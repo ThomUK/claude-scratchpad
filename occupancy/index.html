@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Occupancy &amp; Percentiles &mdash; a toy R-in-the-browser demo</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Occupancy &amp; Percentiles</h1>
+    <p class="subtitle">
+      A toy app that simulates daily <strong>occupancy</strong> and shows why
+      <strong>p50, p85, p95 and p99</strong> give very different absolute answers from the
+      <em>same</em> data. The simulation runs in <strong>R, inside your browser</strong>, via
+      <a href="https://docs.r-wasm.org/webr/latest/" target="_blank" rel="noopener">webR</a> &mdash;
+      no server required.
+    </p>
+    <p id="status" class="status status--loading" role="status">Booting R (downloading webR&hellip;)</p>
+  </header>
+
+  <main>
+    <section class="panel" aria-labelledby="inputs-heading">
+      <h2 id="inputs-heading">Simulation inputs</h2>
+
+      <div class="field">
+        <label for="population">Capacity pool (max possible occupants)</label>
+        <input type="number" id="population" min="1" max="100000" step="1" value="500" />
+      </div>
+
+      <div class="field">
+        <label for="rate">Average occupancy rate <span class="muted">(0&ndash;1)</span></label>
+        <input type="number" id="rate" min="0.01" max="0.99" step="0.01" value="0.6" />
+      </div>
+
+      <div class="field">
+        <label for="variability">Day-to-day variability <span class="muted">(0 = steady, 1 = wild)</span></label>
+        <input type="range" id="variability" min="0" max="0.95" step="0.05" value="0.4" />
+        <output id="variability-out">0.40</output>
+      </div>
+
+      <div class="field">
+        <label for="sims">Simulated days</label>
+        <input type="number" id="sims" min="100" max="200000" step="100" value="10000" />
+      </div>
+
+      <div class="field">
+        <label for="seed">Random seed</label>
+        <div class="seed-row">
+          <input type="number" id="seed" min="0" step="1" value="42" />
+          <button type="button" id="randomize" class="btn btn--ghost" title="New random seed">&#127922;</button>
+        </div>
+      </div>
+
+      <button type="button" id="run" class="btn btn--primary" disabled>Run simulation</button>
+    </section>
+
+    <section class="panel" aria-labelledby="results-heading">
+      <h2 id="results-heading">Results</h2>
+      <div id="summary" class="summary"><p class="hint">Run the simulation to see how the percentile you pick changes the answer.</p></div>
+      <div class="chart-wrap">
+        <canvas id="chart" width="900" height="500" aria-label="Distribution of simulated daily occupancy with percentile markers"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>The R source for the simulation is in <code>app.js</code> (see the <code>rProgram()</code> function).</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
