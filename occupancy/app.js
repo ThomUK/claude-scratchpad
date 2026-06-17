@@ -129,11 +129,21 @@ function renderSummary(v, params) {
   const fmt = (n) => Math.round(n).toLocaleString();
   const pct = (n) => ((n / params.population) * 100).toFixed(1) + '%';
 
+  // Express the exceedance (fraction of days above the percentile) as a typical
+  // count over a ~30.4-day month; spell out rarer-than-monthly cases.
+  const DAYS_PER_MONTH = 30.4;
+  const busiestDays = (exceedFrac) => {
+    const perMonth = exceedFrac * DAYS_PER_MONTH;
+    if (perMonth >= 3) return `~${Math.round(perMonth)} days a month`;
+    if (perMonth >= 1) return `~${perMonth.toFixed(1)} days a month`;
+    return `~${perMonth.toFixed(1)} days a month (about 1 day every ${Math.round(1 / perMonth)} months)`;
+  };
+
   const rows = [
-    ['p50', 'p50', v.p50, 'Median day — you exceed this half the time'],
-    ['p85', 'p85', v.p85, 'Covers all but the busiest ~15% of days'],
-    ['p95', 'p95', v.p95, 'Covers all but the busiest ~5% of days'],
-    ['p99', 'p99', v.p99, 'Covers all but the busiest ~1% of days'],
+    ['p50', 'p50', v.p50, `Median day — busier than this ${busiestDays(0.50)}`],
+    ['p85', 'p85', v.p85, `Covers all but the busiest ${busiestDays(0.15)}`],
+    ['p95', 'p95', v.p95, `Covers all but the busiest ${busiestDays(0.05)}`],
+    ['p99', 'p99', v.p99, `Covers all but the busiest ${busiestDays(0.01)}`],
   ].map(([cls, label, val, note]) => `
     <tr>
       <td><span class="swatch swatch--${cls}"></span>${label}</td>
