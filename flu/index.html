@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flu Season Shapes &mdash; weekly flu patients across years</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Flu Season Shapes</h1>
+    <p class="subtitle">
+      Weekly flu patient counts overlaid across seasons, aligned by week of season.
+      Flu seasons tend to fall into a few shapes &mdash; an <strong>early peak</strong>, a
+      <strong>late peak</strong>, or a low <strong>slow burn</strong> that finishes late.
+      As a new season arrives week by week, this shows which past season it most
+      resembles so far &mdash; a starting point for modelling. Charts are computed in
+      <strong>R, in your browser</strong>, via
+      <a href="https://docs.r-wasm.org/webr/latest/" target="_blank" rel="noopener">webR</a>.
+    </p>
+    <p id="data-note" class="data-note">
+      ⚠ Showing <strong>illustrative, synthetic data</strong> &mdash; not real NHS figures.
+      See the README for how to drop in real NHS England weekly flu data.
+    </p>
+    <p id="status" class="status status--loading" role="status">Booting R (downloading webR&hellip;)</p>
+  </header>
+
+  <main>
+    <section class="panel" aria-labelledby="controls-heading">
+      <h2 id="controls-heading">Controls</h2>
+
+      <div class="field">
+        <label for="current">Season to track</label>
+        <select id="current"></select>
+        <p class="muted small">The bold line. Compared against all other seasons.</p>
+      </div>
+
+      <div class="field">
+        <label for="weeks">Weeks observed so far: <output id="weeks-out">7</output></label>
+        <input type="range" id="weeks" min="2" max="30" step="1" value="7" />
+        <p class="muted small">Pretend only this many weeks of the tracked season are in yet.</p>
+      </div>
+
+      <button type="button" id="update" class="btn btn--primary" disabled>Update</button>
+    </section>
+
+    <section class="panel" aria-labelledby="chart-heading">
+      <h2 id="chart-heading">Seasons overlaid</h2>
+      <div class="chart-wrap">
+        <canvas id="chart" width="960" height="540" aria-label="Weekly flu patient counts by season, aligned by week of season"></canvas>
+      </div>
+    </section>
+
+    <section class="panel panel--wide" aria-labelledby="match-heading">
+      <h2 id="match-heading">Closest past seasons so far</h2>
+      <div id="summary"><p class="hint">Loading&hellip;</p></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Data: <code>flu/data/flu_weekly.csv</code> (synthetic placeholder). R source in <code>app.js</code> (<code>rProgram()</code>).</p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

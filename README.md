@@ -12,6 +12,7 @@ and deployed to GitHub Pages.
 | App | Path | Live | Description |
 | --- | --- | --- | --- |
 | Occupancy & Percentiles | [`occupancy/`](occupancy/) | [open](https://thomuk.github.io/claude-scratchpad/occupancy/) | Simulates daily occupancy and shows why p50/p85/p95/p99 give very different absolute answers from the same data. Runs R in the browser via [webR](https://docs.r-wasm.org/webr/latest/). |
+| Flu Season Shapes | [`flu/`](flu/) | [open](https://thomuk.github.io/claude-scratchpad/flu/) | Weekly flu patients overlaid across seasons (early-peak / late-peak / slow-burn), and which past season a new one most resembles so far. Runs R in the browser via webR. |
 
 ## How deployment works
 
