@@ -38,6 +38,11 @@ h1 { margin: 0 0 8px; font-size: 1.9rem; }
 .subtitle { color: var(--muted); max-width: 70ch; }
 .subtitle a { color: var(--accent); }
 
+.repo-link { margin: 6px 0 0; font-size: 0.85rem; }
+.repo-link a { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); text-decoration: none; }
+.repo-link a:hover { color: var(--accent); }
+.repo-link svg { display: block; }
+
 .status {
   display: inline-block;
   margin-top: 8px;

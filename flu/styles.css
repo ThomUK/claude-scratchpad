@@ -32,6 +32,11 @@ h1 { margin: 0 0 8px; font-size: 1.9rem; }
 .subtitle { color: var(--muted); max-width: 80ch; }
 .subtitle a { color: var(--accent); }
 
+.repo-link { margin: 6px 0 0; font-size: 0.85rem; }
+.repo-link a { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); text-decoration: none; }
+.repo-link a:hover { color: var(--accent); }
+.repo-link svg { display: block; }
+
 .data-note {
   margin-top: 12px; padding: 8px 12px; border-radius: 8px;
   background: #3a2f12; color: #e3c06b; font-size: 0.85rem; max-width: 80ch;
