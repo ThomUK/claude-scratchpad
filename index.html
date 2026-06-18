@@ -17,22 +17,26 @@
     }
     .wrap { max-width: 880px; margin: 0 auto; padding: 48px 20px 64px; }
     h1 { margin: 0 0 8px; font-size: 2rem; }
-    .lede { color: var(--muted); max-width: 65ch; margin: 0 0 36px; }
+    .repo-link { margin: 6px 0 0; font-size: 0.85rem; }
+    .repo-link a { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); text-decoration: none; }
+    .repo-link a:hover { color: var(--accent); }
+    .repo-link svg { display: block; }
+    .lede { color: var(--muted); max-width: 65ch; margin: 18px 0 36px; }
 
     .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
 
     /* Each app is a card. To add an app, copy one <a class="card"> block. */
     a.card {
-      display: block; text-decoration: none; color: inherit;
+      display: flex; flex-direction: column; text-decoration: none; color: inherit;
       background: var(--panel); border: 1px solid var(--panel-border);
       border-radius: 12px; padding: 20px;
       transition: border-color .15s, transform .15s;
     }
     a.card:hover { border-color: var(--accent); transform: translateY(-2px); }
     a.card h2 { margin: 0 0 6px; font-size: 1.15rem; }
-    a.card p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+    a.card p { margin: 0 0 14px; color: var(--muted); font-size: 0.92rem; }
     a.card .tag {
-      display: inline-block; margin-top: 12px; font-size: 0.75rem; font-weight: 600;
+      margin-top: auto; align-self: flex-start; font-size: 0.75rem; font-weight: 600;
       color: var(--accent); border: 1px solid var(--panel-border); border-radius: 999px;
       padding: 3px 10px;
     }
@@ -44,6 +48,12 @@
 <body>
   <div class="wrap">
     <h1>Toy Models</h1>
+    <p class="repo-link">
+      <a href="https://github.com/ThomUK/claude-scratchpad" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.76-3.65 3.95.29.25.54.74.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        View source on GitHub
+      </a>
+    </p>
     <p class="lede">
       A small collection of self-contained demo apps, each living in its own
       directory of this repository. They are designed to aid discussion and
