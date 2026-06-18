@@ -27,8 +27,8 @@ are visible. Replace it with real data to use this for real.
 | Column | Meaning |
 | --- | --- |
 | `season` | Season label, e.g. `2023-24` |
-| `season_week` | Week index within the season (1 = first reporting week; week 1 ≈ early October). Used to align seasons. |
-| `iso_week` | ISO week number (for reference/tooltips) |
+| `season_week` | Position on the annual axis, 1..52, where 1 = ISO week 14 (April). The year runs wk 14 → wk 52 → wk 13, so a winter season sits contiguously in the middle. Used to align and truncate seasons. |
+| `iso_week` | ISO-8601 week number (drives the chart's x-axis labels) |
 | `count` | Number of flu patients that week (e.g. mean daily G&A + critical-care beds occupied by confirmed flu) |
 | `is_current` | `1` for the in-progress season (drawn bold by default), else `0` |
 

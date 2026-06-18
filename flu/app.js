@@ -29,30 +29,35 @@ function rProgram(currentSeason, K) {
       x <- d[d$season == s, ]
       x <- x[order(x$season_week), ]
       pk <- which.max(x$count)
-      list(peak_week = x$season_week[pk], peak_height = max(x$count),
-           weeks = nrow(x))
+      list(peak_pos = x$season_week[pk], peak_iso = x$iso_week[pk],
+           peak_height = max(x$count), weeks = nrow(x))
     }
     info <- setNames(lapply(seasons, summ), seasons)
 
     # Heuristic archetype (tunable): a low peak is a "slow burn"; otherwise
-    # classify by when the peak lands.
+    # classify by when the peak lands on the annual axis (pos 1 = ISO wk 14).
+    # EARLY_CUT 38 ≈ ISO week 51 (mid-December).
     SLOW_HEIGHT <- 1000
-    EARLY_CUT <- 9
+    EARLY_CUT <- 38
     archetype <- function(s) {
       i <- info[[s]]
       if (i$peak_height < SLOW_HEIGHT) "slow"
-      else if (i$peak_week <= EARLY_CUT) "early"
+      else if (i$peak_pos <= EARLY_CUT) "early"
       else "late"
     }
     arch <- setNames(vapply(seasons, archetype, ""), seasons)
 
     # --- plot ---------------------------------------------------------------
+    # x axis is the annual ISO-week year: pos 1..52 = ISO weeks 14→52→1→13.
+    isoOf <- function(p) ((14 + (p - 1) - 1) %% 52) + 1
     pal <- c(early = "#1f9bd6", late = "#d63a30", slow = "#2e9e3f")
     maxc <- max(d$count); maxw <- max(d$season_week)
     op <- par(mar = c(4.6, 4.8, 3, 1), cex = 1.12)
-    plot(NA, xlim = c(1, maxw), ylim = c(0, maxc * 1.05),
-         xlab = "Week of season  (week 1 ≈ early October)",
-         ylab = "Flu patients", main = "Weekly flu patients by season (aligned)")
+    plot(NA, xlim = c(1, maxw), ylim = c(0, maxc * 1.05), xaxt = "n",
+         xlab = "ISO week  (year running wk 14 → wk 52 → wk 13)",
+         ylab = "Flu patients", main = "Weekly flu patients by season (ISO-week year)")
+    ticks <- seq(1, maxw, by = 4)
+    axis(1, at = ticks, labels = isoOf(ticks))
     others <- setdiff(seasons, cur)
     for (s in others) {
       x <- d[d$season == s, ]; x <- x[order(x$season_week), ]
@@ -94,7 +99,7 @@ function rProgram(currentSeason, K) {
       cur_weeks   = nrow(d[d$season == cur, ]),
       season      = others_ranked,
       archetype   = unname(arch[others_ranked]),
-      peak_week   = vapply(others_ranked, function(s) info[[s]]$peak_week, 0),
+      peak_iso    = vapply(others_ranked, function(s) info[[s]]$peak_iso, 0),
       peak_height = vapply(others_ranked, function(s) info[[s]]$peak_height, 0),
       dist        = unname(sc[ord, "dist"]),
       corr        = unname(sc[ord, "corr"])
@@ -210,14 +215,14 @@ function renderSummary(res) {
         <td>${i + 1}</td>
         <td>${s}</td>
         <td><span class="pill pill--${arch}">${ARCH_LABEL[arch] || arch}</span></td>
-        <td>wk ${r.peak_week[i]}, ~${fmt(r.peak_height[i])}</td>
+        <td>ISO wk ${r.peak_iso[i]}, ~${fmt(r.peak_height[i])}</td>
         <td>${Number.isFinite(corr) ? corr.toFixed(2) : '—'}</td>
       </tr>`;
   }).join('');
 
   const bestSeason = r.season[0];
   const bestArch = ARCH_LABEL[r.archetype[0]] || r.archetype[0];
-  const bestPeakWk = r.peak_week[0];
+  const bestPeakWk = r.peak_iso[0];
   const bestPeakHt = fmt(r.peak_height[0]);
 
   summaryEl.innerHTML = `
@@ -230,7 +235,7 @@ function renderSummary(res) {
     <div class="takeaway">
       Through <strong>${k} weeks</strong>, <strong>${current}</strong> most resembles
       <strong>${bestSeason}</strong> &mdash; a <strong>${bestArch}</strong> season.
-      If it keeps tracking that one, expect the peak around <strong>week ${bestPeakWk}</strong>
+      If it keeps tracking that one, expect the peak around <strong>ISO week ${bestPeakWk}</strong>
       (~${bestPeakHt} patients). Drag <em>weeks observed</em> to watch the closest match
       firm up as more of the season arrives.
     </div>`;
