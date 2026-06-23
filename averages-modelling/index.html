@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Average vs Intraday Bed Modelling</title>
+  <link rel="stylesheet" href="styles.css?v=1" />
+</head>
+<body>
+  <header>
+    <h1>Average vs Intraday Bed Modelling</h1>
+    <p class="repo-link">
+      <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/averages-modelling" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.76-3.65 3.95.29.25.54.74.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        View source on GitHub
+      </a>
+    </p>
+    <p class="subtitle">
+      Bed planning often uses an <strong>average</strong>: beds&nbsp;=&nbsp;admissions/day&nbsp;×&nbsp;mean
+      length&nbsp;of&nbsp;stay (Little's Law) &mdash; a single flat number. But real occupancy
+      <strong>swings through the day</strong> as admissions arrive before discharges happen, and
+      <strong>stacks up at weekends</strong> when fewer patients go home. This compares that flat
+      average against an hour-by-hour <strong>deterministic flow</strong> model over a week. It runs in
+      <strong>R, in your browser</strong>, via
+      <a href="https://docs.r-wasm.org/webr/latest/" target="_blank" rel="noopener">webR</a>.
+    </p>
+    <p id="status" class="status status--loading" role="status">Booting R (downloading webR&hellip;)</p>
+  </header>
+
+  <main>
+    <section class="panel" aria-labelledby="controls-heading">
+      <h2 id="controls-heading">Inputs</h2>
+
+      <div class="field">
+        <label for="admits">Admissions per day</label>
+        <input type="number" id="admits" min="1" max="2000" step="1" value="30" />
+      </div>
+
+      <div class="field">
+        <label for="los">Mean length of stay (days)</label>
+        <input type="number" id="los" min="0.5" max="60" step="0.5" value="5" />
+      </div>
+
+      <div class="field">
+        <label for="spread">Length-of-stay spread <span class="muted">(0 = fixed, 1 = long tail)</span></label>
+        <input type="range" id="spread" min="0" max="1" step="0.05" value="0.6" />
+        <output id="spread-out">0.60</output>
+      </div>
+
+      <div class="field">
+        <label for="arrival">Arrival profile (through the day)</label>
+        <select id="arrival">
+          <option value="flat">Flat</option>
+          <option value="daytime" selected>Daytime-weighted</option>
+          <option value="evening">Evening peak (ED-like)</option>
+          <option value="overnight">Overnight-low</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="discharge">Discharge time profile</label>
+        <select id="discharge">
+          <option value="afternoon" selected>Afternoon-heavy</option>
+          <option value="midday">Around midday</option>
+          <option value="spread">Spread through day</option>
+          <option value="early">Early (morning)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="weekend">Weekend discharge level: <output id="weekend-out">0.50</output></label>
+        <input type="range" id="weekend" min="0.2" max="1" step="0.05" value="0.5" />
+        <p class="muted small">Weekend discharges as a fraction of weekday rate (drives weekend stacking).</p>
+      </div>
+
+      <button type="button" id="run" class="btn btn--primary" disabled>Run model</button>
+    </section>
+
+    <section class="panel" aria-labelledby="chart-heading">
+      <h2 id="chart-heading">A week of occupancy</h2>
+      <div class="chart-wrap">
+        <canvas id="chart" width="980" height="540" aria-label="Hour-by-hour bed occupancy over a week vs the average-model bed line"></canvas>
+      </div>
+      <div id="summary"><p class="hint">Run the model to compare the average against the intraday picture.</p></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Deterministic flow model. R source in <code>app.js</code> (<code>rProgram()</code>).</p>
+  </footer>
+
+  <script type="module" src="app.js?v=1"></script>
+</body>
+</html>
