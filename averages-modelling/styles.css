@@ -82,6 +82,7 @@ input[type="range"] { accent-color: var(--accent); }
 .stat .v { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .stat .l { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
 .stat--avg .v { color: var(--accent); }
+.stat--p85 .v { color: var(--warn); }
 .stat--peak .v { color: var(--bad); }
 
 .takeaway {

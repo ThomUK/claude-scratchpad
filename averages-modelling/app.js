@@ -92,6 +92,7 @@ function rProgram(p) {
     wk <- occ[(H - 167 + 1):(H + 1)]            # 168 hourly values, Mon..Sun
     avg_beds <- adm_day * mean_los              # average model (Little's Law)
     peak <- max(wk); meanocc <- mean(wk); trough <- min(wk)
+    p85 <- as.numeric(quantile(wk, 0.85, names = FALSE))
     realised_los <- meanocc / adm_day           # days, via Little's Law
 
     # --- plot --------------------------------------------------------------
@@ -106,19 +107,20 @@ function rProgram(p) {
     axis(1, at = seq(12, 167, by = 24), labels = days, tick = FALSE)
     # average-model bed line
     abline(h = avg_beds, col = "#1f9bd6", lwd = 2.5, lty = 2)
+    abline(h = p85, col = "#c98a13", lwd = 2.5, lty = 4)
     abline(h = meanocc, col = "grey55", lwd = 1.5, lty = 3)
     lines(0:167, wk, col = "#d63a30", lwd = 3)
     pk <- which.max(wk) - 1
     points(pk, peak, pch = 19, col = "#d63a30");
     legend("topleft", bty = "n", inset = 0.02,
-           lwd = c(3, 2.5, 1.5), lty = c(1, 2, 3),
-           col = c("#d63a30", "#1f9bd6", "grey55"),
-           legend = c("intraday model", "average-model beds", "model mean"))
+           lwd = c(3, 2.5, 2.5, 1.5), lty = c(1, 2, 4, 3),
+           col = c("#d63a30", "#1f9bd6", "#c98a13", "grey55"),
+           legend = c("intraday model", "average-model beds", "85th centile", "model mean"))
     par(op)
 
     list(
       avg_beds = avg_beds, peak = peak, meanocc = meanocc, trough = trough,
-      hours_over = sum(wk > avg_beds), uplift = peak / avg_beds - 1,
+      p85 = p85, hours_over = sum(wk > avg_beds), uplift = peak / avg_beds - 1,
       shortfall = ceiling(peak) - ceiling(avg_beds), realised_los = realised_los
     )
   `;
@@ -188,19 +190,22 @@ function renderSummary(v) {
   const peakBeds = Math.ceil(v.peak);
   const pctOver = (v.hours_over / 168 * 100).toFixed(0);
   const uplift = (v.uplift * 100).toFixed(0);
+  const p85Uplift = ((v.p85 / v.avg_beds - 1) * 100).toFixed(0);
 
   summaryEl.innerHTML = `
     <div class="cards">
       <div class="stat stat--avg"><div class="v">${n(v.avg_beds)}</div><div class="l">Average-model beds (admissions × LOS)</div></div>
+      <div class="stat stat--p85"><div class="v">${n(v.p85)}</div><div class="l">85th centile of occupancy</div></div>
       <div class="stat stat--peak"><div class="v">${n(v.peak)}</div><div class="l">Peak occupancy (intraday model)</div></div>
-      <div class="stat"><div class="v">+${uplift}%</div><div class="l">Peak above the average</div></div>
       <div class="stat"><div class="v">${pctOver}%</div><div class="l">Of the week above the average line</div></div>
     </div>
     <div class="takeaway">
       Planning to the average gives <strong>${avgBeds} beds</strong>, but the hour-by-hour model
       peaks at <strong>${n(v.peak)}</strong> &mdash; <strong>${uplift}% higher</strong>. Occupancy sits
       above the average line for <strong>${pctOver}% of the week</strong>, so ${avgBeds} beds would be
-      breached repeatedly; covering the peak needs about
+      breached repeatedly. Even the <strong>85th centile is ${n(v.p85)}</strong> beds
+      (<strong>+${p85Uplift}%</strong> on the average) &mdash; a more honest planning level &mdash; and
+      covering the peak needs about
       <strong>${peakBeds} beds (${v.shortfall >= 0 ? '+' : ''}${v.shortfall})</strong>.
       Discharge timing and reduced weekend discharges create the daily swings and the weekend build-up;
       realised mean length of stay is ~<strong>${v.realised_los.toFixed(1)} days</strong>
