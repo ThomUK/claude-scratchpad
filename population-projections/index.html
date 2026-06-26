@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Population Pyramids — English regions (2022-based)</title>
+  <title>Population Pyramids — English geographies (2022-based)</title>
   <link rel="stylesheet" href="styles.css?v=dev" />
 </head>
 <body>
   <header>
-    <h1>Population Pyramids — English Regions</h1>
+    <h1>Population Pyramids — English Geographies</h1>
     <p class="repo-link">
       <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/population-projections" target="_blank" rel="noopener">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.76-3.65 3.95.29.25.54.74.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
@@ -16,31 +16,58 @@
       </a>
     </p>
     <p class="subtitle">
-      Two population pyramids side by side for a chosen English region, each at a
-      year you pick, with the <strong>change by age band and sex</strong> between them shown
-      below (absolute and percentage). Data: ONS <strong>2022-based</strong> subnational
-      population projections (Regions in England, 5-year age groups, migration variant),
-      mid-2022 to mid-2047. Rendered in <strong>R, in your browser</strong>, via
+      Two population pyramids side by side for a chosen English geography, each at a year you pick,
+      with the <strong>change by age band and sex</strong> between them below. Pick a geography type,
+      then select one or more areas — they are summed into a single footprint. Data: ONS
+      <strong>2022-based</strong> subnational population projections (migration variant, 5-year age
+      groups, mid-2022 to mid-2047). Rendered in <strong>R, in your browser</strong>, via
       <a href="https://docs.r-wasm.org/webr/latest/" target="_blank" rel="noopener">webR</a>.
     </p>
     <p id="status" class="status status--loading" role="status">Booting R (downloading webR&hellip;)</p>
   </header>
 
   <main>
+    <section class="panel explainer">
+      <h2>Geographies available</h2>
+      <p class="muted">All three partition England exactly once, so selecting and summing areas within a level never double-counts.</p>
+      <div class="geo-grid">
+        <div><strong>Region</strong> — the 9 statistical regions of England (North East, London, …).</div>
+        <div><strong>Sub-ICB location</strong> — NHS health geographies that sub-divide the 42 Integrated Care Boards (106 in all). Grouped here by their ICB.</div>
+        <div><strong>Local authority</strong> — council areas: lower-tier districts, unitary, metropolitan and London boroughs (309). Counties and regions are excluded as they are aggregates. Grouped here by region.</div>
+      </div>
+    </section>
+
     <section class="panel controls">
-      <div class="field">
-        <label for="region">Region</label>
-        <select id="region"></select>
+      <div class="ctl-row">
+        <div class="field">
+          <label>Geography</label>
+          <div class="segmented" id="level" role="tablist">
+            <button class="seg-btn is-active" data-level="region" role="tab">Region</button>
+            <button class="seg-btn" data-level="subicb" role="tab">Sub-ICB</button>
+            <button class="seg-btn" data-level="la" role="tab">Local authority</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="yearL">Left pyramid year</label>
+          <select id="yearL"></select>
+        </div>
+        <div class="field">
+          <label for="yearR">Right pyramid year</label>
+          <select id="yearR"></select>
+        </div>
       </div>
+
       <div class="field">
-        <label for="yearL">Left pyramid year</label>
-        <select id="yearL"></select>
+        <label>Areas <span class="muted" id="sel-count"></span></label>
+        <div class="picker">
+          <div class="picker-bar">
+            <input type="search" id="search" placeholder="Search areas…" autocomplete="off" />
+            <button type="button" class="btn btn--ghost" id="clear-all">Clear</button>
+          </div>
+          <div class="chips" id="chips"></div>
+          <div class="groups" id="groups"></div>
+        </div>
       </div>
-      <div class="field">
-        <label for="yearR">Right pyramid year</label>
-        <select id="yearR"></select>
-      </div>
-      <button type="button" id="update" class="btn btn--primary" disabled>Update</button>
     </section>
 
     <section class="panel">
@@ -53,8 +80,9 @@
 
   <footer>
     <p>
-      Source: <a href="https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections/datasets/regionsinenglandtable1" target="_blank" rel="noopener">ONS Regions in England, Table 1</a>
-      (2022-based, migration variant). Data in <code>data/population.csv</code>; R source in <code>app.js</code>.
+      Source: ONS 2022-based subnational population projections (migration variant) —
+      <a href="https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections/datasets/regionsinenglandtable1" target="_blank" rel="noopener">regions</a>,
+      sub-ICB and local-authority tables. Data in <code>data/</code>; R source in <code>app.js</code>.
     </p>
   </footer>
 

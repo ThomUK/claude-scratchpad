@@ -1,50 +1,51 @@
-# Population Pyramids — English Regions
+# Population Pyramids — English Geographies
 
-Two population pyramids side by side for a chosen English region, each at a year
-you select, with the **change by age band and sex** between the two years shown
-below — both **absolute** and **percentage**.
+Two population pyramids side by side for a chosen English geography, each at a year
+you select, with the **change by age band and sex** between them shown below — both
+**absolute** and **percentage**.
 
-Built to explore how a region's age/sex structure is projected to shift over time
-(e.g. left = 2026, right = 2036, and the panels below show exactly where people are
-gained and lost). Rendered entirely in the browser with
-[webR](https://docs.r-wasm.org/webr/latest/) — no backend.
+Pick a **geography level** (Region / Sub-ICB / Local authority), then **multi-select**
+one or more areas; they are **summed** into a single footprint. The right pyramid
+carries a dotted outline of the left year so the shift is visible. Rendered entirely
+in the browser with [webR](https://docs.r-wasm.org/webr/latest/) — no backend.
 
-## Data — this one is the real thing
+## Data — real ONS projections
 
-Unlike the other toy models, this uses **real ONS data**:
+ONS **2022-based subnational population projections**, migration-category variant,
+five-year age groups by sex, mid-2022 to mid-2047, on 2021 boundaries
+(published 24 June 2025). Three tables, kept in `source/` for provenance:
 
-- **ONS 2022-based subnational population projections**, *Regions in England,
-  Table 1* — five-year age groups by sex, migration-category variant,
-  mid-2022 to mid-2047, on 2021 regional boundaries. Published 24 June 2025.
-- Source page:
-  <https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections/datasets/regionsinenglandtable1>
+| Level | Source workbook | Areas kept |
+| --- | --- | --- |
+| Region | `popprojreg5yrmigcat22based.xls` (Table 1) | 9 regions (E12) |
+| Sub-ICB | `popprojsicb5yrmigcat22based.xls` (Table 3) | 106 sub-ICB locations (E38), grouped by ICB |
+| Local authority | `popprojla5yrmigcat22based.xls` (Table 2) | 309 lower-tier/unitary/met/London authorities (E06–E09), grouped by region |
 
-The original workbook is kept in `source/` for provenance.
+**Non-overlapping by design.** For LAs, only the lower-tier set (E06 unitary, E07
+non-met district, E08 met district, E09 London borough) is kept; counties (E10),
+met counties (E11), regions (E12) and England (E92) are dropped because they are
+aggregates that would double-count when summed. Each level sums to the same England
+total (57,112,542 in 2022), confirming a clean partition.
 
 ### Pipeline
 
-`source/popprojreg5yrmigcat22based.xls` → `build_csv.py` → `data/population.csv`
+`source/*.xls` → `build_csv.py` → per-level CSVs in `data/`:
 
 ```sh
 pip install xlrd
 python3 build_csv.py
 ```
 
-`build_csv.py` reads the `Males` and `Females` sheets and writes a tidy CSV; the
-`All ages` total row is dropped (the app sums the bands itself).
+For each level it writes:
 
-### `data/population.csv` schema
+- `data/<level>.csv` — `code, year, sex, age_group, population` (keyed by ONS code)
+- `data/<level>_areas.csv` — `code, label, group` (the picker lookup; `group` is the
+  region for LAs, the ICB for sub-ICBs)
 
-| Column | Meaning |
-| --- | --- |
-| `region` | England or one of the 9 English regions |
-| `year` | 2022–2047 |
-| `sex` | `male` / `female` |
-| `age_group` | five-year band: `0-4`, `5-9`, … `85-89`, `90+` |
-| `population` | projected resident population (persons) |
-
-To refresh with a newer ONS edition, drop the new workbook into `source/`, adjust
-the sheet/column handling in `build_csv.py` if the layout changed, and re-run it.
+The app loads each level's data lazily (the LA file is ~10 MB) and aggregates the
+selected codes in R. Parents (region for LAs, NHS region order, ICB for sub-ICBs)
+are inferred from the workbooks' document order and the sub-ICB names — the source
+tables carry no explicit parent column.
 
 ## Running locally
 

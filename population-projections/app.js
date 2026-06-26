@@ -2,111 +2,53 @@ import { WebR } from 'https://webr.r-wasm.org/latest/webr.mjs';
 
 const $ = (id) => document.getElementById(id);
 const statusEl = $('status');
-const updateBtn = $('update');
-const regionSel = $('region');
 const yearLSel = $('yearL');
 const yearRSel = $('yearR');
 const summaryEl = $('summary');
 const canvas = $('chart');
 const ctx = canvas.getContext('2d');
+const groupsEl = $('groups');
+const chipsEl = $('chips');
+const searchEl = $('search');
+const selCountEl = $('sel-count');
 
 const setStatus = (t, k) => { statusEl.textContent = t; statusEl.className = `status status--${k}`; };
 
 const AGES = ['0-4','5-9','10-14','15-19','20-24','25-29','30-34','35-39','40-44',
   '45-49','50-54','55-59','60-64','65-69','70-74','75-79','80-84','85-89','90+'];
 
-// --- R program -------------------------------------------------------------
-// D (the full tidy data frame) is loaded once into the global env at init.
-function rProgram(region, yearL, yearR) {
-  return `
-    region <- ${JSON.stringify(region)}; yL <- ${yearL}; yR <- ${yearR}
-    ages <- c(${AGES.map((a) => JSON.stringify(a)).join(',')})
-    male_col <- "#3182bd"; female_col <- "#dd3497"
+const LEVELS = {
+  region: { file: 'region', one: 'region', many: 'regions' },
+  subicb: { file: 'subicb', one: 'sub-ICB', many: 'sub-ICBs' },
+  la:     { file: 'la', one: 'local authority', many: 'local authorities' },
+};
 
-    sub <- D[D$region == region, ]
-    getv <- function(yr, sx) {
-      x <- sub[sub$year == yr & sub$sex == sx, ]
-      v <- x$population[match(ages, x$age_group)]; v[is.na(v)] <- 0; v
-    }
-    mL <- getv(yL,"male"); fL <- getv(yL,"female")
-    mR <- getv(yR,"male"); fR <- getv(yR,"female")
-    xmax <- max(mL, fL, mR, fR)
-
-    # axis formatting (k / m)
-    fmt <- function(z) if (xmax >= 1e6) paste0(round(z/1e6, 1), "m") else paste0(round(z/1e3), "k")
-
-    pyramid <- function(m, f, title, show_ages, cm = NULL, cf = NULL) {
-      nm <- if (show_ages) ages else rep("", length(ages))
-      par(mar = c(3.6, if (show_ages) 4.2 else 1.2, 2.6, 1))
-      xl <- c(-xmax, xmax) * 1.2                     # headroom for outside labels
-      b <- barplot(-m, horiz = TRUE, names.arg = nm, las = 1, xlim = xl,
-                   col = male_col, border = NA, xaxt = "n", cex.names = 0.8)
-      barplot(f, horiz = TRUE, add = TRUE, col = female_col, border = NA, xaxt = "n")
-      # dotted outline of the comparison (other) year, if supplied
-      if (!is.null(cm)) {
-        barplot(-cm, horiz = TRUE, add = TRUE, col = NA, border = "grey25", lwd = 1.2, lty = 3, xaxt = "n")
-        barplot(cf,  horiz = TRUE, add = TRUE, col = NA, border = "grey25", lwd = 1.2, lty = 3, xaxt = "n")
-      }
-      at <- pretty(c(0, xmax), 4); at <- at[at <= xmax]
-      ticks <- c(-rev(at), at)
-      axis(1, at = ticks, labels = fmt(abs(ticks)), cex.axis = 0.8)
-      title(main = title, line = 1)
-      abline(v = 0, col = "white", lwd = 1.5)
-      # percentage-of-total label outside each bar
-      tot <- sum(m) + sum(f)
-      if (tot > 0) {
-        text(-m, b, labels = sprintf("%.1f%%", 100 * m / tot), pos = 2, offset = 0.2, cex = 0.56, col = "grey25")
-        text( f, b, labels = sprintf("%.1f%%", 100 * f / tot), pos = 4, offset = 0.2, cex = 0.56, col = "grey25")
-      }
-    }
-
-    changeplot <- function(vM, vR_minus, title, pct, show_ages) {
-      nm <- if (show_ages) ages else rep("", length(ages))
-      par(mar = c(3.6, if (show_ages) 4.2 else 1.2, 2.6, 1))
-      M <- rbind(female = vR_minus$f, male = vR_minus$m)   # drawn bottom-up
-      rng <- max(abs(M)) * 1.04; if (rng == 0) rng <- 1
-      barplot(M, beside = TRUE, horiz = TRUE, names.arg = nm, las = 1,
-              col = c(female_col, male_col), border = NA, xlim = c(-rng, rng),
-              xaxt = "n", cex.names = 0.8)
-      at <- pretty(c(-rng, rng), 5)
-      lab <- if (pct) paste0(round(at), "%") else fmt(at)
-      axis(1, at = at, labels = lab, cex.axis = 0.8)
-      title(main = title, line = 1)
-      abline(v = 0, col = "grey40")
-    }
-
-    layout(matrix(c(1,2,3,4), nrow = 2, byrow = TRUE), heights = c(1.18, 1))
-    pyramid(mL, fL, paste0(region, " — ", yL), TRUE)
-    pyramid(mR, fR, paste0(region, " — ", yR), FALSE, cm = mL, cf = fL)   # outline = left year
-    legend("topright", bty = "n", inset = 0.01,
-           legend = c("male", "female", paste0(yL, " (outline)")),
-           pch = c(15, 15, NA), lty = c(NA, NA, 3), lwd = c(NA, NA, 1.2),
-           col = c(male_col, female_col, "grey25"), pt.cex = 1.2, cex = 0.82)
-
-    absM <- mR - mL; absF <- fR - fL
-    pctM <- ifelse(mL > 0, 100 * (mR - mL) / mL, 0)
-    pctF <- ifelse(fL > 0, 100 * (fR - fL) / fL, 0)
-    changeplot(NULL, list(m = absM, f = absF), paste0("Absolute change, ", yL, " → ", yR), FALSE, TRUE)
-    changeplot(NULL, list(m = pctM, f = pctF), paste0("% change, ", yL, " → ", yR), TRUE, FALSE)
-
-    totL <- sum(mL, fL); totR <- sum(mR, fR)
-    old <- ages %in% c("65-69","70-74","75-79","80-84","85-89","90+")
-    young <- ages %in% c("0-4","5-9","10-14")
-    share_old <- function(m,f) 100 * sum((m+f)[old]) / sum(m+f)
-    share_young <- function(m,f) 100 * sum((m+f)[young]) / sum(m+f)
-    biggest <- ages[which.max(absM + absF)]
-    fastest <- ages[which.max((pctM*mL + pctF*fL) / pmax(mL+fL,1))]
-
-    list(
-      totL = totL, totR = totR, growth = 100 * (totR/totL - 1),
-      old_L = share_old(mL,fL), old_R = share_old(mR,fR),
-      young_L = share_young(mL,fL), young_R = share_young(mR,fR),
-      biggest = biggest, fastest = fastest
-    )
-  `;
+// --- small CSV parser (handles quoted fields with commas) ------------------
+function parseCSV(text) {
+  const rows = []; let row = [], field = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else q = false; }
+      else field += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(field); field = ''; }
+    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+    else if (c === '\r') { /* skip */ }
+    else field += c;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows;
 }
 
-// --- webR boot -------------------------------------------------------------
+// --- state -----------------------------------------------------------------
+const cache = {};                 // level -> { areas, groups, labelOf, csvText }
+const selections = {};            // level -> Set(code)
+let currentLevel = 'region';
+let loadedInWebR = null;          // which level's data D currently holds
+let years = [];
+
+// --- webR -----------------------------------------------------------------
 const webR = new WebR();
 let shelter;
 
@@ -114,79 +56,282 @@ let shelter;
   try {
     await webR.init();
     shelter = await new webR.Shelter();
-
-    const text = await (await fetch('data/population.csv?v=dev', { cache: 'no-cache' })).text();
-    await webR.FS.writeFile('/tmp/pop.csv', new TextEncoder().encode(text));
-    await webR.evalRVoid('D <- read.csv("/tmp/pop.csv", stringsAsFactors = FALSE)');
-    populateControls(text);
-
+    await loadLevel('region');
+    // years come from the (small) region data, parsed once
     setStatus('R is ready', 'ready');
-    updateBtn.disabled = false;
-    render();
+    wireEvents();
+    renderPicker();
+    scheduleRender();
   } catch (err) {
     console.error(err);
     setStatus('Failed to load. webR needs a network connection on first load.', 'error');
   }
 })();
 
-function populateControls(text) {
-  const lines = text.trim().split('\n');
-  const h = lines[0].split(',');
-  const iR = h.indexOf('region'), iY = h.indexOf('year');
-  const regions = [], years = new Set();
-  for (const line of lines.slice(1)) {
-    const f = line.split(',');
-    if (!regions.includes(f[iR])) regions.push(f[iR]);
-    years.add(Number(f[iY]));
+async function fetchText(name) {
+  return (await fetch(`data/${name}?v=dev`, { cache: 'no-cache' })).text();
+}
+
+async function loadLevel(level) {
+  const cfg = LEVELS[level];
+  if (!cache[level]) {
+    setStatus(`Loading ${cfg.many}…`, 'busy');
+    const [areasText, dataText] = await Promise.all([
+      fetchText(`${cfg.file}_areas.csv`),
+      fetchText(`${cfg.file}.csv`),
+    ]);
+    // areas lookup -> ordered groups
+    const rows = parseCSV(areasText).slice(1).filter((r) => r.length >= 3);
+    const areas = rows.map(([code, label, group]) => ({ code, label, group }));
+    const groupOrder = [];
+    const byGroup = new Map();
+    for (const a of areas) {
+      if (!byGroup.has(a.group)) { byGroup.set(a.group, []); groupOrder.push(a.group); }
+      byGroup.get(a.group).push(a);
+    }
+    const labelOf = new Map(areas.map((a) => [a.code, a.label]));
+    cache[level] = { areas, groups: groupOrder.map((g) => ({ name: g, areas: byGroup.get(g) })), labelOf, csvText: dataText };
+
+    if (!years.length) {
+      const ys = new Set();
+      for (const line of dataText.split('\n').slice(1)) { const c = line.indexOf(','); if (c > 0) ys.add(Number(line.slice(c + 1, line.indexOf(',', c + 1)))); }
+      years = [...ys].filter(Boolean).sort((a, b) => a - b);
+      populateYears();
+    }
+    // default selection = first group
+    selections[level] = new Set(cache[level].groups[0].areas.map((a) => a.code));
   }
-  const yearList = [...years].sort((a, b) => a - b);
-  regionSel.innerHTML = regions.map((r) => `<option${r === 'England' ? ' selected' : ''}>${r}</option>`).join('');
-  const opt = (sel) => yearList.map((y) => `<option>${y}</option>`).join('');
-  yearLSel.innerHTML = opt(); yearRSel.innerHTML = opt();
-  yearLSel.value = String(yearList.includes(2026) ? 2026 : yearList[0]);
-  yearRSel.value = String(yearList.includes(2036) ? 2036 : yearList[yearList.length - 1]);
+  if (loadedInWebR !== level) {
+    await webR.FS.writeFile('/tmp/pop.csv', new TextEncoder().encode(cache[level].csvText));
+    await webR.evalRVoid('D <- read.csv("/tmp/pop.csv", stringsAsFactors = FALSE, colClasses = c(code="character"))');
+    loadedInWebR = level;
+  }
+}
+
+function populateYears() {
+  const opts = years.map((y) => `<option>${y}</option>`).join('');
+  yearLSel.innerHTML = opts; yearRSel.innerHTML = opts;
+  yearLSel.value = String(years.includes(2026) ? 2026 : years[0]);
+  yearRSel.value = String(years.includes(2036) ? 2036 : years[years.length - 1]);
+}
+
+// --- events ----------------------------------------------------------------
+function wireEvents() {
+  $('level').addEventListener('click', async (e) => {
+    const btn = e.target.closest('.seg-btn'); if (!btn) return;
+    const level = btn.dataset.level; if (level === currentLevel) return;
+    document.querySelectorAll('.seg-btn').forEach((b) => b.classList.toggle('is-active', b === btn));
+    currentLevel = level;
+    searchEl.value = '';
+    await loadLevel(level);
+    renderPicker(); scheduleRender();
+  });
+
+  [yearLSel, yearRSel].forEach((el) => el.addEventListener('change', scheduleRender));
+  searchEl.addEventListener('input', renderPicker);
+  $('clear-all').addEventListener('click', () => { sel().clear(); renderPicker(); scheduleRender(); });
+
+  groupsEl.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.dataset.code) { t.checked ? sel().add(t.dataset.code) : sel().delete(t.dataset.code); renderPicker(); scheduleRender(); }
+    else if (t.dataset.group) {
+      const grp = cache[currentLevel].groups.find((g) => g.name === t.dataset.group);
+      grp.areas.forEach((a) => (t.checked ? sel().add(a.code) : sel().delete(a.code)));
+      renderPicker(); scheduleRender();
+    }
+  });
+  groupsEl.addEventListener('click', (e) => {
+    const head = e.target.closest('.group-head');
+    if (head && !e.target.matches('input')) head.parentElement.classList.toggle('open');
+  });
+  chipsEl.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-code]'); if (!b) return;
+    sel().delete(b.dataset.code); renderPicker(); scheduleRender();
+  });
+}
+
+const sel = () => selections[currentLevel];
+
+// --- picker rendering ------------------------------------------------------
+function renderPicker() {
+  const { groups, labelOf } = cache[currentLevel];
+  const q = searchEl.value.trim().toLowerCase();
+  const s = sel();
+
+  // chips (cap displayed)
+  const selCodes = [...s];
+  const CAP = 14;
+  chipsEl.innerHTML = selCodes.slice(0, CAP).map((code) =>
+    `<span class="chip">${esc(labelOf.get(code) || code)}<button data-code="${code}" title="remove">×</button></span>`
+  ).join('') + (selCodes.length > CAP ? `<span class="chip more">+${selCodes.length - CAP} more</span>` : '');
+  selCountEl.textContent = selCodes.length ? `· ${selCodes.length} selected` : '· none selected';
+
+  // groups
+  let html = '';
+  for (const g of groups) {
+    const matched = q ? g.areas.filter((a) => a.label.toLowerCase().includes(q)) : g.areas;
+    if (!matched.length) continue;
+    const selN = g.areas.filter((a) => s.has(a.code)).length;
+    const open = q ? true : undefined; // expand all on search
+    html += `<div class="group${open ? ' open' : ''}">
+      <div class="group-head">
+        <input type="checkbox" data-group="${esc(g.name)}" ${selN === g.areas.length ? 'checked' : ''} />
+        <span class="chev">▸</span><span>${esc(g.name)}</span>
+        <span class="count">${selN}/${g.areas.length}</span>
+      </div>
+      <div class="group-body">${matched.map((a) =>
+        `<div class="area-row"><input type="checkbox" id="c_${a.code}" data-code="${a.code}" ${s.has(a.code) ? 'checked' : ''} /><label for="c_${a.code}">${esc(a.label)}</label></div>`
+      ).join('')}</div>
+    </div>`;
+  }
+  groupsEl.innerHTML = html || '<div class="empty">No areas match your search.</div>';
+
+  // indeterminate state for partially-selected groups
+  groupsEl.querySelectorAll('input[data-group]').forEach((cb) => {
+    const g = groups.find((x) => x.name === cb.dataset.group);
+    const n = g.areas.filter((a) => s.has(a.code)).length;
+    cb.indeterminate = n > 0 && n < g.areas.length;
+  });
+}
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// CSS: open groups show their body
+const style = document.createElement('style');
+style.textContent = '.group-body{display:none}.group.open .group-body{display:block}.group.open .chev{transform:rotate(90deg);display:inline-block}';
+document.head.appendChild(style);
+
+// --- chart rendering -------------------------------------------------------
+let renderTimer = null, rendering = false, pending = false;
+function scheduleRender() { clearTimeout(renderTimer); renderTimer = setTimeout(render, 350); }
+
+function titleArea() {
+  const s = sel(); const { labelOf, areas } = cache[currentLevel]; const cfg = LEVELS[currentLevel];
+  if (s.size === 0) return '—';
+  if (s.size === 1) return labelOf.get([...s][0]);
+  if (currentLevel === 'region' && s.size === areas.length) return 'England';
+  return `${s.size} ${cfg.many}`;
 }
 
 async function render() {
   if (!shelter) return;
-  updateBtn.disabled = true;
+  if (rendering) { pending = true; return; }
+  const s = sel();
+  if (s.size === 0) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    summaryEl.innerHTML = '<p class="hint">Select one or more areas to draw the pyramids.</p>';
+    return;
+  }
+  rendering = true;
   setStatus('Rendering in R…', 'busy');
-  const region = regionSel.value;
   const yL = Number(yearLSel.value), yR = Number(yearRSel.value);
   try {
-    const cap = await shelter.captureR(rProgram(region, yL, yR), {
+    const cap = await shelter.captureR(rProgram([...s], yL, yR, titleArea()), {
       captureGraphics: { width: 1000, height: 800 },
     });
     const res = await cap.result.toJs();
     const v = {};
-    res.names.forEach((name, i) => {
-      const x = res.values[i];
-      v[name] = x.values.length === 1 ? x.values[0] : x.values;
-    });
+    res.names.forEach((name, i) => { const x = res.values[i]; v[name] = x.values.length === 1 ? x.values[0] : x.values; });
     if (cap.images.length) drawImage(cap.images[0]);
-    renderSummary(v, region, yL, yR);
+    renderSummary(v, titleArea(), yL, yR);
     setStatus('R is ready', 'ready');
   } catch (err) {
     console.error(err);
     setStatus('Error: ' + (err?.message || err), 'error');
   } finally {
     await shelter.purge();
-    updateBtn.disabled = false;
+    rendering = false;
+    if (pending) { pending = false; render(); }
   }
 }
 
 function drawImage(bitmap) {
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
+  canvas.width = bitmap.width; canvas.height = bitmap.height;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(bitmap, 0, 0);
 }
 
-function renderSummary(v, region, yL, yR) {
+// --- R program -------------------------------------------------------------
+function rProgram(codes, yearL, yearR, areaTitle) {
+  return `
+    sel <- c(${codes.map((c) => JSON.stringify(c)).join(',')})
+    yL <- ${yearL}; yR <- ${yearR}; areaTitle <- ${JSON.stringify(areaTitle)}
+    ages <- c(${AGES.map((a) => JSON.stringify(a)).join(',')})
+    male_col <- "#3182bd"; female_col <- "#dd3497"
+
+    sub <- D[D$code %in% sel, ]
+    getv <- function(yr, sx) {
+      x <- sub[sub$year == yr & sub$sex == sx, ]
+      v <- tapply(x$population, factor(x$age_group, levels = ages), sum)
+      v <- as.numeric(v); v[is.na(v)] <- 0; v
+    }
+    mL <- getv(yL,"male"); fL <- getv(yL,"female")
+    mR <- getv(yR,"male"); fR <- getv(yR,"female")
+    xmax <- max(mL, fL, mR, fR, 1)
+    fmt <- function(z) if (xmax >= 1e6) paste0(round(z/1e6, 1), "m") else if (xmax >= 1e4) paste0(round(z/1e3), "k") else as.character(round(z))
+
+    pyramid <- function(m, f, title, show_ages, cm = NULL, cf = NULL) {
+      nm <- if (show_ages) ages else rep("", length(ages))
+      par(mar = c(3.6, if (show_ages) 4.2 else 1.2, 2.6, 1))
+      xl <- c(-xmax, xmax) * 1.2
+      b <- barplot(-m, horiz = TRUE, names.arg = nm, las = 1, xlim = xl,
+                   col = male_col, border = NA, xaxt = "n", cex.names = 0.8)
+      barplot(f, horiz = TRUE, add = TRUE, col = female_col, border = NA, xaxt = "n")
+      if (!is.null(cm)) {
+        barplot(-cm, horiz = TRUE, add = TRUE, col = NA, border = "grey25", lwd = 1.2, lty = 3, xaxt = "n")
+        barplot(cf,  horiz = TRUE, add = TRUE, col = NA, border = "grey25", lwd = 1.2, lty = 3, xaxt = "n")
+      }
+      at <- pretty(c(0, xmax), 4); at <- at[at <= xmax]
+      axis(1, at = c(-rev(at), at), labels = fmt(abs(c(-rev(at), at))), cex.axis = 0.8)
+      title(main = title, line = 1); abline(v = 0, col = "white", lwd = 1.5)
+      tot <- sum(m) + sum(f)
+      if (tot > 0) {
+        text(-m, b, labels = sprintf("%.1f%%", 100 * m / tot), pos = 2, offset = 0.2, cex = 0.56, col = "grey25")
+        text( f, b, labels = sprintf("%.1f%%", 100 * f / tot), pos = 4, offset = 0.2, cex = 0.56, col = "grey25")
+      }
+    }
+
+    changeplot <- function(v, title, pct, show_ages) {
+      nm <- if (show_ages) ages else rep("", length(ages))
+      par(mar = c(3.6, if (show_ages) 4.2 else 1.2, 2.6, 1))
+      M <- rbind(female = v$f, male = v$m)
+      rng <- max(abs(M)) * 1.04; if (!is.finite(rng) || rng == 0) rng <- 1
+      barplot(M, beside = TRUE, horiz = TRUE, names.arg = nm, las = 1,
+              col = c(female_col, male_col), border = NA, xlim = c(-rng, rng), xaxt = "n", cex.names = 0.8)
+      at <- pretty(c(-rng, rng), 5)
+      axis(1, at = at, labels = if (pct) paste0(round(at), "%") else fmt(at), cex.axis = 0.8)
+      title(main = title, line = 1); abline(v = 0, col = "grey40")
+    }
+
+    layout(matrix(c(1,2,3,4), nrow = 2, byrow = TRUE), heights = c(1.18, 1))
+    pyramid(mL, fL, paste0(areaTitle, " — ", yL), TRUE)
+    pyramid(mR, fR, paste0(areaTitle, " — ", yR), FALSE, cm = mL, cf = fL)
+    legend("topright", bty = "n", inset = 0.01,
+           legend = c("male", "female", paste0(yL, " (outline)")),
+           pch = c(15, 15, NA), lty = c(NA, NA, 3), lwd = c(NA, NA, 1.2),
+           col = c(male_col, female_col, "grey25"), pt.cex = 1.2, cex = 0.82)
+
+    absM <- mR - mL; absF <- fR - fL
+    pctM <- ifelse(mL > 0, 100 * (mR - mL) / mL, 0); pctF <- ifelse(fL > 0, 100 * (fR - fL) / fL, 0)
+    changeplot(list(m = absM, f = absF), paste0("Absolute change, ", yL, " → ", yR), FALSE, TRUE)
+    changeplot(list(m = pctM, f = pctF), paste0("% change, ", yL, " → ", yR), TRUE, FALSE)
+
+    totL <- sum(mL, fL); totR <- sum(mR, fR)
+    old <- ages %in% c("65-69","70-74","75-79","80-84","85-89","90+")
+    young <- ages %in% c("0-4","5-9","10-14")
+    sh <- function(m,f,idx) 100 * sum((m+f)[idx]) / sum(m+f)
+    list(
+      totL = totL, totR = totR, growth = 100 * (totR/totL - 1),
+      old_L = sh(mL,fL,old), old_R = sh(mR,fR,old),
+      young_L = sh(mL,fL,young), young_R = sh(mR,fR,young),
+      biggest = ages[which.max(absM + absF)]
+    )
+  `;
+}
+
+function renderSummary(v, area, yL, yR) {
   const n = (x) => Math.round(x).toLocaleString();
   const sign = (x) => (x >= 0 ? '+' : '');
   const growthCls = v.growth >= 0 ? 'stat--growth' : 'stat--shrink';
-
   summaryEl.innerHTML = `
     <div class="cards">
       <div class="stat"><div class="v">${n(v.totL)}</div><div class="l">Total population, ${yL}</div></div>
@@ -195,15 +340,11 @@ function renderSummary(v, region, yL, yR) {
       <div class="stat"><div class="v">${v.old_L.toFixed(1)}% → ${v.old_R.toFixed(1)}%</div><div class="l">Aged 65+ share</div></div>
     </div>
     <div class="takeaway">
-      <strong>${region}</strong> is projected to go from <strong>${n(v.totL)}</strong> people in ${yL}
+      <strong>${esc(area)}</strong> is projected to go from <strong>${n(v.totL)}</strong> people in ${yL}
       to <strong>${n(v.totR)}</strong> in ${yR} (<strong>${sign(v.growth)}${v.growth.toFixed(1)}%</strong>).
       The share aged 65+ moves from <strong>${v.old_L.toFixed(1)}%</strong> to
-      <strong>${v.old_R.toFixed(1)}%</strong>, while the under-15 share goes
-      ${v.young_L.toFixed(1)}% → ${v.young_R.toFixed(1)}%. The biggest absolute change is in the
-      <strong>${v.biggest}</strong> band. The pyramids show the shape; the panels below show where
-      the people are gained and lost, by age and sex.
+      <strong>${v.old_R.toFixed(1)}%</strong>; under-15s go ${v.young_L.toFixed(1)}% → ${v.young_R.toFixed(1)}%.
+      The biggest absolute change is in the <strong>${v.biggest}</strong> band. The right pyramid's dotted
+      outline is ${yL}, so the gap to the filled bars shows the shift.
     </div>`;
 }
-
-updateBtn.addEventListener('click', render);
-[regionSel, yearLSel, yearRSel].forEach((el) => el.addEventListener('change', render));
