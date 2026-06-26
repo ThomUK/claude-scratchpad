@@ -15,12 +15,12 @@ const chipsEl = $('chips'), searchEl = $('search'), selCountEl = $('sel-count');
 const setStatus = (t, k) => { statusEl.textContent = t; statusEl.className = `status status--${k}`; };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-const STYLE_OFF = { color: '#5a6b7a', weight: 1, fillColor: '#9aa7b4', fillOpacity: 0.12 };
-const STYLE_ON  = { color: '#4cc2ff', weight: 2, fillColor: '#4cc2ff', fillOpacity: 0.45 };
+const STYLE_OFF = { color: '#4cc2ff', weight: 1.6, fillColor: '#4cc2ff', fillOpacity: 0.05 };
+const STYLE_ON  = { color: '#4cc2ff', weight: 2.4, fillColor: '#4cc2ff', fillOpacity: 0.45 };
 
-// Overlay of the next geography up, drawn as contrasting outlines for context.
+// Overlay of the next geography up, drawn as finer contrasting outlines.
 const PARENT = { la: 'subicb', subicb: 'region', region: null };
-const PARENT_STYLE = { color: '#ff7f0e', weight: 2.4, fill: false, opacity: 0.95 };
+const PARENT_STYLE = { color: '#ff7f0e', weight: 1.2, fill: false, opacity: 0.95 };
 const overlayCache = {};   // parent level -> non-interactive outline layer
 let overlay = null;
 
