@@ -55,3 +55,12 @@ Static files — serve over HTTP (webR is an ES-module import, so `file://` won'
 cd population-projections && python3 -m http.server 8000
 # open http://localhost:8000/
 ```
+
+## Licence & attribution
+
+ONS population projections are © Crown copyright, licensed under the
+[Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
+When reusing, retain the acknowledgement (shown in the app footer):
+
+- Office for National Statistics data licensed under the Open Government Licence v.3.0
+- Contains National Statistics data © Crown copyright and database right 2025

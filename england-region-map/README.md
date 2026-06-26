@@ -41,3 +41,18 @@ Static files — serve over HTTP (`fetch` of the GeoJSON won't work from `file:/
 cd england-region-map && python3 -m http.server 8000
 # open http://localhost:8000/
 ```
+
+## Licence & attribution
+
+Boundary and population data are © Crown copyright, licensed under the
+[Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
+When reusing, retain the following acknowledgements (shown in the app footer):
+
+- Source: Office for National Statistics licensed under the Open Government Licence v.3.0
+- Contains National Statistics data © Crown copyright and database right 2022 & 2023
+- Contains OS data © Crown copyright and database right 2022 & 2023
+
+Basemap tiles are © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors
+(map data under the ODbL). Tiles are served from OpenStreetMap's public tile servers,
+whose [tile usage policy](https://operations.osmfoundation.org/policies/tiles/) applies —
+switch to a dedicated tile provider before any heavy or production use.
