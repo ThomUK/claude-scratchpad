@@ -112,6 +112,13 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 @media (max-width: 860px) { #map { height: 460px; } }
 .leaflet-container { font: inherit; }
 .region-tooltip { font-weight: 600; }
+.map-legend {
+  background: rgba(15, 22, 32, 0.88); color: var(--text); border: 1px solid var(--panel-border);
+  border-radius: 8px; padding: 7px 10px; font-size: 0.78rem; line-height: 1.6;
+}
+.map-legend .k { display: inline-block; width: 13px; height: 13px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; }
+.map-legend .k.sel { background: #4cc2ff; }
+.map-legend .k.par { background: transparent; border: 2px solid #ff7f0e; }
 
 footer { padding: 24px 20px 40px; color: var(--muted); font-size: 0.85rem; }
 footer a { color: var(--accent); }

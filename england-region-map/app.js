@@ -18,6 +18,12 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const STYLE_OFF = { color: '#5a6b7a', weight: 1, fillColor: '#9aa7b4', fillOpacity: 0.12 };
 const STYLE_ON  = { color: '#4cc2ff', weight: 2, fillColor: '#4cc2ff', fillOpacity: 0.45 };
 
+// Overlay of the next geography up, drawn as contrasting outlines for context.
+const PARENT = { la: 'subicb', subicb: 'region', region: null };
+const PARENT_STYLE = { color: '#ff7f0e', weight: 2.4, fill: false, opacity: 0.95 };
+const overlayCache = {};   // parent level -> non-interactive outline layer
+let overlay = null;
+
 // --- CSV (handles quoted fields with commas) -------------------------------
 function parseCSV(text) {
   const rows = []; let row = [], field = '', q = false;
@@ -48,6 +54,27 @@ const map = L.map('map', { scrollWheelZoom: true }).setView([53, -1.6], 6);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 18, attribution: '© OpenStreetMap contributors',
 }).addTo(map);
+
+const legend = L.control({ position: 'bottomleft' });
+legend.onAdd = () => L.DomUtil.create('div', 'map-legend');
+legend.addTo(map);
+function setLegend(level) {
+  const el = document.querySelector('.map-legend'); if (!el) return;
+  const parent = PARENT[level];
+  el.innerHTML = `<span class="k sel"></span>selected ${esc(LEVELS[level].many)}` +
+    (parent ? `<br><span class="k par"></span>${esc(LEVELS[parent].many)} boundaries` : '');
+}
+async function updateOverlay(level) {
+  if (overlay) { map.removeLayer(overlay); overlay = null; }
+  const parent = PARENT[level];
+  if (!parent) return;
+  if (!overlayCache[parent]) {
+    try { overlayCache[parent] = L.geoJSON(JSON.parse(await fetchText(LEVELS[parent].geo)), { interactive: false, style: PARENT_STYLE }); }
+    catch (e) { console.error(e); return; }
+  }
+  overlay = overlayCache[parent].addTo(map);
+  overlay.bringToFront();
+}
 
 // --- loading ---------------------------------------------------------------
 const fetchText = (n) => fetch(`data/${n}?v=dev`, { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); });
@@ -106,6 +133,8 @@ async function showLevel(level) {
     console.error(err);
     setStatus(`Boundaries for ${LEVELS[level].many} not available yet (data/${LEVELS[level].geo}). List still works.`, 'error');
   }
+  await updateOverlay(level);
+  setLegend(level);
   buildGroupsDOM();
   syncUI();
 }
