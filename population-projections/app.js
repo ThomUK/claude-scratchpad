@@ -115,7 +115,7 @@ let shelter;
     await webR.init();
     shelter = await new webR.Shelter();
 
-    const text = await (await fetch('data/population.csv?v=1', { cache: 'no-cache' })).text();
+    const text = await (await fetch('data/population.csv?v=dev', { cache: 'no-cache' })).text();
     await webR.FS.writeFile('/tmp/pop.csv', new TextEncoder().encode(text));
     await webR.evalRVoid('D <- read.csv("/tmp/pop.csv", stringsAsFactors = FALSE)');
     populateControls(text);

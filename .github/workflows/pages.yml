@@ -32,6 +32,16 @@ jobs:
         with:
           enablement: true
 
+      - name: Cache-bust assets with commit SHA
+        # Rewrite every ?v=<token> in HTML/JS asset and data URLs to the short
+        # commit SHA, so each deploy gets a fresh cache key (no manual bumping).
+        # Operates on the checked-out copy only; the repo keeps the ?v=dev source.
+        run: |
+          SHA="${GITHUB_SHA::8}"
+          grep -rlZ --include='*.html' --include='*.js' -F '?v=' . \
+            | xargs -0 -r sed -i -E "s/\?v=[A-Za-z0-9._-]+/?v=${SHA}/g"
+          echo "Cache-busted assets with v=${SHA}"
+
       - name: Upload site
         # Publish the repo root so the app is served at /occupancy/.
         uses: actions/upload-pages-artifact@v3

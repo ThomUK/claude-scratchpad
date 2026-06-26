@@ -116,7 +116,7 @@ let shelter;
     await webR.init();
     shelter = await new webR.Shelter();
 
-    const text = await (await fetch('data/flu_weekly.csv?v=2', { cache: 'no-cache' })).text();
+    const text = await (await fetch('data/flu_weekly.csv?v=dev', { cache: 'no-cache' })).text();
     await webR.FS.writeFile('/tmp/flu.csv', new TextEncoder().encode(text));
     populateControls(text);
 
