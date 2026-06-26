@@ -15,6 +15,7 @@ and deployed to GitHub Pages.
 | Flu Season Shapes | [`flu/`](flu/) | [open](https://thomuk.github.io/claude-scratchpad/flu/) | Weekly flu patients overlaid across seasons (early-peak / late-peak / slow-burn), and which past season a new one most resembles so far. Runs R in the browser via webR. |
 | Average vs Intraday Bed Modelling | [`averages-modelling/`](averages-modelling/) | [open](https://thomuk.github.io/claude-scratchpad/averages-modelling/) | Why average-based bed planning (admissions × LOS) under-provisions versus an hour-by-hour deterministic flow model accounting for arrival timing, LOS spread and discharge timing. Runs R in the browser via webR. |
 | Population Pyramids — English Geographies | [`population-projections/`](population-projections/) | [open](https://thomuk.github.io/claude-scratchpad/population-projections/) | Two population pyramids side by side for selected areas (region / sub-ICB / local authority, multi-select) and chosen years, with change by age band and sex below. Real ONS 2022-based subnational projections. Runs R in the browser via webR. |
+| England Geography Map | [`england-region-map/`](england-region-map/) | [open](https://thomuk.github.io/claude-scratchpad/england-region-map/) | Linked list + Leaflet map selector for English regions, sub-ICBs and local authorities — tick the list or click the map and they stay in sync. ONS boundaries, OpenStreetMap tiles. |
 
 ## How deployment works
 

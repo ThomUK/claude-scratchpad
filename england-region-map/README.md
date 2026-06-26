@@ -1,28 +1,37 @@
-# England Region Map
+# England Geography Map
 
-A linked region selector: a **checkbox list** and a **Leaflet map** kept in sync.
-Tick a region in the list and it highlights on the map; click a region on the map
-and it toggles in the list. Pan and scroll-zoom freely. OpenStreetMap tiles sit
-behind the region polygons.
+A linked geography selector across three levels — **Region**, **Sub-ICB location**,
+**Local authority**. Pick a level, then tick areas in the (grouped, searchable) list
+to highlight them on the map, or click areas on the map to toggle them in the list;
+the two stay in sync. Pan and scroll-zoom freely, with OpenStreetMap tiles behind
+the polygons.
 
-Pure HTML/CSS/JS — Leaflet is loaded from a CDN; no build step, no backend.
+Pure HTML/CSS/JS — Leaflet is loaded from a CDN; no build step, no backend. Each
+level's shapes are lazy-loaded on first use.
 
-## Boundary data (you supply)
+## Data
 
-Add `data/regions.geojson` — the **ONS Regions (December 2022) Boundaries, England**.
+Area lists (codes, labels, parent groups, 2022 population) come from the
+`population-projections` data via `build_area_lookups.py`:
 
-- Download from the **ONS Open Geography Portal**: <https://geoportal.statistics.gov.uk>
-  → search *"Regions December 2022 Boundaries EN"*.
-- Choose a **generalised, clipped** resolution (**BUC** ultra-generalised is smallest
-  and fine for web; **BGC** generalised for crisper coastlines).
-- Export as **GeoJSON in WGS84 / EPSG:4326** (Leaflet needs lat-long, not British
-  National Grid).
-- It should hold **9 features** with `RGN22CD` = `E12000001`…`E12000009` and `RGN22NM`.
+```sh
+python3 build_area_lookups.py   # writes data/<level>_areas.csv
+```
 
-The app matches features to regions by their **E12 code** (it scans each feature's
-properties for an `E12NNNNNN` value), so minor differences in property naming are
-fine. The headline's 2022 populations are baked into `app.js` (from the ONS
-2022-based projections) — `57,112,542` across all nine.
+Boundaries are ONS GeoJSON (WGS84 / EPSG:4326), matched to the area lists by ONS
+code. The app keeps only features whose code is in the level's list, so UK-wide
+files are filtered to England automatically.
+
+| Level | `data/` file | ONS product | Codes |
+| --- | --- | --- | --- |
+| Region | `regions.geojson` | Regions (December 2022) Boundaries EN, BUC | `RGN22CD` E12… (9) |
+| Sub-ICB | `subicb.geojson` | Sub-ICB Locations (April 2023) Boundaries EN, BGC | `SICBL23CD` E38… (106) |
+| Local authority | `la.geojson` | Local Authority Districts (December 2022) Boundaries UK, BUC | `LAD22CD` E06–E09 (309 of 374) |
+
+**Vintage matters for LAs:** the projection data uses pre-April-2023 boundaries
+(e.g. Allerdale, South Somerset), so the **December 2022** LAD file is the matching
+vintage. A 2023+ file would miss ~20 codes. Download all three from the ONS Open
+Geography Portal: <https://geoportal.statistics.gov.uk>.
 
 ## Running locally
 

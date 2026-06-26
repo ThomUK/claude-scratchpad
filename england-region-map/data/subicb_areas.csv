@@ -1,0 +1,107 @@
+code,label,group,pop2022
+E38000240,NHS North Central London ICB - 93C,NHS North Central London ICB,1417144
+E38000244,NHS South East London ICB - 72Q,NHS South East London ICB,1796537
+E38000245,NHS South West London ICB - 36L,NHS South West London ICB,1511629
+E38000255,NHS North East London ICB - A3A8R,NHS North East London ICB,2026631
+E38000256,NHS North West London ICB - W2U3Z,NHS North West London ICB,2117102
+E38000021,NHS Sussex ICB - 09D,NHS Sussex ICB,278370
+E38000136,"NHS Buckinghamshire, Oxfordshire and Berkshire W (E38000136)","NHS Buckinghamshire, Oxfordshire and Berkshire West ICB",720757
+E38000137,NHS Hampshire and Isle of Wight ICB - 10R,NHS Hampshire and Isle of Wight ICB,208949
+E38000221,"NHS Buckinghamshire, Oxfordshire and Berkshire W (E38000221)","NHS Buckinghamshire, Oxfordshire and Berkshire West ICB",519522
+E38000223,"NHS Buckinghamshire, Oxfordshire and Berkshire W (E38000223)","NHS Buckinghamshire, Oxfordshire and Berkshire West ICB",563782
+E38000235,NHS Sussex ICB - 97R,NHS Sussex ICB,551007
+E38000237,NHS Kent and Medway ICB - 91Q,NHS Kent and Medway ICB,1877110
+E38000252,NHS Frimley ICB - D4U1Y,NHS Frimley ICB,774255
+E38000253,NHS Hampshire and Isle of Wight ICB - D9Y0V,NHS Hampshire and Isle of Wight ICB,1633583
+E38000264,NHS Surrey Heartlands ICB - 92A,NHS Surrey Heartlands ICB,1060683
+E38000265,NHS Sussex ICB - 70F,NHS Sussex ICB,892807
+E38000045,NHS Dorset ICB - 11J,NHS Dorset ICB,785932
+E38000062,NHS Gloucestershire ICB - 11M,NHS Gloucestershire ICB,652666
+E38000089,NHS Cornwall and the Isles of Scilly ICB - 11N,NHS Cornwall and the Isles of Scilly ICB,577813
+E38000150,NHS Somerset ICB - 11X,NHS Somerset ICB,577091
+E38000222,"NHS Bristol, North Somerset and South Gloucester","NHS Bristol, North Somerset and South Gloucestershire ICB",993108
+E38000230,NHS Devon ICB - 15N,NHS Devon ICB,1232580
+E38000231,"NHS Bath and North East Somerset, Swindon and Wi","NHS Bath and North East Somerset, Swindon and Wiltshire ICB",954449
+E38000008,NHS Nottingham and Nottinghamshire ICB - 02Q,NHS Nottingham and Nottinghamshire ICB,119985
+E38000028,NHS Staffordshire and Stoke-on-Trent ICB - 04Y,NHS Staffordshire and Stoke-on-Trent ICB,137724
+E38000051,"NHS Leicester, Leicestershire and Rutland ICB - (E38000051)","NHS Leicester, Leicestershire and Rutland ICB",350667
+E38000053,NHS Staffordshire and Stoke-on-Trent ICB - 05D,NHS Staffordshire and Stoke-on-Trent ICB,136573
+E38000097,"NHS Leicester, Leicestershire and Rutland ICB - (E38000097)","NHS Leicester, Leicestershire and Rutland ICB",372495
+E38000126,NHS Staffordshire and Stoke-on-Trent ICB - 05G,NHS Staffordshire and Stoke-on-Trent ICB,213258
+E38000153,NHS Staffordshire and Stoke-on-Trent ICB - 05Q,NHS Staffordshire and Stoke-on-Trent ICB,231478
+E38000173,NHS Staffordshire and Stoke-on-Trent ICB - 05V,NHS Staffordshire and Stoke-on-Trent ICB,159211
+E38000175,NHS Staffordshire and Stoke-on-Trent ICB - 05W,NHS Staffordshire and Stoke-on-Trent ICB,268058
+E38000201,"NHS Leicester, Leicestershire and Rutland ICB - (E38000201)","NHS Leicester, Leicestershire and Rutland ICB",413498
+E38000236,NHS Herefordshire and Worcestershire ICB - 18C,NHS Herefordshire and Worcestershire ICB,798019
+E38000238,NHS Lincolnshire ICB - 71E,NHS Lincolnshire ICB,775864
+E38000243,NHS Nottingham and Nottinghamshire ICB - 52R,NHS Nottingham and Nottinghamshire ICB,1042493
+E38000251,NHS Coventry and Warwickshire ICB - B2M3M,NHS Coventry and Warwickshire ICB,960602
+E38000257,"NHS Shropshire, Telford and Wrekin ICB - M2L0M","NHS Shropshire, Telford and Wrekin ICB",516479
+E38000258,NHS Birmingham and Solihull ICB - 15E,NHS Birmingham and Solihull ICB,1372005
+E38000259,NHS Black Country ICB - D2P2L,NHS Black Country ICB,1223619
+E38000261,NHS Derby and Derbyshire ICB - 15M,NHS Derby and Derbyshire ICB,1067075
+E38000262,NHS Northamptonshire ICB - 78H,NHS Northamptonshire ICB,792755
+E38000006,NHS South Yorkshire ICB - 02P,NHS South Yorkshire ICB,246448
+E38000025,NHS West Yorkshire ICB - 02T,NHS West Yorkshire ICB,207660
+E38000044,NHS South Yorkshire ICB - 02X,NHS South Yorkshire ICB,310964
+E38000052,NHS Humber and North Yorkshire ICB - 02Y,NHS Humber and North Yorkshire ICB,321763
+E38000085,NHS Humber and North Yorkshire ICB - 03F,NHS Humber and North Yorkshire ICB,268677
+E38000119,NHS Humber and North Yorkshire ICB - 03H,NHS Humber and North Yorkshire ICB,157745
+E38000122,NHS Humber and North Yorkshire ICB - 03K,NHS Humber and North Yorkshire ICB,170085
+E38000127,NHS North East and North Cumbria ICB - 99C,NHS North East and North Cumbria ICB,210512
+E38000130,NHS North East and North Cumbria ICB - 00L,NHS North East and North Cumbria ICB,324286
+E38000141,NHS South Yorkshire ICB - 03L,NHS South Yorkshire ICB,268267
+E38000146,NHS South Yorkshire ICB - 03N,NHS South Yorkshire ICB,564702
+E38000163,NHS North East and North Cumbria ICB - 00N,NHS North East and North Cumbria ICB,148608
+E38000176,NHS North East and North Cumbria ICB - 00P,NHS North East and North Cumbria ICB,277512
+E38000188,NHS Humber and North Yorkshire ICB - 03Q,NHS Humber and North Yorkshire ICB,364227
+E38000190,NHS West Yorkshire ICB - 03R,NHS West Yorkshire ICB,357698
+E38000212,NHS North East and North Cumbria ICB - 13T,NHS North East and North Cumbria ICB,504324
+E38000215,NHS North East and North Cumbria ICB - 01H,NHS North East and North Cumbria ICB,322409
+E38000225,NHS West Yorkshire ICB - 15F,NHS West Yorkshire ICB,820802
+E38000232,NHS West Yorkshire ICB - 36J,NHS West Yorkshire ICB,604663
+E38000234,NHS North East and North Cumbria ICB - 84H,NHS North East and North Cumbria ICB,527704
+E38000241,NHS Humber and North Yorkshire ICB - 42D,NHS Humber and North Yorkshire ICB,430525
+E38000247,NHS North East and North Cumbria ICB - 16C,NHS North East and North Cumbria ICB,689123
+E38000254,NHS West Yorkshire ICB - X2C4Y,NHS West Yorkshire ICB,437794
+E38000007,NHS Mid and South Essex ICB - 99E,NHS Mid and South Essex ICB,266158
+E38000030,NHS Mid and South Essex ICB - 99F,NHS Mid and South Essex ICB,176938
+E38000049,NHS Hertfordshire and West Essex ICB - 06K,NHS Hertfordshire and West Essex ICB,574368
+E38000079,NHS Hertfordshire and West Essex ICB - 06N,NHS Hertfordshire and West Essex ICB,610224
+E38000086,NHS Suffolk and North East Essex ICB - 06L,NHS Suffolk and North East Essex ICB,414577
+E38000106,NHS Mid and South Essex ICB - 06Q,NHS Mid and South Essex ICB,408587
+E38000117,NHS Suffolk and North East Essex ICB - 06T,NHS Suffolk and North East Essex ICB,346048
+E38000168,NHS Mid and South Essex ICB - 99G,NHS Mid and South Essex ICB,180884
+E38000185,NHS Mid and South Essex ICB - 07G,NHS Mid and South Essex ICB,176788
+E38000197,NHS Hertfordshire and West Essex ICB - 07H,NHS Hertfordshire and West Essex ICB,322128
+E38000204,NHS Suffolk and North East Essex ICB - 07K,NHS Suffolk and North East Essex ICB,237570
+E38000239,NHS Norfolk and Waveney ICB - 26A,NHS Norfolk and Waveney ICB,1042267
+E38000249,"NHS Bedfordshire, Luton and Milton Keynes ICB -","NHS Bedfordshire, Luton and Milton Keynes ICB",1016380
+E38000260,NHS Cambridgeshire and Peterborough ICB - 06H,NHS Cambridgeshire and Peterborough ICB,928260
+E38000014,NHS Lancashire and South Cumbria ICB - 00Q,NHS Lancashire and South Cumbria ICB,155823
+E38000015,NHS Lancashire and South Cumbria ICB - 00R,NHS Lancashire and South Cumbria ICB,141648
+E38000016,NHS Greater Manchester ICB - 00T,NHS Greater Manchester ICB,299153
+E38000024,NHS Greater Manchester ICB - 00V,NHS Greater Manchester ICB,194590
+E38000034,NHS Lancashire and South Cumbria ICB - 00X,NHS Lancashire and South Cumbria ICB,180486
+E38000050,NHS Lancashire and South Cumbria ICB - 01A,NHS Lancashire and South Cumbria ICB,397304
+E38000068,NHS Cheshire and Merseyside ICB - 01F,NHS Cheshire and Merseyside ICB,129008
+E38000080,NHS Greater Manchester ICB - 01D,NHS Greater Manchester ICB,226950
+E38000091,NHS Cheshire and Merseyside ICB - 01J,NHS Cheshire and Merseyside ICB,157107
+E38000101,NHS Cheshire and Merseyside ICB - 99A,NHS Cheshire and Merseyside ICB,495849
+E38000135,NHS Greater Manchester ICB - 00Y,NHS Greater Manchester ICB,243993
+E38000143,NHS Greater Manchester ICB - 01G,NHS Greater Manchester ICB,278867
+E38000161,NHS Cheshire and Merseyside ICB - 01T,NHS Cheshire and Merseyside ICB,163734
+E38000170,NHS Cheshire and Merseyside ICB - 01V,NHS Cheshire and Merseyside ICB,117305
+E38000172,NHS Cheshire and Merseyside ICB - 01X,NHS Cheshire and Merseyside ICB,184728
+E38000174,NHS Greater Manchester ICB - 01W,NHS Greater Manchester ICB,297191
+E38000187,NHS Greater Manchester ICB - 02A,NHS Greater Manchester ICB,236651
+E38000194,NHS Cheshire and Merseyside ICB - 02E,NHS Cheshire and Merseyside ICB,211797
+E38000200,NHS Lancashire and South Cumbria ICB - 02G,NHS Lancashire and South Cumbria ICB,119360
+E38000205,NHS Greater Manchester ICB - 02H,NHS Greater Manchester ICB,334014
+E38000208,NHS Cheshire and Merseyside ICB - 12F,NHS Cheshire and Merseyside ICB,322439
+E38000217,NHS Greater Manchester ICB - 14L,NHS Greater Manchester ICB,566778
+E38000226,NHS Lancashire and South Cumbria ICB - 02M,NHS Lancashire and South Cumbria ICB,200311
+E38000227,NHS Lancashire and South Cumbria ICB - 01E,NHS Lancashire and South Cumbria ICB,211900
+E38000228,NHS Lancashire and South Cumbria ICB - 01K,NHS Lancashire and South Cumbria ICB,331324
+E38000233,NHS Cheshire and Merseyside ICB - 27D,NHS Cheshire and Merseyside ICB,768386
+E38000263,NHS Greater Manchester ICB - 01Y,NHS Greater Manchester ICB,232806
