@@ -35,17 +35,29 @@ function rProgram(region, yearL, yearR) {
     # axis formatting (k / m)
     fmt <- function(z) if (xmax >= 1e6) paste0(round(z/1e6, 1), "m") else paste0(round(z/1e3), "k")
 
-    pyramid <- function(m, f, title, show_ages) {
+    pyramid <- function(m, f, title, show_ages, cm = NULL, cf = NULL) {
       nm <- if (show_ages) ages else rep("", length(ages))
       par(mar = c(3.6, if (show_ages) 4.2 else 1.2, 2.6, 1))
-      b <- barplot(-m, horiz = TRUE, names.arg = nm, las = 1, xlim = c(-xmax, xmax),
+      xl <- c(-xmax, xmax) * 1.2                     # headroom for outside labels
+      b <- barplot(-m, horiz = TRUE, names.arg = nm, las = 1, xlim = xl,
                    col = male_col, border = NA, xaxt = "n", cex.names = 0.8)
       barplot(f, horiz = TRUE, add = TRUE, col = female_col, border = NA, xaxt = "n")
+      # dotted outline of the comparison (other) year, if supplied
+      if (!is.null(cm)) {
+        barplot(-cm, horiz = TRUE, add = TRUE, col = NA, border = "grey25", lwd = 1.2, lty = 3, xaxt = "n")
+        barplot(cf,  horiz = TRUE, add = TRUE, col = NA, border = "grey25", lwd = 1.2, lty = 3, xaxt = "n")
+      }
       at <- pretty(c(0, xmax), 4); at <- at[at <= xmax]
       ticks <- c(-rev(at), at)
       axis(1, at = ticks, labels = fmt(abs(ticks)), cex.axis = 0.8)
       title(main = title, line = 1)
       abline(v = 0, col = "white", lwd = 1.5)
+      # percentage-of-total label outside each bar
+      tot <- sum(m) + sum(f)
+      if (tot > 0) {
+        text(-m, b, labels = sprintf("%.1f%%", 100 * m / tot), pos = 2, offset = 0.2, cex = 0.56, col = "grey25")
+        text( f, b, labels = sprintf("%.1f%%", 100 * f / tot), pos = 4, offset = 0.2, cex = 0.56, col = "grey25")
+      }
     }
 
     changeplot <- function(vM, vR_minus, title, pct, show_ages) {
@@ -65,9 +77,11 @@ function rProgram(region, yearL, yearR) {
 
     layout(matrix(c(1,2,3,4), nrow = 2, byrow = TRUE), heights = c(1.18, 1))
     pyramid(mL, fL, paste0(region, " — ", yL), TRUE)
-    pyramid(mR, fR, paste0(region, " — ", yR), FALSE)
-    legend("topright", bty = "n", inset = 0.01, pch = 15, col = c(male_col, female_col),
-           legend = c("male", "female"), cex = 0.9)
+    pyramid(mR, fR, paste0(region, " — ", yR), FALSE, cm = mL, cf = fL)   # outline = left year
+    legend("topright", bty = "n", inset = 0.01,
+           legend = c("male", "female", paste0(yL, " (outline)")),
+           pch = c(15, 15, NA), lty = c(NA, NA, 3), lwd = c(NA, NA, 1.2),
+           col = c(male_col, female_col, "grey25"), pt.cex = 1.2, cex = 0.82)
 
     absM <- mR - mL; absF <- fR - fL
     pctM <- ifelse(mL > 0, 100 * (mR - mL) / mL, 0)
