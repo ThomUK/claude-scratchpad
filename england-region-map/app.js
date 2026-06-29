@@ -40,10 +40,16 @@ function parseCSV(text) {
 }
 
 // --- state -----------------------------------------------------------------
+// Per-level default selection (ONS codes), shown with their group(s) open.
+const DEFAULTS = {
+  region: ['E12000004'],                                                  // East Midlands
+  subicb: ['E38000243'],                                                  // NHS Nottingham & Nottinghamshire ICB - 52R
+  la: ['E06000018', 'E07000172', 'E07000176', 'E07000173', 'E07000170'],  // Nottingham, Broxtowe, Rushcliffe, Gedling, Ashfield
+};
 const cache = {};            // level -> { areas, groups, labelOf, popOf, codeSet, layer, layerByCode }
 const selections = {};       // level -> Set(code)
 const expanded = {};         // level -> Set(group)
-let currentLevel = 'region';
+let currentLevel = 'subicb';
 let mapLayer = null;         // geojson layer currently on the map
 
 const sel = () => selections[currentLevel];
@@ -92,8 +98,14 @@ async function loadAreas(level) {
     codeSet: new Set(areas.map((a) => a.code)),
     layer: null, layerByCode: {},
   };
-  selections[level] = new Set();
+  // default selection (per level), with the group(s) containing it left open
+  const def = (DEFAULTS[level] || []).filter((c) => cache[level].labelOf.has(c));
+  selections[level] = new Set(def);
   expanded[level] = new Set(order.length === 1 ? order : []);   // single group opens by default
+  for (const code of def) {
+    const g = cache[level].groups.find((gr) => gr.areas.some((a) => a.code === code));
+    if (g) expanded[level].add(g.name);
+  }
 }
 
 const codeOf = (props, codeSet) => { for (const v of Object.values(props || {})) if (codeSet.has(String(v))) return String(v); return null; };
@@ -226,4 +238,4 @@ groupsEl.addEventListener('mouseout', (e) => { const r = e.target.closest('.area
 chipsEl.addEventListener('click', (e) => { const b = e.target.closest('button[data-code]'); if (b) setSelected(b.dataset.code, false); });
 
 // --- go --------------------------------------------------------------------
-showLevel('region');
+showLevel(currentLevel);
