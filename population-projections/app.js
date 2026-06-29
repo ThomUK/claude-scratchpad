@@ -42,9 +42,16 @@ function parseCSV(text) {
 }
 
 // --- state -----------------------------------------------------------------
+// Per-level default selection (ONS codes), shown with their group(s) open.
+const DEFAULTS = {
+  region: ['E12000004'],                                                  // East Midlands
+  subicb: ['E38000243'],                                                  // NHS Nottingham & Nottinghamshire ICB - 52R
+  la: ['E06000018', 'E07000172', 'E07000176', 'E07000173', 'E07000170'],  // Nottingham, Broxtowe, Rushcliffe, Gedling, Ashfield
+};
 const cache = {};                 // level -> { areas, groups, labelOf, csvText }
 const selections = {};            // level -> Set(code)
-let currentLevel = 'region';
+const expanded = {};              // level -> Set(open group names)
+let currentLevel = 'subicb';
 let loadedInWebR = null;          // which level's data D currently holds
 let years = [];
 
@@ -56,8 +63,8 @@ let shelter;
   try {
     await webR.init();
     shelter = await new webR.Shelter();
-    await loadLevel('region');
-    // years come from the (small) region data, parsed once
+    await loadLevel(currentLevel);
+    // years are parsed once from the first level's data
     setStatus('R is ready', 'ready');
     wireEvents();
     renderPicker();
@@ -98,8 +105,15 @@ async function loadLevel(level) {
       years = [...ys].filter(Boolean).sort((a, b) => a - b);
       populateYears();
     }
-    // default selection = first group
-    selections[level] = new Set(cache[level].groups[0].areas.map((a) => a.code));
+    // default selection (per level), with the group(s) containing it left open
+    const def = (DEFAULTS[level] || cache[level].groups[0].areas.map((a) => a.code))
+      .filter((c) => cache[level].labelOf.has(c));
+    selections[level] = new Set(def);
+    expanded[level] = new Set();
+    for (const code of def) {
+      const g = cache[level].groups.find((gr) => gr.areas.some((a) => a.code === code));
+      if (g) expanded[level].add(g.name);
+    }
   }
   if (loadedInWebR !== level) {
     await webR.FS.writeFile('/tmp/pop.csv', new TextEncoder().encode(cache[level].csvText));
@@ -141,8 +155,12 @@ function wireEvents() {
     }
   });
   groupsEl.addEventListener('click', (e) => {
-    const head = e.target.closest('.group-head');
-    if (head && !e.target.matches('input')) head.parentElement.classList.toggle('open');
+    if (e.target.matches('input')) return;
+    const head = e.target.closest('.group-head'); if (!head) return;
+    const name = head.querySelector('input[data-group]').dataset.group;
+    const exp = expanded[currentLevel];
+    exp.has(name) ? exp.delete(name) : exp.add(name);
+    renderPicker();
   });
   chipsEl.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-code]'); if (!b) return;
@@ -172,7 +190,7 @@ function renderPicker() {
     const matched = q ? g.areas.filter((a) => a.label.toLowerCase().includes(q)) : g.areas;
     if (!matched.length) continue;
     const selN = g.areas.filter((a) => s.has(a.code)).length;
-    const open = q ? true : undefined; // expand all on search
+    const open = q ? true : expanded[currentLevel].has(g.name); // expand on search or if opened
     html += `<div class="group${open ? ' open' : ''}">
       <div class="group-head">
         <input type="checkbox" data-group="${esc(g.name)}" ${selN === g.areas.length ? 'checked' : ''} />
@@ -277,8 +295,11 @@ function rProgram(codes, yearL, yearR, areaTitle) {
                    col = male_col, border = NA, xaxt = "n", cex.names = 0.8)
       barplot(f, horiz = TRUE, add = TRUE, col = female_col, border = NA, xaxt = "n")
       if (!is.null(cm)) {
-        barplot(-cm, horiz = TRUE, add = TRUE, col = NA, border = "grey25", lwd = 1.2, lty = 3, xaxt = "n")
-        barplot(cf,  horiz = TRUE, add = TRUE, col = NA, border = "grey25", lwd = 1.2, lty = 3, xaxt = "n")
+        # draw the comparison-year outline with rect() so the dotted lty renders
+        # (barplot ignores lty for its bars, which is why it looked solid)
+        hh <- 0.42
+        rect(0, b - hh, -cm, b + hh, col = NA, border = "grey20", lty = 3, lwd = 1.6)
+        rect(0, b - hh, cf,  b + hh, col = NA, border = "grey20", lty = 3, lwd = 1.6)
       }
       at <- pretty(c(0, xmax), 4); at <- at[at <= xmax]
       axis(1, at = c(-rev(at), at), labels = fmt(abs(c(-rev(at), at))), cex.axis = 0.8)
