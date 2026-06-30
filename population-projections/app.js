@@ -614,8 +614,11 @@ async function render() {
     const codesB = bRest ? null : [...buckets.B.codes];
     if (codesA.length === 0 || (!bRest && codesB.length === 0)) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const missing = codesA.length === 0 ? 'A' : 'B';
-      summaryEl.innerHTML = `<p class="hint">Select areas for Bucket ${missing} to compare.</p>`;
+      // Give a specific prompt for whichever bucket is blocking the render
+      const hint = codesA.length === 0
+        ? 'Select areas for Bucket A to compare.'
+        : 'Select areas for Bucket B, or tick "B = rest of England".';
+      summaryEl.innerHTML = `<p class="hint">${hint}</p>`;
       return;
     }
   } else {
@@ -758,7 +761,7 @@ function rProgram(codes, yearL, yearR, areaTitle) {
 
 // --- R program — area comparison -------------------------------------------
 // Draws pyramid A | pyramid B at a single year on a shared count axis,
-// with A − B divergence full-width below. normalise wiring added in Commit 3.
+// with A − B divergence full-width below. Supports Share (% of own total) and Absolute modes.
 function rProgramArea(codesA, codesB, bRest, year, normalise, titleA, titleB) {
   const jsonA = codesA.map((c) => JSON.stringify(c)).join(',');
   // codesB is null when bRest=true; the R code derives B as England − A
@@ -836,9 +839,9 @@ function rProgramArea(codesA, codesB, bRest, year, normalise, titleA, titleB) {
       axis(1, at = c(-rev(at), at), labels = fmt(abs(c(-rev(at), at))), cex.axis = 0.8)
       title(main = title, line = 1); abline(v = 0, col = "white", lwd = 1.5)
       # Per-bar labels: compute 100*m/tot regardless of mode.
-      # In absolute mode: m=raw, tot=totA → gives share %.
-      # In share mode (Commit 3): m=pmA, tot≈100 → 100*pmA/100 = pmA (also share %).
-      # Either way the label shows the share %, no double-percenting.
+      # In absolute mode: m=raw, tot=totA → 100*mA[i]/totA = share %.
+      # In share mode: m=pmA, tot≈100 → 100*pmA[i]/100 = pmA[i] = share %.
+      # Either way the label shows the share %; no double-percenting in either path.
       tot <- sum(m) + sum(f)
       if (tot > 0) {
         text(-m, b, labels = sprintf("%.1f%%", 100 * m / tot), pos = 2, offset = 0.2, cex = 0.56, col = "grey25")
