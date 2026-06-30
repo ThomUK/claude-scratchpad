@@ -607,31 +607,58 @@ async function render() {
   if (!shelter) return;
   if (rendering) { pending = true; return; }
 
-  // In compare mode the time chart renders for bucket A; area-vs-area chart is Phase 3.
-  const codes = compareMode ? [...buckets.A.codes] : [...sel()];
-  if (codes.length === 0) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    summaryEl.innerHTML = compareMode
-      ? '<p class="hint">Select areas for Bucket A to draw the pyramids.</p>'
-      : '<p class="hint">Select one or more areas to draw the pyramids.</p>';
-    return;
+  // --- early-return guards (before setting rendering=true so finally doesn't run) ---
+  if (compareMode) {
+    const codesA = [...buckets.A.codes];
+    const bRest  = buckets.B.rest;
+    const codesB = bRest ? null : [...buckets.B.codes];
+    if (codesA.length === 0 || (!bRest && codesB.length === 0)) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const missing = codesA.length === 0 ? 'A' : 'B';
+      summaryEl.innerHTML = `<p class="hint">Select areas for Bucket ${missing} to compare.</p>`;
+      return;
+    }
+  } else {
+    if (sel().size === 0) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      summaryEl.innerHTML = '<p class="hint">Select one or more areas to draw the pyramids.</p>';
+      return;
+    }
   }
+
   rendering = true;
   setStatus('Rendering in R…', 'busy');
-  const yL = Number(yearLSel.value), yR = Number(yearRSel.value);
-  const title = compareMode ? titleBucket('A') : titleArea();
   try {
-    const cap = await shelter.captureR(rProgram(codes, yL, yR, title), {
-      captureGraphics: { width: 1000, height: 800 },
-    });
-    const res = await cap.result.toJs();
-    const v = {};
-    res.names.forEach((name, i) => { const x = res.values[i]; v[name] = x.values.length === 1 ? x.values[0] : x.values; });
-    if (cap.images.length) drawImage(cap.images[0]);
-    renderSummary(v, title, yL, yR);
     if (compareMode) {
-      summaryEl.insertAdjacentHTML('beforeend',
-        `<p class="hint" style="margin-top:8px">Showing time comparison for Bucket A (<strong>${esc(titleBucket('B'))}</strong> selected as B but not yet used in chart — area-vs-area view coming soon).</p>`);
+      // --- area compare path ---
+      const codesA = [...buckets.A.codes];
+      const bRest  = buckets.B.rest;
+      const codesB = bRest ? null : [...buckets.B.codes];
+      const year   = Number(yearLSel.value);
+      const titleA = titleBucket('A');
+      const titleB = titleBucket('B');
+      const cap = await shelter.captureR(
+        rProgramArea(codesA, codesB, bRest, year, normalise, titleA, titleB),
+        { captureGraphics: { width: 1000, height: 800 } }
+      );
+      const res = await cap.result.toJs();
+      const v = {};
+      res.names.forEach((name, i) => { const x = res.values[i]; v[name] = x.values.length === 1 ? x.values[0] : x.values; });
+      if (cap.images.length) drawImage(cap.images[0]);
+      renderSummaryArea(v, titleA, titleB, year);
+    } else {
+      // --- time mode path (unchanged) ---
+      const codes = [...sel()];
+      const yL = Number(yearLSel.value), yR = Number(yearRSel.value);
+      const title = titleArea();
+      const cap = await shelter.captureR(rProgram(codes, yL, yR, title), {
+        captureGraphics: { width: 1000, height: 800 },
+      });
+      const res = await cap.result.toJs();
+      const v = {};
+      res.names.forEach((name, i) => { const x = res.values[i]; v[name] = x.values.length === 1 ? x.values[0] : x.values; });
+      if (cap.images.length) drawImage(cap.images[0]);
+      renderSummary(v, title, yL, yR);
     }
     setStatus('R is ready', 'ready');
   } catch (err) {
@@ -729,6 +756,122 @@ function rProgram(codes, yearL, yearR, areaTitle) {
   `;
 }
 
+// --- R program — area comparison -------------------------------------------
+// Draws pyramid A | pyramid B at a single year on a shared count axis,
+// with A − B divergence full-width below. normalise wiring added in Commit 3.
+function rProgramArea(codesA, codesB, bRest, year, normalise, titleA, titleB) {
+  const jsonA = codesA.map((c) => JSON.stringify(c)).join(',');
+  // codesB is null when bRest=true; the R code derives B as England − A
+  const jsonB = bRest ? '' : codesB.map((c) => JSON.stringify(c)).join(',');
+  return `
+    codesA <- c(${jsonA})
+    ${bRest ? '' : `codesB <- c(${jsonB})`}
+    bRest  <- ${bRest ? 'TRUE' : 'FALSE'}
+    yr <- ${year}; normalise <- ${JSON.stringify(normalise)}
+    titleA <- ${JSON.stringify(titleA)}; titleB <- ${JSON.stringify(titleB)}
+    ages <- c(${AGES.map((a) => JSON.stringify(a)).join(',')})
+    male_col <- "#3182bd"; female_col <- "#dd3497"
+
+    # Age-banded population for a set of ONS codes at yr, for one sex
+    vec <- function(codes, sx) {
+      x <- D[D$code %in% codes & D$year == yr & D$sex == sx, ]
+      v <- tapply(x$population, factor(x$age_group, levels = ages), sum)
+      v <- as.numeric(v); v[is.na(v)] <- 0; v
+    }
+
+    mA <- vec(codesA, "male"); fA <- vec(codesA, "female")
+
+    if (bRest) {
+      # England = sum of the 9 E12 region rows (region always loaded at boot)
+      eng <- function(sx) {
+        x <- D[substr(D$code, 1, 3) == "E12" & D$year == yr & D$sex == sx, ]
+        v <- tapply(x$population, factor(x$age_group, levels = ages), sum)
+        v <- as.numeric(v); v[is.na(v)] <- 0; v
+      }
+      mB <- eng("male") - mA; fB <- eng("female") - fA
+      # Clamp tiny floating-point negatives that can appear near zero
+      mB[mB < 0] <- 0; fB[fB < 0] <- 0
+    } else {
+      mB <- vec(codesB, "male"); fB <- vec(codesB, "female")
+    }
+
+    totA <- sum(mA) + sum(fA); totB <- sum(mB) + sum(fB)
+
+    # Absolute mode: raw counts — shared xmax makes size mismatches visible.
+    # Share mode normalisation is added in Commit 3.
+    pmA <- mA; pfA <- fA; pmB <- mB; pfB <- fB
+    xmax <- max(pmA, pfA, pmB, pfB, 1)   # closure var read by fmt() and pyramid()
+    fmt <- function(z) if (xmax >= 1e6) paste0(round(z / 1e6, 1), "m") else if (xmax >= 1e4) paste0(round(z / 1e3), "k") else as.character(round(z))
+
+    # pyramid() is copied from rProgram so both charts share the same implementation.
+    # xmax is a closure variable — both A and B calls use the same binding (shared scale).
+    pyramid <- function(m, f, title, show_ages, cm = NULL, cf = NULL) {
+      nm <- if (show_ages) ages else rep("", length(ages))
+      par(mar = c(3.6, if (show_ages) 4.2 else 1.2, 2.6, 1))
+      xl <- c(-xmax, xmax) * 1.2
+      b <- barplot(-m, horiz = TRUE, names.arg = nm, las = 1, xlim = xl,
+                   col = male_col, border = NA, xaxt = "n", cex.names = 0.8)
+      barplot(f, horiz = TRUE, add = TRUE, col = female_col, border = NA, xaxt = "n")
+      if (!is.null(cm)) {
+        hh <- 0.42
+        rect(0, b - hh, -cm, b + hh, col = NA, border = "grey20", lty = 3, lwd = 1.6)
+        rect(0, b - hh,  cf, b + hh, col = NA, border = "grey20", lty = 3, lwd = 1.6)
+      }
+      at <- pretty(c(0, xmax), 4); at <- at[at <= xmax]
+      axis(1, at = c(-rev(at), at), labels = fmt(abs(c(-rev(at), at))), cex.axis = 0.8)
+      title(main = title, line = 1); abline(v = 0, col = "white", lwd = 1.5)
+      # Per-bar labels: compute 100*m/tot regardless of mode.
+      # In absolute mode: m=raw, tot=totA → gives share %.
+      # In share mode (Commit 3): m=pmA, tot≈100 → 100*pmA/100 = pmA (also share %).
+      # Either way the label shows the share %, no double-percenting.
+      tot <- sum(m) + sum(f)
+      if (tot > 0) {
+        text(-m, b, labels = sprintf("%.1f%%", 100 * m / tot), pos = 2, offset = 0.2, cex = 0.56, col = "grey25")
+        text( f, b, labels = sprintf("%.1f%%", 100 * f / tot), pos = 4, offset = 0.2, cex = 0.56, col = "grey25")
+      }
+    }
+
+    changeplot <- function(v, title, pct, show_ages) {
+      nm <- if (show_ages) ages else rep("", length(ages))
+      par(mar = c(3.6, if (show_ages) 4.2 else 1.2, 2.6, 1))
+      M <- rbind(female = v$f, male = v$m)
+      rng <- max(abs(M)) * 1.04; if (!is.finite(rng) || rng == 0) rng <- 1
+      barplot(M, beside = TRUE, horiz = TRUE, names.arg = nm, las = 1,
+              col = c(female_col, male_col), border = NA, xlim = c(-rng, rng), xaxt = "n", cex.names = 0.8)
+      at <- pretty(c(-rng, rng), 5)
+      axis(1, at = at, labels = if (pct) paste0(round(at), "%") else fmt(at), cex.axis = 0.8)
+      title(main = title, line = 1); abline(v = 0, col = "grey40")
+    }
+
+    # 2-row layout: pyramids side by side on top, divergence panel full-width below
+    layout(matrix(c(1, 2, 3, 3), nrow = 2, byrow = TRUE), heights = c(1.15, 1))
+
+    pyramid(pmA, pfA, titleA, TRUE, cm = pmB, cf = pfB)
+    legend("topright", bty = "n", inset = 0.01,
+           legend = c("male", "female", paste0(titleB, " (outline)")),
+           pch = c(15, 15, NA), lty = c(NA, NA, 3), lwd = c(NA, NA, 1.2),
+           col = c(male_col, female_col, "grey20"), pt.cex = 1.2, cex = 0.82)
+    pyramid(pmB, pfB, titleB, FALSE, cm = pmA, cf = pfA)
+
+    # Divergence panel: A − B. pct=FALSE in absolute mode; Commit 3 adds the pp branch.
+    divTitle <- paste0(titleA, " − ", titleB)
+    changeplot(list(m = pmA - pmB, f = pfA - pfB), divTitle, FALSE, TRUE)
+
+    # Structural stats always in share terms so they are mode-independent
+    old   <- ages %in% c("65-69", "70-74", "75-79", "80-84", "85-89", "90+")
+    young <- ages %in% c("0-4", "5-9", "10-14")
+    sh    <- function(m, f, idx) 100 * sum((m + f)[idx]) / sum(m + f)
+    # Share divergence regardless of toggle — prevents "biggest" from just being the most populous band
+    divS <- abs(100 * mA / totA - 100 * mB / totB) + abs(100 * fA / totA - 100 * fB / totB)
+    list(
+      totA = totA, totB = totB, growthAvsB = 100 * (totA / totB - 1),
+      old_A   = sh(mA, fA, old),   old_B   = sh(mB, fB, old),
+      young_A = sh(mA, fA, young), young_B = sh(mB, fB, young),
+      biggest = ages[which.max(divS)]
+    )
+  `;
+}
+
 function renderSummary(v, area, yL, yR) {
   const n = (x) => Math.round(x).toLocaleString();
   const sign = (x) => (x >= 0 ? '+' : '');
@@ -747,5 +890,26 @@ function renderSummary(v, area, yL, yR) {
       <strong>${v.old_R.toFixed(1)}%</strong>; under-15s go ${v.young_L.toFixed(1)}% → ${v.young_R.toFixed(1)}%.
       The biggest absolute change is in the <strong>${v.biggest}</strong> band. The right pyramid's dotted
       outline is ${yL}, so the gap to the filled bars shows the shift.
+    </div>`;
+}
+
+function renderSummaryArea(v, titleA, titleB, year) {
+  const n    = (x) => Math.round(x).toLocaleString();
+  const sign = (x) => (x >= 0 ? '+' : '');
+  const sizeCls = v.growthAvsB >= 0 ? 'stat--growth' : 'stat--shrink';
+  summaryEl.innerHTML = `
+    <div class="cards">
+      <div class="stat"><div class="v">${n(v.totA)}</div><div class="l">Total — ${esc(titleA)}</div></div>
+      <div class="stat"><div class="v">${n(v.totB)}</div><div class="l">Total — ${esc(titleB)}</div></div>
+      <div class="stat ${sizeCls}"><div class="v">${sign(v.growthAvsB)}${v.growthAvsB.toFixed(1)}%</div><div class="l">A vs B size</div></div>
+      <div class="stat"><div class="v">${v.old_A.toFixed(1)}% vs ${v.old_B.toFixed(1)}%</div><div class="l">Aged 65+ share (A vs B)</div></div>
+    </div>
+    <div class="takeaway">
+      <strong>${esc(titleA)}</strong> has <strong>${n(v.totA)}</strong> people vs
+      <strong>${esc(titleB)}</strong>'s <strong>${n(v.totB)}</strong> in ${year}.
+      Its 65+ share is <strong>${v.old_A.toFixed(1)}%</strong> against
+      <strong>${v.old_B.toFixed(1)}%</strong>, and under-15s
+      <strong>${v.young_A.toFixed(1)}%</strong> vs <strong>${v.young_B.toFixed(1)}%</strong>.
+      The biggest structural divergence is in the <strong>${esc(v.biggest)}</strong> band.
     </div>`;
 }
