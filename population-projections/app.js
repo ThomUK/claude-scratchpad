@@ -42,8 +42,9 @@ function parseCSV(text) {
 }
 
 // --- map constants ---------------------------------------------------------
-const STYLE_OFF = { color: '#4cc2ff', weight: 1.6, fillColor: '#4cc2ff', fillOpacity: 0.05 };
-const STYLE_ON  = { color: '#4cc2ff', weight: 2.4, fillColor: '#4cc2ff', fillOpacity: 0.45 };
+// Unselected polygons use Positron's land colour so England reads as light against the dark sea background.
+const STYLE_OFF = { color: '#4cc2ff', weight: 1.6, fillColor: '#f0f0ea', fillOpacity: 0.92 };
+const STYLE_ON  = { color: '#4cc2ff', weight: 2.8, fillColor: '#4cc2ff', fillOpacity: 0.55 };
 
 // Each level's parent level, drawn as orange outlines to show the nesting boundary.
 const PARENT = { la: 'subicb', subicb: 'region', region: null };
@@ -70,15 +71,18 @@ let years = [];
 // L is available as a global because the Leaflet <script> runs before this module.
 // maxBounds locks panning to England; fitBounds() in showMapForLevel() will refine the view.
 const ENGLAND_BOUNDS = [[49.8, -6.5], [55.9, 2.2]];
+// No tile layer — polygons float on the page background colour for a cutout effect.
+// Interaction locked to a fixed England view; panning/zooming would break the illusion.
 const map = L.map('map', {
-  scrollWheelZoom: true,
+  scrollWheelZoom: false,
+  dragging: false,
+  doubleClickZoom: false,
+  touchZoom: false,
+  zoomControl: false,
+  attributionControl: false,
   maxBounds: ENGLAND_BOUNDS,
-  maxBoundsViscosity: 1.0,  // hard stop at the boundary rather than elastic bounce
-}).setView([52.5, -1.5], 6);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  maxZoom: 19,
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-}).addTo(map);
+  maxBoundsViscosity: 1.0,
+}).setView([52.5, -1.5], 7);
 
 const legend = L.control({ position: 'bottomleft' });
 legend.onAdd = () => L.DomUtil.create('div', 'map-legend');
@@ -137,7 +141,8 @@ async function showMapForLevel(level) {
     mapLayer = cache[level].layer.addTo(map);
     // All three levels partition England, so reset to a fixed England view rather
     // than fitBounds — fitBounds picks zoom 6 which exposes Scotland/Ireland in margin.
-    map.setView([52.5, -1.5], 7);
+    // Zoom 6 fits England in the 420px panel; shifted south to pull Cornwall into view
+    map.setView([52.0, -1.5], 6);
   }
   restyleMapForCurrentLevel();
   await updateOverlay(level);
