@@ -857,7 +857,9 @@ function rProgramArea(codesA, codesB, bRest, year, normalise, titleA, titleB) {
       barplot(M, beside = TRUE, horiz = TRUE, names.arg = nm, las = 1,
               col = c(female_col, male_col), border = NA, xlim = c(-rng, rng), xaxt = "n", cex.names = 0.8)
       at <- pretty(c(-rng, rng), 5)
-      axis(1, at = at, labels = if (pct) paste0(round(at), "%") else fmt(at), cex.axis = 0.8)
+      # In pp mode the range is often <2pp so pretty() emits fractional ticks.
+      # sprintf keeps one decimal to avoid -0.5, 0, 0.5 all collapsing to "0%".
+      axis(1, at = at, labels = if (pct) sprintf("%.1f%%", at) else fmt(at), cex.axis = 0.8)
       title(main = title, line = 1); abline(v = 0, col = "grey40")
     }
 
