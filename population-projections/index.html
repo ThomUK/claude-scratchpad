@@ -50,12 +50,19 @@
           </div>
         </div>
         <div class="field">
-          <label for="yearL">Left pyramid year</label>
+          <label for="yearL" id="yearL-label">Left pyramid year</label>
           <select id="yearL"></select>
         </div>
-        <div class="field">
+        <div class="field" id="yearR-field">
           <label for="yearR">Right pyramid year</label>
           <select id="yearR"></select>
+        </div>
+        <div class="field" id="normalise-field" hidden>
+          <label>Numbers shown as</label>
+          <div class="segmented" id="normalise" role="tablist">
+            <button class="seg-btn is-active" data-norm="percent" role="tab">Share (% of total)</button>
+            <button class="seg-btn" data-norm="absolute" role="tab">Absolute</button>
+          </div>
         </div>
         <div class="field field--compare">
           <label>&nbsp;</label>

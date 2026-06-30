@@ -11,7 +11,11 @@ const groupsEl   = $('groups');
 const chipsEl    = $('chips');
 const searchEl   = $('search');
 const selCountEl = $('sel-count');
-const listTitleEl = $('list-title');
+const listTitleEl  = $('list-title');
+// Controls that change shape between time mode (two years) and compare mode (one year + normalise)
+const yearRFieldEl = $('yearR-field');
+const normFieldEl  = $('normalise-field');
+const yearLLabelEl = $('yearL-label');
 
 const setStatus = (t, k) => { statusEl.textContent = t; statusEl.className = `status status--${k}`; };
 
@@ -73,6 +77,7 @@ let years = [];
 
 // --- compare mode state ----------------------------------------------------
 let compareMode  = false;
+let normalise    = 'percent';  // 'percent' (share of own total) | 'absolute'
 let activeBucket = 'A';
 // Each bucket is locked to one level; A.level and B.level may differ.
 // Codes are initialised when compare mode is first entered; they're empty until then.
@@ -313,6 +318,14 @@ function enterCompareMode() {
     b.classList.toggle('is-active', b.dataset.bucket === 'A'));
   $('compare-bar').hidden = false;
   $('compare-toggle').classList.add('is-active');
+  // Swap year controls: collapse to single-year picker and reveal the normalise toggle
+  yearRFieldEl.hidden = true;
+  normFieldEl.hidden  = false;
+  yearLLabelEl.textContent = 'Year';
+  // Always enter compare mode with Share as the default — reset both state and button
+  normalise = 'percent';
+  document.querySelectorAll('#normalise [data-norm]').forEach((b) =>
+    b.classList.toggle('is-active', b.dataset.norm === 'percent'));
   syncBRestCheckbox();
   setLegend(currentLevel);
   onSelectionChanged();
@@ -322,6 +335,10 @@ async function exitCompareMode() {
   compareMode = false;
   $('compare-bar').hidden = true;
   $('compare-toggle').classList.remove('is-active');
+  // Restore two-year layout for time mode
+  yearRFieldEl.hidden = false;
+  normFieldEl.hidden  = true;
+  yearLLabelEl.textContent = 'Left pyramid year';
   // If B was active at a different level, snap back to A's level
   const targetLevel = buckets.A.level;
   if (targetLevel !== currentLevel) {
@@ -407,6 +424,15 @@ function wireEvents() {
     syncBRestCheckbox();
     setLegend(currentLevel);
     onSelectionChanged();
+  });
+
+  // Share/Absolute toggle — mirrors the #level segmented control pattern
+  $('normalise').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-norm]'); if (!btn) return;
+    document.querySelectorAll('#normalise [data-norm]').forEach((b) =>
+      b.classList.toggle('is-active', b === btn));
+    normalise = btn.dataset.norm;
+    scheduleRender();
   });
 
   [yearLSel, yearRSel].forEach((el) => el.addEventListener('change', scheduleRender));
