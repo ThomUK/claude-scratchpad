@@ -18,9 +18,9 @@ const AGES = ['0-4','5-9','10-14','15-19','20-24','25-29','30-34','35-39','40-44
   '45-49','50-54','55-59','60-64','65-69','70-74','75-79','80-84','85-89','90+'];
 
 const LEVELS = {
-  region: { file: 'region', one: 'region', many: 'regions' },
-  subicb: { file: 'subicb', one: 'sub-ICB', many: 'sub-ICBs' },
-  la:     { file: 'la', one: 'local authority', many: 'local authorities' },
+  region: { file: 'region', geo: 'regions.geojson', one: 'region', many: 'regions' },
+  subicb: { file: 'subicb', geo: 'subicb.geojson',  one: 'sub-ICB', many: 'sub-ICBs' },
+  la:     { file: 'la',     geo: 'la.geojson',       one: 'local authority', many: 'local authorities' },
 };
 
 // --- small CSV parser (handles quoted fields with commas) ------------------
@@ -41,6 +41,17 @@ function parseCSV(text) {
   return rows;
 }
 
+// --- map constants ---------------------------------------------------------
+const STYLE_OFF = { color: '#4cc2ff', weight: 1.6, fillColor: '#4cc2ff', fillOpacity: 0.05 };
+const STYLE_ON  = { color: '#4cc2ff', weight: 2.4, fillColor: '#4cc2ff', fillOpacity: 0.45 };
+
+// Each level's parent level, drawn as orange outlines to show the nesting boundary.
+const PARENT = { la: 'subicb', subicb: 'region', region: null };
+const PARENT_STYLE = { color: '#ff7f0e', weight: 1.2, fill: false, opacity: 0.95 };
+const overlayCache = {};  // parent level -> non-interactive outline layer (cached after first load)
+let overlay = null;       // the overlay layer currently on the map
+let mapLayer = null;      // the active clickable GeoJSON layer
+
 // --- state -----------------------------------------------------------------
 // Per-level default selection (ONS codes), shown with their group(s) open.
 const DEFAULTS = {
@@ -48,12 +59,115 @@ const DEFAULTS = {
   subicb: ['E38000243'],                                                  // NHS Nottingham & Nottinghamshire ICB - 52R
   la: ['E06000018', 'E07000172', 'E07000176', 'E07000173', 'E07000170'],  // Nottingham, Broxtowe, Rushcliffe, Gedling, Ashfield
 };
-const cache = {};                 // level -> { areas, groups, labelOf, csvText }
+const cache = {};                 // level -> { areas, groups, labelOf, csvText, codeSet, layer, layerByCode }
 const selections = {};            // level -> Set(code)
 const expanded = {};              // level -> Set(open group names)
 let currentLevel = 'subicb';
 const loadedLevels = new Set();   // levels whose rows have been appended into webR's combined D
 let years = [];
+
+// --- Leaflet map -----------------------------------------------------------
+// L is available as a global because the Leaflet <script> runs before this module.
+// maxBounds locks panning to England; fitBounds() in showMapForLevel() will refine the view.
+const ENGLAND_BOUNDS = [[49.8, -6.5], [55.9, 2.2]];
+const map = L.map('map', {
+  scrollWheelZoom: true,
+  maxBounds: ENGLAND_BOUNDS,
+  maxBoundsViscosity: 1.0,  // hard stop at the boundary rather than elastic bounce
+}).setView([52.5, -1.5], 6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18,
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+}).addTo(map);
+
+const legend = L.control({ position: 'bottomleft' });
+legend.onAdd = () => L.DomUtil.create('div', 'map-legend');
+legend.addTo(map);
+
+function setLegend(level) {
+  const el = document.querySelector('.map-legend'); if (!el) return;
+  const parent = PARENT[level];
+  el.innerHTML = `<span class="k sel"></span>selected ${esc(LEVELS[level].many)}` +
+    (parent ? `<br><span class="k par"></span>${esc(LEVELS[parent].many)} boundaries` : '');
+}
+
+async function updateOverlay(level) {
+  if (overlay) { map.removeLayer(overlay); overlay = null; }
+  const parent = PARENT[level];
+  if (!parent) return;
+  if (!overlayCache[parent]) {
+    try {
+      const gj = JSON.parse(await fetchText(LEVELS[parent].geo));
+      overlayCache[parent] = L.geoJSON(gj, { interactive: false, style: PARENT_STYLE });
+    } catch (e) { console.error(e); return; }
+  }
+  overlay = overlayCache[parent].addTo(map);
+  overlay.bringToFront();
+}
+
+// Look up the ONS code from a GeoJSON feature's properties by matching against the known codeSet.
+// Codes are globally unique across levels, so we can match any property value.
+const codeOf = (props, codeSet) => {
+  for (const v of Object.values(props || {})) if (codeSet.has(String(v))) return String(v);
+  return null;
+};
+
+async function loadGeo(level) {
+  const c = cache[level];
+  if (c.layer) return;  // already loaded
+  const gj = JSON.parse(await fetchText(LEVELS[level].geo));
+  c.layer = L.geoJSON(gj, {
+    filter: (f) => codeOf(f.properties, c.codeSet) !== null,
+    style: STYLE_OFF,
+    onEachFeature: (f, lyr) => {
+      const code = codeOf(f.properties, c.codeSet);
+      c.layerByCode[code] = lyr;
+      lyr.bindTooltip(c.labelOf.get(code) || code, { sticky: true, className: 'region-tooltip' });
+      // Map click toggles selection exactly like a list checkbox would
+      lyr.on('click', () => { sel().has(code) ? sel().delete(code) : sel().add(code); onSelectionChanged(); });
+      lyr.on('mouseover', () => hover(code, true));
+      lyr.on('mouseout',  () => hover(code, false));
+    },
+  });
+}
+
+async function showMapForLevel(level) {
+  if (mapLayer) { map.removeLayer(mapLayer); mapLayer = null; }
+  if (cache[level]?.layer) {
+    mapLayer = cache[level].layer.addTo(map);
+    // All three levels partition England, so reset to a fixed England view rather
+    // than fitBounds — fitBounds picks zoom 6 which exposes Scotland/Ireland in margin.
+    map.setView([52.5, -1.5], 7);
+  }
+  restyleMapForCurrentLevel();
+  await updateOverlay(level);
+  setLegend(level);
+}
+
+function restyleMapForCurrentLevel() {
+  const byCode = cache[currentLevel]?.layerByCode;
+  if (!byCode) return;
+  const s = sel();
+  for (const [code, lyr] of Object.entries(byCode)) lyr.setStyle(s.has(code) ? STYLE_ON : STYLE_OFF);
+}
+
+function hover(code, on) {
+  // Keep the list row and map polygon in visual sync on hover
+  const row = groupsEl.querySelector(`.area-row[data-code="${code}"]`);
+  if (row) row.classList.toggle('is-hover', on);
+  const lyr = cache[currentLevel]?.layerByCode?.[code];
+  if (lyr) {
+    if (on) { lyr.setStyle({ weight: 3, color: '#ffffff' }); lyr.bringToFront(); }
+    else lyr.setStyle(sel().has(code) ? STYLE_ON : STYLE_OFF);
+  }
+}
+
+// Single mutation sink: called whenever the selection changes (list or map click).
+function onSelectionChanged() {
+  renderPicker();
+  restyleMapForCurrentLevel();
+  scheduleRender();
+}
 
 // --- webR -----------------------------------------------------------------
 const webR = new WebR();
@@ -69,8 +183,10 @@ let shelter;
     // years are parsed once from the first level's data
     setStatus('R is ready', 'ready');
     wireEvents();
-    renderPicker();
-    scheduleRender();
+    // Load the current level's geo and put it on the map; region geo is loaded lazily on first switch
+    await loadGeo(currentLevel);
+    await showMapForLevel(currentLevel);
+    onSelectionChanged();
   } catch (err) {
     console.error(err);
     setStatus('Failed to load. webR needs a network connection on first load.', 'error');
@@ -99,7 +215,15 @@ async function loadLevel(level) {
       byGroup.get(a.group).push(a);
     }
     const labelOf = new Map(areas.map((a) => [a.code, a.label]));
-    cache[level] = { areas, groups: groupOrder.map((g) => ({ name: g, areas: byGroup.get(g) })), labelOf, csvText: dataText };
+    cache[level] = {
+      areas,
+      groups: groupOrder.map((g) => ({ name: g, areas: byGroup.get(g) })),
+      labelOf,
+      csvText: dataText,
+      codeSet: new Set(areas.map((a) => a.code)),  // used by codeOf() to match GeoJSON feature codes
+      layer: null,       // Leaflet GeoJSON layer, populated by loadGeo()
+      layerByCode: {},   // code -> Leaflet layer, populated by loadGeo()
+    };
 
     if (!years.length) {
       const ys = new Set();
@@ -147,20 +271,24 @@ function wireEvents() {
     currentLevel = level;
     searchEl.value = '';
     await loadLevel(level);
-    renderPicker(); scheduleRender();
+    // Lazy-load this level's geo on first switch; then swap the map layer
+    await loadGeo(level);
+    await showMapForLevel(level);
+    onSelectionChanged();
   });
 
   [yearLSel, yearRSel].forEach((el) => el.addEventListener('change', scheduleRender));
+  // Search only needs a picker re-render; it doesn't change the selection or need an R draw
   searchEl.addEventListener('input', renderPicker);
-  $('clear-all').addEventListener('click', () => { sel().clear(); renderPicker(); scheduleRender(); });
+  $('clear-all').addEventListener('click', () => { sel().clear(); onSelectionChanged(); });
 
   groupsEl.addEventListener('change', (e) => {
     const t = e.target;
-    if (t.dataset.code) { t.checked ? sel().add(t.dataset.code) : sel().delete(t.dataset.code); renderPicker(); scheduleRender(); }
+    if (t.dataset.code) { t.checked ? sel().add(t.dataset.code) : sel().delete(t.dataset.code); onSelectionChanged(); }
     else if (t.dataset.group) {
       const grp = cache[currentLevel].groups.find((g) => g.name === t.dataset.group);
       grp.areas.forEach((a) => (t.checked ? sel().add(a.code) : sel().delete(a.code)));
-      renderPicker(); scheduleRender();
+      onSelectionChanged();
     }
   });
   groupsEl.addEventListener('click', (e) => {
@@ -169,11 +297,15 @@ function wireEvents() {
     const name = head.querySelector('input[data-group]').dataset.group;
     const exp = expanded[currentLevel];
     exp.has(name) ? exp.delete(name) : exp.add(name);
+    // Group expand/collapse only needs a DOM update; no selection change, no R draw
     renderPicker();
   });
+  // Hover over a list row → highlight the matching polygon, and vice versa
+  groupsEl.addEventListener('mouseover', (e) => { const r = e.target.closest('.area-row'); if (r) hover(r.dataset.code, true); });
+  groupsEl.addEventListener('mouseout',  (e) => { const r = e.target.closest('.area-row'); if (r) hover(r.dataset.code, false); });
   chipsEl.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-code]'); if (!b) return;
-    sel().delete(b.dataset.code); renderPicker(); scheduleRender();
+    sel().delete(b.dataset.code); onSelectionChanged();
   });
 }
 
@@ -207,7 +339,7 @@ function renderPicker() {
         <span class="count">${selN}/${g.areas.length}</span>
       </div>
       <div class="group-body">${matched.map((a) =>
-        `<div class="area-row"><input type="checkbox" id="c_${a.code}" data-code="${a.code}" ${s.has(a.code) ? 'checked' : ''} /><label for="c_${a.code}">${esc(a.label)}</label></div>`
+        `<div class="area-row" data-code="${a.code}"><input type="checkbox" id="c_${a.code}" data-code="${a.code}" ${s.has(a.code) ? 'checked' : ''} /><label for="c_${a.code}">${esc(a.label)}</label></div>`
       ).join('')}</div>
     </div>`;
   }
