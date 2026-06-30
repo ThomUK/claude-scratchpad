@@ -75,9 +75,9 @@ const map = L.map('map', {
   maxBounds: ENGLAND_BOUNDS,
   maxBoundsViscosity: 1.0,  // hard stop at the boundary rather than elastic bounce
 }).setView([52.5, -1.5], 6);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 18,
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  maxZoom: 19,
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
 }).addTo(map);
 
 const legend = L.control({ position: 'bottomleft' });
