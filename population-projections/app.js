@@ -52,7 +52,7 @@ const cache = {};                 // level -> { areas, groups, labelOf, csvText 
 const selections = {};            // level -> Set(code)
 const expanded = {};              // level -> Set(open group names)
 let currentLevel = 'subicb';
-let loadedInWebR = null;          // which level's data D currently holds
+const loadedLevels = new Set();   // levels whose rows have been appended into webR's combined D
 let years = [];
 
 // --- webR -----------------------------------------------------------------
@@ -64,6 +64,8 @@ let shelter;
     await webR.init();
     shelter = await new webR.Shelter();
     await loadLevel(currentLevel);
+    // Always pre-load region at boot: tiny (306 KB) and needed for "rest of England" in later phases
+    if (currentLevel !== 'region') await loadLevel('region');
     // years are parsed once from the first level's data
     setStatus('R is ready', 'ready');
     wireEvents();
@@ -115,10 +117,17 @@ async function loadLevel(level) {
       if (g) expanded[level].add(g.name);
     }
   }
-  if (loadedInWebR !== level) {
-    await webR.FS.writeFile('/tmp/pop.csv', new TextEncoder().encode(cache[level].csvText));
-    await webR.evalRVoid('D <- read.csv("/tmp/pop.csv", stringsAsFactors = FALSE, colClasses = c(code="character"))');
-    loadedInWebR = level;
+  if (!loadedLevels.has(level)) {
+    // Each level gets its own named file so all levels can coexist in /tmp
+    await webR.FS.writeFile(`/tmp/${level}.csv`, new TextEncoder().encode(cache[level].csvText));
+    if (loadedLevels.size === 0) {
+      // First level loaded: create D from scratch
+      await webR.evalRVoid(`D <- read.csv("/tmp/${level}.csv", stringsAsFactors = FALSE, colClasses = c(code="character"))`);
+    } else {
+      // Subsequent levels: append to D so all levels' rows are always available
+      await webR.evalRVoid(`D <- rbind(D, read.csv("/tmp/${level}.csv", stringsAsFactors = FALSE, colClasses = c(code="character")))`);
+    }
+    loadedLevels.add(level);
   }
 }
 
