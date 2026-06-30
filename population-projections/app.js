@@ -911,13 +911,21 @@ function renderSummary(v, area, yL, yR) {
 function renderSummaryArea(v, titleA, titleB, year) {
   const n    = (x) => Math.round(x).toLocaleString();
   const sign = (x) => (x >= 0 ? '+' : '');
-  const sizeCls = v.growthAvsB >= 0 ? 'stat--growth' : 'stat--shrink';
+  // growthAvsB = 100*(totA/totB − 1): positive means A bigger than B, negative means smaller
+  const sizeCls  = v.growthAvsB >= 0 ? 'stat--growth' : 'stat--shrink';
+  const sizeWord = v.growthAvsB >= 0 ? 'larger' : 'smaller';
   summaryEl.innerHTML = `
     <div class="cards">
       <div class="stat"><div class="v">${n(v.totA)}</div><div class="l">Total — ${esc(titleA)}</div></div>
       <div class="stat"><div class="v">${n(v.totB)}</div><div class="l">Total — ${esc(titleB)}</div></div>
-      <div class="stat ${sizeCls}"><div class="v">${sign(v.growthAvsB)}${v.growthAvsB.toFixed(1)}%</div><div class="l">A vs B size</div></div>
-      <div class="stat"><div class="v">${v.old_A.toFixed(1)}% vs ${v.old_B.toFixed(1)}%</div><div class="l">Aged 65+ share (A vs B)</div></div>
+      <div class="stat ${sizeCls}">
+        <div class="v">${sign(v.growthAvsB)}${v.growthAvsB.toFixed(1)}%</div>
+        <div class="l">A is ${Math.abs(v.growthAvsB).toFixed(1)}% ${sizeWord} than B</div>
+      </div>
+      <div class="stat">
+        <div class="v">${v.old_A.toFixed(1)}% vs ${v.old_B.toFixed(1)}%</div>
+        <div class="l">Aged 65+ share (A vs B)</div>
+      </div>
     </div>
     <div class="takeaway">
       <strong>${esc(titleA)}</strong> has <strong>${n(v.totA)}</strong> people vs
