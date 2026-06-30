@@ -797,11 +797,26 @@ function rProgramArea(codesA, codesB, bRest, year, normalise, titleA, titleB) {
 
     totA <- sum(mA) + sum(fA); totB <- sum(mB) + sum(fB)
 
-    # Absolute mode: raw counts — shared xmax makes size mismatches visible.
-    # Share mode normalisation is added in Commit 3.
-    pmA <- mA; pfA <- fA; pmB <- mB; pfB <- fB
-    xmax <- max(pmA, pfA, pmB, pfB, 1)   # closure var read by fmt() and pyramid()
-    fmt <- function(z) if (xmax >= 1e6) paste0(round(z / 1e6, 1), "m") else if (xmax >= 1e4) paste0(round(z / 1e3), "k") else as.character(round(z))
+    # Share mode: each bar = that sex/band as % of its own bucket's grand total,
+    # so a 1M area and a 56M area become shape-comparable.
+    # Absolute mode: raw counts — shared xmax makes size mismatches visible honestly.
+    if (normalise == "percent") {
+      pmA <- 100 * mA / totA; pfA <- 100 * fA / totA
+      pmB <- 100 * mB / totB; pfB <- 100 * fB / totB
+    } else {
+      pmA <- mA; pfA <- fA; pmB <- mB; pfB <- fB
+    }
+    xmax <- max(pmA, pfA, pmB, pfB, 1)   # shared scale across BOTH pyramids; closure var for fmt() and pyramid()
+
+    # In share mode xmax ≈ 5–10 (each age band is ~5% of total), so k/m thresholds never
+    # trigger and we fall through to as.character() — which would give bare "5", not "5%".
+    # The normalise branch here ensures the axis reads "5.0%" in share mode.
+    fmt <- function(z) {
+      if (normalise == "percent") paste0(round(z, 1), "%")
+      else if (xmax >= 1e6) paste0(round(z / 1e6, 1), "m")
+      else if (xmax >= 1e4) paste0(round(z / 1e3), "k")
+      else as.character(round(z))
+    }
 
     # pyramid() is copied from rProgram so both charts share the same implementation.
     # xmax is a closure variable — both A and B calls use the same binding (shared scale).
@@ -853,9 +868,9 @@ function rProgramArea(codesA, codesB, bRest, year, normalise, titleA, titleB) {
            col = c(male_col, female_col, "grey20"), pt.cex = 1.2, cex = 0.82)
     pyramid(pmB, pfB, titleB, FALSE, cm = pmA, cf = pfA)
 
-    # Divergence panel: A − B. pct=FALSE in absolute mode; Commit 3 adds the pp branch.
-    divTitle <- paste0(titleA, " − ", titleB)
-    changeplot(list(m = pmA - pmB, f = pfA - pfB), divTitle, FALSE, TRUE)
+    # Divergence panel: A − B. Units follow the toggle: pp in share mode, head-count in absolute.
+    divTitle <- paste0(titleA, " − ", titleB, if (normalise == "percent") " (pp)" else "")
+    changeplot(list(m = pmA - pmB, f = pfA - pfB), divTitle, normalise == "percent", TRUE)
 
     # Structural stats always in share terms so they are mode-independent
     old   <- ages %in% c("65-69", "70-74", "75-79", "80-84", "85-89", "90+")
