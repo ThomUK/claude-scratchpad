@@ -1,16 +1,17 @@
 import { WebR } from 'https://webr.r-wasm.org/latest/webr.mjs';
 
 const $ = (id) => document.getElementById(id);
-const statusEl = $('status');
-const yearLSel = $('yearL');
-const yearRSel = $('yearR');
-const summaryEl = $('summary');
-const canvas = $('chart');
-const ctx = canvas.getContext('2d');
-const groupsEl = $('groups');
-const chipsEl = $('chips');
-const searchEl = $('search');
+const statusEl   = $('status');
+const yearLSel   = $('yearL');
+const yearRSel   = $('yearR');
+const summaryEl  = $('summary');
+const canvas     = $('chart');
+const ctx        = canvas.getContext('2d');
+const groupsEl   = $('groups');
+const chipsEl    = $('chips');
+const searchEl   = $('search');
 const selCountEl = $('sel-count');
+const listTitleEl = $('list-title');
 
 const setStatus = (t, k) => { statusEl.textContent = t; statusEl.className = `status status--${k}`; };
 
@@ -18,8 +19,8 @@ const AGES = ['0-4','5-9','10-14','15-19','20-24','25-29','30-34','35-39','40-44
   '45-49','50-54','55-59','60-64','65-69','70-74','75-79','80-84','85-89','90+'];
 
 const LEVELS = {
-  region: { file: 'region', geo: 'regions.geojson', one: 'region', many: 'regions' },
-  subicb: { file: 'subicb', geo: 'subicb.geojson',  one: 'sub-ICB', many: 'sub-ICBs' },
+  region: { file: 'region', geo: 'regions.geojson', one: 'region',    many: 'regions'           },
+  subicb: { file: 'subicb', geo: 'subicb.geojson',  one: 'sub-ICB',   many: 'sub-ICBs'          },
   la:     { file: 'la',     geo: 'la.geojson',       one: 'local authority', many: 'local authorities' },
 };
 
@@ -43,36 +44,64 @@ function parseCSV(text) {
 
 // --- map constants ---------------------------------------------------------
 // Unselected polygons use Positron's land colour so England reads as light against the dark sea background.
-const STYLE_OFF = { color: '#4cc2ff', weight: 1.6, fillColor: '#f0f0ea', fillOpacity: 0.92 };
-const STYLE_ON  = { color: '#4cc2ff', weight: 2.8, fillColor: '#4cc2ff', fillOpacity: 0.55 };
+const STYLE_OFF  = { color: '#4cc2ff', weight: 1.6, fillColor: '#f0f0ea', fillOpacity: 0.92 };
+// Separate ON styles for each comparison bucket so both can be visible simultaneously.
+const STYLE_ON_A = { color: '#4cc2ff', weight: 2.8, fillColor: '#4cc2ff', fillOpacity: 0.55 };
+const STYLE_ON_B = { color: '#d29922', weight: 2.8, fillColor: '#d29922', fillOpacity: 0.55 };
+const STYLE_ON   = STYLE_ON_A; // alias used in single (non-compare) mode
 
 // Each level's parent level, drawn as orange outlines to show the nesting boundary.
 const PARENT = { la: 'subicb', subicb: 'region', region: null };
 const PARENT_STYLE = { color: '#ff7f0e', weight: 1.2, fill: false, opacity: 0.95 };
 const overlayCache = {};  // parent level -> non-interactive outline layer (cached after first load)
-let overlay = null;       // the overlay layer currently on the map
+let overlay  = null;      // the overlay layer currently on the map
 let mapLayer = null;      // the active clickable GeoJSON layer
 
 // --- state -----------------------------------------------------------------
 // Per-level default selection (ONS codes), shown with their group(s) open.
 const DEFAULTS = {
-  region: ['E12000004'],                                                  // East Midlands
-  subicb: ['E38000243'],                                                  // NHS Nottingham & Nottinghamshire ICB - 52R
-  la: ['E06000018', 'E07000172', 'E07000176', 'E07000173', 'E07000170'],  // Nottingham, Broxtowe, Rushcliffe, Gedling, Ashfield
+  region: ['E12000004'],
+  subicb: ['E38000243'],
+  la: ['E06000018', 'E07000172', 'E07000176', 'E07000173', 'E07000170'],
 };
-const cache = {};                 // level -> { areas, groups, labelOf, csvText, codeSet, layer, layerByCode }
-const selections = {};            // level -> Set(code)
-const expanded = {};              // level -> Set(open group names)
+const cache      = {};  // level -> { areas, groups, labelOf, csvText, codeSet, layer, layerByCode }
+const selections = {};  // level -> Set(code) — used in single mode
+const expanded   = {};  // level -> Set(open group names)
 let currentLevel = 'subicb';
-const loadedLevels = new Set();   // levels whose rows have been appended into webR's combined D
+const loadedLevels = new Set();  // levels whose rows have been appended into webR's combined D
 let years = [];
+
+// --- compare mode state ----------------------------------------------------
+let compareMode  = false;
+let activeBucket = 'A';
+// Each bucket is locked to one level; A.level and B.level may differ.
+// Codes are initialised when compare mode is first entered; they're empty until then.
+const buckets = {
+  A: { level: 'subicb', codes: new Set(), rest: false },
+  B: { level: 'subicb', codes: new Set(), rest: true  },
+};
+
+// Derive the correct style for a map polygon based on current mode and bucket membership.
+function styleForCode(code) {
+  if (!compareMode) return sel().has(code) ? STYLE_ON : STYLE_OFF;
+  const inA = buckets.A.level === currentLevel && buckets.A.codes.has(code);
+  // B's codes only shown on map when B is NOT in "rest" mode
+  const inB = !buckets.B.rest && buckets.B.level === currentLevel && buckets.B.codes.has(code);
+  // Active bucket takes visual priority when a code is in both
+  if (activeBucket === 'A') {
+    if (inA) return STYLE_ON_A;
+    if (inB) return STYLE_ON_B;
+  } else {
+    if (inB) return STYLE_ON_B;
+    if (inA) return STYLE_ON_A;
+  }
+  return STYLE_OFF;
+}
 
 // --- Leaflet map -----------------------------------------------------------
 // L is available as a global because the Leaflet <script> runs before this module.
-// maxBounds locks panning to England; fitBounds() in showMapForLevel() will refine the view.
 const ENGLAND_BOUNDS = [[49.8, -6.5], [55.9, 2.2]];
 // No tile layer — polygons float on the page background colour for a cutout effect.
-// Interaction locked to a fixed England view; panning/zooming would break the illusion.
 const map = L.map('map', {
   scrollWheelZoom: false,
   dragging: false,
@@ -82,7 +111,7 @@ const map = L.map('map', {
   attributionControl: false,
   maxBounds: ENGLAND_BOUNDS,
   maxBoundsViscosity: 1.0,
-}).setView([52.5, -1.5], 7);
+}).setView([52.0, -1.5], 6);
 
 const legend = L.control({ position: 'bottomleft' });
 legend.onAdd = () => L.DomUtil.create('div', 'map-legend');
@@ -91,8 +120,14 @@ legend.addTo(map);
 function setLegend(level) {
   const el = document.querySelector('.map-legend'); if (!el) return;
   const parent = PARENT[level];
-  el.innerHTML = `<span class="k sel"></span>selected ${esc(LEVELS[level].many)}` +
-    (parent ? `<br><span class="k par"></span>${esc(LEVELS[parent].many)} boundaries` : '');
+  let html = '';
+  if (compareMode) {
+    html += `<span class="k sel-a"></span>Bucket A &nbsp;<span class="k sel-b"></span>Bucket B`;
+  } else {
+    html += `<span class="k sel"></span>selected ${esc(LEVELS[level].many)}`;
+  }
+  if (parent) html += `<br><span class="k par"></span>${esc(LEVELS[parent].many)} boundaries`;
+  el.innerHTML = html;
 }
 
 async function updateOverlay(level) {
@@ -110,7 +145,6 @@ async function updateOverlay(level) {
 }
 
 // Look up the ONS code from a GeoJSON feature's properties by matching against the known codeSet.
-// Codes are globally unique across levels, so we can match any property value.
 const codeOf = (props, codeSet) => {
   for (const v of Object.values(props || {})) if (codeSet.has(String(v))) return String(v);
   return null;
@@ -127,8 +161,12 @@ async function loadGeo(level) {
       const code = codeOf(f.properties, c.codeSet);
       c.layerByCode[code] = lyr;
       lyr.bindTooltip(c.labelOf.get(code) || code, { sticky: true, className: 'region-tooltip' });
-      // Map click toggles selection exactly like a list checkbox would
-      lyr.on('click', () => { sel().has(code) ? sel().delete(code) : sel().add(code); onSelectionChanged(); });
+      lyr.on('click', () => {
+        // When B is in rest-of-England mode, the picker is locked — user must uncheck "B = rest" first
+        if (compareMode && activeBucket === 'B' && buckets.B.rest) return;
+        sel().has(code) ? sel().delete(code) : sel().add(code);
+        onSelectionChanged();
+      });
       lyr.on('mouseover', () => hover(code, true));
       lyr.on('mouseout',  () => hover(code, false));
     },
@@ -139,8 +177,6 @@ async function showMapForLevel(level) {
   if (mapLayer) { map.removeLayer(mapLayer); mapLayer = null; }
   if (cache[level]?.layer) {
     mapLayer = cache[level].layer.addTo(map);
-    // All three levels partition England, so reset to a fixed England view rather
-    // than fitBounds — fitBounds picks zoom 6 which exposes Scotland/Ireland in margin.
     // Zoom 6 fits England in the 420px panel; shifted south to pull Cornwall into view
     map.setView([52.0, -1.5], 6);
   }
@@ -152,8 +188,7 @@ async function showMapForLevel(level) {
 function restyleMapForCurrentLevel() {
   const byCode = cache[currentLevel]?.layerByCode;
   if (!byCode) return;
-  const s = sel();
-  for (const [code, lyr] of Object.entries(byCode)) lyr.setStyle(s.has(code) ? STYLE_ON : STYLE_OFF);
+  for (const [code, lyr] of Object.entries(byCode)) lyr.setStyle(styleForCode(code));
 }
 
 function hover(code, on) {
@@ -163,7 +198,7 @@ function hover(code, on) {
   const lyr = cache[currentLevel]?.layerByCode?.[code];
   if (lyr) {
     if (on) { lyr.setStyle({ weight: 3, color: '#ffffff' }); lyr.bringToFront(); }
-    else lyr.setStyle(sel().has(code) ? STYLE_ON : STYLE_OFF);
+    else lyr.setStyle(styleForCode(code));
   }
 }
 
@@ -183,12 +218,10 @@ let shelter;
     await webR.init();
     shelter = await new webR.Shelter();
     await loadLevel(currentLevel);
-    // Always pre-load region at boot: tiny (306 KB) and needed for "rest of England" in later phases
+    // Pre-load region at boot: tiny (306 KB) and needed for "rest of England" in later phases
     if (currentLevel !== 'region') await loadLevel('region');
-    // years are parsed once from the first level's data
     setStatus('R is ready', 'ready');
     wireEvents();
-    // Load the current level's geo and put it on the map; region geo is loaded lazily on first switch
     await loadGeo(currentLevel);
     await showMapForLevel(currentLevel);
     onSelectionChanged();
@@ -210,7 +243,6 @@ async function loadLevel(level) {
       fetchText(`${cfg.file}_areas.csv`),
       fetchText(`${cfg.file}.csv`),
     ]);
-    // areas lookup -> ordered groups
     const rows = parseCSV(areasText).slice(1).filter((r) => r.length >= 3);
     const areas = rows.map(([code, label, group]) => ({ code, label, group }));
     const groupOrder = [];
@@ -225,9 +257,9 @@ async function loadLevel(level) {
       groups: groupOrder.map((g) => ({ name: g, areas: byGroup.get(g) })),
       labelOf,
       csvText: dataText,
-      codeSet: new Set(areas.map((a) => a.code)),  // used by codeOf() to match GeoJSON feature codes
-      layer: null,       // Leaflet GeoJSON layer, populated by loadGeo()
-      layerByCode: {},   // code -> Leaflet layer, populated by loadGeo()
+      codeSet: new Set(areas.map((a) => a.code)),
+      layer: null,
+      layerByCode: {},
     };
 
     if (!years.length) {
@@ -236,7 +268,6 @@ async function loadLevel(level) {
       years = [...ys].filter(Boolean).sort((a, b) => a - b);
       populateYears();
     }
-    // default selection (per level), with the group(s) containing it left open
     const def = (DEFAULTS[level] || cache[level].groups[0].areas.map((a) => a.code))
       .filter((c) => cache[level].labelOf.has(c));
     selections[level] = new Set(def);
@@ -247,13 +278,10 @@ async function loadLevel(level) {
     }
   }
   if (!loadedLevels.has(level)) {
-    // Each level gets its own named file so all levels can coexist in /tmp
     await webR.FS.writeFile(`/tmp/${level}.csv`, new TextEncoder().encode(cache[level].csvText));
     if (loadedLevels.size === 0) {
-      // First level loaded: create D from scratch
       await webR.evalRVoid(`D <- read.csv("/tmp/${level}.csv", stringsAsFactors = FALSE, colClasses = c(code="character"))`);
     } else {
-      // Subsequent levels: append to D so all levels' rows are always available
       await webR.evalRVoid(`D <- rbind(D, read.csv("/tmp/${level}.csv", stringsAsFactors = FALSE, colClasses = c(code="character")))`);
     }
     loadedLevels.add(level);
@@ -267,30 +295,132 @@ function populateYears() {
   yearRSel.value = String(years.includes(2036) ? 2036 : years[years.length - 1]);
 }
 
+// --- compare mode entry/exit -----------------------------------------------
+
+function enterCompareMode() {
+  compareMode  = true;
+  activeBucket = 'A';
+  // Seed bucket A from whatever is currently selected in single mode
+  buckets.A.level = currentLevel;
+  buckets.A.codes = new Set(selections[currentLevel]);
+  buckets.A.rest  = false;
+  // Bucket B starts at the same level in rest-of-England mode
+  buckets.B.level = currentLevel;
+  buckets.B.codes = new Set();
+  buckets.B.rest  = true;
+  // Reset the A|B toggle to A
+  document.querySelectorAll('#bucket-seg [data-bucket]').forEach((b) =>
+    b.classList.toggle('is-active', b.dataset.bucket === 'A'));
+  $('compare-bar').hidden = false;
+  $('compare-toggle').classList.add('is-active');
+  syncBRestCheckbox();
+  setLegend(currentLevel);
+  onSelectionChanged();
+}
+
+async function exitCompareMode() {
+  compareMode = false;
+  $('compare-bar').hidden = true;
+  $('compare-toggle').classList.remove('is-active');
+  // If B was active at a different level, snap back to A's level
+  const targetLevel = buckets.A.level;
+  if (targetLevel !== currentLevel) {
+    currentLevel = targetLevel;
+    document.querySelectorAll('#level [data-level]').forEach((b) =>
+      b.classList.toggle('is-active', b.dataset.level === currentLevel));
+    await showMapForLevel(currentLevel);
+  }
+  setLegend(currentLevel);
+  onSelectionChanged();
+}
+
+async function setActiveBucket(b) {
+  if (activeBucket === b) return;
+  activeBucket = b;
+  searchEl.value = '';
+  const targetLevel = buckets[b].level;
+  if (targetLevel !== currentLevel) {
+    currentLevel = targetLevel;
+    // Keep the geography segmented control in sync with the newly active bucket's level
+    document.querySelectorAll('#level [data-level]').forEach((btn) =>
+      btn.classList.toggle('is-active', btn.dataset.level === currentLevel));
+    await loadLevel(currentLevel);
+    await loadGeo(currentLevel);
+    await showMapForLevel(currentLevel);
+  } else {
+    restyleMapForCurrentLevel();
+  }
+  syncBRestCheckbox();
+  onSelectionChanged();
+}
+
+// Grey out the groups list when B is active and locked to "rest of England".
+function syncBRestCheckbox() {
+  const cb = $('b-rest');
+  if (!cb) return;
+  cb.checked = buckets.B.rest;
+  const locked = compareMode && activeBucket === 'B' && buckets.B.rest;
+  groupsEl.style.opacity       = locked ? '0.35' : '';
+  groupsEl.style.pointerEvents = locked ? 'none'  : '';
+}
+
 // --- events ----------------------------------------------------------------
 function wireEvents() {
+  // Geography level switcher — in compare mode this changes the active bucket's level
   $('level').addEventListener('click', async (e) => {
-    const btn = e.target.closest('.seg-btn'); if (!btn) return;
+    const btn = e.target.closest('[data-level]'); if (!btn) return;
     const level = btn.dataset.level; if (level === currentLevel) return;
-    document.querySelectorAll('.seg-btn').forEach((b) => b.classList.toggle('is-active', b === btn));
+    // Only update the geography control buttons (not the bucket-seg buttons)
+    document.querySelectorAll('#level [data-level]').forEach((b) =>
+      b.classList.toggle('is-active', b === btn));
+    if (compareMode) {
+      // Lock the active bucket to the new level and clear its codes
+      buckets[activeBucket].level = level;
+      buckets[activeBucket].codes.clear();
+      // Changing level explicitly means "pick manually", so clear rest if B
+      if (activeBucket === 'B') { buckets.B.rest = false; syncBRestCheckbox(); }
+    }
     currentLevel = level;
     searchEl.value = '';
     await loadLevel(level);
-    // Lazy-load this level's geo on first switch; then swap the map layer
     await loadGeo(level);
     await showMapForLevel(level);
     onSelectionChanged();
   });
 
+  // Compare mode toggle
+  $('compare-toggle').addEventListener('click', async () => {
+    if (compareMode) await exitCompareMode(); else enterCompareMode();
+  });
+
+  // A / B bucket switcher
+  $('bucket-seg').addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-bucket]'); if (!btn) return;
+    document.querySelectorAll('#bucket-seg [data-bucket]').forEach((x) =>
+      x.classList.toggle('is-active', x === btn));
+    await setActiveBucket(btn.dataset.bucket);
+  });
+
+  // "B = rest of England" checkbox
+  $('b-rest').addEventListener('change', (e) => {
+    buckets.B.rest = e.target.checked;
+    syncBRestCheckbox();
+    setLegend(currentLevel);
+    onSelectionChanged();
+  });
+
   [yearLSel, yearRSel].forEach((el) => el.addEventListener('change', scheduleRender));
-  // Search only needs a picker re-render; it doesn't change the selection or need an R draw
   searchEl.addEventListener('input', renderPicker);
   $('clear-all').addEventListener('click', () => { sel().clear(); onSelectionChanged(); });
 
   groupsEl.addEventListener('change', (e) => {
+    // Lock the picker when B is active in rest-of-England mode
+    if (compareMode && activeBucket === 'B' && buckets.B.rest) return;
     const t = e.target;
-    if (t.dataset.code) { t.checked ? sel().add(t.dataset.code) : sel().delete(t.dataset.code); onSelectionChanged(); }
-    else if (t.dataset.group) {
+    if (t.dataset.code) {
+      t.checked ? sel().add(t.dataset.code) : sel().delete(t.dataset.code);
+      onSelectionChanged();
+    } else if (t.dataset.group) {
       const grp = cache[currentLevel].groups.find((g) => g.name === t.dataset.group);
       grp.areas.forEach((a) => (t.checked ? sel().add(a.code) : sel().delete(a.code)));
       onSelectionChanged();
@@ -302,19 +432,34 @@ function wireEvents() {
     const name = head.querySelector('input[data-group]').dataset.group;
     const exp = expanded[currentLevel];
     exp.has(name) ? exp.delete(name) : exp.add(name);
-    // Group expand/collapse only needs a DOM update; no selection change, no R draw
     renderPicker();
   });
-  // Hover over a list row → highlight the matching polygon, and vice versa
   groupsEl.addEventListener('mouseover', (e) => { const r = e.target.closest('.area-row'); if (r) hover(r.dataset.code, true); });
   groupsEl.addEventListener('mouseout',  (e) => { const r = e.target.closest('.area-row'); if (r) hover(r.dataset.code, false); });
+
   chipsEl.addEventListener('click', (e) => {
+    // Clicking the × on a "B = rest of England" chip unsets rest mode
+    if (e.target.closest('button[data-rest]')) {
+      buckets.B.rest = false;
+      syncBRestCheckbox();
+      setLegend(currentLevel);
+      onSelectionChanged();
+      return;
+    }
     const b = e.target.closest('button[data-code]'); if (!b) return;
-    sel().delete(b.dataset.code); onSelectionChanged();
+    if (compareMode) {
+      // Each chip carries its bucket so removing from chips always hits the right Set
+      const bkt = b.dataset.bucket || activeBucket;
+      buckets[bkt].codes.delete(b.dataset.code);
+    } else {
+      sel().delete(b.dataset.code);
+    }
+    onSelectionChanged();
   });
 }
 
-const sel = () => selections[currentLevel];
+// In single mode: the active selection. In compare mode: the active bucket's codes.
+const sel = () => compareMode ? buckets[activeBucket].codes : selections[currentLevel];
 
 // --- picker rendering ------------------------------------------------------
 function renderPicker() {
@@ -322,21 +467,65 @@ function renderPicker() {
   const q = searchEl.value.trim().toLowerCase();
   const s = sel();
 
-  // chips (cap displayed)
-  const selCodes = [...s];
-  const CAP = 14;
-  chipsEl.innerHTML = selCodes.slice(0, CAP).map((code) =>
-    `<span class="chip">${esc(labelOf.get(code) || code)}<button data-code="${code}" title="remove">×</button></span>`
-  ).join('') + (selCodes.length > CAP ? `<span class="chip more">+${selCodes.length - CAP} more</span>` : '');
-  selCountEl.textContent = selCodes.length ? `· ${selCodes.length} selected` : '· none selected';
+  // Update the list-panel heading to reflect mode / active bucket
+  if (listTitleEl) {
+    if (compareMode) {
+      const col = activeBucket === 'A' ? 'var(--accent)' : 'var(--warn)';
+      listTitleEl.innerHTML = `Bucket <span style="color:${col};font-weight:700">${activeBucket}</span>`;
+    } else {
+      listTitleEl.textContent = 'Areas';
+    }
+  }
 
-  // groups
+  // Chips — two separate bucket rows in compare mode, single row in single mode
+  if (compareMode) {
+    chipsEl.classList.add('chips--compare');
+    const CAP = 7;
+
+    const bucketRow = (bkt, tag) => {
+      const b      = buckets[bkt];
+      const bCache = cache[b.level];
+      let html = `<div class="bucket-chips"><span class="bucket-tag bucket-tag--${tag}">${bkt}</span>`;
+      if (bkt === 'B' && b.rest) {
+        html += `<span class="chip chip--b">Rest of England<button data-rest="true" title="clear">×</button></span>`;
+      } else {
+        const codes  = [...b.codes];
+        const lOf    = bCache?.labelOf;
+        const lvlTag = b.level !== buckets[bkt === 'A' ? 'B' : 'A'].level
+          ? `<span class="chip chip--muted">${esc(LEVELS[b.level].many)}</span>` : '';
+        if (!lOf || codes.length === 0) {
+          html += `<span class="chip chip--muted">none selected</span>`;
+        } else {
+          html += codes.slice(0, CAP).map((code) =>
+            `<span class="chip chip--${tag}">${esc(lOf.get(code) || code)}<button data-code="${code}" data-bucket="${bkt}" title="remove">×</button></span>`
+          ).join('');
+          if (codes.length > CAP) html += `<span class="chip more">+${codes.length - CAP} more</span>`;
+          html += lvlTag;
+        }
+      }
+      return html + '</div>';
+    };
+
+    chipsEl.innerHTML = bucketRow('A', 'a') + bucketRow('B', 'b');
+    const bDesc = buckets.B.rest ? 'rest' : String(buckets.B.codes.size);
+    selCountEl.textContent = `· A: ${buckets.A.codes.size}, B: ${bDesc}`;
+  } else {
+    chipsEl.classList.remove('chips--compare');
+    const selCodes = [...s];
+    const CAP = 14;
+    chipsEl.innerHTML = selCodes.slice(0, CAP).map((code) =>
+      `<span class="chip">${esc(labelOf.get(code) || code)}<button data-code="${code}" title="remove">×</button></span>`
+    ).join('') + (selCodes.length > CAP ? `<span class="chip more">+${selCodes.length - CAP} more</span>` : '');
+    selCountEl.textContent = selCodes.length ? `· ${selCodes.length} selected` : '· none selected';
+  }
+
+  // Groups list (always shows the active bucket's level in compare mode)
   let html = '';
   for (const g of groups) {
     const matched = q ? g.areas.filter((a) => a.label.toLowerCase().includes(q)) : g.areas;
     if (!matched.length) continue;
     const selN = g.areas.filter((a) => s.has(a.code)).length;
-    const open = q ? true : expanded[currentLevel].has(g.name); // expand on search or if opened
+    const open = q ? true : expanded[currentLevel].has(g.name);
     html += `<div class="group${open ? ' open' : ''}">
       <div class="group-head">
         <input type="checkbox" data-group="${esc(g.name)}" ${selN === g.areas.length ? 'checked' : ''} />
@@ -350,16 +539,15 @@ function renderPicker() {
   }
   groupsEl.innerHTML = html || '<div class="empty">No areas match your search.</div>';
 
-  // indeterminate state for partially-selected groups
   groupsEl.querySelectorAll('input[data-group]').forEach((cb) => {
     const g = groups.find((x) => x.name === cb.dataset.group);
     const n = g.areas.filter((a) => s.has(a.code)).length;
     cb.indeterminate = n > 0 && n < g.areas.length;
   });
 }
+
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-// CSS: open groups show their body
 const style = document.createElement('style');
 style.textContent = '.group-body{display:none}.group.open .group-body{display:block}.group.open .chev{transform:rotate(90deg);display:inline-block}';
 document.head.appendChild(style);
@@ -368,6 +556,7 @@ document.head.appendChild(style);
 let renderTimer = null, rendering = false, pending = false;
 function scheduleRender() { clearTimeout(renderTimer); renderTimer = setTimeout(render, 350); }
 
+// Human-readable title for the active selection in single mode.
 function titleArea() {
   const s = sel(); const { labelOf, areas } = cache[currentLevel]; const cfg = LEVELS[currentLevel];
   if (s.size === 0) return '—';
@@ -376,27 +565,48 @@ function titleArea() {
   return `${s.size} ${cfg.many}`;
 }
 
+// Human-readable title for a comparison bucket.
+function titleBucket(bkt) {
+  const b = buckets[bkt];
+  if (b.rest) return 'Rest of England';
+  const c = cache[b.level];
+  if (!c) return `Bucket ${bkt}`;
+  if (b.codes.size === 0) return `Bucket ${bkt} (empty)`;
+  if (b.codes.size === 1) return c.labelOf.get([...b.codes][0]) || `Bucket ${bkt}`;
+  if (b.level === 'region' && b.codes.size === c.areas.length) return 'England';
+  return `${b.codes.size} ${LEVELS[b.level].many}`;
+}
+
 async function render() {
   if (!shelter) return;
   if (rendering) { pending = true; return; }
-  const s = sel();
-  if (s.size === 0) {
+
+  // In compare mode the time chart renders for bucket A; area-vs-area chart is Phase 3.
+  const codes = compareMode ? [...buckets.A.codes] : [...sel()];
+  if (codes.length === 0) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    summaryEl.innerHTML = '<p class="hint">Select one or more areas to draw the pyramids.</p>';
+    summaryEl.innerHTML = compareMode
+      ? '<p class="hint">Select areas for Bucket A to draw the pyramids.</p>'
+      : '<p class="hint">Select one or more areas to draw the pyramids.</p>';
     return;
   }
   rendering = true;
   setStatus('Rendering in R…', 'busy');
   const yL = Number(yearLSel.value), yR = Number(yearRSel.value);
+  const title = compareMode ? titleBucket('A') : titleArea();
   try {
-    const cap = await shelter.captureR(rProgram([...s], yL, yR, titleArea()), {
+    const cap = await shelter.captureR(rProgram(codes, yL, yR, title), {
       captureGraphics: { width: 1000, height: 800 },
     });
     const res = await cap.result.toJs();
     const v = {};
     res.names.forEach((name, i) => { const x = res.values[i]; v[name] = x.values.length === 1 ? x.values[0] : x.values; });
     if (cap.images.length) drawImage(cap.images[0]);
-    renderSummary(v, titleArea(), yL, yR);
+    renderSummary(v, title, yL, yR);
+    if (compareMode) {
+      summaryEl.insertAdjacentHTML('beforeend',
+        `<p class="hint" style="margin-top:8px">Showing time comparison for Bucket A (<strong>${esc(titleBucket('B'))}</strong> selected as B but not yet used in chart — area-vs-area view coming soon).</p>`);
+    }
     setStatus('R is ready', 'ready');
   } catch (err) {
     console.error(err);
@@ -441,8 +651,6 @@ function rProgram(codes, yearL, yearR, areaTitle) {
                    col = male_col, border = NA, xaxt = "n", cex.names = 0.8)
       barplot(f, horiz = TRUE, add = TRUE, col = female_col, border = NA, xaxt = "n")
       if (!is.null(cm)) {
-        # draw the comparison-year outline with rect() so the dotted lty renders
-        # (barplot ignores lty for its bars, which is why it looked solid)
         hh <- 0.42
         rect(0, b - hh, -cm, b + hh, col = NA, border = "grey20", lty = 3, lwd = 1.6)
         rect(0, b - hh, cf,  b + hh, col = NA, border = "grey20", lty = 3, lwd = 1.6)

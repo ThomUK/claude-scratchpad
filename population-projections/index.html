@@ -57,15 +57,33 @@
           <label for="yearR">Right pyramid year</label>
           <select id="yearR"></select>
         </div>
+        <div class="field field--compare">
+          <label>&nbsp;</label>
+          <button type="button" class="btn btn--ghost" id="compare-toggle">Compare two locations</button>
+        </div>
       </div>
     </section>
 
     <div class="cols">
       <section class="panel list-panel" aria-labelledby="list-heading">
         <div class="list-head">
-          <h2 id="list-heading">Areas <span class="muted" id="sel-count"></span></h2>
+          <h2 id="list-heading"><span id="list-title">Areas</span> <span class="muted" id="sel-count"></span></h2>
           <button type="button" class="btn btn--ghost" id="clear-all">Clear</button>
         </div>
+
+        <!-- shown only in compare mode -->
+        <div id="compare-bar" hidden>
+          <div class="compare-row">
+            <div class="segmented" id="bucket-seg">
+              <button class="seg-btn is-active" data-bucket="A">Editing A</button>
+              <button class="seg-btn" data-bucket="B">Editing B</button>
+            </div>
+            <label class="b-rest-label">
+              <input type="checkbox" id="b-rest" /> B = rest of England
+            </label>
+          </div>
+        </div>
+
         <div class="picker">
           <div class="picker-bar">
             <input type="search" id="search" placeholder="Search areas…" autocomplete="off" />
