@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Population Pyramids — English geographies (2022-based)</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="styles.css?v=dev" />
 </head>
 <body>
@@ -48,32 +50,65 @@
           </div>
         </div>
         <div class="field">
-          <label for="yearL">Left pyramid year</label>
+          <label for="yearL" id="yearL-label">Left pyramid year</label>
           <select id="yearL"></select>
         </div>
-        <div class="field">
+        <div class="field" id="yearR-field">
           <label for="yearR">Right pyramid year</label>
           <select id="yearR"></select>
         </div>
-      </div>
-
-      <div class="field">
-        <label>Areas <span class="muted" id="sel-count"></span></label>
-        <div class="picker">
-          <div class="picker-bar">
-            <input type="search" id="search" placeholder="Search areas…" autocomplete="off" />
-            <button type="button" class="btn btn--ghost" id="clear-all">Clear</button>
+        <div class="field" id="normalise-field" hidden>
+          <label>Numbers shown as</label>
+          <div class="segmented" id="normalise" role="tablist">
+            <button class="seg-btn is-active" data-norm="percent" role="tab">Share (% of total)</button>
+            <button class="seg-btn" data-norm="absolute" role="tab">Absolute</button>
           </div>
-          <div class="chips" id="chips"></div>
-          <div class="groups" id="groups"></div>
+        </div>
+        <div class="field field--compare">
+          <label>&nbsp;</label>
+          <button type="button" class="btn btn--ghost" id="compare-toggle">Compare two locations</button>
         </div>
       </div>
     </section>
 
+    <div class="cols">
+      <section class="panel list-panel" aria-labelledby="list-heading">
+        <div class="list-head">
+          <h2 id="list-heading"><span id="list-title">Areas</span> <span class="muted" id="sel-count"></span></h2>
+          <button type="button" class="btn btn--ghost" id="clear-all">Clear</button>
+        </div>
+
+        <!-- shown only in compare mode -->
+        <div id="compare-bar" hidden>
+          <div class="compare-row">
+            <div class="segmented" id="bucket-seg">
+              <button class="seg-btn is-active" data-bucket="A">Editing A</button>
+              <button class="seg-btn" data-bucket="B">Editing B</button>
+            </div>
+            <label class="b-rest-label">
+              <input type="checkbox" id="b-rest" /> B = rest of England
+            </label>
+          </div>
+        </div>
+
+        <div class="picker">
+          <div class="picker-bar">
+            <input type="search" id="search" placeholder="Search areas…" autocomplete="off" />
+          </div>
+          <div class="chips" id="chips"></div>
+          <div class="groups" id="groups"></div>
+        </div>
+      </section>
+
+      <section class="panel map-panel">
+        <div id="map" aria-label="Map of English geographies"></div>
+      </section>
+    </div>
+
     <section class="panel">
       <div id="summary"><p class="hint">Loading projections&hellip;</p></div>
       <div class="chart-wrap">
-        <canvas id="chart" width="1000" height="800" aria-label="Two population pyramids and the change by age and sex between the selected years"></canvas>
+        <canvas id="chart" width="1000" height="800" aria-label="Population pyramid chart for the selected English geography"></canvas>
       </div>
     </section>
   </main>
@@ -92,6 +127,8 @@
     <p>Data in <code>data/</code>; R source in <code>app.js</code>.</p>
   </footer>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script type="module" src="app.js?v=dev"></script>
 </body>
 </html>
