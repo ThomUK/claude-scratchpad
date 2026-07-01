@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Waiting Lists — queueing, shape & simulation</title>
+  <link rel="stylesheet" href="styles.css?v=dev" />
+</head>
+<body>
+  <header>
+    <h1>Waiting Lists: Distribution, Shape &amp; Simulation</h1>
+    <p class="repo-link">
+      <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/waiting-list" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.76-3.65 3.95.29.25.54.74.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        View source on GitHub
+      </a>
+    </p>
+    <p class="subtitle">
+      A queueing-theory toy for waiting lists / backlogs (NHS RTT, MRI, endoscopy, letters,
+      complaints — any queue). Based on the method in Fong, House, Walton et&nbsp;al.,
+      <a href="https://doi.org/10.1101/2022.08.23.22279117" target="_blank" rel="noopener"><em>Understanding Waiting List Pressures</em></a>
+      and the <a href="https://nhs-r-community.github.io/NHSRwaitinglist/" target="_blank" rel="noopener">NHSRwaitinglist</a> package.
+      Runs in <strong>R, in your browser</strong> via
+      <a href="https://docs.r-wasm.org/webr/latest/" target="_blank" rel="noopener">webR</a>.
+    </p>
+    <p id="status" class="status status--loading" role="status">Booting R (downloading webR&hellip;)</p>
+  </header>
+
+  <main>
+    <!-- ============ Section A: exponential + targets ============ -->
+    <section class="panel">
+      <h2>1 · The exponential model &amp; targets</h2>
+      <p class="muted small">In the M/M/1 steady state, waiting time is <strong>exponential</strong>. To see a
+        proportion <em>p</em> within <em>y</em> weeks needs mean wait <code>W = −y / ln(1−p)</code>, and a
+        steady-state list of <code>λ·W</code> (Little's law).</p>
+      <div class="controls">
+        <div class="field"><label for="a-lam">Referrals λ (per week)</label><input type="number" id="a-lam" min="1" max="100000" step="1" value="100" /></div>
+        <div class="field">
+          <label>Mode</label>
+          <div class="segmented" id="a-mode">
+            <button class="seg-btn is-active" data-mode="target">Target → capacity</button>
+            <button class="seg-btn" data-mode="capacity">Capacity → performance</button>
+          </div>
+        </div>
+        <div class="field a-target"><label for="a-p">Target: seen % </label><input type="number" id="a-p" min="1" max="99.9" step="0.5" value="92" /></div>
+        <div class="field a-target"><label for="a-y">…within (weeks)</label><input type="number" id="a-y" min="1" max="260" step="1" value="18" /></div>
+        <div class="field a-capacity" hidden><label for="a-mu">Capacity μ (per week)</label><input type="number" id="a-mu" min="1" max="100000" step="0.5" value="101" /></div>
+      </div>
+      <div id="a-summary"></div>
+      <div class="chart-wrap"><canvas id="a-chart" width="960" height="420"></canvas></div>
+    </section>
+
+    <!-- ============ Section B: shape morph ============ -->
+    <section class="panel">
+      <h2>2 · Same list, different shape</h2>
+      <p class="muted small">Constraining long waiters <em>necessarily</em> reshapes the list. The exponential
+        (random order) has many short waits and a long tail; the extreme opposite is <strong>pure FIFO</strong>,
+        where the census is flat at λ until everyone is removed together. Same λ and same mean wait W throughout.</p>
+      <div class="controls">
+        <div class="field"><label for="b-family">Shape family</label>
+          <select id="b-family"><option value="weibull" selected>Weibull</option><option value="lognormal">Lognormal</option></select>
+        </div>
+        <div class="field grow"><label for="b-k">Long-waiter constraint: <output id="b-k-out">random / exponential</output></label>
+          <input type="range" id="b-k" min="0" max="1" step="0.02" value="0" />
+        </div>
+      </div>
+      <div id="b-summary"></div>
+      <div class="chart-wrap"><canvas id="b-chart" width="960" height="440"></canvas></div>
+    </section>
+
+    <!-- ============ Section C: simulator ============ -->
+    <section class="panel">
+      <h2>3 · Simulator</h2>
+      <p class="muted small">A weekly fluid simulation: referrals in, capacity out, under a chosen removal
+        discipline, starting from an initial list. Watch it grow / shrink / hold and read performance at key weeks.</p>
+      <div class="controls">
+        <div class="field"><label for="c-lam">Referrals λ /wk</label><input type="number" id="c-lam" min="0" max="100000" step="1" value="100" /></div>
+        <div class="field"><label for="c-mu">Capacity μ /wk</label><input type="number" id="c-mu" min="0" max="100000" step="1" value="100" /></div>
+        <div class="field">
+          <label>Removal discipline</label>
+          <div class="segmented" id="c-disc">
+            <button class="seg-btn is-active" data-disc="random">Random</button>
+            <button class="seg-btn" data-disc="fifo">FIFO</button>
+            <button class="seg-btn" data-disc="lifo">LIFO</button>
+          </div>
+        </div>
+        <div class="field"><label for="c-init">Initial list</label><input type="number" id="c-init" min="0" max="1000000" step="10" value="713" /></div>
+        <div class="field"><label for="c-initw">Initial mean wait (wks)</label><input type="number" id="c-initw" min="0.5" max="200" step="0.5" value="7" /></div>
+        <div class="field"><label for="c-weeks">Weeks to run</label><input type="number" id="c-weeks" min="4" max="520" step="1" value="104" /></div>
+      </div>
+      <div id="c-summary"></div>
+      <div class="chart-wrap"><canvas id="c-chart" width="960" height="620"></canvas></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Method: Fong, House, Walton et al. (2022), <em>Understanding Waiting List Pressures</em>
+       (medRxiv 2022.08.23.22279117); NHSRwaitinglist (nhs-r-community). Illustrative model — not a
+       clinical planning tool. R source in <code>app.js</code>.</p>
+  </footer>
+
+  <script type="module" src="app.js?v=dev"></script>
+</body>
+</html>
