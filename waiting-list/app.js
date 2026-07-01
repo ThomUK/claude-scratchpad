@@ -81,20 +81,25 @@ function rA(lam, p, y) {
     perf <- function(t) 1-exp(-t/W)
     wmax <- max(ceiling(y*1.6), 52, ceiling(W*4))
     w <- 0:(wmax-1)
-    bins <- lam*(exp(-w/W) - exp(-(w+1)/W))   # referrals per week whose wait is [w, w+1)
-    cols <- ifelse(w + 1 <= y, "#1f9bd6", "#cddbe6")
+    # Waiting-list census by weeks waited: number still on the list who have
+    # waited [w, w+1). Starts near lam (few removed in week 1) and decays;
+    # the area is the list size lam*W (Little's Law).
+    bins <- lam*W*(exp(-w/W) - exp(-(w+1)/W))
+    cols <- ifelse(w < y, "#1f9bd6", "#cddbe6")
     op <- par(mar=c(4.4,4.8,2.6,1), cex=1.12)
-    ymax <- max(bins)*1.12
-    plot(NA, xlim=c(0, wmax), ylim=c(0, ymax), xlab="Waiting time (weeks)",
-         ylab="Referrals (per week)", main="Waiting-time distribution of referrals (exponential)")
+    ymax <- max(bins, lam)*1.10
+    plot(NA, xlim=c(0, wmax), ylim=c(0, ymax), xlab="Weeks waited",
+         ylab="Referrals still waiting", main="Waiting list by weeks waited (exponential)")
     rect(w, 0, w+1, bins, col=cols, border="white", lwd=0.6)
+    abline(h=lam, col="grey70", lty=3)
     abline(v=y, col="#d63a30", lwd=2, lty=2)
     abline(v=W, col="#2e9e3f", lwd=2)
+    text(wmax, lam, sprintf("λ = %g ", lam), col="grey55", pos=2, cex=0.8)
     text(y, ymax*0.98, sprintf(" target %d wk", y), col="#d63a30", pos=4, cex=0.85)
     text(W, ymax*0.90, sprintf(" mean %.1f wk", W), col="#2e9e3f", pos=4, cex=0.85)
     legend("right", bty="n", fill=c("#1f9bd6","#cddbe6"), border="white",
-           legend=c(sprintf("within target (%.0f%% = %.0f/wk)", p*100, lam*p),
-                    sprintf("beyond target (%.0f/wk)", lam*(1-p))))
+           legend=c(sprintf("within target (%.0f%% of list)", p*100),
+                    sprintf("beyond target (%.0f%% of list)", (1-p)*100)))
     par(op)
     list(W=W, L=lam*W, mu=mu, rho=rho, pressure=2*W/y, p6=perf(6), p18=perf(18), p52=perf(52))
   `;
