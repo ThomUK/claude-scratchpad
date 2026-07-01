@@ -79,7 +79,9 @@ function rA(lam, p, y) {
     lam <- ${lam}; p <- ${p}; y <- ${y}
     W <- -y/log(1-p); mu <- lam + 1/W; rho <- lam/mu
     perf <- function(t) 1-exp(-t/W)
-    wmax <- max(ceiling(y*1.6), 52, ceiling(W*4))
+    # auto-scale the x-axis to the data: cover the target and the tail of the
+    # exponential (W*5.5 ≈ 99.6% of the area), with a small minimum.
+    wmax <- max(ceiling(y*1.15), ceiling(W*5.5), 6)
     w <- 0:(wmax-1)
     # Waiting-list census by weeks waited: number still on the list who have
     # waited [w, w+1). Starts near lam (few removed in week 1) and decays;
