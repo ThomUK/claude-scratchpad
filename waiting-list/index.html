@@ -35,16 +35,8 @@
         steady-state list of <code>λ·W</code> (Little's law).</p>
       <div class="controls">
         <div class="field"><label for="a-lam">Referrals λ (per week)</label><input type="number" id="a-lam" min="1" max="100000" step="1" value="100" /></div>
-        <div class="field">
-          <label>Mode</label>
-          <div class="segmented" id="a-mode">
-            <button class="seg-btn is-active" data-mode="target">Target → capacity</button>
-            <button class="seg-btn" data-mode="capacity">Capacity → performance</button>
-          </div>
-        </div>
-        <div class="field a-target"><label for="a-p">Target: seen % </label><input type="number" id="a-p" min="1" max="99.9" step="0.5" value="92" /></div>
-        <div class="field a-target"><label for="a-y">…within (weeks)</label><input type="number" id="a-y" min="1" max="260" step="1" value="18" /></div>
-        <div class="field a-capacity" hidden><label for="a-mu">Capacity μ (per week)</label><input type="number" id="a-mu" min="1" max="100000" step="0.5" value="101" /></div>
+        <div class="field"><label for="a-p">Target: seen %</label><input type="number" id="a-p" min="1" max="99.9" step="0.5" value="92" /></div>
+        <div class="field"><label for="a-y">…within (weeks)</label><input type="number" id="a-y" min="1" max="260" step="1" value="18" /></div>
       </div>
       <div id="a-summary"></div>
       <div class="chart-wrap"><canvas id="a-chart" width="960" height="420"></canvas></div>

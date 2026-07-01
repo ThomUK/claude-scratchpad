@@ -53,9 +53,8 @@ function targetW() { const p = num('a-p') / 100, y = num('a-y'); return -y / Mat
 function renderA() {
   schedule('A', async () => {
     setStatus('Computing…', 'busy');
-    const lam = num('a-lam'), p = num('a-p') / 100, y = num('a-y'), mu = num('a-mu');
-    const mode = document.querySelector('#a-mode .is-active').dataset.mode;
-    const { out, img } = await capture(rA(lam, mode, p, y, mu), 960, 420);
+    const lam = num('a-lam'), p = num('a-p') / 100, y = num('a-y');
+    const { out, img } = await capture(rA(lam, p, y), 960, 420);
     draw($('a-chart'), img);
     const W = out.W, unstable = !isFinite(W) || W <= 0;
     const cards = unstable
@@ -75,34 +74,29 @@ function renderA() {
   });
 }
 
-function rA(lam, mode, p, y, mu) {
+function rA(lam, p, y) {
   return `
     lam <- ${lam}; p <- ${p}; y <- ${y}
-    ${mode === 'target' ? 'W <- -y/log(1-p); mu <- lam + 1/W' : `mu <- ${mu}; W <- if (mu > lam) 1/(mu-lam) else Inf`}
-    rho <- lam/mu
-    perf <- function(t) if (is.finite(W)) 1-exp(-t/W) else 0
+    W <- -y/log(1-p); mu <- lam + 1/W; rho <- lam/mu
+    perf <- function(t) 1-exp(-t/W)
+    wmax <- max(ceiling(y*1.6), 52, ceiling(W*4))
+    w <- 0:(wmax-1)
+    bins <- lam*(exp(-w/W) - exp(-(w+1)/W))   # referrals per week whose wait is [w, w+1)
+    cols <- ifelse(w + 1 <= y, "#1f9bd6", "#cddbe6")
     op <- par(mar=c(4.4,4.8,2.6,1), cex=1.12)
-    if (is.finite(W) && W > 0) {
-      tmax <- max(y*1.6, 52, W*4)
-      tt <- seq(0, tmax, length.out=500); dens <- (1/W)*exp(-tt/W)
-      plot(tt, dens, type="n", xlab="Waiting time (weeks)", ylab="Density of patients treated",
-           main="Waiting-time distribution (exponential)")
-      u <- tt <= y
-      polygon(c(0, tt[u], y), c(0, dens[u], 0), col="#cfe8ff", border=NA)
-      lines(tt, dens, col="#1f9bd6", lwd=3)
-      abline(v=c(6,18,52), col="grey85", lty=3)
-      abline(v=y, col="#d63a30", lwd=2, lty=2)
-      abline(v=W, col="#2e9e3f", lwd=2)
-      legend("topright", bty="n", lwd=c(3,2,2), lty=c(1,2,1),
-             col=c("#1f9bd6","#d63a30","#2e9e3f"),
-             legend=c("exponential density", sprintf("target: %d wk", y), sprintf("mean wait: %.1f wk", W)))
-    } else {
-      plot.new(); text(0.5,0.55,"Unstable: load ≥ 1 (capacity ≤ demand).", col="#d63a30", cex=1.3)
-      text(0.5,0.4,"The waiting list grows without bound.", col="#d63a30")
-    }
+    ymax <- max(bins)*1.12
+    plot(NA, xlim=c(0, wmax), ylim=c(0, ymax), xlab="Waiting time (weeks)",
+         ylab="Referrals (per week)", main="Waiting-time distribution of referrals (exponential)")
+    rect(w, 0, w+1, bins, col=cols, border="white", lwd=0.6)
+    abline(v=y, col="#d63a30", lwd=2, lty=2)
+    abline(v=W, col="#2e9e3f", lwd=2)
+    text(y, ymax*0.98, sprintf(" target %d wk", y), col="#d63a30", pos=4, cex=0.85)
+    text(W, ymax*0.90, sprintf(" mean %.1f wk", W), col="#2e9e3f", pos=4, cex=0.85)
+    legend("right", bty="n", fill=c("#1f9bd6","#cddbe6"), border="white",
+           legend=c(sprintf("within target (%.0f%% = %.0f/wk)", p*100, lam*p),
+                    sprintf("beyond target (%.0f/wk)", lam*(1-p))))
     par(op)
-    list(W=W, L=if(is.finite(W)) lam*W else Inf, mu=mu, rho=rho,
-         pressure=if(is.finite(W)) 2*W/y else Inf, p6=perf(6), p18=perf(18), p52=perf(52))
+    list(W=W, L=lam*W, mu=mu, rho=rho, pressure=2*W/y, p6=perf(6), p18=perf(18), p52=perf(52))
   `;
 }
 
@@ -225,15 +219,7 @@ function rC(lam, mu, disc, weeks, init, initw) {
 // --- wiring ----------------------------------------------------------------
 function wire() {
   // Section A
-  ['a-lam', 'a-p', 'a-y', 'a-mu'].forEach((id) => $(id).addEventListener('input', () => { renderA(); if (id !== 'a-mu') renderB(); }));
-  $('a-mode').addEventListener('click', (e) => {
-    const b = e.target.closest('.seg-btn'); if (!b) return;
-    document.querySelectorAll('#a-mode .seg-btn').forEach((x) => x.classList.toggle('is-active', x === b));
-    const cap = b.dataset.mode === 'capacity';
-    document.querySelectorAll('.a-target').forEach((el) => (el.hidden = cap));
-    document.querySelectorAll('.a-capacity').forEach((el) => (el.hidden = !cap));
-    renderA();
-  });
+  ['a-lam', 'a-p', 'a-y'].forEach((id) => $(id).addEventListener('input', () => { renderA(); renderB(); }));
   // Section C
   ['c-lam', 'c-mu', 'c-init', 'c-initw', 'c-weeks'].forEach((id) => $(id).addEventListener('input', renderC));
   $('c-disc').addEventListener('click', (e) => {
