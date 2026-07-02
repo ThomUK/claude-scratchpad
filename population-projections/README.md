@@ -64,3 +64,26 @@ When reusing, retain the acknowledgement (shown in the app footer):
 
 - Office for National Statistics data licensed under the Open Government Licence v.3.0
 - Contains National Statistics data © Crown copyright and database right 2025
+
+## R chart code (webR)
+
+The chart logic lives in `R/`, sourced into the webR session at boot:
+
+| File | Purpose |
+| --- | --- |
+| `R/data.R` | dplyr/tidyr wrangling helpers (`band_vec`, `england_vec`, `band_share`) + shared constants |
+| `R/pyramids.R` | `pyramid_chart()` — time-mode two-pyramid + change chart |
+| `R/compare.R` | `compare_chart()` — compare-mode A vs B chart |
+| `R/local_dev.R` | Local harness: loads the CSVs into `D` and sources the above so you can develop in RStudio |
+
+Data wrangling uses **dplyr/tidyr**; plotting is base graphics. The app installs
+`dplyr` and `tidyr` in webR on first load (a one-off package download), then
+`source()`s the files. `app.js` only builds the one-line call into these functions.
+
+Develop the R locally without the browser:
+
+```r
+setwd("population-projections")
+source("R/local_dev.R")   # builds D from data/, sources R/, writes preview PNGs
+pyramid_chart(c("E12000004"), 2026, 2036, "East Midlands")
+```

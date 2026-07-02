@@ -19,8 +19,6 @@ const yearLLabelEl = $('yearL-label');
 
 const setStatus = (t, k) => { statusEl.textContent = t; statusEl.className = `status status--${k}`; };
 
-const AGES = ['0-4','5-9','10-14','15-19','20-24','25-29','30-34','35-39','40-44',
-  '45-49','50-54','55-59','60-64','65-69','70-74','75-79','80-84','85-89','90+'];
 
 const LEVELS = {
   region: { file: 'region', geo: 'regions.geojson', one: 'region',    many: 'regions'           },
@@ -222,6 +220,7 @@ let shelter;
   try {
     await webR.init();
     shelter = await new webR.Shelter();
+    await setupR();                       // install tidyverse + source R/ chart files
     await loadLevel(currentLevel);
     // Pre-load region at boot: tiny (306 KB) and needed for "rest of England" in later phases
     if (currentLevel !== 'region') await loadLevel('region');
@@ -238,6 +237,19 @@ let shelter;
 
 async function fetchText(name) {
   return (await fetch(`data/${name}?v=dev`, { cache: 'no-cache' })).text();
+}
+
+// Install the tidyverse packages used for wrangling and source the chart
+// functions from R/. Runs once at boot (first load downloads the packages).
+async function setupR() {
+  setStatus('Installing R packages (dplyr, tidyr)…', 'busy');
+  await webR.installPackages(['dplyr', 'tidyr']);
+  setStatus('Loading R code…', 'busy');
+  for (const f of ['data.R', 'pyramids.R', 'compare.R']) {
+    const src = await (await fetch(`R/${f}?v=dev`, { cache: 'no-cache' })).text();
+    await webR.FS.writeFile(`/tmp/${f}`, new TextEncoder().encode(src));
+    await webR.evalRVoid(`source("/tmp/${f}")`);
+  }
 }
 
 async function loadLevel(level) {
@@ -677,226 +689,19 @@ function drawImage(bitmap) {
   ctx.drawImage(bitmap, 0, 0);
 }
 
-// --- R program -------------------------------------------------------------
+// --- R calls ---------------------------------------------------------------
+// The chart logic lives in R/data.R, R/pyramids.R and R/compare.R (sourced at
+// boot by setupR). These builders just produce the one-line call into that R.
+const rVec = (codes) => `c(${codes.map((c) => JSON.stringify(c)).join(', ')})`;
+
 function rProgram(codes, yearL, yearR, areaTitle) {
-  return `
-    sel <- c(${codes.map((c) => JSON.stringify(c)).join(',')})
-    yL <- ${yearL}; yR <- ${yearR}; areaTitle <- ${JSON.stringify(areaTitle)}
-    ages <- c(${AGES.map((a) => JSON.stringify(a)).join(',')})
-    male_col <- "#3182bd"; female_col <- "#dd3497"
-
-    sub <- D[D$code %in% sel, ]
-    getv <- function(yr, sx) {
-      x <- sub[sub$year == yr & sub$sex == sx, ]
-      v <- tapply(x$population, factor(x$age_group, levels = ages), sum)
-      v <- as.numeric(v); v[is.na(v)] <- 0; v
-    }
-    mL <- getv(yL,"male"); fL <- getv(yL,"female")
-    mR <- getv(yR,"male"); fR <- getv(yR,"female")
-    xmax <- max(mL, fL, mR, fR, 1)
-    fmt <- function(z) if (xmax >= 1e6) paste0(round(z/1e6, 1), "m") else if (xmax >= 1e4) paste0(round(z/1e3), "k") else as.character(round(z))
-
-    pyramid <- function(m, f, title, show_ages, cm = NULL, cf = NULL) {
-      nm <- if (show_ages) ages else rep("", length(ages))
-      par(mar = c(3.6, if (show_ages) 4.2 else 1.2, 2.6, 1))
-      xl <- c(-xmax, xmax) * 1.2
-      b <- barplot(-m, horiz = TRUE, names.arg = nm, las = 1, xlim = xl,
-                   col = male_col, border = NA, xaxt = "n", cex.names = 0.8)
-      barplot(f, horiz = TRUE, add = TRUE, col = female_col, border = NA, xaxt = "n")
-      if (!is.null(cm)) {
-        hh <- 0.42
-        rect(0, b - hh, -cm, b + hh, col = NA, border = "grey20", lty = 3, lwd = 1.6)
-        rect(0, b - hh, cf,  b + hh, col = NA, border = "grey20", lty = 3, lwd = 1.6)
-      }
-      at <- pretty(c(0, xmax), 4); at <- at[at <= xmax]
-      axis(1, at = c(-rev(at), at), labels = fmt(abs(c(-rev(at), at))), cex.axis = 0.8)
-      title(main = title, line = 1); abline(v = 0, col = "white", lwd = 1.5)
-      tot <- sum(m) + sum(f)
-      if (tot > 0) {
-        text(-m, b, labels = sprintf("%.1f%%", 100 * m / tot), pos = 2, offset = 0.2, cex = 0.56, col = "grey25")
-        text( f, b, labels = sprintf("%.1f%%", 100 * f / tot), pos = 4, offset = 0.2, cex = 0.56, col = "grey25")
-      }
-    }
-
-    changeplot <- function(v, title, pct, show_ages) {
-      nm <- if (show_ages) ages else rep("", length(ages))
-      par(mar = c(3.6, if (show_ages) 4.2 else 1.2, 2.6, 1))
-      M <- rbind(female = v$f, male = v$m)
-      rng <- max(abs(M)) * 1.04; if (!is.finite(rng) || rng == 0) rng <- 1
-      barplot(M, beside = TRUE, horiz = TRUE, names.arg = nm, las = 1,
-              col = c(female_col, male_col), border = NA, xlim = c(-rng, rng), xaxt = "n", cex.names = 0.8)
-      at <- pretty(c(-rng, rng), 5)
-      axis(1, at = at, labels = if (pct) paste0(round(at), "%") else fmt(at), cex.axis = 0.8)
-      title(main = title, line = 1); abline(v = 0, col = "grey40")
-    }
-
-    layout(matrix(c(1,2,3,4), nrow = 2, byrow = TRUE), heights = c(1.18, 1))
-    pyramid(mL, fL, paste0(areaTitle, " — ", yL), TRUE)
-    pyramid(mR, fR, paste0(areaTitle, " — ", yR), FALSE, cm = mL, cf = fL)
-    legend("topright", bty = "n", inset = 0.01,
-           legend = c("male", "female", paste0(yL, " (outline)")),
-           pch = c(15, 15, NA), lty = c(NA, NA, 3), lwd = c(NA, NA, 1.2),
-           col = c(male_col, female_col, "grey25"), pt.cex = 1.2, cex = 0.82)
-
-    absM <- mR - mL; absF <- fR - fL
-    pctM <- ifelse(mL > 0, 100 * (mR - mL) / mL, 0); pctF <- ifelse(fL > 0, 100 * (fR - fL) / fL, 0)
-    changeplot(list(m = absM, f = absF), paste0("Absolute change, ", yL, " → ", yR), FALSE, TRUE)
-    changeplot(list(m = pctM, f = pctF), paste0("% change, ", yL, " → ", yR), TRUE, FALSE)
-
-    totL <- sum(mL, fL); totR <- sum(mR, fR)
-    old <- ages %in% c("65-69","70-74","75-79","80-84","85-89","90+")
-    young <- ages %in% c("0-4","5-9","10-14")
-    sh <- function(m,f,idx) 100 * sum((m+f)[idx]) / sum(m+f)
-    list(
-      totL = totL, totR = totR, growth = 100 * (totR/totL - 1),
-      old_L = sh(mL,fL,old), old_R = sh(mR,fR,old),
-      young_L = sh(mL,fL,young), young_R = sh(mR,fR,young),
-      biggest = ages[which.max(absM + absF)]
-    )
-  `;
+  return `pyramid_chart(${rVec(codes)}, ${yearL}, ${yearR}, ${JSON.stringify(areaTitle)})`;
 }
 
-// --- R program — area comparison -------------------------------------------
-// Draws pyramid A | pyramid B at a single year on a shared count axis,
-// with A − B divergence full-width below. Supports Share (% of own total) and Absolute modes.
-// Compare mode: pyramid A at yL (yR as dotted overlay) | pyramid B at yL (yR overlay),
-// then per-area % change charts side by side so trajectories can be compared directly.
 function rProgramArea(codesA, codesB, bRest, yearL, yearR, normalise, titleA, titleB) {
-  const jsonA = codesA.map((c) => JSON.stringify(c)).join(',');
-  // codesB is null when bRest=true; B is derived as England − A inside R
-  const jsonB = bRest ? '' : codesB.map((c) => JSON.stringify(c)).join(',');
-  return `
-    codesA <- c(${jsonA})
-    ${bRest ? '' : `codesB <- c(${jsonB})`}
-    bRest  <- ${bRest ? 'TRUE' : 'FALSE'}
-    yL <- ${yearL}; yR <- ${yearR}; normalise <- ${JSON.stringify(normalise)}
-    titleA <- ${JSON.stringify(titleA)}; titleB <- ${JSON.stringify(titleB)}
-    ages <- c(${AGES.map((a) => JSON.stringify(a)).join(',')})
-    male_col <- "#3182bd"; female_col <- "#dd3497"
-
-    # Age-banded population for a set of ONS codes, one sex, one year
-    vec <- function(codes, sx, yr) {
-      x <- D[D$code %in% codes & D$year == yr & D$sex == sx, ]
-      v <- tapply(x$population, factor(x$age_group, levels = ages), sum)
-      v <- as.numeric(v); v[is.na(v)] <- 0; v
-    }
-
-    mAL <- vec(codesA,"male",yL); fAL <- vec(codesA,"female",yL)
-    mAR <- vec(codesA,"male",yR); fAR <- vec(codesA,"female",yR)
-
-    if (bRest) {
-      # England = sum of the 9 E12 region rows (region always loaded at boot)
-      eng <- function(sx, yr) {
-        x <- D[substr(D$code,1,3)=="E12" & D$year==yr & D$sex==sx, ]
-        v <- tapply(x$population, factor(x$age_group, levels=ages), sum)
-        v <- as.numeric(v); v[is.na(v)] <- 0; v
-      }
-      mBL <- eng("male",yL)-mAL; fBL <- eng("female",yL)-fAL
-      mBR <- eng("male",yR)-mAR; fBR <- eng("female",yR)-fAR
-      # Clamp tiny floating-point negatives
-      mBL[mBL<0]<-0; fBL[fBL<0]<-0; mBR[mBR<0]<-0; fBR[fBR<0]<-0
-    } else {
-      mBL <- vec(codesB,"male",yL); fBL <- vec(codesB,"female",yL)
-      mBR <- vec(codesB,"male",yR); fBR <- vec(codesB,"female",yR)
-    }
-
-    totAL <- sum(mAL)+sum(fAL); totAR <- sum(mAR)+sum(fAR)
-    totBL <- sum(mBL)+sum(fBL); totBR <- sum(mBR)+sum(fBR)
-
-    # Normalise pyramids: Share makes shapes comparable across different-sized areas;
-    # Absolute keeps raw counts so size differences are visible.
-    # The change charts at the bottom always use % change so the two areas are comparable.
-    if (normalise == "percent") {
-      pmAL <- 100*mAL/totAL; pfAL <- 100*fAL/totAL
-      pmAR <- 100*mAR/totAR; pfAR <- 100*fAR/totAR
-      pmBL <- 100*mBL/totBL; pfBL <- 100*fBL/totBL
-      pmBR <- 100*mBR/totBR; pfBR <- 100*fBR/totBR
-    } else {
-      pmAL<-mAL; pfAL<-fAL; pmAR<-mAR; pfAR<-fAR
-      pmBL<-mBL; pfBL<-fBL; pmBR<-mBR; pfBR<-fBR
-    }
-    # One shared xmax across all four pyramid panels (yL and yR for A, yL and yR for B)
-    xmax <- max(pmAL,pfAL,pmAR,pfAR,pmBL,pfBL,pmBR,pfBR,1)
-
-    # In share mode xmax ≈ 5–10 so the k/m thresholds never trigger; the % branch
-    # ensures the axis reads "5.0%" instead of bare "5".
-    fmt <- function(z) {
-      if (normalise == "percent") paste0(round(z,1),"%")
-      else if (xmax >= 1e6) paste0(round(z/1e6,1),"m")
-      else if (xmax >= 1e4) paste0(round(z/1e3),"k")
-      else as.character(round(z))
-    }
-
-    # xmax is a closure variable — all four pyramid() calls read the same binding (shared scale).
-    pyramid <- function(m, f, title, show_ages, cm=NULL, cf=NULL) {
-      nm <- if (show_ages) ages else rep("", length(ages))
-      par(mar = c(3.6, if (show_ages) 4.2 else 1.2, 2.6, 1))
-      xl <- c(-xmax, xmax) * 1.2
-      b <- barplot(-m, horiz=TRUE, names.arg=nm, las=1, xlim=xl,
-                   col=male_col, border=NA, xaxt="n", cex.names=0.8)
-      barplot(f, horiz=TRUE, add=TRUE, col=female_col, border=NA, xaxt="n")
-      if (!is.null(cm)) {
-        hh <- 0.42
-        rect(0, b-hh, -cm, b+hh, col=NA, border="grey20", lty=3, lwd=1.6)
-        rect(0, b-hh,  cf, b+hh, col=NA, border="grey20", lty=3, lwd=1.6)
-      }
-      at <- pretty(c(0,xmax),4); at <- at[at<=xmax]
-      axis(1, at=c(-rev(at),at), labels=fmt(abs(c(-rev(at),at))), cex.axis=0.8)
-      title(main=title, line=1); abline(v=0, col="white", lwd=1.5)
-      # Per-bar labels always show share %: 100*m/tot = m/tot_raw in absolute mode,
-      # and 100*pmAL/100 = pmAL in share mode. No double-percenting in either path.
-      tot <- sum(m)+sum(f)
-      if (tot > 0) {
-        text(-m, b, labels=sprintf("%.1f%%",100*m/tot), pos=2, offset=0.2, cex=0.56, col="grey25")
-        text( f, b, labels=sprintf("%.1f%%",100*f/tot), pos=4, offset=0.2, cex=0.56, col="grey25")
-      }
-    }
-
-    # Change chart: always % change so both areas are directly comparable regardless of size.
-    changeplot <- function(v, title, show_ages) {
-      nm <- if (show_ages) ages else rep("", length(ages))
-      par(mar = c(3.6, if (show_ages) 4.2 else 1.2, 2.6, 1))
-      M <- rbind(female=v$f, male=v$m)
-      rng <- max(abs(M))*1.04; if (!is.finite(rng)||rng==0) rng <- 1
-      barplot(M, beside=TRUE, horiz=TRUE, names.arg=nm, las=1,
-              col=c(female_col,male_col), border=NA, xlim=c(-rng,rng), xaxt="n", cex.names=0.8)
-      at <- pretty(c(-rng,rng), 5)
-      # sprintf avoids fractional ticks like -0.5 and 0.5 both rounding to "0%"
-      axis(1, at=at, labels=sprintf("%.1f%%", at), cex.axis=0.8)
-      title(main=title, line=1); abline(v=0, col="grey40")
-    }
-
-    # % change per age band within each area — relative so a 1M and 56M area are comparable
-    pctMA <- ifelse(mAL>0, 100*(mAR-mAL)/mAL, 0)
-    pctFA <- ifelse(fAL>0, 100*(fAR-fAL)/fAL, 0)
-    pctMB <- ifelse(mBL>0, 100*(mBR-mBL)/mBL, 0)
-    pctFB <- ifelse(fBL>0, 100*(fBR-fBL)/fBL, 0)
-
-    # 2×2 layout: A pyramid | B pyramid on top; A % change | B % change below
-    layout(matrix(c(1,2,3,4), nrow=2, byrow=TRUE), heights=c(1.18,1))
-
-    pyramid(pmAL, pfAL, paste0(titleA," — ",yL), TRUE, cm=pmAR, cf=pfAR)
-    legend("topright", bty="n", inset=0.01,
-           legend=c("male","female",paste0(yR," (outline)")),
-           pch=c(15,15,NA), lty=c(NA,NA,3), lwd=c(NA,NA,1.2),
-           col=c(male_col,female_col,"grey20"), pt.cex=1.2, cex=0.82)
-    pyramid(pmBL, pfBL, paste0(titleB," — ",yL), FALSE, cm=pmBR, cf=pfBR)
-
-    changeplot(list(m=pctMA, f=pctFA), paste0(titleA,": % change ",yL,"→",yR), TRUE)
-    changeplot(list(m=pctMB, f=pctFB), paste0(titleB,": % change ",yL,"→",yR), FALSE)
-
-    sh <- function(m,f,idx) 100*sum((m+f)[idx])/sum(m+f)
-    old   <- ages %in% c("65-69","70-74","75-79","80-84","85-89","90+")
-    young <- ages %in% c("0-4","5-9","10-14")
-    list(
-      totAL=totAL, totAR=totAR, growthA=100*(totAR/totAL-1),
-      totBL=totBL, totBR=totBR, growthB=100*(totBR/totBL-1),
-      old_AL=sh(mAL,fAL,old), old_AR=sh(mAR,fAR,old),
-      old_BL=sh(mBL,fBL,old), old_BR=sh(mBR,fBR,old),
-      young_AL=sh(mAL,fAL,young), young_AR=sh(mAR,fAR,young),
-      young_BL=sh(mBL,fBL,young), young_BR=sh(mBR,fBR,young)
-    )
-  `;
+  const codesBArg = bRest ? 'NULL' : rVec(codesB);
+  return `compare_chart(${rVec(codesA)}, ${codesBArg}, ${bRest ? 'TRUE' : 'FALSE'}, ` +
+    `${yearL}, ${yearR}, ${JSON.stringify(normalise)}, ${JSON.stringify(titleA)}, ${JSON.stringify(titleB)})`;
 }
 
 function renderSummary(v, area, yL, yR) {
