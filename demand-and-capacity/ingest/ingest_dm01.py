@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""Ingest NHSE DM01 'Monthly Diagnostics Web File Provider' workbooks and build
+data/dm01.json for the diagnostics module.
+
+Usage:
+    python3 ingest/ingest_dm01.py <latest.xls> [--prior <older.xls>]... [--provider RX1]
+
+Per provider x diagnostic test the workbook gives the waiting list by weekly
+band (6-week standard), plus the month's activity split into planned,
+unscheduled and waiting-list tests. Monthly demand on the waiting list is
+estimated as: waiting-list tests + ΔWL/12 (year-on-year list change).
+With two priors, demand growth is calibrated from the EARLIEST adjacent pair
+(pre-EPR; same reasoning as the RTT ingest).
+"""
+import json
+import os
+import sys
+import xlrd
+
+WKS_PER_MONTH = 52 / 12
+
+
+def read_dm01(path, provider):
+    b = xlrd.open_workbook(path)
+    s = b.sheet_by_name('Provider by Test')
+    hdr = [str(s.cell_value(13, c)).strip() for c in range(s.ncols)]
+    col = {h: c for c, h in enumerate(hdr) if h}
+    period = str(s.cell_value(4, 2)).strip()
+    out = {}
+    for r in range(14, s.nrows):
+        if str(s.cell_value(r, 3)).strip() != provider:
+            continue
+        name = str(s.cell_value(r, col['Diagnostic Test Name'])).strip()
+        if name == 'Total':
+            continue
+        g = lambda h: float(s.cell_value(r, col[h]) or 0)
+        out[name] = {
+            "id": int(g('Diagnostic ID')),
+            "list": g('Total Waiting List'),
+            "over6": g('Number waiting 6+ Weeks'),
+            "over13": g('Number waiting 13+ Weeks'),
+            "wlTestsMo": g('Waiting list tests / procedures (excluding planned)'),
+            "plannedMo": g('Planned tests / procedures'),
+            "unschedMo": g('Unscheduled tests / procedures'),
+        }
+    return out, period
+
+
+def main():
+    src = sys.argv[1]
+    provider = sys.argv[sys.argv.index("--provider") + 1] if "--provider" in sys.argv else "RX1"
+    prior_srcs = [sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == "--prior"]
+
+    cur, period = read_dm01(src, provider)
+    priors = sorted((read_dm01(p, provider) for p in prior_srcs), key=lambda t: t[1])
+
+    # pair diagnostics (demand = wl tests + ΔWL/12, per modality and total)
+    chain = [p[0] for p in priors] + [cur]
+    labels = [p[1] for p in priors] + [period]
+    growth, calNote = None, ""
+    if len(chain) >= 2:
+        def tot_demand(older, newer):
+            d = 0
+            for k, v in newer.items():
+                o = older.get(k)
+                if o: d += v["wlTestsMo"] + (v["list"] - o["list"]) / 12
+            return d
+        pairs = []
+        for i in range(len(chain) - 1):
+            d1 = sum(v["wlTestsMo"] for v in chain[i].values())
+            d2 = tot_demand(chain[i], chain[i + 1])
+            g = round(100 * (d2 / d1 - 1), 1) if d1 else 0
+            pairs.append((labels[i], labels[i + 1], g))
+            print(f"  pair {labels[i]} -> {labels[i+1]}: waiting-list demand growth ≈ {g:+.1f}%/yr")
+        growth = pairs[0][2]
+        calNote = f"growth from earliest pair ({pairs[0][0]} vs {pairs[0][1]})"
+
+    prev = chain[-2] if len(chain) >= 2 else None
+    modalities = []
+    for name, v in sorted(cur.items(), key=lambda kv: -kv[1]["list"]):
+        dWL = (v["list"] - prev[name]["list"]) / 12 if prev and name in prev else 0
+        demandMo = v["wlTestsMo"] + dWL
+        within6 = v["list"] - v["over6"]
+        modalities.append({
+            "id": v["id"], "name": name,
+            "list": int(v["list"]),
+            "pct6": round(100 * within6 / v["list"], 1) if v["list"] else 100,
+            "demandWk": round(demandMo / WKS_PER_MONTH, 1),
+            "testsWk": round(v["wlTestsMo"] / WKS_PER_MONTH, 1),
+            "plannedMo": int(v["plannedMo"]), "unschedMo": int(v["unschedMo"]),
+            "over13": int(v["over13"]),
+            "sourceNote": f"DM01 provider file ({period}); demand = waiting-list tests + ΔWL/12 vs prior year",
+        })
+
+    out = {
+        "_provenance": {
+            "provider": provider, "period": period,
+            "sources": labels,
+            "dataQuality": ("Seeded from published DM01 provider files. Demand estimated as "
+                            "waiting-list tests + year-on-year ΔWL/12; April activity is "
+                            f"bank-holiday depressed. {calNote}. Growth applied at whole-"
+                            "diagnostics level (modality recoding caution as per RTT)."),
+        },
+        "standard": {"windowWeeks": 6, "interimPct": 95, "constitutionalPct": 99,
+                     "milestones": [{"ym": "2027-04", "pct": 95}, {"ym": "2029-04", "pct": 99}],
+                     "note": "milestones are a modelling assumption aligned to the RTT trajectory: 95% under 6 weeks by Apr-27, 99% (constitutional <1% over) by Apr-29"},
+        "levers": {"demandGrowthPctYr": growth if growth is not None else 0},
+        "modalities": modalities,
+    }
+    path = os.path.join(os.path.dirname(__file__), "..", "data", "dm01.json")
+    json.dump(out, open(path, "w"), indent=2)
+    totL = sum(m["list"] for m in modalities)
+    w = sum(m["list"] * m["pct6"] / 100 for m in modalities)
+    print(f"{provider} {period}: DM01 list {totL:,} | {100*w/totL:.1f}% <6wk | "
+          f"demand {sum(m['demandWk'] for m in modalities):,.0f}/wk | growth {growth}%/yr | "
+          f"{len(modalities)} modalities")
+    print(f"wrote {os.path.normpath(path)}")
+
+
+if __name__ == "__main__":
+    main()

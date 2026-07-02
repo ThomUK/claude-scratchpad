@@ -187,3 +187,60 @@ export function runScenario(baseline, opts = {}) {
   };
   return { cal, milestones, levers, perTfc, trust };
 }
+
+// --- diagnostics (DM01) -------------------------------------------------------
+// Same queueing core on a 6-week window: monthly required tests = demand +
+// phased clearance of the excess list down to the shape-calibrated sustainable
+// size for the glide-path target. Units are tests/month throughout.
+export function runDiagnostic(mod, levers, cal, milestones, windowWeeks = 6) {
+  const n = cal.length;
+  const growthPctYr = (mod.demandGrowthPctYr ?? levers.demandGrowthPctYr ?? 0)
+    + (levers.demandGrowthAdjPctYr ?? 0);
+  const growth = Math.pow(1 + growthPctYr / 100, 1 / 12);
+  const glide = glidePath(cal, mod.pct6, milestones);
+  const msIdx = milestones.map((m) => ymDiff(cal[0], m.ym)).filter((i) => i > 0);
+  const k = shapeFactor(mod.list, mod.pct6 / 100, mod.demandWk, windowWeeks);
+
+  const s = {
+    ym: cal, list: new Array(n), targetList: new Array(n), glidePct: glide,
+    impliedPct: new Array(n), demandMo: new Array(n),
+    requiredTestsMo: new Array(n), currentTestsMo: new Array(n),
+  };
+  let L = mod.list, dWk = mod.demandWk;
+  for (let i = 0; i < n; i++) {
+    const demandMo = dWk * WKS_PER_MONTH;
+    const nextMs = msIdx.find((m) => m > i) ?? (n - 1);
+    const monthsLeft = Math.max(1, nextMs - i);
+    const pAtMs = glide[Math.min(nextMs, n - 1)] / 100;
+    const LtargetMs = k * targetListSize(dWk * Math.pow(growth, monthsLeft), pAtMs, windowWeeks);
+    const required = demandMo + Math.max(0, L - LtargetMs) / monthsLeft;
+    s.list[i] = L;
+    s.targetList[i] = k * targetListSize(dWk, glide[i] / 100, windowWeeks);
+    s.impliedPct[i] = 100 * impliedPerformance(L, k * dWk, windowWeeks);
+    s.demandMo[i] = demandMo;
+    s.requiredTestsMo[i] = required;
+    s.currentTestsMo[i] = mod.testsWk * WKS_PER_MONTH;
+    L = Math.max(0, L + demandMo - required);
+    dWk *= growth;
+  }
+  return s;
+}
+
+export function runDiagnostics(dm01, opts = {}) {
+  const cal = calendar(opts.startYM || '2026-07', opts.endYM || '2030-03');
+  const milestones = opts.milestones || dm01.standard.milestones;
+  const levers = { ...dm01.levers, ...(opts.levers || {}) };
+  const wk = dm01.standard.windowWeeks || 6;
+  const perMod = dm01.modalities.map((m) => ({ mod: m, series: runDiagnostic(m, levers, cal, milestones, wk) }));
+  const sum = (key) => cal.map((_, i) => perMod.reduce((a, r) => a + r.series[key][i], 0));
+  const total = {
+    ym: cal, list: sum('list'), targetList: sum('targetList'),
+    demandMo: sum('demandMo'), requiredTestsMo: sum('requiredTestsMo'), currentTestsMo: sum('currentTestsMo'),
+    impliedPct: cal.map((_, i) => {
+      const within = perMod.reduce((a, r) => a + r.series.list[i] * r.series.impliedPct[i] / 100, 0);
+      const tot = perMod.reduce((a, r) => a + r.series.list[i], 0);
+      return tot > 0 ? 100 * within / tot : 100;
+    }),
+  };
+  return { cal, milestones, levers, perMod, total };
+}

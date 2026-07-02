@@ -1,0 +1,189 @@
+{
+  "_provenance": {
+    "provider": "RX1",
+    "period": "April 2026",
+    "sources": [
+      "April 2024",
+      "April 2025",
+      "April 2026"
+    ],
+    "dataQuality": "Seeded from published DM01 provider files. Demand estimated as waiting-list tests + year-on-year \u0394WL/12; April activity is bank-holiday depressed. growth from earliest pair (April 2024 vs April 2025). Growth applied at whole-diagnostics level (modality recoding caution as per RTT)."
+  },
+  "standard": {
+    "windowWeeks": 6,
+    "interimPct": 95,
+    "constitutionalPct": 99,
+    "milestones": [
+      {
+        "ym": "2027-04",
+        "pct": 95
+      },
+      {
+        "ym": "2029-04",
+        "pct": 99
+      }
+    ],
+    "note": "milestones are a modelling assumption aligned to the RTT trajectory: 95% under 6 weeks by Apr-27, 99% (constitutional <1% over) by Apr-29"
+  },
+  "levers": {
+    "demandGrowthPctYr": 12.6
+  },
+  "modalities": [
+    {
+      "id": 1,
+      "name": "Magnetic Resonance Imaging",
+      "list": 7346,
+      "pct6": 51.2,
+      "demandWk": 1239.1,
+      "testsWk": 1178.5,
+      "plannedMo": 874,
+      "unschedMo": 19,
+      "over13": 799,
+      "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year"
+    },
+    {
+      "id": 3,
+      "name": "Non-obstetric Ultrasound",
+      "list": 5667,
+      "pct6": 55.2,
+      "demandWk": 760.6,
+      "testsWk": 698.8,
+      "plannedMo": 512,
+      "unschedMo": 1341,
+      "over13": 246,
+      "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year"
+    },
+    {
+      "id": 2,
+      "name": "Computed Tomography",
+      "list": 4210,
+      "pct6": 55.6,
+      "demandWk": 439.8,
+      "testsWk": 413.8,
+      "plannedMo": 1210,
+      "unschedMo": 7197,
+      "over13": 610,
+      "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year"
+    },
+    {
+      "id": 7,
+      "name": "Cardiology - Echocardiography",
+      "list": 2889,
+      "pct6": 62.2,
+      "demandWk": 193.7,
+      "testsWk": 181.6,
+      "plannedMo": 282,
+      "unschedMo": 572,
+      "over13": 3,
+      "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year"
+    },
+    {
+      "id": 15,
+      "name": "Gastroscopy",
+      "list": 1364,
+      "pct6": 53.2,
+      "demandWk": 186.1,
+      "testsWk": 184.4,
+      "plannedMo": 74,
+      "unschedMo": 0,
+      "over13": 231,
+      "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year"
+    },
+    {
+      "id": 12,
+      "name": "Colonoscopy",
+      "list": 830,
+      "pct6": 59.9,
+      "demandWk": 118.2,
+      "testsWk": 115.8,
+      "plannedMo": 54,
+      "unschedMo": 0,
+      "over13": 84,
+      "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year"
+    },
+    {
+      "id": 6,
+      "name": "Audiology - Audiology Assessments",
+      "list": 829,
+      "pct6": 80.1,
+      "demandWk": 147.3,
+      "testsWk": 158.3,
+      "plannedMo": 247,
+      "unschedMo": 0,
+      "over13": 9,
+      "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year"
+    },
+    {
+      "id": 5,
+      "name": "DEXA Scan",
+      "list": 697,
+      "pct6": 82.8,
+      "demandWk": 114.0,
+      "testsWk": 121.8,
+      "plannedMo": 631,
+      "unschedMo": 0,
+      "over13": 0,
+      "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year"
+    },
+    {
+      "id": 10,
+      "name": "Respiratory physiology - Sleep Studies",
+      "list": 367,
+      "pct6": 87.7,
+      "demandWk": 56.3,
+      "testsWk": 57.2,
+      "plannedMo": 12,
+      "unschedMo": 0,
+      "over13": 11,
+      "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year"
+    },
+    {
+      "id": 13,
+      "name": "Flexi Sigmoidoscopy",
+      "list": 339,
+      "pct6": 49.3,
+      "demandWk": 42.4,
+      "testsWk": 42.7,
+      "plannedMo": 15,
+      "unschedMo": 0,
+      "over13": 36,
+      "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year"
+    },
+    {
+      "id": 9,
+      "name": "Neurophysiology - Peripheral Neurophysiology",
+      "list": 317,
+      "pct6": 65.6,
+      "demandWk": 48.1,
+      "testsWk": 47.1,
+      "plannedMo": 2,
+      "unschedMo": 12,
+      "over13": 28,
+      "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year"
+    },
+    {
+      "id": 14,
+      "name": "Cystoscopy",
+      "list": 197,
+      "pct6": 84.8,
+      "demandWk": 10.5,
+      "testsWk": 10.2,
+      "plannedMo": 112,
+      "unschedMo": 0,
+      "over13": 6,
+      "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year"
+    },
+    {
+      "id": 11,
+      "name": "Urodynamics - Pressures & Flows",
+      "list": 13,
+      "pct6": 61.5,
+      "demandWk": 0.8,
+      "testsWk": 1.8,
+      "plannedMo": 142,
+      "unschedMo": 0,
+      "over13": 3,
+      "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year"
+    }
+  ]
+}

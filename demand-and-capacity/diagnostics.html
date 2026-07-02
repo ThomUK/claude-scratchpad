@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagnostics (DM01) — Demand &amp; Capacity, NUH (RX1)</title>
+  <link rel="stylesheet" href="styles.css?v=dev" />
+</head>
+<body>
+  <header>
+    <h1>Diagnostics (DM01) — NUH (RX1)</h1>
+    <nav class="crumbs"><a href="./">← Elective (RTT) spine</a></nav>
+    <p class="subtitle">
+      <strong>Phase 2:</strong> modality-level diagnostic waiting lists against the
+      <strong>6-week DM01 standard</strong> (interim ambition 95% under 6 weeks; constitutional
+      &lt;1% over). Same queueing method as the elective spine, on a 6-week window: required
+      tests per month = demand + phased clearance to the sustainable list size, with census-shape
+      calibration per modality.
+    </p>
+    <p class="data-note">Seeded from the published <strong>DM01 provider files (April 2026 position;
+      April 2024/2025 for demand-growth calibration — pre-EPR pair used)</strong>. Demand is estimated
+      as waiting-list tests + year-on-year list change; April activity is bank-holiday depressed.
+      Milestones (95% by Apr-27, 99% by Apr-29) are a modelling assumption aligned to the RTT trajectory.</p>
+    <p id="status" class="status status--loading" role="status">Loading model…</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Diagnostics position &amp; trajectory</h2>
+      <div id="cards" class="cards"></div>
+      <div class="chart-block">
+        <h3>DM01 performance — required glide path <span class="muted small">(implied % waiting &lt;6 weeks, if required capacity is delivered)</span></h3>
+        <canvas id="chart-perf" width="1040" height="360"></canvas>
+      </div>
+      <div class="two-col">
+        <div class="chart-block">
+          <h3>Diagnostic waiting list <span class="muted small">(required path vs sustainable target)</span></h3>
+          <canvas id="chart-list" width="520" height="330"></canvas>
+        </div>
+        <div class="chart-block">
+          <h3>Tests per month <span class="muted small">(required vs current waiting-list activity)</span></h3>
+          <canvas id="chart-tests" width="520" height="330"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Levers</h2>
+      <div id="levers" class="levers"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Modalities</h2>
+      <div class="table-wrap">
+        <table id="mod-table">
+          <thead>
+            <tr>
+              <th>Modality</th>
+              <th class="num">List</th><th class="num">%&lt;6wk</th><th class="num">13+ wk</th>
+              <th class="num">Demand /wk</th><th class="num">WL tests /mo (now)</th>
+              <th class="num">Required /mo (peak)</th><th class="num">Uplift</th>
+              <th class="num">Planned /mo</th><th class="num">Unscheduled /mo</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="chart-block">
+        <h3 id="mod-chart-title">Modality trajectory</h3>
+        <canvas id="chart-mod" width="1040" height="330"></canvas>
+      </div>
+      <p class="muted small">The elective spine's referral-driven diagnostics demand (phase 1) and this
+        module currently run side by side; pathway-level linkage (RTT referrals → modality demand) is a
+        phase 2.1 refinement.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Method: Fong et al. (2022) / <a href="https://nhs-r-community.github.io/NHSRwaitinglist/" target="_blank" rel="noopener">NHSRwaitinglist</a>
+      on the DM01 6-week window. Source: NHSE Monthly Diagnostics (DM01) provider files in <code>source/</code>;
+      ingest in <code>ingest/ingest_dm01.py</code>. Illustrative planning model — not operational advice.</p>
+  </footer>
+
+  <script type="module" src="js/diag.js?v=dev"></script>
+</body>
+</html>

@@ -74,15 +74,27 @@ To re-seed with a newer month:
 
 ```sh
 python3 ingest/ingest_rtt.py source/<latest>.zip --prior source/<yr-1>.zip --prior source/<yr-2>.zip --provider RX1
+python3 ingest/ingest_dm01.py source/<latest-dm01>.xls --prior source/<yr-1>.xls --prior source/<yr-2>.xls --provider RX1
 node tests/engine.test.mjs
 ```
+
+### Diagnostics (DM01) seeding
+
+`ingest/ingest_dm01.py` reads the NHSE Monthly Diagnostics provider workbooks
+('Provider by Test' sheet): per-modality waiting list and 6-week bands, plus
+planned / unscheduled / waiting-list activity. Demand ≈ waiting-list tests +
+year-on-year ΔWL/12. April 2026 position: **25,065 waiting, 57.3% under
+6 weeks** (standard 95/99%) — MRI, CT, NOUS and echo carry the bulk. Demand
+growth **+12.6%/yr** from the pre-EPR pair (the EPR year shows −13.2%,
+recoding/counting-contaminated as with RTT). The 95%-by-Apr-27 / 99%-by-Apr-29
+milestones are a documented modelling assumption aligned to the RTT trajectory.
 
 ## Roadmap
 
 | Phase | Scope |
 | --- | --- |
 | **1 — Elective spine (this release)** | RTT waiting list → clock stops → OP / theatres / beds / diagnostics per TFC, trust rollup, levers, scenarios |
-| 2 — Diagnostics | DM01 modality-level (MRI, CT, NOUS, endoscopy…) queues vs the 6-week standard, demand fed by the elective spine |
+| **2 — Diagnostics (this release)** | DM01 modality-level queues vs the 6-week standard — `diagnostics.html`, seeded from the published DM01 provider files (Apr-24/25/26), same queueing core on a 6-week window |
 | 3 — Cancer | FDS / 31-day / 62-day capacity by tumour site |
 | 4 — UEC | ED four-hour + handover; bed interaction with the elective model |
 | 5 — Workforce | Medical & nursing WTE as the cross-cutting constraint |

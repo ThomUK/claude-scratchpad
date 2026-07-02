@@ -1,6 +1,8 @@
 // Engine validation — run with: node tests/engine.test.mjs
 import { readFileSync } from 'node:fs';
-import { meanWaitFor, targetListSize, impliedPerformance, glidePath, calendar, runScenario, ymDiff, shapeFactor } from '../js/engine.js';
+import { meanWaitFor, targetListSize, impliedPerformance, glidePath, calendar, runScenario, ymDiff, shapeFactor, runDiagnostics } from '../js/engine.js';
+
+const dm01 = JSON.parse(readFileSync(new URL('../data/dm01.json', import.meta.url)));
 
 const baseline = JSON.parse(readFileSync(new URL('../data/baseline.json', import.meta.url)));
 let fails = 0;
@@ -64,6 +66,20 @@ ok(res.trust.opAttendancesMo[0] > req0, 'OP attendances > clock stops (follow-up
 ok(res.trust.opSlotsMo[0] > res.trust.opAttendancesMo[0], 'slots > attendances (DNA + utilisation uplift)');
 ok(res.trust.theatreSessionsMo[0] > 0 && res.trust.theatreSessionsMo[0] < req0, 'theatre sessions plausible');
 ok(res.trust.bedsRequired[0] > 0 && res.trust.bedsRequired[0] < 1663, `elective beds required ${res.trust.bedsRequired[0].toFixed(0)} < total trust beds`);
+
+console.log('— diagnostics (DM01) module —');
+{
+  const d = runDiagnostics(dm01, { startYM: '2026-07' });
+  const j0 = 0, j27 = ymDiff('2026-07', '2027-04'), j29 = ymDiff('2026-07', '2029-04');
+  ok(close(d.total.list[j0], 25065, 1), `opening DM01 list = ${Math.round(d.total.list[j0]).toLocaleString()} (published Apr-26)`);
+  ok(close(d.total.impliedPct[j0], 57.3, 0.6), `opening implied <6wk ${d.total.impliedPct[j0].toFixed(1)}% ≈ published 57.3%`);
+  ok(d.total.impliedPct[j27] >= 94.5, `Apr-27 implied ${d.total.impliedPct[j27].toFixed(1)}% ≥ 95% (tol)`);
+  ok(d.total.impliedPct[j29] >= 98.5, `Apr-29 implied ${d.total.impliedPct[j29].toFixed(1)}% ≥ 99% (tol)`);
+  ok(close(meanWaitFor(0.95, 6), 2.0, 0.01), `meanWaitFor(0.95, 6wk) = ${meanWaitFor(0.95, 6).toFixed(2)} wk`);
+  const m0 = d.perMod[0].series;
+  ok(close(m0.list[5], m0.list[4] + m0.demandMo[4] - m0.requiredTestsMo[4], 0.5), 'DM01 list conservation holds');
+  console.log(`  DM01 peak required tests/mo: ${Math.round(Math.max(...d.total.requiredTestsMo)).toLocaleString()} vs current ${Math.round(d.total.currentTestsMo[0]).toLocaleString()}`);
+}
 
 console.log('— headline numbers (eyeball) —');
 console.log(`  peak required stops/mo: ${Math.round(Math.max(...res.trust.requiredStopsMo)).toLocaleString()} vs current ${Math.round(res.trust.currentStopsMo[0]).toLocaleString()}`);
