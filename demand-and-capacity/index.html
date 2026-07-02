@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demand &amp; Capacity — NUH (RX1)</title>
+  <link rel="stylesheet" href="styles.css?v=dev" />
+</head>
+<body>
+  <header>
+    <h1>Trust Demand &amp; Capacity Model — NUH (RX1)</h1>
+    <p class="repo-link">
+      <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/demand-and-capacity" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.76-3.65 3.95.29.25.54.74.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        View source on GitHub
+      </a>
+    </p>
+    <p class="subtitle">
+      A trust-wide, specialty-connected demand &amp; capacity model for Nottingham University Hospitals,
+      built to answer: <strong>what capacity is needed to meet the NHS constitutional standards</strong> —
+      RTT (65% by Apr&nbsp;2027, 80% by Apr&nbsp;2028, 92% by Apr&nbsp;2029), cancer, diagnostics (DM01) and
+      urgent care. <strong>Phase&nbsp;1: the elective (RTT) spine</strong> — waiting list → required clock
+      stops → outpatient, theatre, bed and diagnostic capacity, per treatment function. Method:
+      Fong&nbsp;et&nbsp;al. (2022) / NHSRwaitinglist queueing theory.
+    </p>
+    <p class="data-note">⚠ Trust-level anchors are researched from published reporting; the specialty-level
+      split and operational parameters are <strong>estimates</strong> pending ingest of the published NHSE
+      provider extracts. Every figure is editable; nothing here is operational advice.</p>
+    <p id="status" class="status status--loading" role="status">Loading model…</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Trust position &amp; trajectory</h2>
+      <div id="cards" class="cards"></div>
+      <div class="chart-block">
+        <h3>RTT performance — required glide path <span class="muted small">(implied % of list waiting &lt;18 weeks, if required capacity is delivered)</span></h3>
+        <canvas id="chart-perf" width="1040" height="360"></canvas>
+      </div>
+      <div class="two-col">
+        <div class="chart-block">
+          <h3>Waiting list size <span class="muted small">(required-capacity path vs sustainable target)</span></h3>
+          <canvas id="chart-list" width="520" height="330"></canvas>
+        </div>
+        <div class="chart-block">
+          <h3>Clock stops per month <span class="muted small">(required vs current delivery)</span></h3>
+          <canvas id="chart-stops" width="520" height="330"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Capacity levers <span class="muted small">— apply trust-wide; recomputes instantly</span></h2>
+      <div id="levers" class="levers"></div>
+    </section>
+
+    <section class="panel">
+      <div class="row-between">
+        <h2>Specialties <span class="muted small">(treatment function level)</span></h2>
+        <div class="actions">
+          <button type="button" class="btn btn--ghost" id="export">Export scenario</button>
+          <button type="button" class="btn btn--ghost" id="import">Import scenario</button>
+          <input type="file" id="import-file" accept=".json" hidden />
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="tfc-table">
+          <thead>
+            <tr>
+              <th>TFC</th><th>Specialty</th>
+              <th class="num">List</th><th class="num">%&lt;18wk</th>
+              <th class="num">Referrals /wk</th><th class="num">Stops /mo (now)</th>
+              <th class="num">Required /mo (peak)</th><th class="num">Uplift</th>
+              <th class="num">OP slots /mo</th><th class="num">Theatre sessions /mo</th>
+              <th class="num">Elective beds</th><th class="num">Diagnostics /mo</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="chart-block">
+        <h3 id="tfc-chart-title">Specialty trajectory</h3>
+        <canvas id="chart-tfc" width="1040" height="330"></canvas>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Roadmap</h2>
+      <div class="roadmap">
+        <div class="phase done"><strong>Phase 1 — Elective (RTT) spine</strong><br />Waiting list → clock stops → OP / theatres / beds / diagnostics, per TFC. <em>This page.</em></div>
+        <div class="phase"><strong>Phase 2 — Diagnostics (DM01)</strong><br />Modality-level (MRI, CT, NOUS, endoscopy…) waiting lists and capacity vs the 6-week standard, fed by the elective spine.</div>
+        <div class="phase"><strong>Phase 3 — Cancer</strong><br />FDS / 31-day / 62-day pathway capacity by tumour site (breast, gynae, urology, lower GI constrained at NUH).</div>
+        <div class="phase"><strong>Phase 4 — UEC</strong><br />ED 4-hour and ambulance handover: attendance demand, flow and bed interaction with the elective model.</div>
+        <div class="phase"><strong>Phase 5 — Workforce</strong><br />Medical &amp; nursing WTE as the binding constraint layer across all modules.</div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      Method: Fong, House, Walton et al. (2022) <em>Understanding Waiting List Pressures</em>;
+      <a href="https://nhs-r-community.github.io/NHSRwaitinglist/" target="_blank" rel="noopener">NHSRwaitinglist</a>.
+      Benchmarks: GIRFT (85% capped theatre utilisation), BADS day-case directory, NHS Elect outpatient
+      benchmarks, NHSE planning guidance. Seed data sources and estimate flags: see
+      <code>data/baseline.json</code> and the README. Illustrative planning model — not operational advice.
+    </p>
+  </footer>
+
+  <script type="module" src="js/app.js?v=dev"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "_note": "Constitutional standards, national planning trajectories and best-practice operational benchmarks used by the model. Every entry carries a source. Per-TFC overrides live in baseline.json.",
+  "constitutional": {
+    "rtt": {
+      "standard": "92% of incomplete pathways waiting under 18 weeks",
+      "targetPct": 92, "windowWeeks": 18,
+      "trajectory": [
+        { "ym": "2027-04", "pct": 65 },
+        { "ym": "2028-04", "pct": 80 },
+        { "ym": "2029-04", "pct": 92 }
+      ],
+      "source": "NHS Constitution; user-specified NUH trajectory (65% Apr-27, 80% Apr-28, 92% Apr-29); national ambition 92% by March 2029 per Elective Reform Plan"
+    },
+    "cancer": {
+      "fds": { "standard": "Faster Diagnosis Standard: diagnosis or ruling-out within 28 days", "targetPct": 80, "note": "2025/26 national planning objective 80%", "source": "NHSE cancer waiting times standards (consolidated 2023)" },
+      "day31": { "standard": "31 days from decision-to-treat to first/subsequent treatment", "targetPct": 96, "source": "NHSE cancer waiting times standards" },
+      "day62": { "standard": "62 days from urgent referral to first treatment", "targetPct": 85, "interimPct": 70, "note": "national 2025/26 ambition 70%; constitutional 85%", "source": "NHSE cancer waiting times standards; 2025/26 planning guidance" }
+    },
+    "diagnostics": {
+      "standard": "DM01: max 6 weeks from referral to test",
+      "targetPctUnder6wk": 99, "interimPctUnder6wk": 95,
+      "note": "Constitutional expectation <1% waiting 6+ weeks; interim planning ambition 95% under 6 weeks by March 2026",
+      "source": "NHS Constitution; NHSE planning guidance"
+    },
+    "ed": {
+      "fourHour": { "standard": "A&E 4-hour: admitted/transferred/discharged within 4h", "targetPct": 95, "interimPct": 78, "planningPct": 82, "note": "78% national 2025/26 ambition; 82% objective in Medium Term Planning Framework 2026/27-2028/29", "source": "NHS Constitution; NHSE Medium Term Planning Framework" },
+      "handover": { "standard": "Ambulance handover within 15 minutes; none over 60 minutes", "maxMinutes": 15, "processMinutes": 45, "note": "NUH operates a 45-minute maximum handover process (from Dec 2024)", "source": "NHSE UEC recovery plan; NUH board reporting" }
+    }
+  },
+  "bestPractice": {
+    "theatreUtilisation": { "value": 0.85, "unit": "capped touch-time utilisation", "source": "GIRFT/NHSE: providers targeted to achieve minimum 85% capped theatre utilisation" },
+    "dayCaseRate": { "value": 0.85, "unit": "share of eligible elective surgery as day case", "note": "BADS/GIRFT: overall day-case rates range 60-85%; BADS directory sets procedure-level targets — per-TFC overrides used", "source": "British Association of Day Surgery directory; GIRFT day-case delivery guides" },
+    "outpatientDNA": { "value": 0.05, "unit": "did-not-attend rate", "note": "good practice ~5% vs national average ~7-8%", "source": "NHS Elect outpatient transformation benchmarks; GIRFT outpatients" },
+    "clinicUtilisation": { "value": 0.90, "unit": "booked/attended share of available slots", "source": "NHS Elect outpatient benchmarks" },
+    "newToFollowUpRatio": { "value": 1.9, "unit": "follow-ups per new attendance", "note": "GIRFT outpatients: reduce follow-ups via PIFU; specialty-specific overrides apply", "source": "GIRFT outpatients national report" },
+    "pifuShare": { "value": 0.05, "unit": "share of outpatient contacts moved to patient-initiated follow-up", "source": "NHSE outpatient recovery plan" },
+    "bedOccupancy": { "value": 0.92, "unit": "target max general & acute bed occupancy", "source": "NHSE planning guidance (92% G&A occupancy ambition)" },
+    "elective LOS": { "value": null, "note": "specialty-level; per-TFC values in baseline.json", "source": "GIRFT specialty reports / Model Health System" }
+  }
+}
