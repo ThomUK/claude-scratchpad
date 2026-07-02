@@ -68,13 +68,30 @@ export function glidePath(cal, startPct, milestones) {
   });
 }
 
+// Census-shape calibration. Published lists are rarely exponential-shaped
+// (trusts constrain long waits), so anchor the implied-performance curve to the
+// ACTUAL starting position: k = 1 for a perfect exponential steady state; k > 1
+// means the census is front-loaded (better %<18wk than exponential predicts for
+// its size). k then scales the sustainable-list-size relationship consistently.
+export function shapeFactor(list, pct18Frac, effRefWk, weeks = 18) {
+  if (list <= 0 || effRefWk <= 0) return 1;
+  const p = Math.min(0.98, Math.max(0.05, pct18Frac));
+  const k = (-Math.log(1 - p) * list) / (weeks * effRefWk);
+  return Math.min(4, Math.max(0.25, k));
+}
+
 // --- per-TFC model ----------------------------------------------------------
 // Returns monthly series for one treatment function.
 export function runTfc(tfc, levers, cal, milestones) {
   const n = cal.length;
   const growth = Math.pow(1 + (levers.demandGrowthPctYr || 0) / 100, 1 / 12);
+  // Share of referrals that leave the list without a counted clock stop
+  // (DNA discharges, duplicates, deaths, validation) — a real feature of RTT
+  // accounting: nationally New RTT Periods exceed completed pathways.
+  const keep = 1 - (levers.otherRemovalsPct ?? 0);
   const glide = glidePath(cal, tfc.pct18, milestones);
   const msIdx = milestones.map((m) => ymDiff(cal[0], m.ym)).filter((i) => i > 0);
+  const k = shapeFactor(tfc.list, tfc.pct18 / 100, tfc.referralsWk * keep);
 
   const s = {
     ym: cal, list: new Array(n), targetList: new Array(n), glidePct: glide,
@@ -88,13 +105,14 @@ export function runTfc(tfc, levers, cal, milestones) {
   let L = tfc.list;
   let refWk = tfc.referralsWk;
   for (let i = 0; i < n; i++) {
-    const demandMo = refWk * WKS_PER_MONTH;
+    const effRefWk = refWk * keep;              // referrals that need a clock stop
+    const demandMo = effRefWk * WKS_PER_MONTH;
     // clearance phased to the NEXT milestone (or end of horizon)
     const nextMs = msIdx.find((m) => m > i) ?? (n - 1);
     const monthsLeft = Math.max(1, nextMs - i);
     const pAtMs = glide[Math.min(nextMs, n - 1)] / 100;
-    const refWkAtMs = refWk * Math.pow(growth, monthsLeft);
-    const LtargetMs = targetListSize(refWkAtMs, pAtMs);
+    const refWkAtMs = effRefWk * Math.pow(growth, monthsLeft);
+    const LtargetMs = k * targetListSize(refWkAtMs, pAtMs);
     const clearance = Math.max(0, L - LtargetMs) / monthsLeft;
     const required = demandMo + clearance;
 
@@ -112,11 +130,11 @@ export function runTfc(tfc, levers, cal, milestones) {
     const ip = cases - dayCases;
     const bedDays = ip * tfc.losElectiveIP;
     const beds = bedDays / 30.4 / levers.bedOccupancy;
-    const diags = demandMo * tfc.diagPerReferral;
+    const diags = refWk * WKS_PER_MONTH * tfc.diagPerReferral;   // all referrals drive diagnostics
 
     s.list[i] = L;
-    s.targetList[i] = targetListSize(refWk, glide[i] / 100);
-    s.impliedPct[i] = 100 * impliedPerformance(L, refWk);
+    s.targetList[i] = k * targetListSize(effRefWk, glide[i] / 100);
+    s.impliedPct[i] = 100 * impliedPerformance(L, k * effRefWk);
     s.demandMo[i] = demandMo;
     s.requiredStopsMo[i] = required;
     s.currentStopsMo[i] = tfc.clockStopsWk * WKS_PER_MONTH;

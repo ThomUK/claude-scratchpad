@@ -1,0 +1,190 @@
+#!/usr/bin/env python3
+"""Ingest the NHSE RTT monthly full-extract CSV and rebuild data/baseline.json
+for the demand-and-capacity model.
+
+Usage:
+    python3 ingest/ingest_rtt.py <full-extract.csv or .zip> [--provider RX1]
+
+The full extract (published monthly on the NHSE RTT statistics page as the
+"Full CSV data file" ZIP) contains, per provider x commissioner x treatment
+function, weekly wait-band counts for five parts:
+  - Incomplete Pathways                      -> list size + %<18wk (bands)
+  - Completed Pathways For Admitted Patients -> admitted clock stops / month
+  - Completed Pathways For Non-Admitted ...  -> non-admitted clock stops / month
+  - New RTT Periods - All Patients           -> referral demand / month
+  - Incomplete Pathways with DTA             -> (kept for reference)
+
+This script aggregates over commissioners for the chosen provider, computes the
+model's per-TFC seed fields (real), attaches operational parameters (still
+ESTIMATES until better sources are provided), folds degenerate TFCs (<100 on
+the list) into Other, and writes data/baseline.json.
+"""
+import csv
+import io
+import json
+import math
+import os
+import sys
+import zipfile
+from collections import defaultdict
+
+WKS_PER_MONTH = 52 / 12
+
+# Operational parameters by TFC — ESTIMATES (GIRFT/BADS norms + acute-typical
+# values). Fields: admDayCase, casesPerSession, newToFu, losIP, diagPerRef
+OPS = {
+    "C_100": (0.70, 4.0, 1.5, 3.0, 0.40), "C_101": (0.80, 5.0, 1.9, 2.0, 0.55),
+    "C_110": (0.55, 3.0, 1.6, 2.8, 0.45), "C_120": (0.75, 4.0, 1.8, 1.5, 0.30),
+    "C_130": (0.95, 6.0, 2.8, 1.2, 0.15), "C_140": (0.85, 5.0, 1.4, 1.5, 0.25),
+    "C_150": (0.25, 1.5, 2.0, 5.0, 0.70), "C_160": (0.80, 5.0, 1.5, 1.8, 0.20),
+    "C_170": (0.10, 1.2, 1.8, 7.0, 0.60), "C_300": (0.90, 4.0, 2.0, 3.5, 0.50),
+    "C_301": (0.95, 5.0, 1.7, 2.0, 0.80), "C_320": (0.80, 4.0, 2.5, 2.5, 0.90),
+    "C_330": (0.95, 8.0, 1.8, 1.0, 0.05), "C_340": (0.90, 4.0, 2.3, 3.0, 0.70),
+    "C_400": (0.90, 4.0, 2.4, 3.0, 0.60), "C_410": (0.90, 4.0, 3.0, 2.0, 0.35),
+    "C_430": (0.90, 4.0, 2.4, 6.0, 0.40), "C_502": (0.75, 4.0, 1.6, 1.8, 0.45),
+    "X02": (0.90, 4.0, 2.2, 3.0, 0.55),   # Other - Medical
+    "X03": (0.90, 4.0, 2.2, 2.5, 0.45),   # Other - Mental Health
+    "X04": (0.70, 3.0, 2.2, 2.0, 0.30),   # Other - Paediatric
+    "X05": (0.75, 4.0, 1.6, 2.2, 0.35),   # Other - Surgical
+    "X06": (0.80, 4.0, 1.9, 2.2, 0.35),   # Other - Other
+}
+DEFAULT_OPS = (0.75, 4.0, 1.9, 2.2, 0.35)
+FOLD_INTO = "X06"
+FOLD_BELOW = 100          # fold TFCs with list < this into Other
+
+PART_INC = "Incomplete Pathways"
+PART_ADM = "Completed Pathways For Admitted Patients"
+PART_NON = "Completed Pathways For Non-Admitted Patients"
+PART_NEW = "New RTT Periods - All Patients"
+
+
+def open_extract(path):
+    if path.lower().endswith(".zip"):
+        z = zipfile.ZipFile(path)
+        name = next(n for n in z.namelist() if n.lower().endswith(".csv"))
+        return io.TextIOWrapper(z.open(name), encoding="utf-8-sig"), name
+    return open(path, encoding="utf-8-sig"), os.path.basename(path)
+
+
+def aggregate(src, provider):
+    """Aggregate one full extract for a provider: (tfc -> fields), names, period, provname."""
+    fh, srcname = open_extract(src)
+    rdr = csv.DictReader(fh)
+    band_le18 = [c for c in rdr.fieldnames
+                 if c.startswith("Gt ") and "To" in c
+                 and int(c.split("To")[1].split("Weeks")[0]) <= 18]
+    acc = defaultdict(lambda: defaultdict(float))
+    names, period, provname = {}, None, None
+    for d in rdr:
+        if d["Provider Org Code"].strip() != provider:
+            continue
+        period = d["Period"]; provname = d["Provider Org Name"]
+        tfc = d["Treatment Function Code"].strip()
+        if tfc == "C_999":
+            continue
+        names[tfc] = d["Treatment Function Name"].strip().replace(" Service", "")
+        part = d["RTT Part Description"]
+        tot = float(d["Total All"] or d["Total"] or 0)
+        a = acc[tfc]
+        if part == PART_INC:
+            a["list"] += tot
+            a["within18"] += sum(float(d[c] or 0) for c in band_le18)
+        elif part == PART_ADM: a["admMo"] += tot
+        elif part == PART_NON: a["nonMo"] += tot
+        elif part == PART_NEW: a["newMo"] += tot
+    fh.close()
+    return acc, names, period, provname, srcname
+
+
+def main():
+    src = sys.argv[1]
+    provider = sys.argv[sys.argv.index("--provider") + 1] if "--provider" in sys.argv else "RX1"
+    prior_src = sys.argv[sys.argv.index("--prior") + 1] if "--prior" in sys.argv else None
+
+    acc, names, period, provname, srcname = aggregate(src, provider)
+
+    # Optional prior-year extract: trust-level demand growth + other-removals
+    # calibration. Growth is applied at TRUST level only: per-TFC year-on-year
+    # comparisons are dominated by specialty recoding (e.g. NUH's Nov-2025 EPR
+    # go-live shifted activity between C_ codes and the X_ 'Other' groups).
+    prior, priorPeriod, trustGrowth, otherRemovalsPct = None, None, None, None
+    if prior_src:
+        prior, _, priorPeriod, _, _ = aggregate(prior_src, provider)
+        n1 = sum(p["newMo"] for p in prior.values())
+        n2 = sum(a["newMo"] for a in acc.values())
+        trustGrowth = round(100 * (n2 / n1 - 1), 1)
+        # Trust-level accounting identity over the year between the two snapshots:
+        #   ΔL = new − stops − other  =>  other = new − stops − ΔL
+        # Annual flows approximated as 12 × the mean of the two Aprils.
+        L1 = sum(p["list"] for p in prior.values()); L2 = sum(a["list"] for a in acc.values())
+        newYr = 12 * (sum(p["newMo"] for p in prior.values()) + sum(a["newMo"] for a in acc.values())) / 2
+        stopsYr = 12 * (sum(p["admMo"] + p["nonMo"] for p in prior.values())
+                        + sum(a["admMo"] + a["nonMo"] for a in acc.values())) / 2
+        otherYr = newYr - stopsYr - (L2 - L1)
+        otherRemovalsPct = round(max(0, min(0.5, otherYr / newYr)), 3)
+
+    # fold small TFCs into Other
+    folded = []
+    for tfc in [t for t, a in acc.items() if a["list"] < FOLD_BELOW and t != FOLD_INTO]:
+        for k, v in acc[tfc].items():
+            acc[FOLD_INTO][k] += v
+        folded.append(f"{tfc} ({names.get(tfc)})")
+        del acc[tfc]
+
+    tfcs = []
+    for tfc, a in sorted(acc.items(), key=lambda kv: -kv[1]["list"]):
+        L = a["list"]; stopsMo = a["admMo"] + a["nonMo"]
+        ops = OPS.get(tfc, DEFAULT_OPS)
+        row = {
+            "code": tfc, "name": names.get(tfc, tfc),
+            "list": int(L),
+            "pct18": round(100 * a["within18"] / L, 1) if L else 0,
+            "referralsWk": round(a["newMo"] / WKS_PER_MONTH, 1),
+            "clockStopsWk": round(stopsMo / WKS_PER_MONTH, 1),
+            "admittedShare": round(a["admMo"] / stopsMo, 3) if stopsMo else 0.1,
+            "dayCaseRate": ops[0], "casesPerSession": ops[1],
+            "newToFuRatio": ops[2], "losElectiveIP": ops[3], "diagPerReferral": ops[4],
+            "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract "
+                          f"({period}); operational parameters: ESTIMATE (GIRFT/BADS norms)",
+        }
+        tfcs.append(row)
+
+    totL = sum(t["list"] for t in tfcs)
+    w = sum(t["list"] * t["pct18"] / 100 for t in tfcs)
+    base_path = os.path.join(os.path.dirname(__file__), "..", "data", "baseline.json")
+    baseline = json.load(open(base_path))
+    baseline["tfcs"] = tfcs
+    if otherRemovalsPct is not None:
+        baseline["levers"]["otherRemovalsPct"] = otherRemovalsPct
+        baseline["levers"]["demandGrowthPctYr"] = trustGrowth
+        baseline["levers"]["sourceNote"] = (
+            f"demandGrowthPctYr ({trustGrowth}%/yr) and otherRemovalsPct ({otherRemovalsPct}) "
+            f"calibrated from {priorPeriod} vs {period} (growth applied at trust level only — "
+            "per-TFC comparisons are recoding-dominated post EPR go-live; treat the growth "
+            "figure with caution for the same reason); other levers remain typical-acute "
+            "ESTIMATES with GIRFT/NHS Elect targets")
+    prov = baseline["_provenance"]
+    prov["dataQuality"] = ("SEEDED FROM PUBLISHED DATA: NHSE RTT full extract "
+        f"'{srcname}' ({period}), provider {provider} ({provname}), aggregated over "
+        "commissioners per treatment function. Wait bands give list and %<18wk; "
+        "New RTT Periods give referral demand; completed admitted/non-admitted give "
+        "clock stops and admitted share. NOTE: April flow figures are bank-holiday "
+        "depressed and may understate a typical month. Operational parameters "
+        "(day-case rate, cases/session, N:FU, LOS, diagnostics/referral) remain "
+        f"estimates. Folded into Other: {', '.join(folded) or 'none'}.")
+    prov["researchedAnchors"]["rttPct18"] = {
+        "value": round(100 * w / totL, 1), "asOf": period,
+        "note": "computed from published wait bands", "source": "NHSE RTT statistics, full CSV extract"}
+    prov["researchedAnchors"]["waitingList"] = {
+        "value": totL, "asOf": period,
+        "note": "published incomplete pathways (sum of TFCs)", "source": "NHSE RTT statistics, full CSV extract"}
+    json.dump(baseline, open(base_path, "w"), indent=2)
+    print(f"{provider} {period}: list {totL:,} | {100*w/totL:.1f}% <18wk | "
+          f"demand {sum(t['referralsWk'] for t in tfcs):,.0f}/wk | "
+          f"stops {sum(t['clockStopsWk'] for t in tfcs):,.0f}/wk | {len(tfcs)} TFCs "
+          f"(folded: {len(folded)})")
+    print(f"wrote {os.path.normpath(base_path)}")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,6 +1,6 @@
 // Engine validation — run with: node tests/engine.test.mjs
 import { readFileSync } from 'node:fs';
-import { meanWaitFor, targetListSize, impliedPerformance, glidePath, calendar, runScenario, ymDiff } from '../js/engine.js';
+import { meanWaitFor, targetListSize, impliedPerformance, glidePath, calendar, runScenario, ymDiff, shapeFactor } from '../js/engine.js';
 
 const baseline = JSON.parse(readFileSync(new URL('../data/baseline.json', import.meta.url)));
 let fails = 0;
@@ -29,8 +29,13 @@ ok(glide.every((v, i, a) => i === 0 || v >= a[i - 1] - 1e-9), 'glide is non-decr
 console.log('— scenario run —');
 const res = runScenario(baseline);
 const i0 = 0, iM1 = ymDiff('2026-07', '2027-04'), iM2 = ymDiff('2026-07', '2028-04'), iM3 = ymDiff('2026-07', '2029-04');
-ok(close(res.trust.list[i0], 100000, 1), `opening trust list = ${Math.round(res.trust.list[i0]).toLocaleString()}`);
-ok(close(res.trust.impliedPct[i0], 63.4, 0.5), `opening implied performance ${res.trust.impliedPct[i0].toFixed(1)}% ≈ seeded 63.4%`);
+ok(close(res.trust.list[i0], 85166, 1), `opening trust list = ${Math.round(res.trust.list[i0]).toLocaleString()} (published Apr-26)`);
+ok(close(res.trust.impliedPct[i0], 62.8, 0.5), `opening implied performance ${res.trust.impliedPct[i0].toFixed(1)}% ≈ published 62.8% (shape-calibrated)`);
+// shape calibration anchors every TFC's implied performance to its published %<18wk
+const keep = 1 - baseline.levers.otherRemovalsPct;
+const worst = Math.max(...res.perTfc.map((r) => Math.abs(r.series.impliedPct[0] - Math.min(95, Math.max(5, r.tfc.pct18)))));
+ok(worst < 0.75, `per-TFC implied(t=0) matches published pct18 (worst |Δ| = ${worst.toFixed(2)}pp)`);
+ok(close(shapeFactor(85166, 0.628, 4410 * keep), 1.32, 0.1), `trust census shape factor ≈ ${shapeFactor(85166, 0.628, 4410 * keep).toFixed(2)} (front-loaded vs exponential)`);
 ok(res.trust.impliedPct[iM1] >= 64.9, `Apr-27 implied ${res.trust.impliedPct[iM1].toFixed(1)}% ≥ 65% (tol)`);
 ok(res.trust.impliedPct[iM2] >= 79.5, `Apr-28 implied ${res.trust.impliedPct[iM2].toFixed(1)}% ≥ 80% (tol)`);
 ok(res.trust.impliedPct[iM3] >= 91.5, `Apr-29 implied ${res.trust.impliedPct[iM3].toFixed(1)}% ≥ 92% (tol)`);
@@ -51,7 +56,7 @@ ok(res.trust.bedsRequired[0] > 0 && res.trust.bedsRequired[0] < 1663, `elective 
 
 console.log('— headline numbers (eyeball) —');
 console.log(`  peak required stops/mo: ${Math.round(Math.max(...res.trust.requiredStopsMo)).toLocaleString()} vs current ${Math.round(res.trust.currentStopsMo[0]).toLocaleString()}`);
-console.log(`  list: 100,000 → ${Math.round(res.trust.list[res.cal.length - 1]).toLocaleString()} (Mar-30)`);
+console.log(`  list: ${Math.round(res.trust.list[0]).toLocaleString()} → ${Math.round(res.trust.list[res.cal.length - 1]).toLocaleString()} (Mar-30)`);
 console.log(`  OP slots/mo at peak: ${Math.round(Math.max(...res.trust.opSlotsMo)).toLocaleString()}`);
 console.log(`  theatre sessions/mo at peak: ${Math.round(Math.max(...res.trust.theatreSessionsMo)).toLocaleString()}`);
 

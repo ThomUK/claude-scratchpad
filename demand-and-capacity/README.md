@@ -39,40 +39,44 @@ round-trips, glide-path milestones, list conservation, activity sanity). Run:
 
 ## Seed data & provenance
 
-**Trust-level anchors are researched from published reporting; the TFC-level
-split and operational parameters are clearly-flagged estimates.** Every number
-lives in `data/baseline.json` with a source note. Researched anchors:
+**The RTT position is seeded from the published NHSE RTT full extracts** (the
+"Full CSV data file" from the [RTT statistics page](https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/)),
+ingested by `ingest/ingest_rtt.py` (source ZIPs kept in `source/`):
 
-| Anchor | Value | Source |
-| --- | --- | --- |
-| RTT %<18wk | 55.1% (Jan-26) → **63.5% (Mar-26)**, fastest-improving in the Midlands | [West Bridgford Wire](https://westbridgfordwire.com/nottingham-university-hospitals-is-the-fastest-improving-trust-in-the-midlands-for-elective-waiting-times/) |
-| Waiting list size | **~100,000 (ESTIMATE)** pending NHSE published figure | scale inference — [NUH](https://www.nuh.nhs.uk/) serves 2.5m local + 3–4m tertiary |
-| Cancer 62-day | ~66% (Mar-25); backlog peaked >650 (Oct-25), 555 by mid-Nov-25; constrained: breast, gynae, urology, lower GI | [West Bridgford Wire](https://westbridgfordwire.com/nottingham-hospitals-still-under-pressure-as-emergency-care-cancer-and-diagnostic-waits-remain-below-plan/), [Newark Advertiser](https://www.newarkadvertiser.co.uk/news/hospital-trust-reports-largest-ever-backlog-in-people-waitin-9448418/), [Chad](https://www.chad.co.uk/news/people/cancer-target-missed-for-more-than-400-people-as-nottingham-hospitals-face-waiting-list-backlog-5129996) |
-| Cancer FDS | 64.8% (Oct-25) vs 70.9% trajectory / 80% objective | West Bridgford Wire (as above) |
-| ED four-hour | ~50% headline; median 2h59m (Mar-26); 82% MTPF objective | [NottinghamWorld](https://www.nottinghamworld.com/your-nottingham/nottingham/half-of-ae-arrivals-at-nottingham-university-hospitals-seen-within-four-hours-missing-nhs-target-4510834) |
-| Ambulance handover | 45-min max process (Dec-24); QMC mean pre-handover ~37 min (early 2026) | [Chad](https://www.chad.co.uk/news/people/faster-notts-ambulance-response-times-but-added-hospital-pressure-4945959), [Erewash Sound](https://www.erewashsound.com/news/ambulance-trust-lost-more-than-19000-handover-hours-due-to-ongoing-pressures/) |
-| Scale | ~1,663 beds, ~20,000 staff | [CQC](https://www.cqc.org.uk/provider/RX1), [NUH](https://www.nuh.nhs.uk/) |
+- **April 2026 extract** → per-TFC waiting list (85,166 total), %<18 weeks from
+  the published wait bands (62.8% trust-weighted), referral demand (New RTT
+  Periods, 4,410/wk), clock stops (completed admitted + non-admitted,
+  3,026/wk counted in April) and admitted share.
+- **April 2025 extract** → calibration: trust demand growth (+8.0%/yr — treat
+  with caution, the year spans NUH's Nov-2025 EPR go-live) and the
+  **other-removals rate** (20.3% of referrals leave the list without a counted
+  clock stop), from the accounting identity ΔL = new − stops − other.
 
-Best-practice benchmarks in `data/standards.json`: GIRFT ([85% capped theatre
-utilisation](https://gettingitrightfirsttime.co.uk/medical_specialties/theatres-and-perioperative-medicine/),
-[day-case guides](https://gettingitrightfirsttime.co.uk/cross_cutting_theme/day-case-surgery/)),
-[BADS](https://bads.co.uk/) day-case directory, NHS Elect outpatient benchmarks,
-NHSE planning guidance. National statistics landing pages:
-[RTT](https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/),
-[DM01](https://www.england.nhs.uk/statistics/statistical-work-areas/diagnostics-waiting-times-and-activity/monthly-diagnostics-waiting-times-and-activity/).
+Two modelling consequences of using real (non-idealised) data:
 
-### Replacing estimates with the real extracts
+- **Census-shape calibration**: NUH's census is front-loaded vs the exponential
+  steady state (shape factor ≈ 1.33), so the engine anchors each TFC's implied
+  performance to its published %<18wk and scales the sustainable-list-size
+  relationship consistently.
+- **Other removals**: required clock stops are computed against *effective*
+  demand (referrals × (1 − other-removals rate)), exposed as a lever.
 
-This environment cannot download the NHSE statistical files directly. To seed
-the true position, download and drop in (an ingest script will be added with
-each phase):
+Per-TFC growth is deliberately **not** seeded: year-on-year TFC comparisons are
+dominated by specialty recoding (post-EPR), e.g. gastroenterology +72%,
+cardiology −42% — clearly reclassification, not demand.
 
-1. **RTT**: monthly *Incomplete pathways by provider and treatment function*
-   (XLS) → replaces `tfcs[].list`, `pct18`, and (from completed pathways +
-   new periods) `referralsWk`/`clockStopsWk`.
-2. **DM01**: provider extract by modality (phase 2).
-3. **Cancer waits**: provider extract by tumour site (phase 3).
-4. **AE attendances & handover** (phase 4); **workforce returns** (phase 5).
+**Still estimates** (flagged in `data/baseline.json`): operational parameters —
+day-case rate, cases/session, N:FU ratio, elective LOS, diagnostics/referral —
+pending GIRFT / Model Health System / trust figures. Cancer, ED and handover
+anchors researched from published reporting remain in the provenance block for
+later phases.
+
+To re-seed with a newer month:
+
+```sh
+python3 ingest/ingest_rtt.py source/<new-full-extract>.zip --prior source/<year-earlier>.zip --provider RX1
+node tests/engine.test.mjs
+```
 
 ## Roadmap
 
