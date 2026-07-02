@@ -146,7 +146,7 @@ function renderCharts() {
 
 // --- levers -------------------------------------------------------------------
 const LEVERS = [
-  { key: 'demandGrowthPctYr', label: 'Referral demand growth (%/yr)', min: 0, max: 10, step: 0.5, pct: false, bench: 'calibrated Apr-25→Apr-26 (+8%/yr, EPR-era — treat with caution)' },
+  { key: 'demandGrowthAdjPctYr', label: 'Demand growth adjustment (±%/yr)', min: -3, max: 5, step: 0.5, pct: false, bench: 'on calibrated baselines: trust −2.5%/yr, per-TFC where clean (pre-EPR pair Apr-24→Apr-25)' },
   { key: 'otherRemovalsPct', label: 'Referrals leaving without treatment', min: 0, max: 0.4, step: 0.01, pct: true, bench: 'calibrated 20.3% (DNA discharge, duplicates, validation)' },
   { key: 'dnaRate', label: 'Outpatient DNA rate', min: 0.03, max: 0.12, step: 0.005, pct: true, bench: 'best practice 5% (NHS Elect)' },
   { key: 'clinicUtilisation', label: 'Clinic utilisation', min: 0.75, max: 0.95, step: 0.01, pct: true, bench: 'target 90% (NHS Elect)' },
@@ -156,7 +156,7 @@ const LEVERS = [
 
 function buildLevers() {
   $('levers').innerHTML = LEVERS.map((l) => {
-    const v = baseline.levers[l.key];
+    const v = baseline.levers[l.key] ?? 0;
     return `<div class="lever">
       <label>${l.label} — <span class="val" id="lv-${l.key}">${l.pct ? (v * 100).toFixed(1) + '%' : v}</span></label>
       <input type="range" data-lever="${l.key}" min="${l.min}" max="${l.max}" step="${l.step}" value="${v}" />

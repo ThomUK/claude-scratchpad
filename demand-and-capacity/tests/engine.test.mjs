@@ -35,7 +35,18 @@ ok(close(res.trust.impliedPct[i0], 62.8, 0.5), `opening implied performance ${re
 const keep = 1 - baseline.levers.otherRemovalsPct;
 const worst = Math.max(...res.perTfc.map((r) => Math.abs(r.series.impliedPct[0] - Math.min(95, Math.max(5, r.tfc.pct18)))));
 ok(worst < 0.75, `per-TFC implied(t=0) matches published pct18 (worst |Δ| = ${worst.toFixed(2)}pp)`);
-ok(close(shapeFactor(85166, 0.628, 4410 * keep), 1.32, 0.1), `trust census shape factor ≈ ${shapeFactor(85166, 0.628, 4410 * keep).toFixed(2)} (front-loaded vs exponential)`);
+ok(close(shapeFactor(85166, 0.628, 4410 * keep), 1.19, 0.1), `trust census shape factor ≈ ${shapeFactor(85166, 0.628, 4410 * keep).toFixed(2)} (front-loaded vs exponential)`);
+// per-TFC calibrated growth is used where seeded; trust fallback otherwise
+{
+  const seeded = baseline.tfcs.filter((t) => 'demandGrowthPctYr' in t);
+  ok(seeded.length >= 10, `per-TFC growth seeded for ${seeded.length}/${baseline.tfcs.length} TFCs (pre-EPR pair)`);
+  const t = { ...baseline.tfcs[0], demandGrowthPctYr: 6 };
+  const lv = { ...baseline.levers, demandGrowthAdjPctYr: 1 };
+  const one = runScenario({ ...baseline, tfcs: [t] }, { levers: lv });
+  const d = one.perTfc[0].series.demandMo;
+  const annual = Math.pow(d[12] / d[0], 1);
+  ok(close(annual, 1.07, 0.005), `per-TFC growth + adjustment applied (12-mo demand ratio ${annual.toFixed(3)} ≈ 1.07)`);
+}
 ok(res.trust.impliedPct[iM1] >= 64.9, `Apr-27 implied ${res.trust.impliedPct[iM1].toFixed(1)}% ≥ 65% (tol)`);
 ok(res.trust.impliedPct[iM2] >= 79.5, `Apr-28 implied ${res.trust.impliedPct[iM2].toFixed(1)}% ≥ 80% (tol)`);
 ok(res.trust.impliedPct[iM3] >= 91.5, `Apr-29 implied ${res.trust.impliedPct[iM3].toFixed(1)}% ≥ 92% (tol)`);

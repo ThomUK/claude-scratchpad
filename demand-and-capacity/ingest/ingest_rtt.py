@@ -99,7 +99,7 @@ def aggregate(src, provider):
 def main():
     src = sys.argv[1]
     provider = sys.argv[sys.argv.index("--provider") + 1] if "--provider" in sys.argv else "RX1"
-    prior_src = sys.argv[sys.argv.index("--prior") + 1] if "--prior" in sys.argv else None
+    prior_srcs = [sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == "--prior"]
 
     acc, names, period, provname, srcname = aggregate(src, provider)
 
@@ -107,21 +107,44 @@ def main():
     # calibration. Growth is applied at TRUST level only: per-TFC year-on-year
     # comparisons are dominated by specialty recoding (e.g. NUH's Nov-2025 EPR
     # go-live shifted activity between C_ codes and the X_ 'Other' groups).
-    prior, priorPeriod, trustGrowth, otherRemovalsPct = None, None, None, None
-    if prior_src:
-        prior, _, priorPeriod, _, _ = aggregate(prior_src, provider)
-        n1 = sum(p["newMo"] for p in prior.values())
-        n2 = sum(a["newMo"] for a in acc.values())
-        trustGrowth = round(100 * (n2 / n1 - 1), 1)
-        # Trust-level accounting identity over the year between the two snapshots:
-        #   ΔL = new − stops − other  =>  other = new − stops − ΔL
-        # Annual flows approximated as 12 × the mean of the two Aprils.
-        L1 = sum(p["list"] for p in prior.values()); L2 = sum(a["list"] for a in acc.values())
-        newYr = 12 * (sum(p["newMo"] for p in prior.values()) + sum(a["newMo"] for a in acc.values())) / 2
-        stopsYr = 12 * (sum(p["admMo"] + p["nonMo"] for p in prior.values())
-                        + sum(a["admMo"] + a["nonMo"] for a in acc.values())) / 2
-        otherYr = newYr - stopsYr - (L2 - L1)
-        otherRemovalsPct = round(max(0, min(0.5, otherYr / newYr)), 3)
+    def pair_metrics(older, newer):
+        """Trust growth, other-removals rate and per-TFC growth between two snapshots."""
+        n1 = sum(p["newMo"] for p in older.values()); n2 = sum(a["newMo"] for a in newer.values())
+        growth = round(100 * (n2 / n1 - 1), 1)
+        # Accounting identity over the year: ΔL = new − stops − other.
+        # Annual flows approximated as 12 × the mean of the two snapshot months.
+        L1 = sum(p["list"] for p in older.values()); L2 = sum(a["list"] for a in newer.values())
+        newYr = 12 * (n1 + n2) / 2
+        stopsYr = 12 * (sum(p["admMo"] + p["nonMo"] for p in older.values())
+                        + sum(a["admMo"] + a["nonMo"] for a in newer.values())) / 2
+        removals = round(max(0, min(0.5, (newYr - stopsYr - (L2 - L1)) / newYr)), 3)
+        byTfc = {}
+        for tfc, a in newer.items():
+            p = older.get(tfc)
+            if p and p["newMo"] >= 50 and a["newMo"] >= 50:
+                byTfc[tfc] = round(100 * (a["newMo"] / p["newMo"] - 1), 1)
+        return growth, removals, byTfc
+
+    priorPeriod, trustGrowth, otherRemovalsPct, growthByTfc, calNote = None, None, None, {}, ""
+    if prior_srcs:
+        # Sort priors oldest-first by their Period, then calibrate from the
+        # OLDEST adjacent pair — with three snapshots spanning an EPR go-live,
+        # the earliest pair is the cleanest (recoding contaminates the latest).
+        priors = sorted((aggregate(p, provider) for p in prior_srcs), key=lambda t: t[2])
+        chain = [pr[0] for pr in priors] + [acc]
+        labels = [pr[2] for pr in priors] + [period]
+        pairs = [(labels[i], labels[i + 1], *pair_metrics(chain[i], chain[i + 1]))
+                 for i in range(len(chain) - 1)]
+        for lab1, lab2, g, r, byTfc in pairs:
+            clamped = sum(1 for v in byTfc.values() if abs(v) > 15)
+            print(f"  pair {lab1} -> {lab2}: trust growth {g:+.1f}%/yr, removals {r:.1%}, "
+                  f"TFC growth swings >15%: {clamped}/{len(byTfc)}")
+        lab1, lab2, trustGrowth, otherRemovalsPct, byTfc = pairs[0]
+        priorPeriod = f"{lab1} vs {lab2}"
+        calNote = f"calibrated from the earliest pair ({priorPeriod})"
+        # Seed per-TFC growth only from the earliest (cleanest) pair, and only
+        # where it looks like demand rather than recoding (|growth| <= 15%/yr).
+        growthByTfc = {t: g for t, g in byTfc.items() if abs(g) <= 15}
 
     # fold small TFCs into Other
     folded = []
@@ -147,6 +170,9 @@ def main():
             "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract "
                           f"({period}); operational parameters: ESTIMATE (GIRFT/BADS norms)",
         }
+        if tfc in growthByTfc:
+            row["demandGrowthPctYr"] = growthByTfc[tfc]
+            row["sourceNote"] += f"; demand growth {growthByTfc[tfc]}%/yr ({calNote})"
         tfcs.append(row)
 
     totL = sum(t["list"] for t in tfcs)
@@ -159,9 +185,8 @@ def main():
         baseline["levers"]["demandGrowthPctYr"] = trustGrowth
         baseline["levers"]["sourceNote"] = (
             f"demandGrowthPctYr ({trustGrowth}%/yr) and otherRemovalsPct ({otherRemovalsPct}) "
-            f"calibrated from {priorPeriod} vs {period} (growth applied at trust level only — "
-            "per-TFC comparisons are recoding-dominated post EPR go-live; treat the growth "
-            "figure with caution for the same reason); other levers remain typical-acute "
+            f"{calNote}; per-TFC growth seeded from the same pair where |growth| <= 15%/yr "
+            "(larger swings treated as recoding); other levers remain typical-acute "
             "ESTIMATES with GIRFT/NHS Elect targets")
     prov = baseline["_provenance"]
     prov["dataQuality"] = ("SEEDED FROM PUBLISHED DATA: NHSE RTT full extract "

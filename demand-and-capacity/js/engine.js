@@ -84,7 +84,11 @@ export function shapeFactor(list, pct18Frac, effRefWk, weeks = 18) {
 // Returns monthly series for one treatment function.
 export function runTfc(tfc, levers, cal, milestones) {
   const n = cal.length;
-  const growth = Math.pow(1 + (levers.demandGrowthPctYr || 0) / 100, 1 / 12);
+  // Per-TFC calibrated growth where seeded (clean pre-EPR pair), else the trust
+  // baseline; the adjustment lever shifts all TFCs together for scenarios.
+  const growthPctYr = (tfc.demandGrowthPctYr ?? levers.demandGrowthPctYr ?? 0)
+    + (levers.demandGrowthAdjPctYr ?? 0);
+  const growth = Math.pow(1 + growthPctYr / 100, 1 / 12);
   // Share of referrals that leave the list without a counted clock stop
   // (DNA discharges, duplicates, deaths, validation) — a real feature of RTT
   // accounting: nationally New RTT Periods exceed completed pathways.

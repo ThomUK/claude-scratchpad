@@ -47,10 +47,13 @@ ingested by `ingest/ingest_rtt.py` (source ZIPs kept in `source/`):
   the published wait bands (62.8% trust-weighted), referral demand (New RTT
   Periods, 4,410/wk), clock stops (completed admitted + non-admitted,
   3,026/wk counted in April) and admitted share.
-- **April 2025 extract** → calibration: trust demand growth (+8.0%/yr — treat
-  with caution, the year spans NUH's Nov-2025 EPR go-live) and the
-  **other-removals rate** (20.3% of referrals leave the list without a counted
-  clock stop), from the accounting identity ΔL = new − stops − other.
+- **April 2024 + April 2025 extracts** → calibration from the **pre-EPR pair**
+  (Apr-24→Apr-25): trust demand growth **−2.5%/yr**, other-removals rate
+  **10.7%** (ΔL = new − stops − other), and **per-TFC demand growth** seeded for
+  14/21 TFCs where |growth| ≤ 15%/yr. The EPR-era pair (Apr-25→Apr-26: +8.0%,
+  removals 20.3%, 14/21 TFC swings >15%) is reported by the ingest for
+  comparison but deliberately not used — NUH's Nov-2025 EPR go-live contaminates
+  it with recoding and validation artefacts.
 
 Two modelling consequences of using real (non-idealised) data:
 
@@ -61,10 +64,6 @@ Two modelling consequences of using real (non-idealised) data:
 - **Other removals**: required clock stops are computed against *effective*
   demand (referrals × (1 − other-removals rate)), exposed as a lever.
 
-Per-TFC growth is deliberately **not** seeded: year-on-year TFC comparisons are
-dominated by specialty recoding (post-EPR), e.g. gastroenterology +72%,
-cardiology −42% — clearly reclassification, not demand.
-
 **Still estimates** (flagged in `data/baseline.json`): operational parameters —
 day-case rate, cases/session, N:FU ratio, elective LOS, diagnostics/referral —
 pending GIRFT / Model Health System / trust figures. Cancer, ED and handover
@@ -74,7 +73,7 @@ later phases.
 To re-seed with a newer month:
 
 ```sh
-python3 ingest/ingest_rtt.py source/<new-full-extract>.zip --prior source/<year-earlier>.zip --provider RX1
+python3 ingest/ingest_rtt.py source/<latest>.zip --prior source/<yr-1>.zip --prior source/<yr-2>.zip --provider RX1
 node tests/engine.test.mjs
 ```
 
