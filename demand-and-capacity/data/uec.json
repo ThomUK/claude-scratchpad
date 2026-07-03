@@ -106,7 +106,7 @@
   "levers": {
     "attGrowthPctYr": 1.5,
     "admGrowthPctYr": 1.1,
-    "emergencyLOSDays": 5.3,
+    "emergencyLOSDays": 5.2,
     "bedOccupancyTarget": 0.92
   },
   "standards": {
@@ -758,5 +758,6 @@
         "handovers": 5646
       }
     ]
-  }
+  },
+  "electiveOccupiedEstimate": 41.4
 }

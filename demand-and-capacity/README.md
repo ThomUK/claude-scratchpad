@@ -120,7 +120,9 @@ the reverse of the RTT/DM01 EPR situation, as attendance counts are not
 clock-rule sensitive. `ingest_sitrep.py` adds winter bed stats from the UEC
 Daily SitRep timeseries (winter 2025-26: adult G&A **95.4% occupied**, a
 quarter of occupied beds held by 21+ day stayers) and derives the implied
-emergency LOS (5.3d) via Little's Law. `ingest_kh03.py` adds the KH03
+emergency LOS (5.2d) via Little's Law, net of an elective-occupied estimate
+(~41 beds from the RTT baseline's current activity) so the bed chart is a
+true emergency + elective decomposition without double-counting. `ingest_kh03.py` adds the KH03
 specialty bed mix (geriatric medicine is the largest occupied base) and
 England occupancy context. `ingest_drd.py` adds Discharge Ready Date delays
 (Apr-26: 22.7% of discharges delayed, **5,435 bed-days lost ≈ 179 beds**;

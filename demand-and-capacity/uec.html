@@ -50,9 +50,11 @@
 
     <section class="panel">
       <h2>The shared bed pool — where UEC meets the elective recovery</h2>
-      <p class="small muted">Emergency occupied beds follow Little's Law (daily admissions × LOS); open
-        beds needed add the occupancy-target headroom. The elective spine's bed requirement (phase 1)
-        is drawn on the same axis — both press on one adult G&amp;A pool of ~1,600 beds.</p>
+      <p class="small muted">Emergency occupied beds follow Little's Law (daily admissions × LOS,
+        with LOS derived from winter occupancy <em>net of the elective share</em> so the decomposition
+        doesn't double-count); open beds needed add the occupancy-target headroom. The elective
+        spine's bed requirement (phase 1) stacks on top — both press on one adult G&amp;A pool of
+        ~1,600 beds.</p>
       <div class="chart-block">
         <h3>Adult G&amp;A beds — required vs available <span class="muted small">(emergency + elective vs winter average open)</span></h3>
         <canvas id="chart-beds" width="1040" height="360"></canvas>

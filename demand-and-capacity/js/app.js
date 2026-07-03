@@ -38,10 +38,11 @@ function renderCards() {
   const t = result.trust, cal = result.cal;
   const i27 = ymDiff(cal[0], '2027-04'), i29 = ymDiff(cal[0], '2029-04');
   const upliftPct = 100 * (Math.max(...t.requiredStopsMo) / t.currentStopsMo[0] - 1);
+  const rawRefMo = baseline.tfcs.reduce((a, x) => a + x.referralsWk, 0) * (52 / 12);
   $('cards').innerHTML = `
     <div class="stat"><div class="v">${fmt(t.list[0])}</div><div class="l">Waiting list (published Apr-26)</div></div>
     <div class="stat stat--accent"><div class="v">${t.impliedPct[0].toFixed(1)}%</div><div class="l">Within 18 weeks (published Apr-26)</div></div>
-    <div class="stat"><div class="v">${fmt(t.demandMo[0])}</div><div class="l">Referrals / month</div></div>
+    <div class="stat"><div class="v">${fmt(t.demandMo[0])}</div><div class="l">Effective demand / month (${fmt(rawRefMo)} referrals less ${(100 * result.levers.otherRemovalsPct).toFixed(1)}% other removals)</div></div>
     <div class="stat ${upliftPct > 15 ? 'stat--bad' : upliftPct > 5 ? 'stat--warn' : 'stat--good'}"><div class="v">+${upliftPct.toFixed(1)}%</div><div class="l">Peak capacity uplift required vs current</div></div>
     <div class="stat"><div class="v">${fmt(t.list[i27])}</div><div class="l">List needed by Apr-27 (65%)</div></div>
     <div class="stat"><div class="v">${fmt(t.list[i29])}</div><div class="l">List needed by Apr-29 (92%)</div></div>`;
@@ -69,7 +70,7 @@ function renderCharts() {
 // --- levers -------------------------------------------------------------------
 const LEVERS = [
   { key: 'demandGrowthAdjPctYr', label: 'Demand growth adjustment (±%/yr)', min: -3, max: 5, step: 0.5, pct: false, bench: 'on calibrated baselines: trust −2.5%/yr, per-TFC where clean (pre-EPR pair Apr-24→Apr-25)' },
-  { key: 'otherRemovalsPct', label: 'Referrals leaving without treatment', min: 0, max: 0.4, step: 0.01, pct: true, bench: 'calibrated 20.3% (DNA discharge, duplicates, validation)' },
+  { key: 'otherRemovalsPct', label: 'Referrals leaving without treatment', min: 0, max: 0.4, step: 0.01, pct: true, bench: 'calibrated 10.7% (pre-EPR pair; DNA discharge, duplicates, validation — the EPR year\'s 20.3% is excluded as contaminated)' },
   { key: 'dnaRate', label: 'Outpatient DNA rate', min: 0.03, max: 0.12, step: 0.005, pct: true, bench: 'best practice 5% (NHS Elect)' },
   { key: 'clinicUtilisation', label: 'Clinic utilisation', min: 0.75, max: 0.95, step: 0.01, pct: true, bench: 'target 90% (NHS Elect)' },
   { key: 'theatreUtilisation', label: 'Theatre utilisation (capped)', min: 0.65, max: 0.9, step: 0.01, pct: true, bench: 'GIRFT standard 85%' },

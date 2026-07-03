@@ -126,9 +126,14 @@ console.log('— UEC module —');
   const expOcc = (uec.current.admTotal / 30.4) * uec.levers.emergencyLOSDays;
   ok(close(s.emergencyOccupiedBeds[j0], expOcc, 0.5), `emergency occupied beds ${s.emergencyOccupiedBeds[j0].toFixed(0)} = λ×W`);
   ok(close(s.emergencyOpenBedsNeeded[j0], expOcc / uec.levers.bedOccupancyTarget, 0.5), 'open beds = occupied ÷ occupancy target');
-  // implied LOS reproduces the winter occupied bed base it was derived from
+  // implied LOS reproduces the winter occupied base NET of the elective share
+  // (so stacking the RTT spine's elective beds on top is not double-counting)
   const w = uec.beds.winters['W2025-26'];
-  ok(close(s.emergencyOccupiedBeds[j0], w.adultGA.occupied, 10), `implied LOS reproduces winter occupied base (${w.adultGA.occupied}, LOS lever rounded to 0.1d)`);
+  ok(uec.electiveOccupiedEstimate > 20 && uec.electiveOccupiedEstimate < 150,
+     `elective occupied estimate ${uec.electiveOccupiedEstimate} beds (from RTT baseline current activity)`);
+  ok(close(s.emergencyOccupiedBeds[j0], w.adultGA.occupied - uec.electiveOccupiedEstimate, 15),
+     `emergency occupied ${s.emergencyOccupiedBeds[j0].toFixed(0)} ≈ winter occupied ${w.adultGA.occupied} − elective ${uec.electiveOccupiedEstimate}`);
+  ok(s.emergencyOccupiedBeds[j0] < w.adultGA.occupied - 20, 'emergency line no longer absorbs the whole pool (decomposition is real)');
   ok(w.adultGA.occupancyPct > 92, `winter 2025-26 occupancy ${w.adultGA.occupancyPct}% above the 92% norm`);
   // handover seed: cross-validated snapshot vs timeseries, thresholds ordered
   const ho = uec.handover;

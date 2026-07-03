@@ -74,12 +74,22 @@ def main():
 
     out_path = os.path.join(os.path.dirname(__file__), "..", "data", "uec.json")
     uec = json.load(open(out_path))
-    # implied blended LOS: winter avg occupied beds ÷ daily emergency admissions
-    # (Little's Law inverted; includes the small elective share of occupancy)
+    # implied EMERGENCY LOS: (winter avg occupied − elective occupied) ÷ daily
+    # emergency admissions (Little's Law inverted). The elective share is
+    # estimated from the RTT baseline's CURRENT activity — same formula as the
+    # engine's bed conversion — so the emergency line is a true decomposition
+    # and the spine's elective beds can be stacked on top without double-counting.
     latest = winters[max(winters)]
     daily_adm = uec["current"]["admTotal"] / 30.4
-    uec["levers"]["emergencyLOSDays"] = round(latest["adultGA"]["occupied"] / daily_adm, 1)
+    baseline = json.load(open(os.path.join(os.path.dirname(__file__), "..", "data", "baseline.json")))
+    elective_occ = sum(t["clockStopsWk"] * (52 / 12) * t["admittedShare"]
+                       * (1 - t["dayCaseRate"]) * t["losElectiveIP"] / 30.4
+                       for t in baseline["tfcs"])
+    uec["levers"]["emergencyLOSDays"] = round((latest["adultGA"]["occupied"] - elective_occ) / daily_adm, 1)
     uec["levers"]["bedOccupancyTarget"] = 0.92
+    uec["electiveOccupiedEstimate"] = round(elective_occ, 1)
+    print(f"  elective occupied estimate {elective_occ:.0f} beds (current RTT activity) → "
+          f"emergency LOS {uec['levers']['emergencyLOSDays']}d")
     uec["beds"] = {
         "note": ("Winter (Nov-Mar) daily averages from the UEC Daily SitRep provider "
                  "timeseries. Adult G&A is the emergency/elective shared bed pool; "
