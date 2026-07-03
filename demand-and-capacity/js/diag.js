@@ -63,7 +63,7 @@ function renderCharts() {
 }
 
 const LEVERS = [
-  { key: 'demandGrowthPctYr', label: 'Diagnostic demand growth (%/yr)', min: 0, max: 15, step: 0.5, pct: false, bench: 'calibrated +12.6%/yr (pre-EPR pair Apr-24→Apr-25)' },
+  { key: 'demandGrowthPctYr', label: 'Diagnostic demand growth (%/yr)', min: 0, max: 15, step: 0.5, pct: false, bench: 'calibrated +6.5%/yr: core modalities, working-day adjusted (CDC step-changes excluded; all-modality raw was +12.6%)' },
 ];
 
 function buildLevers() {

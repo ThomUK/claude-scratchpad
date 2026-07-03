@@ -7,7 +7,7 @@
       "April 2025",
       "April 2026"
     ],
-    "dataQuality": "Seeded from published DM01 provider files. Demand estimated as waiting-list tests + year-on-year \u0394WL/12; April activity is bank-holiday depressed. growth from earliest pair (April 2024 vs April 2025). Growth applied at whole-diagnostics level (modality recoding caution as per RTT)."
+    "dataQuality": "Seeded from published DM01 provider files. Demand estimated as waiting-list tests + year-on-year \u0394WL/12; April activity is bank-holiday depressed. core-modality growth from earliest pair (April 2024 vs April 2025), working-day adjusted; step-changed modalities excluded from calibration (Audiology - Audiology Assessments, DEXA Scan, Flexi Sigmoidoscopy, Magnetic Resonance Imaging, Respiratory physiology - Sleep Studies) \u2014 CDC capacity, service moves and list validation are supply/coverage events, not demand (all-modality raw: 12.6%/yr). Growth applied at whole-diagnostics level (modality recoding caution as per RTT)."
   },
   "standard": {
     "windowWeeks": 6,
@@ -26,7 +26,7 @@
     "note": "milestones are a modelling assumption aligned to the RTT trajectory: 95% under 6 weeks by Apr-27, 99% (constitutional <1% over) by Apr-29"
   },
   "levers": {
-    "demandGrowthPctYr": 12.6
+    "demandGrowthPctYr": 6.5
   },
   "modalities": [
     {

@@ -47,7 +47,6 @@ function renderCards() {
   const i27 = ymDiff(cal[0], '2027-04'), i29 = ymDiff(cal[0], '2029-04');
   const upliftPct = 100 * (Math.max(...t.requiredStopsMo) / t.currentStopsMo[0] - 1);
   const rawRefMo = baseline.tfcs.reduce((a, x) => a + x.referralsWk, 0) * (52 / 12);
-  const upliftIfAprilLight = 100 * (Math.max(...t.requiredStopsMo) / (t.currentStopsMo[0] * 1.08) - 1);
   $('cards').innerHTML = `
     <div class="stat"><div class="v">${fmt(t.list[0])}</div><div class="l">Waiting list (published Apr-26)</div></div>
     <div class="stat stat--accent"><div class="v">${t.impliedPct[0].toFixed(1)}%</div><div class="l">Within 18 weeks (published Apr-26)</div></div>
@@ -57,7 +56,7 @@ function renderCards() {
     <div class="stat ${upliftPct > 15 ? 'stat--bad' : upliftPct > 5 ? 'stat--warn' : 'stat--good'}"><div class="v">+${upliftPct.toFixed(1)}%</div><div class="l">Peak capacity uplift required vs current</div></div>
     <div class="stat"><div class="v">${fmt(t.list[i27])}</div><div class="l">List needed by Apr-27 (65%)</div></div>
     <div class="stat"><div class="v">${fmt(t.list[i29])}</div><div class="l">List needed by Apr-29 (92%)</div></div>`;
-  $('level-note').textContent = `April-levels caveat: flow levels (referrals, clock stops) are seeded from April 2026 alone — a bank-holiday-depressed month. If April ran ~8% light, the peak uplift reads ≈+${upliftIfAprilLight.toFixed(1)}% instead of +${upliftPct.toFixed(1)}%. Growth calibration is unaffected (Apr→Apr pairs, working-day adjusted); levels will be re-seeded from a multi-month average when further extracts are loaded.`;
+  $('level-note').textContent = `Flow levels are working-day-normalised means over Feb–Apr 2026 (a standard 21-working-day month): per working day, April referrals were actually the HIGHEST of the four observed months (956/wd vs 902–928) — the apparent April dip was entirely working-day count. January is excluded (EPR catch-up tail: 615 stops/wd vs 656–688 later). The census (list, bands) is April's, post the Feb→Mar validation purge of ~8,500 migrated pathways.`;
 }
 
 const MS_LABELS = [

@@ -100,6 +100,7 @@ def main():
     src = sys.argv[1]
     provider = sys.argv[sys.argv.index("--provider") + 1] if "--provider" in sys.argv else "RX1"
     prior_srcs = [sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == "--prior"]
+    level_srcs = [sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == "--level"]
 
     acc, names, period, provname, srcname = aggregate(src, provider)
 
@@ -113,7 +114,12 @@ def main():
     # Flow growth is therefore adjusted to a per-working-day basis; unadjusted,
     # the 2024→2025 pair reads ~5pp too low (a demand 'fall' that is actually an
     # Easter artefact).
-    WORKING_DAYS = {"April-2024": 21, "April-2025": 20, "April-2026": 20}
+    WORKING_DAYS = {"April-2024": 21, "April-2025": 20, "April-2026": 20,
+                    "January-2026": 21, "February-2026": 20, "March-2026": 22}
+    STD_WD = 21   # standard month for level normalisation (252 working days / 12)
+
+    def wd_of(label):
+        return next((v for k, v in WORKING_DAYS.items() if k in label), None)
 
     def wd_ratio(lab1, lab2):
         w1 = next((v for k, v in WORKING_DAYS.items() if k in lab1), None)
@@ -168,12 +174,40 @@ def main():
         growthByTfc = {t: g for t, g in byTfc.items() if abs(g) <= 15}
 
     # fold small TFCs into Other
-    folded = []
+    folded, fold_set = [], set()
     for tfc in [t for t, a in acc.items() if a["list"] < FOLD_BELOW and t != FOLD_INTO]:
         for k, v in acc[tfc].items():
             acc[FOLD_INTO][k] += v
         folded.append(f"{tfc} ({names.get(tfc)})")
+        fold_set.add(tfc)
         del acc[tfc]
+
+    # Multi-month flow LEVELS (feedback: a single April understates a typical
+    # month). Each level month's flows are normalised to a standard 21-working-
+    # day month, then averaged with the (normalised) census month. The census
+    # (list, wait bands) stays from the primary extract.
+    levelNote = ""
+    if level_srcs:
+        months = []
+        for p in level_srcs:
+            lacc, _, lperiod, _, _ = aggregate(p, provider)
+            for tfc in [t for t in list(lacc) if t in fold_set]:
+                for k, v in lacc[tfc].items():
+                    lacc[FOLD_INTO][k] += v
+                del lacc[tfc]
+            months.append((lperiod, lacc))
+        months.append((period, acc))
+        for lp, _ in months:
+            if wd_of(lp) is None:
+                raise SystemExit(f"no working-day count for level month {lp} — extend WORKING_DAYS")
+        for tfc, a in acc.items():
+            for key in ("newMo", "admMo", "nonMo"):
+                vals = [la.get(tfc, {}).get(key, 0) * (STD_WD / wd_of(lp)) for lp, la in months]
+                a[key] = sum(vals) / len(vals)
+        labels_lv = ", ".join(lp for lp, _ in months)
+        levelNote = (f"flow levels are working-day-normalised means over {labels_lv} "
+                     f"(standard {STD_WD}-working-day month); census from {period}")
+        print(f"  levels: {levelNote}")
 
     tfcs = []
     for tfc, a in sorted(acc.items(), key=lambda kv: -kv[1]["list"]):
@@ -215,8 +249,11 @@ def main():
         f"'{srcname}' ({period}), provider {provider} ({provname}), aggregated over "
         "commissioners per treatment function. Wait bands give list and %<18wk; "
         "New RTT Periods give referral demand; completed admitted/non-admitted give "
-        "clock stops and admitted share. NOTE: April flow figures are bank-holiday "
-        "depressed and may understate a typical month. Operational parameters "
+        "clock stops and admitted share. "
+        + (f"LEVELS: {levelNote}. " if levelNote else
+           "NOTE: flow levels are seeded from a single April, a short working-day "
+           "month — pass --level extracts to average. ")
+        + "Operational parameters "
         "(day-case rate, cases/session, N:FU, LOS, diagnostics/referral) remain "
         f"estimates. Folded into Other: {', '.join(folded) or 'none'}.")
     prov["researchedAnchors"]["rttPct18"] = {

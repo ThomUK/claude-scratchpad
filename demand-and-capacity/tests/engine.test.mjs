@@ -38,7 +38,11 @@ ok(close(res.trust.impliedPct[i0], 62.8, 0.5), `opening implied performance ${re
 const keep = 1 - baseline.levers.otherRemovalsPct;
 const worst = Math.max(...res.perTfc.map((r) => Math.abs(r.series.impliedPct[0] - Math.min(95, Math.max(5, r.tfc.pct18)))));
 ok(worst < 0.75, `per-TFC implied(t=0) matches published pct18 (worst |Δ| = ${worst.toFixed(2)}pp)`);
-ok(close(shapeFactor(85166, 0.628, 4410 * keep), 1.19, 0.1), `trust census shape factor ≈ ${shapeFactor(85166, 0.628, 4410 * keep).toFixed(2)} (front-loaded vs exponential)`);
+{
+  const refWk = baseline.tfcs.reduce((a, t) => a + t.referralsWk, 0);
+  ok(close(refWk, 4531, 5), `seeded demand ${refWk.toFixed(0)}/wk (Feb-Apr working-day-normalised mean)`);
+  ok(close(shapeFactor(85166, 0.628, refWk * keep), 1.16, 0.1), `trust census shape factor ≈ ${shapeFactor(85166, 0.628, refWk * keep).toFixed(2)} (front-loaded vs exponential)`);
+}
 // per-TFC calibrated growth is used where seeded; trust fallback otherwise
 {
   const seeded = baseline.tfcs.filter((t) => 'demandGrowthPctYr' in t);
@@ -218,6 +222,36 @@ console.log('— explainer maths (census vs flow) —');
   ok(sim.censusPct[50] > sim.censusPct[25] + 10, `drive lifts census reading (${sim.censusPct[25].toFixed(0)}% → ${sim.censusPct[50].toFixed(0)}%)`);
   ok(sim.flowPct[40] < sim.flowPct[24] - 20, `drive tanks flow reading (${sim.flowPct[24].toFixed(0)}% → ${sim.flowPct[40].toFixed(0)}%)`);
   ok(sim.censusPct[103] > 78 && sim.flowPct[103] > 78, `both cameras read high after the drive (census ${sim.censusPct[103].toFixed(0)}%, flow ${sim.flowPct[103].toFixed(0)}%)`);
+}
+
+console.log('— OP attendances (tandem queue & attribution) —');
+{
+  const { runTandemSim } = await import('../js/explainmath.js');
+  // balanced capacities → steady state (queues stabilise, no growth)
+  const bal = runTandemSim({ referralsWk: 100, newSlotsWk: 100, treatSlotsWk: 60, conversionPct: 60, q1Start: 0, q2Start: 0 });
+  const n = bal.q1.length - 1;
+  ok(bal.q1[n] < 105 && bal.q2[n] < 105, 'balanced tandem queue stabilises');
+  // starve the front door → queue 1 grows linearly, queue 2 drains
+  const starve = runTandemSim({ referralsWk: 100, newSlotsWk: 80, treatSlotsWk: 60, conversionPct: 60 });
+  ok(starve.q1[n] > starve.q1[0] + 100 * (20 / 100) * n * 0.9, 'under-served front door: queue 1 grows ~20/wk');
+  ok(starve.q2[n] < 100, 'queue 2 drains when fed less than treatment capacity');
+  // treatment surge alone leaves queue 1 untouched (the queue MOVES, not shrinks)
+  const surge = runTandemSim({ referralsWk: 100, newSlotsWk: 100, treatSlotsWk: 120, conversionPct: 60 });
+  ok(close(surge.q1[n], runTandemSim({ referralsWk: 100, newSlotsWk: 100, treatSlotsWk: 62, conversionPct: 60 }).q1[n], 1e-9),
+     'treatment surge does not touch the first-OP queue');
+  // conservation: total = q1 + q2 each week
+  ok(surge.total.every((v, i) => Math.abs(v - (surge.q1[i] + surge.q2[i])) < 1e-9), 'tandem conservation holds');
+  // attribution: firsts follow referrals — OP attendances minus FU equals raw referrals
+  const t = baseline.tfcs[0];
+  const one = runScenario({ ...baseline, tfcs: [t] });
+  const s = one.perTfc[0].series;
+  const keep = 1 - baseline.levers.otherRemovalsPct;
+  for (const i of [0, 12, 30]) {
+    const firsts = s.opAttendancesMo[i] - s.requiredStopsMo[i] * t.newToFuRatio;
+    const rawRefsMo = s.demandMo[i] / keep;
+    if (!close(firsts, rawRefsMo, 0.5)) { ok(false, `firsts ≠ raw referrals at month ${i}`); break; }
+    if (i === 30) ok(true, 'first attendances track raw referrals at t=0, 12, 30 (not the clearance surge)');
+  }
 }
 
 console.log('— headline numbers (eyeball) —');

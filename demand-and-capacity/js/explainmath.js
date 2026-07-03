@@ -39,6 +39,35 @@ export function censusCdf(x, k, W, steps = 400) {
   return Math.min(1, (acc * h) / W);
 }
 
+/* Tandem-queue simulation for the OP-attendances explainer: the RTT list is
+ * really two queues in series. Stage 1: waiting for a FIRST outpatient
+ * attendance (fed by referrals, served by new-appointment slots). At the first
+ * attendance a share is discharged (the "other removals" mostly attended
+ * before leaving); the rest join stage 2: waiting for TREATMENT (served by
+ * treatment capacity — the clock stop). Boosting one stage's capacity without
+ * the other just moves the queue along the pathway.
+ */
+export function runTandemSim({
+  weeks = 104, referralsWk = 100, conversionPct = 60,
+  newSlotsWk = 100, treatSlotsWk = 60,
+  q1Start = 400, q2Start = 600,
+} = {}) {
+  const conv = conversionPct / 100;
+  let q1 = q1Start, q2 = q2Start;
+  const s = { q1: [], q2: [], total: [], firstsSeen: [], treated: [] };
+  for (let w = 0; w < weeks; w++) {
+    q1 += referralsWk;
+    const seen = Math.min(newSlotsWk, q1);
+    q1 -= seen;
+    q2 += seen * conv;
+    const treated = Math.min(treatSlotsWk, q2);
+    q2 -= treated;
+    s.q1.push(q1); s.q2.push(q2); s.total.push(q1 + q2);
+    s.firstsSeen.push(seen); s.treated.push(treated);
+  }
+  return s;
+}
+
 /* Backlog-clearance simulation: one queue tracked as counts by age-week.
  * Three phases: steady state (proportional selection ≈ memoryless), a
  * clearance drive (extra capacity, oldest treated first), then business as

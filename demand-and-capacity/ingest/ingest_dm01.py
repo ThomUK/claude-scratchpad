@@ -54,26 +54,45 @@ def main():
     cur, period = read_dm01(src, provider)
     priors = sorted((read_dm01(p, provider) for p in prior_srcs), key=lambda t: t[1])
 
-    # pair diagnostics (demand = wl tests + ΔWL/12, per modality and total)
+    # pair diagnostics (demand = wl tests + ΔWL/12, per modality and total).
+    # Calibration mirrors the RTT method: (a) exclude modalities with step-
+    # changes (|growth| > 20%: CDC capacity coming online under the trust code,
+    # service moves, list validation) — delivered tests measure CAPACITY, not
+    # demand, when a backlog constrains them; (b) working-day adjust (WL
+    # diagnostics are weekday-delivered; April 2024 had 21 working days vs 20
+    # in 2025/26).
+    WORKING_DAYS = {"24": 21, "25": 20, "26": 20}
     chain = [p[0] for p in priors] + [cur]
     labels = [p[1] for p in priors] + [period]
-    growth, calNote = None, ""
+    growth, growthRawAll, calNote, excluded = None, None, "", []
     if len(chain) >= 2:
-        def tot_demand(older, newer):
-            d = 0
-            for k, v in newer.items():
-                o = older.get(k)
-                if o: d += v["wlTestsMo"] + (v["list"] - o["list"]) / 12
-            return d
+        def wd(lab1, lab2):
+            w1 = WORKING_DAYS.get(lab1.strip()[-2:]); w2 = WORKING_DAYS.get(lab2.strip()[-2:])
+            return (w1 / w2) if (w1 and w2) else 1.0
         pairs = []
         for i in range(len(chain) - 1):
-            d1 = sum(v["wlTestsMo"] for v in chain[i].values())
-            d2 = tot_demand(chain[i], chain[i + 1])
-            g = round(100 * (d2 / d1 - 1), 1) if d1 else 0
-            pairs.append((labels[i], labels[i + 1], g))
-            print(f"  pair {labels[i]} -> {labels[i+1]}: waiting-list demand growth ≈ {g:+.1f}%/yr")
-        growth = pairs[0][2]
-        calNote = f"growth from earliest pair ({pairs[0][0]} vs {pairs[0][1]})"
+            older, newer, ratio = chain[i], chain[i + 1], wd(labels[i], labels[i + 1])
+            perMod = {}
+            for k, v in newer.items():
+                o = older.get(k)
+                if o and o["wlTestsMo"] >= 100:
+                    d1 = o["wlTestsMo"]
+                    d2 = v["wlTestsMo"] + (v["list"] - o["list"]) / 12
+                    perMod[k] = (d1, d2, 100 * ((d2 / d1) * ratio - 1))
+            core = {k: t for k, t in perMod.items() if abs(t[2]) <= 20}
+            excl = sorted(set(perMod) - set(core))
+            c1 = sum(t[0] for t in core.values()); c2 = sum(t[1] for t in core.values())
+            gAll = 100 * (sum(t[1] for t in perMod.values()) / sum(t[0] for t in perMod.values()) - 1)
+            gCore = round(100 * ((c2 / c1) * ratio - 1), 1)
+            pairs.append((labels[i], labels[i + 1], gCore, round(gAll, 1), excl))
+            print(f"  pair {labels[i]} -> {labels[i+1]}: core demand growth {gCore:+.1f}%/yr "
+                  f"working-day adjusted (all-modality raw {gAll:+.1f}%); excluded as step-changes: "
+                  f"{', '.join(excl) or 'none'}")
+        growth, growthRawAll, excluded = pairs[0][2], pairs[0][3], pairs[0][4]
+        calNote = (f"core-modality growth from earliest pair ({pairs[0][0]} vs {pairs[0][1]}), "
+                   f"working-day adjusted; step-changed modalities excluded from calibration "
+                   f"({', '.join(excluded)}) — CDC capacity, service moves and list validation "
+                   f"are supply/coverage events, not demand (all-modality raw: {growthRawAll}%/yr)")
 
     prev = chain[-2] if len(chain) >= 2 else None
     modalities = []

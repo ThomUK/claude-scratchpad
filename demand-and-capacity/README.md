@@ -44,10 +44,17 @@ round-trips, glide-path milestones, list conservation, activity sanity). Run:
 "Full CSV data file" from the [RTT statistics page](https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/)),
 ingested by `ingest/ingest_rtt.py` (source ZIPs kept in `source/`):
 
-- **April 2026 extract** → per-TFC waiting list (85,166 total), %<18 weeks from
-  the published wait bands (62.8% trust-weighted), referral demand (New RTT
-  Periods, 4,410/wk), clock stops (completed admitted + non-admitted,
-  3,026/wk counted in April) and admitted share.
+- **April 2026 extract** → per-TFC waiting list (85,166 total) and %<18 weeks
+  from the published wait bands (62.8% trust-weighted). **Flow levels
+  (referrals 4,531/wk, clock stops 3,249/wk, admitted share) are working-day-
+  normalised means over Feb–Apr 2026** (`--level` extracts, standard 21-working-
+  day month): per working day April referrals were the highest of the observed
+  months — the apparent April dip was entirely working-day count. January 2026
+  is excluded (EPR catch-up tail: 615 stops/wd vs 656–688 later). The Apr-26
+  census sits AFTER the Feb→Mar validation purge (~8,500 migrated unclosed
+  pathways left the list in one month), so the opening list is post-cleanup;
+  validation removals were still running ~21% of referrals in April (the
+  forward-looking lever keeps the pre-EPR 10.7% steady state).
 - **April 2024 + April 2025 extracts** → calibration from the **pre-EPR pair**
   (Apr-24→Apr-25), **working-day adjusted**: April 2024 had 21 working days but
   April 2025 only 20 (Easter fell wholly inside April), so the raw −2.5%/yr is
@@ -88,7 +95,7 @@ later phases.
 To re-seed with a newer month:
 
 ```sh
-python3 ingest/ingest_rtt.py source/<latest>.zip --prior source/<yr-1>.zip --prior source/<yr-2>.zip --provider RX1
+python3 ingest/ingest_rtt.py source/<latest>.zip --prior source/<yr-1>.zip --prior source/<yr-2>.zip --level source/<mo-1>.zip --level source/<mo-2>.zip --provider RX1
 python3 ingest/ingest_dm01.py source/<latest-dm01>.xls --prior source/<yr-1>.xls --prior source/<yr-2>.xls --provider RX1
 python3 ingest/ingest_cwt.py source/<latest-cwt>.csv --prior source/<yr-1>.xlsx --prior source/<yr-2>.xlsx --provider RX1
 python3 ingest/ingest_ae.py source/<latest-ae>.csv --prior source/<yr-1>.csv --prior source/<yr-2>.csv --provider RX1
@@ -106,9 +113,16 @@ node tests/engine.test.mjs
 planned / unscheduled / waiting-list activity. Demand ≈ waiting-list tests +
 year-on-year ΔWL/12. April 2026 position: **25,065 waiting, 57.3% under
 6 weeks** (standard 95/99%) — MRI, CT, NOUS and echo carry the bulk. Demand
-growth **+12.6%/yr** from the pre-EPR pair (the EPR year shows −13.2%,
-recoding/counting-contaminated as with RTT). The 95%-by-Apr-27 / 99%-by-Apr-29
-milestones are a documented modelling assumption aligned to the RTT trajectory.
+growth **+6.5%/yr**: core modalities only, working-day adjusted. The all-
+modality raw figure (+12.6%) decomposes into three artefacts — CDC capacity
+coming online under the trust code (MRI +32%, DEXA +45%, audiology +64%
+activity: delivered tests measure *capacity*, not demand, in a backlog-
+constrained system), service moves (sleep studies −48%, list 1,303→417) and
+list validation (NOUS census −38% on flat activity). Step-changed modalities
+are excluded from calibration, mirroring the RTT method; the EPR-year pair's
+core reading (−5.8%) confirms that year is contaminated for diagnostics too.
+The 95%-by-Apr-27 / 99%-by-Apr-29 milestones are a documented modelling
+assumption aligned to the RTT trajectory.
 
 ### Cancer (CWT) seeding
 
