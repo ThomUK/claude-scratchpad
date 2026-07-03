@@ -84,7 +84,8 @@ Two modelling consequences of using real (non-idealised) data:
   demand (referrals × (1 − other-removals rate)), exposed as a lever; the
   overview cards show the full arithmetic (referrals − removals = effective).
 - **Shape-factor drift**: k is calibrated to today's booking discipline
-  (0.93–1.81 per TFC) and held to 2030 by default — a stated assumption, with a
+  (≈0.9–2.4 per TFC on the current seed; the exact range is computed live on
+  the page from the data so this prose cannot drift) and held to 2030 by default — a stated assumption, with a
   `kEndScale` lever that morphs k towards FIFO (larger sustainable list, less
   clearance) or memoryless (×1, deeper clearance). t = 0 always keeps the
   published anchor.
@@ -151,8 +152,11 @@ which silently empties openpyxl's read-only iteration — the ingest calls
 Apr-27, 85% by Apr-29). Unlike RTT/DM01 these are *flow* standards with no
 published backlog census, so the model works on cohort volumes × a timeliness
 glide path; the gap vs today's timely rate is the pathway capacity to add.
-FDS-volume growth **−0.7%/yr** from the pre-EPR pair (the EPR year shows
-+13.4%). Trust PTL data would deepen this to a backlog model.
+FDS-volume growth **+4.2%/yr** from the pre-EPR pair, **working-day adjusted
+on the same basis as RTT/DM01** — cancer cohorts (diagnoses communicated,
+treatments delivered) are clinic-driven, and Apr-24 had 21 working days vs
+Apr-25's 20, so the raw ratio (−0.7%) is the Easter artefact again (the EPR
+year shows +13.4%). Trust PTL data would deepen this to a backlog model.
 
 ### UEC seeding
 
@@ -165,8 +169,9 @@ the reverse of the RTT/DM01 EPR situation, as attendance counts are not
 clock-rule sensitive. `ingest_sitrep.py` adds winter bed stats from the UEC
 Daily SitRep timeseries (winter 2025-26: adult G&A **95.4% occupied**, a
 quarter of occupied beds held by 21+ day stayers) and derives the implied
-emergency LOS (5.2d) via Little's Law, net of an elective-occupied estimate
-(~41 beds from the RTT baseline's current activity) so the bed chart is a
+emergency LOS (5.1d) via Little's Law, net of an elective-occupied estimate
+(~57 beds from the RTT baseline's current activity; both figures are written
+into the JSON by the ingest and rendered from it) so the bed chart is a
 true emergency + elective decomposition without double-counting. `ingest_kh03.py` adds the KH03
 specialty bed mix (geriatric medicine is the largest occupied base) and
 England occupancy context. `ingest_drd.py` adds Discharge Ready Date delays
@@ -177,7 +182,7 @@ DOCUMENTED milestone assumptions — 82% at Apr-27 is the Medium Term Planning
 Framework objective (2025/26 ambition was 78%), 88%/95% are our interpolation
 and constitutional endpoint — and, because the all-types metric is
 UTC-flattered, also derives the implied TYPE-1 glide (holding non-type-1
-streams at today's performance, type-1 must reach ~93% for 95% all-types,
+streams at today's performance, type-1 must reach ~98.8% for 95% all-types,
 from 44.7% today); plus 12-hour DTA to zero and the shared bed pool: emergency beds (λ×LOS) + the elective
 spine's requirement vs ~1,600 open. `ingest_handover.py` adds the Ambulance
 Handover Times by Acute Trust collection (Apr-26: mean **31.3 min** vs the
@@ -206,8 +211,43 @@ panel makes the 'no-chequebook' case: the RX1 proxy (occupied bed-days per
 clinical FTE, caveats stated) is **−15% vs 2019** with +26% more staff —
 matching the direction of NHSE's national acute estimate (−8% by late
 2024/25, recovering ≈2.4%/yr) — and a solver reports the productivity rate
-that closes the FTE gap at trend headcount (≈5.2%/yr; +1.5%/yr headcount
-brings it to ≈3.6%/yr — the credible plan is a mix).
+that closes the FTE gap at trend headcount (≈5.7%/yr on the current seed;
++1.5%/yr headcount brings it to ≈4.1%/yr — the credible plan is a mix; both
+figures are solved live on the page, so treat the page as authoritative).
+
+## Known limitations
+
+The model produces strong structural findings (the implied type-1 4-hour
+requirement, the required productivity rate, the bed gap being largely a
+discharge problem). Those claims will travel further than the caveats
+attached to them, so the boundary of what the model can support is written
+down here, by us, rather than left for a critic to discover:
+
+- **Steady-state queueing assumptions.** Waits and census shapes come from
+  the exponential/Erlang family (Fong et al. 2022); real pathways deviate,
+  and the shape factor k patches the level but not the dynamics. Clearance
+  trajectories between milestones are smooth glides, not operational plans.
+- **No within-year seasonality.** Everything is seeded from April(-anchored)
+  levels and grows smoothly; winter surges, leave patterns and elective
+  cancellation waves are outside the model. The UEC module uses winter
+  averages for beds precisely because the annual average would flatter them.
+- **Modules do not compete for capacity.** Cancer pathway activity, RTT
+  clock stops and diagnostic tests are modelled as separate requirements;
+  in reality they share the same theatres, clinics and scanners, so the
+  module totals cannot simply be added (the bed pool is the one shared
+  constraint the model does join up).
+- **Workforce counts are substantive ESR only.** Bank and agency staffing is
+  invisible to the published statistics, so FTE gaps are understated and the
+  productivity proxy conflates substantive-staff productivity with changes
+  in the bank/agency share.
+- **Published national data, not trust operational data.** April snapshots,
+  no PTL, no theatre timetables, no job plans; operational parameters
+  (cases/session, N:FU ratios, LOS) remain estimates until trust data
+  replaces them.
+- **Requirement ≠ feasibility.** The model computes the capacity that meets
+  the standards; it does not check that estates, workforce supply or money
+  make that capacity deliverable — that is exactly the conversation the
+  outputs are meant to start.
 
 ## Roadmap
 

@@ -7,7 +7,7 @@
       "Apr-25",
       "Apr-26"
     ],
-    "dataQuality": "Seeded from published CWT provider data (combined CSV 2026; CRS workbooks 2024/25 \u2014 two formats, one statistic). April volumes are bank-holiday depressed. FDS-volume growth from earliest pair (Apr-24 vs Apr-25); pre-EPR pair preferred as per RTT/DM01. Published CWT has no PTL backlog census \u2014 the model works on treated/seen volumes and timeliness shares; trust PTL data would deepen it."
+    "dataQuality": "Seeded from published CWT provider data (combined CSV 2026; CRS workbooks 2024/25 \u2014 two formats, one statistic). April volumes are bank-holiday depressed. FDS-volume growth from earliest pair (Apr-24 vs Apr-25), working-day adjusted (21 vs 20 working days; raw -0.7%) on the same basis as RTT/DM01; pre-EPR pair preferred as per RTT/DM01. Published CWT has no PTL backlog census \u2014 the model works on treated/seen volumes and timeliness shares; trust PTL data would deepen it."
   },
   "standards": {
     "fds": {
@@ -114,7 +114,8 @@
   },
   "milestoneNote": "milestones are modelling assumptions: FDS 80% and 31D 96% by Apr-27; 62D interim 70% by Apr-27, constitutional 85% by Apr-29 \u2014 aligned to the RTT trajectory shape",
   "levers": {
-    "demandGrowthPctYr": -0.7
+    "demandGrowthPctYr": 4.2,
+    "demandGrowthRawPctYr": -0.7
   },
   "sites": {
     "Exhibited (non-cancer) breast symptoms - cancer not initially suspected": {

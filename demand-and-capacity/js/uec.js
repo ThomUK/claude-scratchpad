@@ -236,7 +236,7 @@ function renderHandover() {
 const LEVERS = [
   { key: 'attGrowthPctYr', label: 'Attendance growth (%/yr)', min: -2, max: 8, step: 0.5, bench: 'calibrated +1.5%/yr (latest pair; earliest contaminated by UTC split)' },
   { key: 'admGrowthPctYr', label: 'Emergency admission growth (%/yr)', min: -2, max: 8, step: 0.5, bench: 'calibrated +1.1%/yr (latest pair)' },
-  { key: 'emergencyLOSDays', label: 'Emergency length of stay (days)', min: 3, max: 8, step: 0.1, bench: 'implied 5.2d from (winter occupied − elective share) ÷ admissions; long-stay release moves this' },
+  { key: 'emergencyLOSDays', label: 'Emergency length of stay (days)', min: 3, max: 8, step: 0.1, bench: 'implied {LOS}d from (winter occupied − elective share of ~{ELECTIVE_OCC} beds) ÷ admissions; long-stay release moves this' },
   { key: 'bedOccupancyTarget', label: 'Bed occupancy target', min: 0.85, max: 0.98, step: 0.01, bench: '92% planning norm; NUH winter 2025-26 ran at 95.4%' },
 ];
 
@@ -246,7 +246,7 @@ function buildLevers() {
     return `<div class="lever">
       <label>${l.label} — <span class="val" id="lv-${l.key}">${v}</span></label>
       <input type="range" data-lever="${l.key}" min="${l.min}" max="${l.max}" step="${l.step}" value="${v}" />
-      <div class="bench">${l.bench}</div>
+      <div class="bench">${l.bench.replace('{LOS}', uec.levers.emergencyLOSDays).replace('{ELECTIVE_OCC}', Math.round(uec.electiveOccupiedEstimate ?? 0))}</div>
     </div>`;
   }).join('');
 }

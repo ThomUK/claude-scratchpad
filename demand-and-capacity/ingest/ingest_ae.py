@@ -14,8 +14,10 @@ Comparability cautions handled here:
   - UTC merge: from Apr-26 the co-located UTC/walk-in activity (NEMS/CityCare)
     reports under RX1's code, inflating 'Other department' attendances; type-1
     and admissions are the comparable series across years.
-  - Growth is calibrated from the EARLIEST pair on type-1 attendances and on
-    total emergency admissions (pre-EPR, as per the other modules).
+  - Growth is calibrated from the LATEST pair on type-1 attendances and on
+    total emergency admissions: the earliest pair is contaminated by the UTC
+    reporting split — the reverse of the RTT/DM01 EPR situation, as attendance
+    counts are not clock-rule sensitive.
 """
 import csv
 import json

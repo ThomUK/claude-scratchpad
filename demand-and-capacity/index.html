@@ -29,7 +29,7 @@
       published NHSE RTT full extracts (April 2026 position; April 2024/2025 for calibration)</strong>.
       Growth and removals are calibrated from the pre-EPR pair (Apr-24→Apr-25) — the EPR-era year is recoding-contaminated.
       Operational parameters (day-case rates, cases/session, N:FU, LOS) remain estimates. The census
-      <strong>shape factor k</strong> (0.93–1.81 per TFC) anchors implied performance to each TFC's published
+      <strong>shape factor k</strong> (<span id="k-range">…</span> per TFC) anchors implied performance to each TFC's published
       %&lt;18wk and, by default, is <strong>held at today's value to 2030</strong> — k reflects booking discipline,
       the sustainable list scales linearly with it, and the booking-discipline-drift lever tests the
       assumption (see the <a href="explainers.html">explainer</a>). Every figure is
@@ -65,8 +65,11 @@
     </section>
 
     <section class="panel">
-      <h2>Sensitivity of the headline <span class="muted small">(peak capacity uplift under the obvious challenges)</span></h2>
+      <h2>Sensitivity of the headline <span class="muted small">(same challenges, two metrics)</span></h2>
+      <h3>Peak capacity uplift <span class="muted small">(the +% headline)</span></h3>
       <canvas id="chart-tornado" width="1040" height="240"></canvas>
+      <h3>Cumulative extra clock stops to Apr-29 <span class="muted small">(the volume headline)</span></h3>
+      <canvas id="chart-tornado-cum" width="1040" height="240"></canvas>
       <p class="muted small" id="tornado-note"></p>
     </section>
 

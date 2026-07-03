@@ -13,13 +13,19 @@ Usage:
 
 Outputs per snapshot the three standards (FDS 28-day, 31-day, 62-day) as
 {total, within, pct}, tumour-site detail from the latest snapshot, and demand
-growth calibrated from the EARLIEST adjacent pair (pre-EPR, as per RTT/DM01).
+growth calibrated from the EARLIEST adjacent pair (pre-EPR, as per RTT/DM01),
+WORKING-DAY ADJUSTED on the same basis as RTT/DM01: cancer cohorts (diagnoses
+communicated, treatments delivered) are clinic-driven, and Easter fell inside
+April in 2025/2026 but not 2024, so the raw Apr->Apr ratio reads ~5% low.
 """
 import csv
 import json
 import os
 import re
 import sys
+
+# working weekdays (Mon-Fri excl. English bank holidays) per snapshot month
+WORKING_DAYS = {"Apr-24": 21, "Apr-25": 20, "Apr-26": 20}
 
 
 def read_combined_csv(path, provider):
@@ -169,14 +175,21 @@ def main():
         f, t1, t2 = snap["fds"], snap["d31"], snap["d62"]
         print(f"  {lab}: FDS {f['pct']}% ({f['total']:.0f}) | 31D {t1['pct']}% ({t1['total']:.0f}) | 62D {t2['pct']}% ({t2['total']:.0f})")
 
-    growth, calNote = 0, "no prior data"
+    growth, growth_raw, calNote = 0, 0, "no prior data"
     if len(chain) >= 2:
-        g = []
+        g_adj, g_raw = [], []
         for i in range(len(chain) - 1):
-            g.append(round(100 * (chain[i + 1]["fds"]["total"] / chain[i]["fds"]["total"] - 1), 1))
-            print(f"  pair {labels[i]} -> {labels[i+1]}: FDS volume growth {g[-1]:+.1f}%/yr")
-        growth = g[0]
-        calNote = f"FDS-volume growth from earliest pair ({labels[0]} vs {labels[1]})"
+            ratio = chain[i + 1]["fds"]["total"] / chain[i]["fds"]["total"]
+            wd1, wd2 = WORKING_DAYS.get(labels[i]), WORKING_DAYS.get(labels[i + 1])
+            adj = ratio * wd1 / wd2 if wd1 and wd2 else ratio
+            g_raw.append(round(100 * (ratio - 1), 1))
+            g_adj.append(round(100 * (adj - 1), 1))
+            print(f"  pair {labels[i]} -> {labels[i+1]}: FDS volume growth {g_adj[-1]:+.1f}%/yr "
+                  f"working-day adjusted (raw {g_raw[-1]:+.1f}%, {wd1} vs {wd2} working days)")
+        growth, growth_raw = g_adj[0], g_raw[0]
+        calNote = (f"FDS-volume growth from earliest pair ({labels[0]} vs {labels[1]}), working-day "
+                   f"adjusted ({WORKING_DAYS.get(labels[0])} vs {WORKING_DAYS.get(labels[1])} working days; "
+                   f"raw {growth_raw:+.1f}%) on the same basis as RTT/DM01")
 
     out = {
         "_provenance": {
@@ -200,7 +213,7 @@ def main():
                     "current": cur["d62"], "history": {l: c["d62"] for l, c in zip(labels, chain)}},
         },
         "milestoneNote": "milestones are modelling assumptions: FDS 80% and 31D 96% by Apr-27; 62D interim 70% by Apr-27, constitutional 85% by Apr-29 — aligned to the RTT trajectory shape",
-        "levers": {"demandGrowthPctYr": growth},
+        "levers": {"demandGrowthPctYr": growth, "demandGrowthRawPctYr": growth_raw},
         "sites": cur["sites"],
         "conversion": build_conversion(cur),
     }

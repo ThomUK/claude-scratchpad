@@ -1,4 +1,4 @@
-import { runScenario, ymDiff } from './engine.js?v=dev';
+import { runScenario, shapeFactor, ymDiff } from './engine.js?v=dev';
 import { lineChart, fmt, S1, S2, S3 } from './charts.js?v=dev';
 
 const $ = (id) => document.getElementById(id);
@@ -9,11 +9,17 @@ let baseline = null;
 let scenario = { levers: {}, tfcOverrides: {} };   // user deltas over the baseline
 let result = null;
 let selectedTfc = null;
+let kRangeText = '';
 
 // --- boot -------------------------------------------------------------------
 (async function init() {
   try {
     baseline = await (await fetch('data/baseline.json?v=dev', { cache: 'no-cache' })).json();
+    // derived k range, computed from the seed so the prose cannot drift from the data
+    const keep = 1 - (baseline.levers.otherRemovalsPct ?? 0);
+    const ks = baseline.tfcs.map((t) => shapeFactor(t.list, t.pct18 / 100, t.referralsWk * keep));
+    kRangeText = `${Math.min(...ks).toFixed(2)}–${Math.max(...ks).toFixed(2)}`;
+    $('k-range').textContent = kRangeText;
     buildLevers();
     recompute();
     wire();
@@ -31,21 +37,32 @@ function upliftUnder(leverOverrides) {
   return 100 * (Math.max(...r.trust.requiredStopsMo) / r.trust.currentStopsMo[0] - 1);
 }
 
-function renderSensitivity() {
-  const central = upliftUnder({});
-  const rawShift = (baseline.levers.demandGrowthRawPctYr ?? baseline.levers.demandGrowthPctYr) - baseline.levers.demandGrowthPctYr;
-  const adjNow = scenario.levers.demandGrowthAdjPctYr ?? 0;
-  const rows = [
-    { label: `shape-factor drift ×0.8 … ×1.2`, lo: upliftUnder({ kEndScale: 0.8 }), hi: upliftUnder({ kEndScale: 1.2 }) },
-    { label: `demand growth ${baseline.levers.demandGrowthRawPctYr}% … +2.0%/yr`, lo: upliftUnder({ demandGrowthAdjPctYr: adjNow + rawShift }), hi: upliftUnder({ demandGrowthAdjPctYr: adjNow + (2 - baseline.levers.demandGrowthPctYr) }) },
-    { label: 'other removals 5% … 20%', lo: upliftUnder({ otherRemovalsPct: 0.05 }), hi: upliftUnder({ otherRemovalsPct: 0.20 }) },
-  ];
-  drawTornado($('chart-tornado'), rows, central);
-  const span = rows.map((r) => Math.max(r.lo, r.hi) - Math.min(r.lo, r.hi));
-  $('tornado-note').textContent = `Central headline +${central.toFixed(1)}%. Each bar shows the peak uplift across the stated range of one assumption, others held. Widest swing: ${rows[span.indexOf(Math.max(...span))].label}. Note the removals bar reads intuitively backwards — FEWER other-removals means MORE pathways need a clock stop.`;
+function cumExtraUnder(leverOverrides) {
+  const r = runScenario(baseline, { levers: { ...scenario.levers, ...leverOverrides }, tfcOverrides: scenario.tfcOverrides });
+  const t = r.trust, i29 = ymDiff(r.cal[0], '2029-04');
+  return t.requiredStopsMo.slice(0, i29 + 1).reduce((a, v, i) => a + Math.max(0, v - t.currentStopsMo[i]), 0);
 }
 
-function drawTornado(canvas, rows, central) {
+function renderSensitivity() {
+  const rawShift = (baseline.levers.demandGrowthRawPctYr ?? baseline.levers.demandGrowthPctYr) - baseline.levers.demandGrowthPctYr;
+  const adjNow = scenario.levers.demandGrowthAdjPctYr ?? 0;
+  const rowsFor = (fn) => [
+    { label: `shape-factor drift ×0.8 … ×1.2`, lo: fn({ kEndScale: 0.8 }), hi: fn({ kEndScale: 1.2 }) },
+    { label: `demand growth ${baseline.levers.demandGrowthRawPctYr}% … +2.0%/yr`, lo: fn({ demandGrowthAdjPctYr: adjNow + rawShift }), hi: fn({ demandGrowthAdjPctYr: adjNow + (2 - baseline.levers.demandGrowthPctYr) }) },
+    { label: 'other removals 5% … 20%', lo: fn({ otherRemovalsPct: 0.05 }), hi: fn({ otherRemovalsPct: 0.20 }) },
+  ];
+  const central = upliftUnder({}), rows = rowsFor(upliftUnder);
+  drawTornado($('chart-tornado'), rows, central);
+  const cumCentral = cumExtraUnder({}), cumRows = rowsFor(cumExtraUnder);
+  const kFmt = (v) => `${Math.round(v / 1000)}k`;
+  drawTornado($('chart-tornado-cum'), cumRows, cumCentral, { fmt: kFmt });
+  const span = rows.map((r) => Math.max(r.lo, r.hi) - Math.min(r.lo, r.hi));
+  const growthCum = cumRows[1];
+  $('tornado-note').textContent = `Central: +${central.toFixed(1)}% peak uplift, ${kFmt(cumCentral)} cumulative extra clock stops to Apr-29. Each bar shows one assumption swept across the stated range, others held. Widest swing on the peak: ${rows[span.indexOf(Math.max(...span))].label}. The two metrics answer different questions — demand growth barely moves the PEAK (higher growth also raises the sustainable list target, and the two nearly cancel at the peak month) but moves the TOTAL from ${kFmt(Math.min(growthCum.lo, growthCum.hi))} to ${kFmt(Math.max(growthCum.lo, growthCum.hi))} extra stops: growth doesn't change the size of the biggest month, it changes how long you must sustain it. Note the removals bars read intuitively backwards — FEWER other-removals means MORE pathways need a clock stop.`;
+}
+
+function drawTornado(canvas, rows, central, opts = {}) {
+  const vfmt = opts.fmt || ((v) => `+${v.toFixed(1)}%`);
   // cache the design size: canvas.width/height below overwrite the attributes,
   // so re-reading them on redraw would compound the dpr scaling (mobile-scroll balloon)
   if (!canvas.dataset.baseW) { canvas.dataset.baseW = canvas.getAttribute('width'); canvas.dataset.baseH = canvas.getAttribute('height'); }
@@ -60,7 +77,8 @@ function drawTornado(canvas, rows, central) {
   const narrow = W < 640;
   const padL = narrow ? 10 : 250, padR = narrow ? 10 : 90, padT = 18, padB = narrow ? 8 : 26;
   const vals = rows.flatMap((r) => [r.lo, r.hi]).concat([central]);
-  const vmin = Math.min(...vals) - 2, vmax = Math.max(...vals) + 2;
+  const vpad = (Math.max(...vals) - Math.min(...vals)) * 0.09 || Math.abs(central) * 0.05 || 1;
+  const vmin = Math.min(...vals) - vpad, vmax = Math.max(...vals) + vpad;
   const x = (v) => padL + ((v - vmin) / (vmax - vmin)) * (W - padL - padR);
   ctx.clearRect(0, 0, W, H);
   ctx.font = '11px system-ui';
@@ -68,7 +86,7 @@ function drawTornado(canvas, rows, central) {
   ctx.strokeStyle = '#37465a'; ctx.setLineDash([4, 4]);
   ctx.beginPath(); ctx.moveTo(x(central), padT - 6); ctx.lineTo(x(central), H - padB); ctx.stroke();
   ctx.setLineDash([]);
-  const centralTxt = `central +${central.toFixed(1)}%`;
+  const centralTxt = `central ${vfmt(central)}`;
   const cw = ctx.measureText(centralTxt).width;
   ctx.fillStyle = css('--muted'); ctx.textAlign = 'center';
   ctx.fillText(centralTxt, Math.max(cw / 2 + 2, Math.min(x(central), W - cw / 2 - 2)), padT - 8);
@@ -81,7 +99,7 @@ function drawTornado(canvas, rows, central) {
     ctx.fillStyle = css('--text');
     if (narrow) { ctx.textAlign = 'left'; ctx.fillText(r.label, padL, padT + rh * i + 16); }
     else { ctx.textAlign = 'right'; ctx.fillText(r.label, padL - 10, yMid + 4); }
-    const loTxt = `+${lo.toFixed(1)}%`, hiTxt = `+${hi.toFixed(1)}%`;
+    const loTxt = vfmt(lo), hiTxt = vfmt(hi);
     ctx.textAlign = 'right';
     ctx.fillText(loTxt, Math.max(x(lo) - 5, ctx.measureText(loTxt).width + 2), yMid + 4);
     ctx.textAlign = 'left';
@@ -198,7 +216,7 @@ const LEVERS = [
   { key: 'dnaRate', label: 'Outpatient DNA rate', min: 0.03, max: 0.12, step: 0.005, pct: true, bench: 'best practice 5% (NHS Elect)' },
   { key: 'clinicUtilisation', label: 'Clinic utilisation', min: 0.75, max: 0.95, step: 0.01, pct: true, bench: 'target 90% (NHS Elect)' },
   { key: 'theatreUtilisation', label: 'Theatre utilisation (capped)', min: 0.65, max: 0.9, step: 0.01, pct: true, bench: 'GIRFT standard 85%. casesPerSession is defined at FULL utilisation (a planning norm, not achieved throughput), so this divides once — no double-discount' },
-  { key: 'kEndScale', label: 'Booking-discipline drift (× shape factor k by 2029)', min: 0.6, max: 1.5, step: 0.05, bench: 'k today 0.93–1.81 per TFC (census-calibrated, anchored to published %<18wk); FIFO-like discipline raises k and the sustainable list scales linearly with it — memoryless selection → ×1. See the explainer.' },
+  { key: 'kEndScale', label: 'Booking-discipline drift (× shape factor k by 2029)', min: 0.6, max: 1.5, step: 0.05, bench: 'k today {K_RANGE} per TFC (census-calibrated, anchored to published %<18wk); FIFO-like discipline raises k and the sustainable list scales linearly with it — memoryless selection → ×1. See the explainer.' },
   { key: 'bedOccupancy', label: 'G&A bed occupancy', min: 0.85, max: 0.98, step: 0.01, pct: true, bench: 'planning norm 92%, aligned with the UEC module so bed totals add consistently (NUH winter actual 95.4%)' },
 ];
 
@@ -208,7 +226,7 @@ function buildLevers() {
     return `<div class="lever">
       <label>${l.label} — <span class="val" id="lv-${l.key}">${l.pct ? (v * 100).toFixed(1) + '%' : v}</span></label>
       <input type="range" data-lever="${l.key}" min="${l.min}" max="${l.max}" step="${l.step}" value="${v}" />
-      <div class="bench">${l.bench}</div>
+      <div class="bench">${l.bench.replace('{K_RANGE}', kRangeText)}</div>
     </div>`;
   }).join('');
 }

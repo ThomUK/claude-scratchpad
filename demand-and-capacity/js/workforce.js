@@ -5,6 +5,7 @@ const $ = (id) => document.getElementById(id);
 const setStatus = (t, k) => { const el = $('status'); el.textContent = t; el.className = `status status--${k}`; };
 
 let wf = null;
+let uecData = null;     // kept for the productivity panel, which re-renders on lever changes
 let activityIdx = null; // monthly combined activity index, 1.0 at t0
 let scenario = { levers: {} };
 let result = null;
@@ -19,11 +20,11 @@ const WEIGHTS = { uec: 0.45, rtt: 0.35, dm01: 0.10, cancer: 0.10 };
       'data/workforce.json', 'data/baseline.json', 'data/dm01.json', 'data/cancer.json', 'data/uec.json',
     ].map(async (p) => (await fetch(`${p}?v=dev`, { cache: 'no-cache' })).json()));
     wf = w;
+    uecData = uec;
     activityIdx = buildActivityIndex(baseline, dm01, cancer, uec, WEIGHTS);
     buildLevers();
     recompute();
     renderStatic();
-    renderProductivity(uec);
     wire();
     setStatus('Model ready', 'ready');
   } catch (e) {
@@ -37,6 +38,9 @@ function recompute() {
   renderCards();
   renderGapChart();
   renderGroupTable();
+  // the solver figure and hiring number in the productivity panel depend on the
+  // same levers, so the panel must follow them
+  if (uecData) renderProductivity(uecData);
 }
 
 function renderCards() {
@@ -120,6 +124,7 @@ function renderProductivity(uec) {
     .map((t) => ({ year: +t.date.slice(0, 4), beds: t.occupied, fte: fteAt(+t.date.slice(0, 4)) }))
     .filter((p) => !Number.isNaN(p.fte));
   const base = pts.find((p) => p.year === 2019);
+  if (!base || pts.length < 2) return; // proxy needs the 2019 anchor in the KH03 trend
   const idx = pts.map((p) => 100 * (p.beds / p.fte) / (base.beds / base.fte));
   const last = pts[pts.length - 1];
   const iLast = idx[idx.length - 1];

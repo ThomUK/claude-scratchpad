@@ -91,7 +91,7 @@ function renderStdChart() {
 }
 
 const LEVERS = [
-  { key: 'demandGrowthPctYr', label: 'Cancer demand growth (%/yr)', min: -3, max: 15, step: 0.5, bench: 'calibrated −0.7%/yr (pre-EPR pair Apr-24→Apr-25); Apr-25→Apr-26 was +13.4% (EPR-affected)' },
+  { key: 'demandGrowthPctYr', label: 'Cancer demand growth (%/yr)', min: -3, max: 15, step: 0.5, bench: 'calibrated +4.2%/yr working-day adjusted (pre-EPR pair Apr-24→Apr-25; raw −0.7% is the Easter artefact, 21 vs 20 working days); Apr-25→Apr-26 was +13.4% (EPR-affected)' },
 ];
 
 function buildLevers() {
