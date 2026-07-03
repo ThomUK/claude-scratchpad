@@ -226,6 +226,42 @@ export function runDiagnostic(mod, levers, cal, milestones, windowWeeks = 6) {
   return s;
 }
 
+// --- workforce (phase 5: the cross-cutting constraint) ------------------------
+// Requirement side: clinical FTE must scale with the activity the other modules
+// say is required — an activity index (1.0 at t0), deflated by a productivity
+// lever (activity per FTE per year). Supply side: each group grows at its
+// calibrated trend plus an adjustment lever. Infrastructure support is treated
+// as activity-independent. Bank/agency are outside the published counts, so
+// gaps understate true pressure.
+export const WORKFORCE_CLINICAL = ['nurses', 'midwives', 'doctors', 'stt', 'supportClinical'];
+
+export function runWorkforce(wf, activityIdx, opts = {}) {
+  const cal = calendar(opts.startYM || '2026-07', opts.endYM || '2030-03');
+  const n = cal.length;
+  const levers = { ...wf.levers, ...(opts.levers || {}) };
+  const prod = Math.pow(1 + (levers.productivityPctYr ?? 0) / 100, 1 / 12);
+  const perGroup = {};
+  for (const [key, g] of Object.entries(wf.groups)) {
+    if (key === 'total' || key === 'consultants') continue;
+    const clinical = WORKFORCE_CLINICAL.includes(key);
+    const gr = Math.pow(1 + ((g.growthPctYr ?? 0) + (levers.workforceGrowthAdjPctYr ?? 0)) / 100, 1 / 12);
+    const required = new Array(n), supply = new Array(n);
+    for (let i = 0; i < n; i++) {
+      required[i] = clinical ? (g.fte * activityIdx[i]) / Math.pow(prod, i) : g.fte;
+      supply[i] = g.fte * Math.pow(gr, i);
+    }
+    perGroup[key] = { group: g, clinical, required, supply };
+  }
+  const clin = Object.values(perGroup).filter((r) => r.clinical);
+  const requiredClinical = cal.map((_, i) => clin.reduce((a, r) => a + r.required[i], 0));
+  const supplyClinical = cal.map((_, i) => clin.reduce((a, r) => a + r.supply[i], 0));
+  const totals = {
+    ym: cal, requiredClinical, supplyClinical,
+    gapClinical: cal.map((_, i) => requiredClinical[i] - supplyClinical[i]),
+  };
+  return { cal, levers, perGroup, totals };
+}
+
 // --- UEC (A&E 4-hour, 12-hour DTA, emergency beds) ----------------------------
 // The 4-hour standard is a FLOW standard like cancer: each month's attendances
 // are scored on timeliness (no backlog census — nobody waits in A&E between

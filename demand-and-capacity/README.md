@@ -133,6 +133,20 @@ Handover Times by Acute Trust collection (Apr-26: mean **31.3 min** vs the
 85 min has more than halved). Timeseries cells that lost their time formatting
 arrive as raw Excel day fractions — the ingest converts them.
 
+### Workforce seeding
+
+`ingest/ingest_workforce.py` reads the NHS Workforce Statistics HCHS CSV packs
+(ESR payroll-based, so *not* EPR-affected). RX1 April 2026: **17,662 total
+FTE** — 4,960 nurses & health visitors, 2,360 doctors (963 consultants), 2,345
+ST&T. The 2020-24 expansion (+4.4%/yr) has reversed: **−1.4% total FTE in the
+latest year**. The full packs are hundreds of MB, so provider-only slices are
+committed to `source/` and the ingest accepts either. The module treats
+workforce as the cross-cutting constraint: required clinical FTE = a weighted
+activity index from the other four modules (emergency 45%, elective 35%,
+diagnostics 10%, cancer 10% — documented assumption) deflated by a
+productivity lever, vs supply projected at each group's calibrated trend.
+Bank/agency are outside the published counts, so gaps understate pressure.
+
 ## Roadmap
 
 | Phase | Scope |
@@ -141,7 +155,7 @@ arrive as raw Excel day fractions — the ingest converts them.
 | **2 — Diagnostics (this release)** | DM01 modality-level queues vs the 6-week standard — `diagnostics.html`, seeded from the published DM01 provider files (Apr-24/25/26), same queueing core on a 6-week window |
 | **3 — Cancer (this release)** | FDS / 31-day / 62-day timeliness by tumour site — `cancer.html`, seeded from published CWT provider data (Apr-24/25/26, two formats), flow model on cohort volumes |
 | **4 — UEC (this release)** | ED 4-hour, 12-hour DTA, discharge delays and the shared bed pool — `uec.html`, seeded from MSitAE, UEC sitreps, KH03 and Discharge Ready Date; including ambulance handover (Handover Times by Acute Trust) |
-| 5 — Workforce | Medical & nursing WTE as the cross-cutting constraint |
+| **5 — Workforce (this release)** | Medical & nursing FTE as the cross-cutting constraint — `workforce.html`, activity-driven requirement vs supply at trend, seeded from NHS Workforce Statistics |
 
 ## Explainers
 

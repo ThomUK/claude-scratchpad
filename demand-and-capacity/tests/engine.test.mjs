@@ -143,6 +143,35 @@ console.log('— UEC module —');
   ok(close(peak, 84.8, 0.1) && ho.timeseries[ho.timeseries.length - 1].meanMin < peak / 2, `Jan-24 peak ${peak} min has more than halved`);
 }
 
+console.log('— workforce module —');
+{
+  const { runWorkforce } = await import('../js/engine.js');
+  const wf = JSON.parse(readFileSync(new URL('../data/workforce.json', import.meta.url)));
+  ok(close(wf.groups.total.fte, 17662, 1), `total FTE ${wf.groups.total.fte.toLocaleString()} (published Apr-26)`);
+  ok(close(wf.groups.nurses.fte + wf.groups.midwives.fte + wf.groups.doctors.fte + wf.groups.stt.fte
+     + wf.groups.supportClinical.fte + wf.groups.infrastructure.fte + 15,
+     wf.groups.total.fte, 25), 'staff groups + unknown(15) sum to total');
+  // flat activity, zero productivity, zero growth adj → required(0) = supply(0)
+  const cal = calendar('2026-07', '2030-03');
+  const flat = cal.map(() => 1);
+  const w0 = runWorkforce(wf, flat, { levers: { productivityPctYr: 0, workforceGrowthAdjPctYr: 0 } });
+  ok(close(w0.totals.requiredClinical[0], w0.totals.supplyClinical[0], 0.5), 'required = supply at t=0');
+  // rising activity opens a gap when supply trend is flat-ish
+  const rising = cal.map((_, i) => 1 + 0.10 * (i / 12));
+  const w1 = runWorkforce(wf, rising, { levers: { productivityPctYr: 0, workforceGrowthAdjPctYr: 0 } });
+  const iEnd = cal.length - 1;
+  ok(w1.totals.gapClinical[iEnd] > 0, `+10%/yr activity opens a clinical gap (${Math.round(w1.totals.gapClinical[iEnd]).toLocaleString()} FTE by Mar-30)`);
+  // productivity substitutes for workforce: 10%/yr activity with 10%/yr productivity → no gap
+  const w2 = runWorkforce(wf, cal.map((_, i) => Math.pow(1.10, i / 12)), { levers: { productivityPctYr: 10, workforceGrowthAdjPctYr: 0 } });
+  const reqEnd = w2.totals.requiredClinical[iEnd];
+  ok(close(reqEnd, w2.totals.requiredClinical[0], 1), 'productivity exactly offsets matching activity growth');
+  // infrastructure is activity-independent
+  ok(close(w1.perGroup.infrastructure.required[iEnd], wf.groups.infrastructure.fte, 0.1), 'infrastructure requirement stays flat');
+  // supply follows calibrated per-group trend
+  const ng = wf.groups.nurses.growthPctYr / 100;
+  ok(close(w0.perGroup.nurses.supply[12] / w0.perGroup.nurses.supply[0], 1 + ng, 0.002), `nurse supply compounds at calibrated ${wf.groups.nurses.growthPctYr}%/yr`);
+}
+
 console.log('— explainer maths (census vs flow) —');
 {
   const { erlangCdf, censusCdf, runClearanceSim } = await import('../js/explainmath.js');

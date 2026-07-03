@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workforce — Demand &amp; Capacity, NUH (RX1)</title>
+  <link rel="stylesheet" href="styles.css?v=dev" />
+</head>
+<body>
+  <header>
+    <h1>Workforce — NUH (RX1)</h1>
+    <nav class="crumbs"><a href="./">← Elective (RTT) spine</a> · <a href="diagnostics.html">Diagnostics (DM01)</a> · <a href="cancer.html">Cancer (CWT)</a> · <a href="uec.html">UEC</a> · <a href="explainers.html">Explainers →</a></nav>
+    <p class="subtitle">
+      <strong>Phase 5:</strong> medical &amp; nursing workforce as the <strong>cross-cutting
+      constraint</strong>. The requirement side takes the activity the other four modules say is
+      needed — a weighted activity index deflated by a productivity lever — and asks what clinical
+      FTE that implies. The supply side projects each staff group at its calibrated trend. The gap
+      between them is the workforce ask hiding inside every recovery trajectory.
+    </p>
+    <p class="data-note">Seeded from the <strong>NHS Workforce Statistics HCHS CSV packs (April 2026;
+      timeseries to 2009)</strong> — ESR payroll-based, so <em>not</em> EPR-affected and the latest annual
+      pair is clean for calibration. <strong>Substantive staff only: bank and agency are outside these
+      counts</strong>, so gaps understate true staffing pressure. Activity weights (emergency 45%,
+      elective 35%, diagnostics 10%, cancer 10%) are a documented modelling assumption.</p>
+    <p id="status" class="status status--loading" role="status">Loading model…</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Workforce position &amp; the constraint</h2>
+      <div id="cards" class="cards"></div>
+      <div class="chart-block">
+        <h3>Clinical FTE — required vs supply at trend <span class="muted small">(requirement = activity index ÷ productivity)</span></h3>
+        <canvas id="chart-gap" width="1040" height="360"></canvas>
+      </div>
+      <p class="muted small" id="gap-note"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Levers</h2>
+      <div id="levers" class="levers"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Staff groups</h2>
+      <div class="table-wrap">
+        <table id="group-table">
+          <thead><tr>
+            <th>Staff group</th><th class="num">FTE (Apr-26)</th>
+            <th class="num">Growth (latest yr)</th><th class="num">5-yr CAGR</th>
+            <th class="num">Required Apr-29</th><th class="num">Supply Apr-29</th><th class="num">Gap</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="chart-block">
+        <h3>FTE by staff group — long run <span class="muted small">(September snapshots + monthly from Apr-25)</span></h3>
+        <canvas id="chart-trend" width="1040" height="360"></canvas>
+      </div>
+      <p class="muted small">The 2020–2024 expansion (+4.4%/yr total) has stopped: the latest year shows
+        <strong>−1.4% total FTE</strong>, concentrated in support and infrastructure roles, while the
+        modelled activity requirement keeps rising. Every percentage point of annual productivity
+        (activity per FTE) substitutes for roughly a percentage point of workforce growth.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Medical workforce detail <span class="muted small">(April 2026)</span></h2>
+      <div class="two-col">
+        <div>
+          <h3>Doctors by grade</h3>
+          <div class="table-wrap">
+            <table id="grade-table">
+              <thead><tr><th>Grade</th><th class="num">FTE</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <h3>Consultants by specialty group</h3>
+          <div class="table-wrap">
+            <table id="spec-table">
+              <thead><tr><th>Specialty group</th><th class="num">FTE</th><th class="num">Share</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <p class="muted small" id="turnover-note"></p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Source: NHS Workforce Statistics (HCHS monthly, ESR-based) — provider slices in
+      <code>source/</code>, ingest in <code>ingest/ingest_workforce.py</code>. Requirement linkage and
+      activity weights are modelling assumptions; bank/agency staffing is outside the published counts.
+      Illustrative planning model — not operational advice.</p>
+  </footer>
+
+  <script type="module" src="js/workforce.js?v=dev"></script>
+</body>
+</html>
