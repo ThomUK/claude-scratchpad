@@ -1,0 +1,126 @@
+{
+  "_provenance": {
+    "provider": "RX1",
+    "period": "Apr-26",
+    "sources": [
+      "Apr-24",
+      "Apr-25",
+      "Apr-26"
+    ],
+    "dataQuality": "Seeded from published Monthly A&E (MSitAE) provider CSVs. From Apr-26 the co-located UTC/walk-in activity reports under RX1's code, inflating 'Other department' attendances \u2014 type-1 and admissions are the comparable series. Growth calibrated from the LATEST pair \u2014 the earliest pair is contaminated by the UTC reporting split (Apr-24\u2192Apr-25), and attendance counts are not EPR-sensitive. April is bank-holiday depressed. 12-hour figure is decision-to-admit based (the published measure), not 12h-from-arrival."
+  },
+  "snapshots": {
+    "Apr-24": {
+      "att": {
+        "t1": 15219.0,
+        "t2": 2022.0,
+        "other": 316.0
+      },
+      "attAll": 17557.0,
+      "over4": {
+        "t1": 7338.0,
+        "t2": 119.0,
+        "other": 5.0
+      },
+      "over4All": 7462.0,
+      "pct4hAll": 57.5,
+      "pct4hT1": 51.8,
+      "dta4to12": 695.0,
+      "dta12plus": 519.0,
+      "admissions": {
+        "viaAE": 3880.0,
+        "other": 3931.0
+      },
+      "admTotal": 7811.0
+    },
+    "Apr-25": {
+      "att": {
+        "t1": 12371.0,
+        "t2": 1736.0,
+        "other": 542.0
+      },
+      "attAll": 14649.0,
+      "over4": {
+        "t1": 6491.0,
+        "t2": 122.0,
+        "other": 123.0
+      },
+      "over4All": 6736.0,
+      "pct4hAll": 54.0,
+      "pct4hT1": 47.5,
+      "dta4to12": 254.0,
+      "dta12plus": 581.0,
+      "admissions": {
+        "viaAE": 4520.0,
+        "other": 4100.0
+      },
+      "admTotal": 8620.0
+    },
+    "Apr-26": {
+      "att": {
+        "t1": 12555.0,
+        "t2": 1943.0,
+        "other": 9716.0
+      },
+      "attAll": 24214.0,
+      "over4": {
+        "t1": 6944.0,
+        "t2": 198.0,
+        "other": 861.0
+      },
+      "over4All": 8003.0,
+      "pct4hAll": 66.9,
+      "pct4hT1": 44.7,
+      "dta4to12": 156.0,
+      "dta12plus": 819.0,
+      "admissions": {
+        "viaAE": 4818.0,
+        "other": 3899.0
+      },
+      "admTotal": 8717.0
+    }
+  },
+  "current": {
+    "att": {
+      "t1": 12555.0,
+      "t2": 1943.0,
+      "other": 9716.0
+    },
+    "attAll": 24214.0,
+    "over4": {
+      "t1": 6944.0,
+      "t2": 198.0,
+      "other": 861.0
+    },
+    "over4All": 8003.0,
+    "pct4hAll": 66.9,
+    "pct4hT1": 44.7,
+    "dta4to12": 156.0,
+    "dta12plus": 819.0,
+    "admissions": {
+      "viaAE": 4818.0,
+      "other": 3899.0
+    },
+    "admTotal": 8717.0
+  },
+  "levers": {
+    "attGrowthPctYr": 1.5,
+    "admGrowthPctYr": 1.1
+  },
+  "standards": {
+    "fourHour": {
+      "name": "A&E 4-hour standard",
+      "constitutionalPct": 95,
+      "interim": {
+        "ym": "2026-03",
+        "pct": 78
+      },
+      "note": "constitutional 95%; 2025/26 planning ambition 78% by Mar-26; milestones beyond are modelling assumptions"
+    },
+    "twelveHourDTA": {
+      "name": "12-hour decision-to-admit waits",
+      "target": 0,
+      "note": "should be zero; published measure is DTA-based"
+    }
+  }
+}
