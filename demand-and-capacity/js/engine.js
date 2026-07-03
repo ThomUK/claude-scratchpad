@@ -141,6 +141,9 @@ export function runTfc(tfc, levers, cal, milestones) {
     const attendances = firsts + fus;
     const slots = attendances / (1 - levers.dnaRate) / levers.clinicUtilisation;
     const cases = admitted;
+    // casesPerSession is defined as cases in a FULLY-UTILISED planned session
+    // (a planning norm, not achieved throughput), so dividing by utilisation
+    // converts cases -> sessions to schedule without double-discounting.
     const sessions = (cases / tfc.casesPerSession) / levers.theatreUtilisation;
     const dayCases = cases * tfc.dayCaseRate;
     const ip = cases - dayCases;
@@ -238,6 +241,27 @@ export function runDiagnostic(mod, levers, cal, milestones, windowWeeks = 6) {
   return s;
 }
 
+// Combined activity index for the workforce module, ANCHORED to required vs
+// DELIVERED activity at t0: month-0 required work already exceeds what today's
+// staffing delivers (the recovery step-up), so the index starts above 1 for
+// the elective modules rather than assuming current FTE covers it for free.
+// Emergency admissions are demand (delivered by definition), so anchor 1.
+export function buildActivityIndex(baseline, dm01, cancer, uec, weights = { uec: 0.45, rtt: 0.35, dm01: 0.10, cancer: 0.10 }) {
+  const rttRes = runScenario(baseline);
+  const rtt = rttRes.trust.requiredStopsMo.map((v) => v / rttRes.trust.currentStopsMo[0]);
+  const dmRes = runDiagnostics(dm01);
+  const dm = dmRes.total.requiredTestsMo.map((v) => v / dmRes.total.currentTestsMo[0]);
+  const cw = runCancer(cancer);
+  const cwReq = cw.cal.map((_, i) =>
+    ['fds', 'd31', 'd62'].reduce((a, k) => a + cw.perStd[k].series.requiredTimelyMo[i], 0));
+  const cwCur = ['fds', 'd31', 'd62'].reduce((a, k) => a + cw.perStd[k].series.currentRateTimelyMo[0], 0);
+  const ca = cwReq.map((v) => v / cwCur);
+  const ueRes = runUec(uec);
+  const ue = ueRes.series.admMo.map((v) => v / ueRes.series.admMo[0]);
+  return rtt.map((_, i) =>
+    weights.rtt * rtt[i] + weights.dm01 * dm[i] + weights.cancer * ca[i] + weights.uec * ue[i]);
+}
+
 // --- workforce (phase 5: the cross-cutting constraint) ------------------------
 // Requirement side: clinical FTE must scale with the activity the other modules
 // say is required — an activity index (1.0 at t0), deflated by a productivity
@@ -287,16 +311,28 @@ export function runUec(uec, opts = {}) {
   const n = cal.length;
   const gAtt = Math.pow(1 + (levers.attGrowthPctYr ?? 0) / 100, 1 / 12);
   const gAdm = Math.pow(1 + (levers.admGrowthPctYr ?? 0) / 100, 1 / 12);
+  // Milestones are a DOCUMENTED MODELLING ASSUMPTION: 82% at Apr-27 is the
+  // Medium Term Planning Framework objective (the 2025/26 ambition was 78%);
+  // 88% Apr-28 and constitutional 95% Apr-29 are our interpolation/endpoint.
   const msFour = opts.fourHourMilestones || [
-    { ym: '2027-04', pct: 78 }, { ym: '2028-04', pct: 86 }, { ym: '2029-04', pct: 95 },
+    { ym: '2027-04', pct: 82 }, { ym: '2028-04', pct: 88 }, { ym: '2029-04', pct: 95 },
   ];
   const glide4 = glidePath(cal, cur.pct4hAll, msFour);
+  // Derived TYPE-1 requirement: the standard is measured across all types, but
+  // the merged UTC stream flatters it. Hold non-type-1 streams at today's
+  // performance and back out what type-1 must deliver for the all-types glide.
+  const sT1 = cur.att.t1 / cur.attAll;
+  const winT1 = cur.att.t1 - cur.over4.t1;
+  const winAll = cur.attAll - cur.over4All;
+  const pctNonT1 = 100 * (winAll - winT1) / (cur.attAll - cur.att.t1);
+  const glideT1 = glide4.map((g) =>
+    Math.max(0, Math.min(100, (g - pctNonT1 * (1 - sT1)) / sT1)));
   const dtaZero = Math.max(1, ymDiff(cal[0], opts.dtaZeroYM || '2028-04'));
   const los = levers.emergencyLOSDays ?? 5;
   const occT = levers.bedOccupancyTarget ?? 0.92;
 
   const s = {
-    ym: cal, glidePct: glide4,
+    ym: cal, glidePct: glide4, glideT1Pct: glideT1, pctNonT1: Math.round(pctNonT1 * 10) / 10,
     attMo: new Array(n), requiredTimelyMo: new Array(n),
     currentRateTimelyMo: new Array(n), extraTimelyMo: new Array(n),
     dta12Mo: new Array(n),

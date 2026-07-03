@@ -30,7 +30,9 @@ and the [NHSRwaitinglist](https://nhs-r-community.github.io/NHSRwaitinglist/) pa
      start — they do not surge with clearance), follow-ups by clock stops
      (N:FU ratio), uplifted for DNA rate and clinic utilisation → slots;
    - **Theatres**: admitted stops → cases → sessions via cases-per-session and
-     GIRFT capped utilisation, day-case vs inpatient split (BADS);
+     GIRFT capped utilisation, day-case vs inpatient split (BADS).
+     *casesPerSession is defined at full utilisation* (a planning norm, not
+     achieved throughput) so the utilisation divide happens exactly once;
    - **Beds**: inpatient electives × specialty LOS ÷ occupancy target;
    - **Diagnostics**: referral-driven tests per referral (deepened in phase 2).
 
@@ -124,6 +126,12 @@ candidates), a service move (sleep studies −48%, list 1,303→417) and list
 validation (NOUS census −38% on flat activity). Step-changed modalities are
 excluded from calibration, mirroring the RTT method; the EPR-year pair's core
 reading (−5.8%) confirms that year is contaminated for diagnostics too.
+*Symmetry note*: the pre-EPR rule is applied consistently even though it
+raises growth here while (before working-day adjustment) it lowered growth
+for RTT — the rejected EPR-year pairs swing in implausible and opposite
+directions across modules, which is recording disruption, not demand. The
+pre-EPR pair may itself embed recovery-drive catch-up rather than pure
+demand, so growth stays a lever with the raw figure quoted alongside.
 The 95%-by-Apr-27 / 99%-by-Apr-29 milestones are a documented modelling
 assumption aligned to the RTT trajectory.
 
@@ -159,8 +167,13 @@ specialty bed mix (geriatric medicine is the largest occupied base) and
 England occupancy context. `ingest_drd.py` adds Discharge Ready Date delays
 (Apr-26: 22.7% of discharges delayed, **5,435 bed-days lost ≈ 179 beds**;
 early-year figures understate — DRD recording matured over 2024-26). The
-module models the 4-hour standard as a flow standard (like cancer), 12-hour
-DTA to zero, and the shared bed pool: emergency beds (λ×LOS) + the elective
+module models the 4-hour standard as a flow standard (like cancer) with
+DOCUMENTED milestone assumptions — 82% at Apr-27 is the Medium Term Planning
+Framework objective (2025/26 ambition was 78%), 88%/95% are our interpolation
+and constitutional endpoint — and, because the all-types metric is
+UTC-flattered, also derives the implied TYPE-1 glide (holding non-type-1
+streams at today's performance, type-1 must reach ~93% for 95% all-types,
+from 44.7% today); plus 12-hour DTA to zero and the shared bed pool: emergency beds (λ×LOS) + the elective
 spine's requirement vs ~1,600 open. `ingest_handover.py` adds the Ambulance
 Handover Times by Acute Trust collection (Apr-26: mean **31.3 min** vs the
 15-minute standard, 45.9% over 30 min, 747 crew-hours lost; the Jan-24 peak of
@@ -179,7 +192,11 @@ workforce as the cross-cutting constraint: required clinical FTE = a weighted
 activity index from the other four modules (emergency 45%, elective 35%,
 diagnostics 10%, cancer 10% — documented assumption) deflated by a
 productivity lever, vs supply projected at each group's calibrated trend.
-Bank/agency are outside the published counts, so gaps understate pressure.
+The index is ANCHORED to required vs DELIVERED activity at t0 — month-0
+required work already exceeds today's delivery (the recovery step-up), so the
+FTE gap includes the step-up rather than assuming current staff absorb it for
+free. Even so the gap is understated: bank/agency staffing (outside the
+published counts) currently absorbs part of that step-up.
 
 ## Roadmap
 

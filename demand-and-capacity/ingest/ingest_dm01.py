@@ -123,7 +123,13 @@ def main():
             "dataQuality": ("Seeded from published DM01 provider files. Demand estimated as "
                             "waiting-list tests + year-on-year ΔWL/12; April activity is "
                             f"bank-holiday depressed. {calNote}. Growth applied at whole-"
-                            "diagnostics level (modality recoding caution as per RTT)."),
+                            "diagnostics level (modality recoding caution as per RTT). "
+                            "SYMMETRY NOTE: the pre-EPR-pair rule is applied consistently "
+                            "across modules even though it raises growth here and lowered it "
+                            "for RTT — the EPR-year pair swings in implausible and OPPOSITE "
+                            "directions across modules (RTT +8.0%, DM01 core −5.8%), which is "
+                            "recording disruption, not demand. The pre-EPR pair may still "
+                            "embed recovery-drive catch-up, so growth remains a lever."),
         },
         "standard": {"windowWeeks": 6, "interimPct": 95, "constitutionalPct": 99,
                      "milestones": [{"ym": "2027-04", "pct": 95}, {"ym": "2029-04", "pct": 99}],

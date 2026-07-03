@@ -1,4 +1,4 @@
-import { runWorkforce, runScenario, runDiagnostics, runCancer, runUec, ymDiff } from './engine.js?v=dev';
+import { runWorkforce, buildActivityIndex, ymDiff } from './engine.js?v=dev';
 import { lineChart, fmt, S1, S2, S3 } from './charts.js?v=dev';
 
 const $ = (id) => document.getElementById(id);
@@ -19,7 +19,7 @@ const WEIGHTS = { uec: 0.45, rtt: 0.35, dm01: 0.10, cancer: 0.10 };
       'data/workforce.json', 'data/baseline.json', 'data/dm01.json', 'data/cancer.json', 'data/uec.json',
     ].map(async (p) => (await fetch(`${p}?v=dev`, { cache: 'no-cache' })).json()));
     wf = w;
-    activityIdx = buildActivityIndex(baseline, dm01, cancer, uec);
+    activityIdx = buildActivityIndex(baseline, dm01, cancer, uec, WEIGHTS);
     buildLevers();
     recompute();
     renderStatic();
@@ -30,18 +30,6 @@ const WEIGHTS = { uec: 0.45, rtt: 0.35, dm01: 0.10, cancer: 0.10 };
     setStatus('Failed to load workforce data.', 'error');
   }
 })();
-
-function buildActivityIndex(baseline, dm01, cancer, uec) {
-  const norm = (arr) => arr.map((v) => v / arr[0]);
-  const rtt = norm(runScenario(baseline).trust.requiredStopsMo);
-  const dm = norm(runDiagnostics(dm01).total.requiredTestsMo);
-  const cw = runCancer(cancer);
-  const cwTot = cw.cal.map((_, i) =>
-    ['fds', 'd31', 'd62'].reduce((a, k) => a + cw.perStd[k].series.requiredTimelyMo[i], 0));
-  const ca = norm(cwTot);
-  const ue = norm(runUec(uec).series.admMo);
-  return rtt.map((_, i) => WEIGHTS.rtt * rtt[i] + WEIGHTS.dm01 * dm[i] + WEIGHTS.cancer * ca[i] + WEIGHTS.uec * ue[i]);
-}
 
 function recompute() {
   result = runWorkforce(wf, activityIdx, { levers: scenario.levers });
@@ -70,7 +58,7 @@ function renderGapChart() {
     { name: 'supply at trend', data: t.supplyClinical, color: S2(), dash: [5, 4] },
   ], { milestones: MS_LABELS, yfmt: (v) => `${(v / 1000).toFixed(1)}k` });
   const idxEnd = activityIdx[activityIdx.length - 1];
-  $('gap-note').textContent = `Activity index reaches ${(100 * idxEnd - 100).toFixed(0) > 0 ? '+' : ''}${(100 * idxEnd - 100).toFixed(0)}% vs Jul-26 by Mar-30 (weighted: emergency ${100 * 0.45}%, elective ${100 * 0.35}%, diagnostics ${100 * 0.10}%, cancer ${100 * 0.10}%). Productivity lever currently ${result.levers.productivityPctYr}%/yr; growth adjustment ${result.levers.workforceGrowthAdjPctYr >= 0 ? '+' : ''}${result.levers.workforceGrowthAdjPctYr}%/yr on every group's trend.`;
+  $('gap-note').textContent = `The index is ANCHORED to required vs DELIVERED activity: it opens at ${activityIdx[0].toFixed(2)} (the recovery step-up — month-0 required work already exceeds what today's staffing delivers) and reaches ${activityIdx[activityIdx.length - 1].toFixed(2)} by Mar-30 (weights: emergency 45%, elective 35%, diagnostics 10%, cancer 10%). So the gap includes the step-up, not just growth after t0 — and it still UNDERSTATES pressure, because bank/agency staffing (outside the published FTE counts) is currently absorbing part of that step-up. Productivity lever ${result.levers.productivityPctYr}%/yr; growth adjustment ${result.levers.workforceGrowthAdjPctYr >= 0 ? '+' : ''}${result.levers.workforceGrowthAdjPctYr}%/yr.`;
 }
 
 function renderGroupTable() {

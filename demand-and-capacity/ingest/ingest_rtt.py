@@ -31,7 +31,9 @@ from collections import defaultdict
 WKS_PER_MONTH = 52 / 12
 
 # Operational parameters by TFC — ESTIMATES (GIRFT/BADS norms + acute-typical
-# values). Fields: admDayCase, casesPerSession, newToFu, losIP, diagPerRef
+# values). Fields: admDayCase, casesPerSession, newToFu, losIP, diagPerRef.
+# casesPerSession = cases in a FULLY-UTILISED planned session (planning norm,
+# not achieved throughput) — the engine divides by theatre utilisation once.
 OPS = {
     "C_100": (0.70, 4.0, 1.5, 3.0, 0.40), "C_101": (0.80, 5.0, 1.9, 2.0, 0.55),
     "C_110": (0.55, 3.0, 1.6, 2.8, 0.45), "C_120": (0.75, 4.0, 1.8, 1.5, 0.30),

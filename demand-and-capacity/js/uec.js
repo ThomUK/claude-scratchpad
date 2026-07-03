@@ -9,7 +9,7 @@ let electiveBeds = null; // monthly series from the RTT spine
 let scenario = { levers: {} };
 let result = null;
 
-const MS_LABELS = [{ ym: '2027-04', label: '78%' }, { ym: '2028-04', label: '86%' }, { ym: '2029-04', label: '95%' }];
+const MS_LABELS = [{ ym: '2027-04', label: '82%' }, { ym: '2028-04', label: '88%' }, { ym: '2029-04', label: '95%' }];
 
 (async function init() {
   try {
@@ -55,8 +55,10 @@ function renderCards() {
 function renderCharts() {
   const s = result.series, cal = result.cal;
   lineChart($('chart-glide'), cal, [
-    { name: 'required % <4h', data: s.glidePct, color: S1() },
+    { name: 'all types (the standard)', data: s.glidePct, color: S1() },
+    { name: 'type-1 implied', data: s.glideT1Pct, color: S2(), dash: [5, 4] },
   ], { milestones: MS_LABELS, ymin: 40, ymax: 100, yfmt: (v) => `${v.toFixed(0)}%` });
+  $('glide-note').textContent = `Milestones are a documented modelling assumption: 82% at Apr-27 is the Medium Term Planning Framework objective (2025/26 ambition was 78%); 88% Apr-28 and constitutional 95% Apr-29 are our interpolation and endpoint. The all-types line is flattered by the merged UTC stream, so the dashed line derives what TYPE-1 must deliver: holding non-type-1 streams at today's ${s.pctNonT1}%, type-1 must reach ${s.glideT1Pct[s.glideT1Pct.length - 1].toFixed(1)}% (from 44.7% today) for the trust to hit 95% all-types.`;
   lineChart($('chart-timely'), cal, [
     { name: 'required', data: s.requiredTimelyMo, color: S1() },
     { name: `today's rate`, data: s.currentRateTimelyMo, color: S2(), dash: [5, 4] },

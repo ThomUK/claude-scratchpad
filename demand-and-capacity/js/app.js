@@ -93,7 +93,7 @@ const LEVERS = [
   { key: 'otherRemovalsPct', label: 'Referrals leaving without treatment', min: 0, max: 0.4, step: 0.01, pct: true, bench: 'calibrated 10.7% (pre-EPR pair; DNA discharge, duplicates, validation — the EPR year\'s 20.3% is excluded as contaminated)' },
   { key: 'dnaRate', label: 'Outpatient DNA rate', min: 0.03, max: 0.12, step: 0.005, pct: true, bench: 'best practice 5% (NHS Elect)' },
   { key: 'clinicUtilisation', label: 'Clinic utilisation', min: 0.75, max: 0.95, step: 0.01, pct: true, bench: 'target 90% (NHS Elect)' },
-  { key: 'theatreUtilisation', label: 'Theatre utilisation (capped)', min: 0.65, max: 0.9, step: 0.01, pct: true, bench: 'GIRFT standard 85%' },
+  { key: 'theatreUtilisation', label: 'Theatre utilisation (capped)', min: 0.65, max: 0.9, step: 0.01, pct: true, bench: 'GIRFT standard 85%. casesPerSession is defined at FULL utilisation (a planning norm, not achieved throughput), so this divides once — no double-discount' },
   { key: 'kEndScale', label: 'Booking-discipline drift (× shape factor k by 2029)', min: 0.6, max: 1.5, step: 0.05, bench: 'k today 0.93–1.81 per TFC (census-calibrated, anchored to published %<18wk); FIFO-like discipline raises k and the sustainable list scales linearly with it — memoryless selection → ×1. See the explainer.' },
   { key: 'bedOccupancy', label: 'G&A bed occupancy', min: 0.85, max: 0.98, step: 0.01, pct: true, bench: 'planning norm 92%, aligned with the UEC module so bed totals add consistently (NUH winter actual 95.4%)' },
 ];

@@ -145,7 +145,16 @@ console.log('— UEC module —');
   const s = u.series, j0 = 0, j27 = ymDiff('2026-07', '2027-04'), j28 = ymDiff('2026-07', '2028-04'), j29 = ymDiff('2026-07', '2029-04');
   ok(close(s.attMo[j0], 24214, 1), `opening all-type attendances ${s.attMo[j0].toFixed(0)}/mo (published Apr-26)`);
   ok(close(s.glidePct[j0], 66.9, 0.1), `4h glide starts at published ${s.glidePct[j0].toFixed(1)}%`);
-  ok(close(s.glidePct[j27], 78, 1e-9), '4h glide hits 78% at Apr-27 (planning ambition)');
+  ok(close(s.glidePct[j27], 82, 1e-9), '4h glide hits 82% at Apr-27 (MTPF objective)');
+  // derived type-1: non-T1 streams held at today's performance
+  ok(s.glideT1Pct[j0] < s.glidePct[j0] - 15, `type-1 implied starts well below all-types (${s.glideT1Pct[j0].toFixed(1)}% vs ${s.glidePct[j0].toFixed(1)}%)`);
+  ok(s.glideT1Pct[j29] > 88 && s.glideT1Pct[j29] < 100, `type-1 must reach ${s.glideT1Pct[j29].toFixed(1)}% for 95% all-types`);
+  {
+    // arithmetic identity: sT1×T1 + (1−sT1)×nonT1 = all-types glide
+    const sT1 = uec.current.att.t1 / uec.current.attAll;
+    const recon = sT1 * s.glideT1Pct[j29] + (1 - sT1) * s.pctNonT1;
+    ok(close(recon, 95, 0.1), `T1/non-T1 shares reconstruct the all-types milestone (${recon.toFixed(1)} ≈ 95)`);
+  }
   ok(close(s.glidePct[j29], 95, 1e-9), '4h glide hits constitutional 95% at Apr-29');
   ok(close(s.dta12Mo[j0], 819, 1), `12h DTA starts at published ${s.dta12Mo[j0].toFixed(0)}/mo`);
   ok(s.dta12Mo[j28] < 1 && s.dta12Mo[u.cal.length - 1] === 0, '12h DTA reaches zero by Apr-28 and stays there');
@@ -202,6 +211,17 @@ console.log('— workforce module —');
   // supply follows calibrated per-group trend
   const ng = wf.groups.nurses.growthPctYr / 100;
   ok(close(w0.perGroup.nurses.supply[12] / w0.perGroup.nurses.supply[0], 1 + ng, 0.002), `nurse supply compounds at calibrated ${wf.groups.nurses.growthPctYr}%/yr`);
+}
+
+console.log('— anchored activity index —');
+{
+  const { buildActivityIndex } = await import('../js/engine.js');
+  const uecSeed = JSON.parse(readFileSync(new URL('../data/uec.json', import.meta.url)));
+  const idx = buildActivityIndex(baseline, dm01, cancer, uecSeed);
+  ok(idx[0] > 1.05, `index opens at ${idx[0].toFixed(2)} — the month-0 recovery step-up is not absorbed for free`);
+  const rttStep = runScenario(baseline).trust.requiredStopsMo[0] / runScenario(baseline).trust.currentStopsMo[0];
+  ok(idx[0] < rttStep, 'blended index step-up is below the pure RTT step-up (emergency anchors at 1)');
+  ok(idx.every((v) => v > 0.9), 'index never collapses below plausible bounds');
 }
 
 console.log('— explainer maths (census vs flow) —');

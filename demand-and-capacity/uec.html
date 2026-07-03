@@ -24,8 +24,9 @@
       (the earliest is contaminated by the UTC split — the reverse of the RTT/DM01 EPR situation).
       Emergency flows run 7 days a week, so growth pairs compare CALENDAR months — all three Aprils
       have 30 days and 22 weekdays — and no working-day adjustment applies (unlike the elective modules).
-      4-hour milestones (78% Apr-27 → 86% Apr-28 → 95% Apr-29) and the 12-hour-to-zero date are
-      modelling assumptions. <strong>Ambulance handover</strong> is seeded from the NHSE Ambulance
+      4-hour milestones (82% Apr-27 per the Medium Term Planning Framework objective → 88% Apr-28 →
+      95% Apr-29) and the 12-hour-to-zero date are documented modelling assumptions; the glide is
+      also derived for type-1, since the all-types metric is UTC-flattered. <strong>Ambulance handover</strong> is seeded from the NHSE Ambulance
       Handover Times by Acute Trust collection (monthly timeseries from Oct-2023 + April snapshots).</p>
     <p id="status" class="status status--loading" role="status">Loading model…</p>
   </header>
@@ -37,6 +38,7 @@
       <div class="chart-block">
         <h3>A&amp;E 4-hour performance — required glide path <span class="muted small">(all types; constitutional 95%)</span></h3>
         <canvas id="chart-glide" width="1040" height="360"></canvas>
+        <p class="muted small" id="glide-note"></p>
       </div>
       <div class="two-col">
         <div class="chart-block">
