@@ -1,4 +1,4 @@
-import { runWorkforce, buildActivityIndex, ymDiff } from './engine.js?v=dev';
+import { runWorkforce, buildActivityIndex, requiredProductivityPctYr, ymDiff } from './engine.js?v=dev';
 import { lineChart, fmt, S1, S2, S3 } from './charts.js?v=dev';
 
 const $ = (id) => document.getElementById(id);
@@ -23,6 +23,7 @@ const WEIGHTS = { uec: 0.45, rtt: 0.35, dm01: 0.10, cancer: 0.10 };
     buildLevers();
     recompute();
     renderStatic();
+    renderProductivity(uec);
     wire();
     setStatus('Model ready', 'ready');
   } catch (e) {
@@ -106,9 +107,47 @@ function renderStatic() {
   }
 }
 
+// --- productivity: the collapse since COVID and the required regain ----------
+function renderProductivity(uec) {
+  if (!uec.kh03?.trend) return;
+  const CLIN = ['nurses', 'midwives', 'doctors', 'stt', 'supportClinical'];
+  // clinical FTE at each September; occupied beds at each June (same year)
+  const fteAt = (year) => CLIN.reduce((a, g) => {
+    const p = wf.groups[g].series.find((x) => x.date === `${year}-09-30`);
+    return p ? a + p.fte : NaN;
+  }, 0);
+  const pts = uec.kh03.trend
+    .map((t) => ({ year: +t.date.slice(0, 4), beds: t.occupied, fte: fteAt(+t.date.slice(0, 4)) }))
+    .filter((p) => !Number.isNaN(p.fte));
+  const base = pts.find((p) => p.year === 2019);
+  const idx = pts.map((p) => 100 * (p.beds / p.fte) / (base.beds / base.fte));
+  const last = pts[pts.length - 1];
+  const iLast = idx[idx.length - 1];
+  const fteGrowth = 100 * (last.fte / base.fte - 1);
+  const bedGrowth = 100 * (last.beds / base.beds - 1);
+  const reqProd = requiredProductivityPctYr(wf, activityIdx, { levers: scenario.levers });
+
+  $('prod-cards').innerHTML = `
+    <div class="stat"><div class="v">+${fteGrowth.toFixed(0)}%</div><div class="l">Clinical FTE growth, 2019 → ${last.year}</div></div>
+    <div class="stat"><div class="v">+${bedGrowth.toFixed(0)}%</div><div class="l">Occupied bed-days delivered, 2019 → ${last.year}</div></div>
+    <div class="stat stat--bad"><div class="v">−${(100 - iLast).toFixed(0)}%</div><div class="l">Bed-days per clinical FTE vs 2019 (RX1 proxy)</div></div>
+    <div class="stat stat--warn"><div class="v">−8%</div><div class="l">NHSE national estimate: acute productivity vs 2019/20 (late 2024/25)</div></div>
+    <div class="stat stat--accent"><div class="v">${reqProd.toFixed(1)}%/yr</div><div class="l">Productivity growth that closes the clinical FTE gap by Apr-29 at trend headcount</div></div>
+    <div class="stat ${reqProd <= 2.4 ? 'stat--good' : 'stat--warn'}"><div class="v">2.4%/yr</div><div class="l">NHSE-reported acute productivity recovery rate, 2024/25 — the regain is underway nationally</div></div>`;
+
+  const xs = pts.map((p) => `Jun-${String(p.year).slice(2)}`);
+  lineChart($('chart-prod'), xs, [
+    { name: 'bed-days per clinical FTE', data: idx, color: S1() },
+    { name: '2019 level', data: idx.map(() => 100), color: S2(), dash: [5, 4] },
+  ], { xTickEvery: 2, yfmt: (v) => v.toFixed(0) });
+
+  const reqProdMixed = requiredProductivityPctYr(wf, activityIdx, { levers: { ...scenario.levers, workforceGrowthAdjPctYr: (scenario.levers.workforceGrowthAdjPctYr ?? 0) + 1.5 } });
+  $('prod-note').textContent = `Proxy caveats, stated plainly: this is overnight occupied bed-days (KH03, June) per clinical FTE (ESR, September) — a single-output measure that ignores casemix and acuity, outpatient and day-case delivery (whose growth legitimately reduces bed-days per episode), and community/virtual-ward shifts. The 2020–21 crater is COVID bed-emptying by policy, not productivity. The structural point is the endpoint: ${last.year} delivers ${(100 - iLast).toFixed(0)}% fewer bed-days per clinical FTE than 2019 despite ${fteGrowth.toFixed(0)}% more staff — same direction and similar size as NHS England's national acute estimate (≈11% below 2019/20 in 2023/24, ≈8% by late 2024/25, recovering ≈2.4%/yr). The honest conclusion is a MIX: at trend headcount the model needs ${reqProd.toFixed(1)}%/yr productivity — more than double the national recovery pace, probably undeliverable — while pure hiring (~${fmt(Math.max(...result.totals.gapClinical))} clinical FTE against a −1.4%/yr supply trend) is not available either. Restore modest headcount growth (+1.5%/yr) and the productivity ask falls to ${reqProdMixed.toFixed(1)}%/yr — hard, but within reach of a sustained national-rate recovery plus the regain still owed from the ${(100 - iLast).toFixed(0)}% lost since 2019.`;
+}
+
 const LEVERS = [
   { key: 'workforceGrowthAdjPctYr', label: 'Workforce growth adjustment (%/yr, all groups)', min: -2, max: 4, step: 0.25, bench: 'added to each group\'s calibrated trend (total −1.4%/yr latest year; +4.4%/yr over 5 years)' },
-  { key: 'productivityPctYr', label: 'Productivity growth (%/yr, activity per FTE)', min: 0, max: 3, step: 0.25, bench: 'NHS planning ambitions typically 1–2%/yr; each 1% substitutes ≈1% workforce growth' },
+  { key: 'productivityPctYr', label: 'Productivity growth (%/yr, activity per FTE)', min: 0, max: 4, step: 0.25, bench: 'NHSE reports acute productivity recovering ≈2.4%/yr in 2024/25, still ≈8% below 2019/20; each 1% substitutes ≈1% workforce growth' },
 ];
 
 function buildLevers() {

@@ -213,15 +213,24 @@ console.log('— workforce module —');
   ok(close(w0.perGroup.nurses.supply[12] / w0.perGroup.nurses.supply[0], 1 + ng, 0.002), `nurse supply compounds at calibrated ${wf.groups.nurses.growthPctYr}%/yr`);
 }
 
-console.log('— anchored activity index —');
+console.log('— anchored activity index & required productivity —');
 {
-  const { buildActivityIndex } = await import('../js/engine.js');
+  const { buildActivityIndex, requiredProductivityPctYr, runWorkforce } = await import('../js/engine.js');
+  const wfSeed = JSON.parse(readFileSync(new URL('../data/workforce.json', import.meta.url)));
   const uecSeed = JSON.parse(readFileSync(new URL('../data/uec.json', import.meta.url)));
   const idx = buildActivityIndex(baseline, dm01, cancer, uecSeed);
   ok(idx[0] > 1.05, `index opens at ${idx[0].toFixed(2)} — the month-0 recovery step-up is not absorbed for free`);
   const rttStep = runScenario(baseline).trust.requiredStopsMo[0] / runScenario(baseline).trust.currentStopsMo[0];
   ok(idx[0] < rttStep, 'blended index step-up is below the pure RTT step-up (emergency anchors at 1)');
   ok(idx.every((v) => v > 0.9), 'index never collapses below plausible bounds');
+  // required-productivity solver: closes the Apr-29 clinical gap at trend headcount
+  const p = requiredProductivityPctYr(wfSeed, idx);
+  ok(p > 0.5 && p < 8, `required productivity ${p}%/yr is in a plausible band`);
+  const at = runWorkforce(wfSeed, idx, { levers: { productivityPctYr: p } });
+  const i29 = ymDiff(at.cal[0], '2029-04');
+  ok(Math.abs(at.totals.gapClinical[i29]) < 25, `gap at Apr-29 ≈ 0 at the solved rate (${Math.round(at.totals.gapClinical[i29])} FTE)`);
+  const below = runWorkforce(wfSeed, idx, { levers: { productivityPctYr: p - 0.5 } });
+  ok(below.totals.gapClinical[i29] > 0, 'half a point less productivity leaves a positive gap (monotonic)');
 }
 
 console.log('— explainer maths (census vs flow) —');

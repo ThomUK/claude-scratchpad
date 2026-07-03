@@ -196,7 +196,13 @@ The index is ANCHORED to required vs DELIVERED activity at t0 — month-0
 required work already exceeds today's delivery (the recovery step-up), so the
 FTE gap includes the step-up rather than assuming current staff absorb it for
 free. Even so the gap is understated: bank/agency staffing (outside the
-published counts) currently absorbs part of that step-up.
+published counts) currently absorbs part of that step-up. A productivity
+panel makes the 'no-chequebook' case: the RX1 proxy (occupied bed-days per
+clinical FTE, caveats stated) is **−15% vs 2019** with +26% more staff —
+matching the direction of NHSE's national acute estimate (−8% by late
+2024/25, recovering ≈2.4%/yr) — and a solver reports the productivity rate
+that closes the FTE gap at trend headcount (≈5.2%/yr; +1.5%/yr headcount
+brings it to ≈3.6%/yr — the credible plan is a mix).
 
 ## Roadmap
 

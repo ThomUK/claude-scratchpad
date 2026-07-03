@@ -298,6 +298,22 @@ export function runWorkforce(wf, activityIdx, opts = {}) {
   return { cal, levers, perGroup, totals };
 }
 
+// Solve for the annual productivity growth (activity per FTE) that closes the
+// clinical FTE gap at the target milestone, given each group's supply trend.
+// This is the 'no-chequebook' number: the regain required if headcount follows
+// its calibrated trajectory.
+export function requiredProductivityPctYr(wf, activityIdx, opts = {}) {
+  const targetYM = opts.targetYM || '2029-04';
+  let lo = 0, hi = 10;
+  for (let iter = 0; iter < 40; iter++) {
+    const mid = (lo + hi) / 2;
+    const r = runWorkforce(wf, activityIdx, { ...opts, levers: { ...(opts.levers || {}), productivityPctYr: mid } });
+    const i = ymDiff(r.cal[0], targetYM);
+    if (r.totals.gapClinical[i] > 0) lo = mid; else hi = mid;
+  }
+  return Math.round(((lo + hi) / 2) * 100) / 100;
+}
+
 // --- UEC (A&E 4-hour, 12-hour DTA, emergency beds) ----------------------------
 // The 4-hour standard is a FLOW standard like cancer: each month's attendances
 // are scored on timeliness (no backlog census — nobody waits in A&E between
