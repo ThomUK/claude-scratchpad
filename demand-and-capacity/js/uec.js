@@ -133,9 +133,12 @@ function renderRecoverable() {
     <div class="stat stat--good"><div class="v">${fmt(delay - overshoot)}</div><div class="l">Headroom recovered if delay beds are released — enough for the elective ramp</div></div>`;
 
   const canvas = $('chart-recover');
+  // cache the design size: canvas.width/height below overwrite the attributes,
+  // so re-reading them on redraw would compound the dpr scaling (mobile-scroll balloon)
+  if (!canvas.dataset.baseW) { canvas.dataset.baseW = canvas.getAttribute('width'); canvas.dataset.baseH = canvas.getAttribute('height'); }
   const dpr = window.devicePixelRatio || 1;
-  const W = canvas.clientWidth || +canvas.getAttribute('width');
-  const H = +canvas.getAttribute('height');
+  const W = canvas.clientWidth || +canvas.dataset.baseW;
+  const H = +canvas.dataset.baseH;
   canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.height = `${H}px`;
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
@@ -256,5 +259,5 @@ function wire() {
     $(`lv-${key}`).textContent = v;
     recompute();
   });
-  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderCharts, 150); });
+  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { renderCharts(); renderRecoverable(); }, 150); });
 }

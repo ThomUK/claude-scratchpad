@@ -46,14 +46,19 @@ function renderSensitivity() {
 }
 
 function drawTornado(canvas, rows, central) {
+  // cache the design size: canvas.width/height below overwrite the attributes,
+  // so re-reading them on redraw would compound the dpr scaling (mobile-scroll balloon)
+  if (!canvas.dataset.baseW) { canvas.dataset.baseW = canvas.getAttribute('width'); canvas.dataset.baseH = canvas.getAttribute('height'); }
   const dpr = window.devicePixelRatio || 1;
-  const W = canvas.clientWidth || +canvas.getAttribute('width');
-  const H = +canvas.getAttribute('height');
+  const W = canvas.clientWidth || +canvas.dataset.baseW;
+  const H = +canvas.dataset.baseH;
   canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.height = `${H}px`;
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-  const padL = 250, padR = 90, padT = 18, padB = 26;
+  // narrow layout: no room for a label gutter, so row labels sit above their bars
+  const narrow = W < 640;
+  const padL = narrow ? 10 : 250, padR = narrow ? 10 : 90, padT = 18, padB = narrow ? 8 : 26;
   const vals = rows.flatMap((r) => [r.lo, r.hi]).concat([central]);
   const vmin = Math.min(...vals) - 2, vmax = Math.max(...vals) + 2;
   const x = (v) => padL + ((v - vmin) / (vmax - vmin)) * (W - padL - padR);
@@ -63,18 +68,24 @@ function drawTornado(canvas, rows, central) {
   ctx.strokeStyle = '#37465a'; ctx.setLineDash([4, 4]);
   ctx.beginPath(); ctx.moveTo(x(central), padT - 6); ctx.lineTo(x(central), H - padB); ctx.stroke();
   ctx.setLineDash([]);
+  const centralTxt = `central +${central.toFixed(1)}%`;
+  const cw = ctx.measureText(centralTxt).width;
   ctx.fillStyle = css('--muted'); ctx.textAlign = 'center';
-  ctx.fillText(`central +${central.toFixed(1)}%`, x(central), padT - 8);
+  ctx.fillText(centralTxt, Math.max(cw / 2 + 2, Math.min(x(central), W - cw / 2 - 2)), padT - 8);
   const rh = (H - padT - padB) / rows.length;
   rows.forEach((r, i) => {
-    const yMid = padT + rh * i + rh / 2;
+    const yMid = padT + rh * i + (narrow ? rh * 0.68 : rh / 2);
     const lo = Math.min(r.lo, r.hi), hi = Math.max(r.lo, r.hi);
     ctx.fillStyle = 'rgba(43, 151, 214, 0.45)';
     ctx.fillRect(x(lo), yMid - 9, Math.max(2, x(hi) - x(lo)), 18);
-    ctx.fillStyle = css('--text'); ctx.textAlign = 'right';
-    ctx.fillText(r.label, padL - 10, yMid + 4);
-    ctx.textAlign = 'right'; ctx.fillText(`+${lo.toFixed(1)}%`, x(lo) - 5, yMid + 4);
-    ctx.textAlign = 'left'; ctx.fillText(`+${hi.toFixed(1)}%`, x(hi) + 5, yMid + 4);
+    ctx.fillStyle = css('--text');
+    if (narrow) { ctx.textAlign = 'left'; ctx.fillText(r.label, padL, padT + rh * i + 16); }
+    else { ctx.textAlign = 'right'; ctx.fillText(r.label, padL - 10, yMid + 4); }
+    const loTxt = `+${lo.toFixed(1)}%`, hiTxt = `+${hi.toFixed(1)}%`;
+    ctx.textAlign = 'right';
+    ctx.fillText(loTxt, Math.max(x(lo) - 5, ctx.measureText(loTxt).width + 2), yMid + 4);
+    ctx.textAlign = 'left';
+    ctx.fillText(hiTxt, Math.min(x(hi) + 5, W - ctx.measureText(hiTxt).width - 2), yMid + 4);
   });
 }
 
