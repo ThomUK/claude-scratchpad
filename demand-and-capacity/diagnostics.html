@@ -18,9 +18,17 @@
       calibration per modality.
     </p>
     <p class="data-note">Seeded from the published <strong>DM01 provider files (April 2026 position;
-      April 2024/2025 for demand-growth calibration — pre-EPR pair used)</strong>. Demand is estimated
-      as waiting-list tests + year-on-year list change; April activity is bank-holiday depressed.
-      Milestones (95% by Apr-27, 99% by Apr-29) are a modelling assumption aligned to the RTT trajectory.</p>
+      April 2024/2025 for demand-growth calibration — pre-EPR pair, core modalities, working-day
+      adjusted)</strong>. Demand is estimated as waiting-list tests + year-on-year list change; levels are
+      April's (a 20-working-day month — the model works in weekly rates so this washes out of
+      trajectories, but monthly figures read ~5% low vs a typical month). Milestones (95% by Apr-27,
+      99% by Apr-29) are a documented modelling assumption aligned to the RTT trajectory. The same
+      census-shape calibration as the RTT spine applies per modality (k anchors implied performance
+      to the published %&lt;6wk and scales the sustainable list).
+      <strong>Scope note:</strong> this module counts ALL reportable waiting-list diagnostics —
+      direct-access GP requests, surveillance and cancer pathways — so its demand (~14,500/mo) is
+      roughly twice the <a href="./">elective spine's</a> referral-driven diagnostics column
+      (~8,000/mo). Both are correct; the scopes differ.</p>
     <p id="status" class="status status--loading" role="status">Loading model…</p>
   </header>
 

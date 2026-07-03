@@ -73,13 +73,13 @@
       "pct18": 62.9,
       "referralsWk": 821.1,
       "clockStopsWk": 469.1,
-      "admittedShare": 0.069,
+      "admittedShare": 0.016,
       "dayCaseRate": 0.9,
       "casesPerSession": 4.0,
       "newToFuRatio": 2.2,
       "losElectiveIP": 3.0,
       "diagPerReferral": 0.55,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -12.4%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -12.4%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": -12.4
     },
     {
@@ -89,13 +89,13 @@
       "pct18": 52.1,
       "referralsWk": 353.8,
       "clockStopsWk": 180.5,
-      "admittedShare": 0.101,
+      "admittedShare": 0.176,
       "dayCaseRate": 0.75,
       "casesPerSession": 4.0,
       "newToFuRatio": 1.6,
       "losElectiveIP": 1.8,
       "diagPerReferral": 0.45,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 1.5%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 1.5%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": 1.5
     },
     {
@@ -105,13 +105,13 @@
       "pct18": 67.8,
       "referralsWk": 349.3,
       "clockStopsWk": 79.0,
-      "admittedShare": 0.445,
+      "admittedShare": 0.043,
       "dayCaseRate": 0.95,
       "casesPerSession": 5.0,
       "newToFuRatio": 1.7,
       "losElectiveIP": 2.0,
       "diagPerReferral": 0.8,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 6.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 6.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": 6.2
     },
     {
@@ -121,13 +121,13 @@
       "pct18": 56.7,
       "referralsWk": 399.2,
       "clockStopsWk": 284.0,
-      "admittedShare": 0.219,
+      "admittedShare": 0.263,
       "dayCaseRate": 0.95,
       "casesPerSession": 8.0,
       "newToFuRatio": 1.8,
       "losElectiveIP": 1.0,
       "diagPerReferral": 0.05,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 1.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 1.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": 1.0
     },
     {
@@ -137,13 +137,13 @@
       "pct18": 52.5,
       "referralsWk": 271.2,
       "clockStopsWk": 215.6,
-      "admittedShare": 0.236,
+      "admittedShare": 0.421,
       "dayCaseRate": 0.55,
       "casesPerSession": 3.0,
       "newToFuRatio": 1.6,
       "losElectiveIP": 2.8,
       "diagPerReferral": 0.45,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
     },
     {
       "code": "C_120",
@@ -152,13 +152,13 @@
       "pct18": 57.8,
       "referralsWk": 356.0,
       "clockStopsWk": 194.3,
-      "admittedShare": 0.184,
+      "admittedShare": 0.192,
       "dayCaseRate": 0.75,
       "casesPerSession": 4.0,
       "newToFuRatio": 1.8,
       "losElectiveIP": 1.5,
       "diagPerReferral": 0.3,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 4.8%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 4.8%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": 4.8
     },
     {
@@ -168,13 +168,13 @@
       "pct18": 65.5,
       "referralsWk": 334.1,
       "clockStopsWk": 320.6,
-      "admittedShare": 0.139,
+      "admittedShare": 0.335,
       "dayCaseRate": 0.95,
       "casesPerSession": 6.0,
       "newToFuRatio": 2.8,
       "losElectiveIP": 1.2,
       "diagPerReferral": 0.15,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
     },
     {
       "code": "X05",
@@ -183,13 +183,13 @@
       "pct18": 72.7,
       "referralsWk": 473.3,
       "clockStopsWk": 386.0,
-      "admittedShare": 0.135,
+      "admittedShare": 0.216,
       "dayCaseRate": 0.75,
       "casesPerSession": 4.0,
       "newToFuRatio": 1.6,
       "losElectiveIP": 2.2,
       "diagPerReferral": 0.35,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -6.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -6.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": -6.2
     },
     {
@@ -199,13 +199,13 @@
       "pct18": 62.0,
       "referralsWk": 184.6,
       "clockStopsWk": 158.3,
-      "admittedShare": 0.322,
+      "admittedShare": 0.26,
       "dayCaseRate": 0.8,
       "casesPerSession": 5.0,
       "newToFuRatio": 1.9,
       "losElectiveIP": 2.0,
       "diagPerReferral": 0.55,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -13.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -13.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": -13.0
     },
     {
@@ -215,13 +215,13 @@
       "pct18": 80.7,
       "referralsWk": 244.4,
       "clockStopsWk": 231.9,
-      "admittedShare": 0.066,
+      "admittedShare": 0.137,
       "dayCaseRate": 0.7,
       "casesPerSession": 3.0,
       "newToFuRatio": 2.2,
       "losElectiveIP": 2.0,
       "diagPerReferral": 0.3,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 9.6%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 9.6%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": 9.6
     },
     {
@@ -231,13 +231,13 @@
       "pct18": 45.1,
       "referralsWk": 74.0,
       "clockStopsWk": 67.1,
-      "admittedShare": 0.122,
+      "admittedShare": 0.156,
       "dayCaseRate": 0.85,
       "casesPerSession": 5.0,
       "newToFuRatio": 1.4,
       "losElectiveIP": 1.5,
       "diagPerReferral": 0.25,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 5.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 5.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": 5.0
     },
     {
@@ -247,13 +247,13 @@
       "pct18": 83.8,
       "referralsWk": 154.0,
       "clockStopsWk": 89.3,
-      "admittedShare": 0.055,
+      "admittedShare": 0.153,
       "dayCaseRate": 0.9,
       "casesPerSession": 4.0,
       "newToFuRatio": 2.3,
       "losElectiveIP": 3.0,
       "diagPerReferral": 0.7,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
     },
     {
       "code": "C_400",
@@ -262,13 +262,13 @@
       "pct18": 80.0,
       "referralsWk": 75.0,
       "clockStopsWk": 55.8,
-      "admittedShare": 0.029,
+      "admittedShare": 0.002,
       "dayCaseRate": 0.9,
       "casesPerSession": 4.0,
       "newToFuRatio": 2.4,
       "losElectiveIP": 3.0,
       "diagPerReferral": 0.6,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
     },
     {
       "code": "C_320",
@@ -277,13 +277,13 @@
       "pct18": 80.9,
       "referralsWk": 90.6,
       "clockStopsWk": 103.8,
-      "admittedShare": 0.145,
+      "admittedShare": 0.183,
       "dayCaseRate": 0.8,
       "casesPerSession": 4.0,
       "newToFuRatio": 2.5,
       "losElectiveIP": 2.5,
       "diagPerReferral": 0.9,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
     },
     {
       "code": "C_430",
@@ -292,13 +292,13 @@
       "pct18": 45.1,
       "referralsWk": 27.9,
       "clockStopsWk": 9.3,
-      "admittedShare": 0.117,
+      "admittedShare": 0.0,
       "dayCaseRate": 0.9,
       "casesPerSession": 4.0,
       "newToFuRatio": 2.4,
       "losElectiveIP": 6.0,
       "diagPerReferral": 0.4,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -2.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -2.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": -2.2
     },
     {
@@ -308,13 +308,13 @@
       "pct18": 75.3,
       "referralsWk": 53.4,
       "clockStopsWk": 30.7,
-      "admittedShare": 0.329,
+      "admittedShare": 0.377,
       "dayCaseRate": 0.25,
       "casesPerSession": 1.5,
       "newToFuRatio": 2.0,
       "losElectiveIP": 5.0,
       "diagPerReferral": 0.7,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 1.7%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 1.7%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": 1.7
     },
     {
@@ -324,13 +324,13 @@
       "pct18": 59.4,
       "referralsWk": 42.2,
       "clockStopsWk": 32.9,
-      "admittedShare": 0.458,
+      "admittedShare": 0.493,
       "dayCaseRate": 0.7,
       "casesPerSession": 4.0,
       "newToFuRatio": 1.5,
       "losElectiveIP": 3.0,
       "diagPerReferral": 0.4,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 5.8%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 5.8%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": 5.8
     },
     {
@@ -340,13 +340,13 @@
       "pct18": 89.3,
       "referralsWk": 105.2,
       "clockStopsWk": 249.9,
-      "admittedShare": 0.058,
+      "admittedShare": 0.012,
       "dayCaseRate": 0.8,
       "casesPerSession": 4.0,
       "newToFuRatio": 1.9,
       "losElectiveIP": 2.2,
       "diagPerReferral": 0.35,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 7.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 7.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": 7.2
     },
     {
@@ -356,13 +356,13 @@
       "pct18": 55.7,
       "referralsWk": 44.0,
       "clockStopsWk": 33.6,
-      "admittedShare": 0.447,
+      "admittedShare": 0.465,
       "dayCaseRate": 0.8,
       "casesPerSession": 5.0,
       "newToFuRatio": 1.5,
       "losElectiveIP": 1.8,
       "diagPerReferral": 0.2,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -12.8%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -12.8%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": -12.8
     },
     {
@@ -372,13 +372,13 @@
       "pct18": 86.8,
       "referralsWk": 53.7,
       "clockStopsWk": 38.5,
-      "admittedShare": 0.043,
+      "admittedShare": 0.0,
       "dayCaseRate": 0.9,
       "casesPerSession": 4.0,
       "newToFuRatio": 3.0,
       "losElectiveIP": 2.0,
       "diagPerReferral": 0.35,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 9.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 9.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
       "demandGrowthPctYr": 9.0
     },
     {
@@ -388,13 +388,13 @@
       "pct18": 86.1,
       "referralsWk": 24.0,
       "clockStopsWk": 19.0,
-      "admittedShare": 0.618,
+      "admittedShare": 0.675,
       "dayCaseRate": 0.1,
       "casesPerSession": 1.2,
       "newToFuRatio": 1.8,
       "losElectiveIP": 7.0,
       "diagPerReferral": 0.6,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
     }
   ]
 }

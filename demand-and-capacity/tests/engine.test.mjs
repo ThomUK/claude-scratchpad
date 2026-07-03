@@ -123,7 +123,7 @@ console.log('— cancer (CWT) module —');
   ok(close(s62.requiredTimelyMo[j0], s62.currentRateTimelyMo[j0], 0.5), '62-day required = current timely at t=0');
   ok(close(s62.volumeMo[j0], 444, 0.5), `62-day cohort ${s62.volumeMo[j0].toFixed(0)}/mo (published Apr-26)`);
   // volume identity: required timely + breaches = cohort
-  ok(c.cal.every((_, i) => close(s62.requiredTimelyMo[i] + s62.breachesMo[i], s62.volumeMo[i], 1e-6)), 'timely + breaches = cohort (all months)');
+  ok(c.cal.every((_, i) => close(s62.requiredTimelyMo[i] + s62.breachesAllowedMo[i], s62.volumeMo[i], 1e-6)), 'timely + breaches = cohort (all months)');
   // growth lever compounds annually on volumes
   const g = runCancer(cancer, { levers: { demandGrowthPctYr: 6 } });
   ok(close(g.perStd.fds.series.volumeMo[12] / g.perStd.fds.series.volumeMo[0], 1.06, 0.005), 'growth lever compounds to +6% over 12 months');

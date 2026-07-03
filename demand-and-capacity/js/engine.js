@@ -387,7 +387,7 @@ export function runCancerStandard(std, levers, cal) {
   const s = {
     ym: cal, glidePct: glide, volumeMo: new Array(n),
     requiredTimelyMo: new Array(n), currentRateTimelyMo: new Array(n),
-    breachesMo: new Array(n), extraTimelyMo: new Array(n),
+    breachesAllowedMo: new Array(n), extraTimelyMo: new Array(n),
   };
   let vol = std.current.total;
   for (let i = 0; i < n; i++) {
@@ -396,7 +396,7 @@ export function runCancerStandard(std, levers, cal) {
     s.volumeMo[i] = vol;
     s.requiredTimelyMo[i] = req;
     s.currentRateTimelyMo[i] = atCurrentRate;
-    s.breachesMo[i] = vol - req;
+    s.breachesAllowedMo[i] = vol - req;   // breaches PERMITTED at the glide target, not a forecast
     s.extraTimelyMo[i] = Math.max(0, req - atCurrentRate);
     vol *= growth;
   }

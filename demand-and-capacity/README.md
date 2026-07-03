@@ -56,7 +56,12 @@ ingested by `ingest/ingest_rtt.py` (source ZIPs kept in `source/`):
   census sits AFTER the Feb→Mar validation purge (~8,500 migrated unclosed
   pathways left the list in one month), so the opening list is post-cleanup;
   validation removals were still running ~21% of referrals in April (the
-  forward-looking lever keeps the pre-EPR 10.7% steady state).
+  forward-looking lever keeps the pre-EPR 10.7% steady state). **Admitted
+  share is seeded from the pre-EPR pooled flows (20.4%)** rather than the
+  current period (15.1%): the pathways not completing now are
+  disproportionately the admitted/surgical ones, and the clearance must work
+  through that admitted-heavy backlog — seeding at the distorted current share
+  would understate the theatre and bed requirement per clock stop.
 - **April 2024 + April 2025 extracts** → calibration from the **pre-EPR pair**
   (Apr-24→Apr-25), **working-day adjusted**: April 2024 had 21 working days but
   April 2025 only 20 (Easter fell wholly inside April), so the raw −2.5%/yr is

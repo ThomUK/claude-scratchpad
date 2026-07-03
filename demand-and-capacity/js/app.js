@@ -54,8 +54,8 @@ function renderCards() {
     <div class="stat"><div class="v">−${fmt(rawRefMo - t.demandMo[0])}</div><div class="l">Other removals / month (${(100 * result.levers.otherRemovalsPct).toFixed(1)}% leave without a counted clock stop)</div></div>
     <div class="stat"><div class="v">${fmt(t.demandMo[0])}</div><div class="l">Effective demand / month (needs a clock stop)</div></div>
     <div class="stat ${upliftPct > 15 ? 'stat--bad' : upliftPct > 5 ? 'stat--warn' : 'stat--good'}"><div class="v">+${upliftPct.toFixed(1)}%</div><div class="l">Peak capacity uplift required vs current</div></div>
-    <div class="stat"><div class="v">${fmt(t.list[i27])}</div><div class="l">List needed by Apr-27 (65%)</div></div>
-    <div class="stat"><div class="v">${fmt(t.list[i29])}</div><div class="l">List needed by Apr-29 (92%)</div></div>`;
+    <div class="stat"><div class="v">${fmt(t.list[i27])}</div><div class="l">List at Apr-27 on the required path (≠ sustainable target)</div></div>
+    <div class="stat"><div class="v">${fmt(t.list[i29])}</div><div class="l">List at Apr-29 on the required path</div></div>`;
   $('level-note').textContent = `Flow levels are working-day-normalised means over Feb–Apr 2026 (a standard 21-working-day month): per working day, April referrals were actually the HIGHEST of the four observed months (956/wd vs 902–928) — the apparent April dip was entirely working-day count. January is excluded (EPR catch-up tail: 615 stops/wd vs 656–688 later). The census (list, bands) is April's, post the Feb→Mar validation purge of ~8,500 migrated pathways.`;
 }
 
@@ -81,7 +81,7 @@ function renderCharts() {
        band: band(t.targetList, resultRaw.trust.targetList) });
   lineChart($('chart-stops'), cal, [
     { name: 'required', data: t.requiredStopsMo, color: S1() },
-    { name: 'current', data: t.currentStopsMo, color: S2(), dash: [5, 4] },
+    { name: 'held at Apr-26 rate', data: t.currentStopsMo, color: S2(), dash: [5, 4] },
   ], { milestones: MS_LABELS, yfmt: (v) => `${(v / 1000).toFixed(1)}k`,
        band: band(t.requiredStopsMo, resultRaw.trust.requiredStopsMo) });
   $('band-note').textContent = `Shaded band: the demand-growth calibration question — the lower edge uses the raw Apr→Apr pair (${baseline.levers.demandGrowthRawPctYr}%/yr, which reads low because April 2024 had 21 working days vs 20 in 2025), the line uses the working-day-adjusted ${baseline.levers.demandGrowthPctYr}%/yr. Demand is most likely growing, not falling.`;

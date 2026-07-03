@@ -58,7 +58,7 @@ function renderCharts() {
   ], { milestones: MS_LABELS, yfmt: (v) => `${(v / 1000).toFixed(1)}k` });
   lineChart($('chart-tests'), cal, [
     { name: 'required', data: t.requiredTestsMo, color: S1() },
-    { name: 'current', data: t.currentTestsMo, color: S2(), dash: [5, 4] },
+    { name: 'held at Apr-26 rate', data: t.currentTestsMo, color: S2(), dash: [5, 4] },
   ], { milestones: MS_LABELS, yfmt: (v) => `${(v / 1000).toFixed(1)}k` });
 }
 
@@ -102,7 +102,7 @@ function renderModChart() {
   $('mod-chart-title').textContent = `${row.mod.name} — required vs current waiting-list tests per month`;
   lineChart($('chart-mod'), result.cal, [
     { name: 'required', data: row.series.requiredTestsMo, color: S1() },
-    { name: 'current', data: row.series.currentTestsMo, color: S2(), dash: [5, 4] },
+    { name: 'held at Apr-26 rate', data: row.series.currentTestsMo, color: S2(), dash: [5, 4] },
     { name: 'demand', data: row.series.demandMo, color: S3(), dash: [2, 3] },
   ], { milestones: MS_LABELS, yfmt: (v) => fmt(v) });
 }

@@ -153,6 +153,7 @@ def main():
         return growth, growthRaw, removals, byTfc
 
     priorPeriod, trustGrowth, otherRemovalsPct, growthByTfc, calNote = None, None, None, {}, ""
+    admShareByTfc = {}
     if prior_srcs:
         # Sort priors oldest-first by their Period, then calibrate from the
         # OLDEST adjacent pair — with three snapshots spanning an EPR go-live,
@@ -174,6 +175,23 @@ def main():
         # Seed per-TFC growth only from the earliest (cleanest) pair, and only
         # where it looks like demand rather than recoding (|growth| <= 15%/yr).
         growthByTfc = {t: g for t, g in byTfc.items() if abs(g) <= 15}
+        # Admitted SHARE is seeded from the pre-EPR snapshots, pooled: the
+        # current share (~15%) is EPR/backlog-distorted — the pathways not
+        # completing now are disproportionately the admitted (surgical) ones,
+        # and the clearance must work through that admitted-heavy backlog.
+        # Pre-EPR the share ran ~20%.
+        preEpr = chain[:2]
+        admShareByTfc = {}
+        for tfc in set(preEpr[0]) | set(preEpr[1]):
+            adm = sum(c.get(tfc, {}).get("admMo", 0) for c in preEpr)
+            non = sum(c.get(tfc, {}).get("nonMo", 0) for c in preEpr)
+            if adm + non >= 100:
+                admShareByTfc[tfc] = round(adm / (adm + non), 3)
+        pooledAdm = sum(c[t]["admMo"] for c in preEpr for t in c)
+        pooledStops = pooledAdm + sum(c[t]["nonMo"] for c in preEpr for t in c)
+        print(f"  admitted share: pre-EPR pooled {100 * pooledAdm / pooledStops:.1f}% "
+              f"(seeded per-TFC for {len(admShareByTfc)} TFCs; current-period share is "
+              f"EPR/backlog-distorted)")
 
     # fold small TFCs into Other
     folded, fold_set = [], set()
@@ -221,10 +239,13 @@ def main():
             "pct18": round(100 * a["within18"] / L, 1) if L else 0,
             "referralsWk": round(a["newMo"] / WKS_PER_MONTH, 1),
             "clockStopsWk": round(stopsMo / WKS_PER_MONTH, 1),
-            "admittedShare": round(a["admMo"] / stopsMo, 3) if stopsMo else 0.1,
+            "admittedShare": admShareByTfc.get(tfc, round(a["admMo"] / stopsMo, 3) if stopsMo else 0.1),
             "dayCaseRate": ops[0], "casesPerSession": ops[1],
             "newToFuRatio": ops[2], "losElectiveIP": ops[3], "diagPerReferral": ops[4],
-            "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract "
+            "sourceNote": ("admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share "
+                           "is EPR/backlog-distorted); " if tfc in admShareByTfc else
+                           "admittedShare: current flows (TFC absent pre-EPR); ")
+                          + "list/pct18/referrals/stops: NHSE RTT full extract "
                           f"({period}); operational parameters: ESTIMATE (GIRFT/BADS norms)",
         }
         if tfc in growthByTfc:
