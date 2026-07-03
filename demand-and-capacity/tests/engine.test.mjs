@@ -251,6 +251,14 @@ console.log('— explainer maths (census vs flow) —');
   ok(sim.censusPct[50] > sim.censusPct[25] + 10, `drive lifts census reading (${sim.censusPct[25].toFixed(0)}% → ${sim.censusPct[50].toFixed(0)}%)`);
   ok(sim.flowPct[40] < sim.flowPct[24] - 20, `drive tanks flow reading (${sim.flowPct[24].toFixed(0)}% → ${sim.flowPct[40].toFixed(0)}%)`);
   ok(sim.censusPct[103] > 78 && sim.flowPct[103] > 78, `both cameras read high after the drive (census ${sim.censusPct[103].toFixed(0)}%, flow ${sim.flowPct[103].toFixed(0)}%)`);
+
+  // the shape-factor explainer's bridge: booking discipline (Erlang m) -> model k
+  // via the SAME shapeFactor() the model calibrates with (list = λW by Little)
+  const lam = 100;
+  const kOf = (m, Wd) => shapeFactor(lam * Wd, censusCdf(T, m, Wd), lam, T);
+  ok(close(kOf(1, 20), 1, 0.01), `memoryless discipline implies shape factor k ≈ 1 (${kOf(1, 20).toFixed(3)})`);
+  ok(kOf(4, 20) > kOf(2, 20) && kOf(2, 20) > kOf(1, 20), `more FIFO-like discipline implies higher k (${kOf(1, 20).toFixed(2)} < ${kOf(2, 20).toFixed(2)} < ${kOf(4, 20).toFixed(2)})`);
+  ok(kOf(20, 30) > 1.5, `near-strict FIFO at W=30 implies k = ${kOf(20, 30).toFixed(2)} (well above textbook)`);
 }
 
 console.log('— OP attendances (tandem queue & attribution) —');

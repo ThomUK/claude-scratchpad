@@ -292,6 +292,22 @@ transients (a backlog clearance drive lifts the census reading while it
 tanks the flow reading — same events, opposite optics). Maths in
 `js/explainmath.js`, checks in the test suite.
 
+`explainer-shape-factor.html` develops **the shape factor k** for a lay
+reader: two lists of the same size fed by the same referrals can perform
+differently on the 18-week standard because what matters is the list's
+**age mix**, and k is the one number that captures it — how far the real
+age distribution departs from the textbook exponential shape
+(k = −ln(1−p)·L/(18·λ); k = 1 textbook, k > 1 younger-than-size-suggests,
+k < 1 fatter tail). The page is anti-drift: a worked example uses the
+trust's largest list straight from the seed, an interactive
+booking-discipline slider derives the implied k through the same
+`shapeFactor()` the model calibrates with (memoryless → k = 1 is a test
+suite check), and a per-TFC bar chart computes every specialty's k live
+from `baseline.json`. It also states the two honest caveats: k conflates
+booking discipline with data quality (a post-EPR-purge list reads high),
+and one number cannot capture a whole distribution — trust PTL data would
+replace it.
+
 ## Running locally
 
 ```sh

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The shape factor k — Demand &amp; Capacity, NUH (RX1)</title>
+  <link rel="stylesheet" href="styles.css?v=dev" />
+</head>
+<body>
+  <header>
+    <h1>Explainer — the shape factor k</h1>
+    <nav class="crumbs"><a href="./">← Elective (RTT) spine</a> · <a href="anatomy.html">How the model works</a> · <a href="explainers.html">Explainers hub</a></nav>
+    <p class="subtitle">
+      Two waiting lists can be the <strong>same size</strong>, fed by the <strong>same number of
+      referrals</strong>, and still perform completely differently on the 18-week standard — because
+      what matters is not just how many people are waiting but <strong>how long they have each been
+      waiting</strong>: the list's <em>age mix</em>. The shape factor <strong>k</strong> is the one
+      number the model uses to capture the age mix. Your instinct that it is "a distribution
+      modifier" is exactly right: k measures how far a real list's age distribution departs from the
+      textbook shape, and the model then stretches its size-vs-performance arithmetic by that factor.
+    </p>
+    <p class="crumbs"><strong>In this series:</strong>
+      <a href="anatomy.html">0. How the model works →</a> ·
+      <a href="explainers.html">1. Census vs flow standards →</a> ·
+      <a href="explainer-attendances.html">2. New &amp; follow-up attendances →</a> ·
+      3. The shape factor k (this page)</p>
+    <p id="status" class="status status--loading" role="status">Loading model…</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>1 &nbsp;The puzzle — same size, different health</h2>
+      <p>
+        Imagine two specialties, each with 2,000 patients waiting and 100 referrals arriving a week.
+        In the first, bookings roughly follow arrival order: nobody is ancient, and 70% of the list
+        is under 18 weeks. In the second, a few hundred long-waiters have quietly accumulated at the
+        back: only 45% is under 18 weeks. <strong>Size alone cannot tell these lists apart.</strong>
+        A model that worked from size and referrals only would treat them identically — and be wrong
+        about both. k is how this model tells them apart using only published data.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>2 &nbsp;The textbook shape — and k as the "how far from textbook" dial</h2>
+      <p>
+        Queueing theory has a natural default: if the next patient is picked effectively at random
+        (a realistic stand-in for clinically-led mixed booking), the ages of people on the list
+        follow the <strong>exponential curve</strong> — lots of recent joiners, a long thin tail.
+        On that textbook shape, the size of the list and the referral rate <em>fully determine</em>
+        the %&lt;18wk. So the model asks each specialty one question:
+        <strong>"given your size and referrals, is your published %&lt;18wk what the textbook
+        predicts?"</strong> The answer is k:
+      </p>
+      <ul class="small">
+        <li><strong>k = 1</strong> — the list behaves exactly as its size suggests (textbook shape).</li>
+        <li><strong>k &gt; 1</strong> — the list is <em>younger than its size suggests</em>: disciplined,
+          FIFO-like booking keeps everyone moving (or the list was recently validated). It performs
+          like a textbook list only 1/k as large.</li>
+        <li><strong>k &lt; 1</strong> — the list has a <em>fatter long-wait tail</em> than its size
+          suggests: long-waiters are accumulating at the back.</li>
+      </ul>
+      <p class="small">Formally, for the 18-week window: <code>k = −ln(1 − p) × L ÷ (18 × λ)</code>,
+        where p is the published %&lt;18wk, L the list size and λ the effective referral rate. A worked
+        example with real numbers — the trust's largest list, straight from the seed:</p>
+      <div id="worked" class="cards"></div>
+      <p class="muted small" id="worked-note"></p>
+    </section>
+
+    <section class="panel">
+      <h2>3 &nbsp;Try it — booking discipline creates k</h2>
+      <p>
+        Drag the discipline slider from random selection towards strict first-in-first-out and watch
+        the age mix change shape. FIFO-like booking clears the tail, so more of the list sits under
+        the 18-week line <em>at the same list size</em> — that surplus over textbook is exactly k &gt; 1.
+        (The census-vs-flow explainer uses the same slider and calls the underlying distribution
+        parameter k; on this page we keep <strong>k for the model's shape factor</strong> — the two are
+        related but not the same number.)
+      </p>
+      <div id="disc-cards" class="cards"></div>
+      <div class="levers" id="levers"></div>
+      <div class="chart-block">
+        <h3>Age mix of the waiting list <span class="muted small">(share of the list at each waiting age)</span></h3>
+        <canvas id="chart-ages" width="1040" height="330"></canvas>
+      </div>
+      <p class="muted small">The implied-k card runs the <em>same</em> <code>shapeFactor()</code> function
+        the model calibrates with, fed by this demo queue's size, %&lt;18wk and referral rate. Note the
+        last card: <strong>the sustainable list at 92% scales linearly with k</strong> — a list with
+        disciplined booking can be k times larger and still meet the standard, because meeting a census
+        standard is about the age mix, not the headcount.</p>
+    </section>
+
+    <section class="panel">
+      <h2>4 &nbsp;The real NUH values <span class="muted small">(computed live from the seed)</span></h2>
+      <p class="small">
+        Each specialty's k, calibrated from its published April 2026 list size, %&lt;18wk and referral
+        rate. Green bars (k ≥ 1) read younger than textbook; red bars (k &lt; 1) carry a fatter tail.
+      </p>
+      <div class="canvas-scroll">
+        <canvas id="chart-tfck" width="1040" height="600"></canvas>
+      </div>
+      <p class="muted small" id="tfck-note"></p>
+    </section>
+
+    <section class="panel">
+      <h2>5 &nbsp;What the model does with k — and what to watch</h2>
+      <ul class="small">
+        <li><strong>Calibration:</strong> k is measured once per specialty at the model start and anchors
+          each trajectory to the published %&lt;18wk — so the model never claims a specialty is healthier
+          or sicker than its published position.</li>
+        <li><strong>Held constant by default:</strong> booking discipline is assumed to stay as it is
+          to 2030. That is a stated assumption, not a fact — the <em>booking-discipline drift</em> lever
+          on the <a href="./">RTT page</a> morphs k linearly by 2029 to test it, and the sensitivity
+          tornado shows what ±20% of drift does to the headline (because the sustainable list scales
+          linearly with k, drift towards FIFO shrinks the clearance ask and drift towards tail-neglect
+          grows it).</li>
+        <li><strong>k conflates discipline with data quality.</strong> A very high k can mean genuinely
+          disciplined booking — or a recently validated list. NUH's highest-k specialty sits just after
+          the Feb–Mar 2026 EPR migration purge removed thousands of stale pathways, so treat extreme
+          values with respect for both readings.</li>
+        <li><strong>One number, one distribution.</strong> k summarises a whole age distribution in a
+          single ratio at the 18-week point. Two lists can share a k and differ elsewhere in the tail;
+          per-patient PTL data would replace this approximation entirely.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>The worked example, the implied-k card and the per-specialty chart all run
+      <code>shapeFactor()</code> from <code>js/engine.js</code> against <code>data/baseline.json</code> —
+      the same function and seed as the model, so this page cannot drift from it. Illustrative planning
+      model — not operational advice.</p>
+  </footer>
+
+  <script type="module" src="js/explain-k.js?v=dev"></script>
+</body>
+</html>
