@@ -28,7 +28,8 @@ export function lineChart(canvas, cal, series, opts = {}) {
   const padB = 16 + Math.ceil(maxXLabel * Math.abs(Math.sin(ANGLE))) + 6;
   const iw = W - padL - padR, ih = H - padT - padB;
 
-  const all = series.flatMap((s) => s.data);
+  const all = series.flatMap((s) => s.data)
+    .concat(opts.band ? [...opts.band.upper, ...opts.band.lower] : []);
   let ymin = opts.ymin ?? Math.min(...all), ymax = opts.ymax ?? Math.max(...all);
   if (ymin === ymax) { ymin -= 1; ymax += 1; }
   const yr = ymax - ymin; ymin -= yr * 0.06; ymax += yr * 0.08;
@@ -63,6 +64,15 @@ export function lineChart(canvas, cal, series, opts = {}) {
     ctx.setLineDash([]);
     ctx.fillStyle = MUT(); ctx.textAlign = 'center'; ctx.fillText(m.label, x(i), padT + 2);
   });
+  // uncertainty band (drawn behind the series)
+  if (opts.band) {
+    ctx.beginPath();
+    opts.band.upper.forEach((v, i) => (i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v))));
+    for (let i = cal.length - 1; i >= 0; i--) ctx.lineTo(x(i), y(opts.band.lower[i]));
+    ctx.closePath();
+    ctx.fillStyle = opts.band.color || 'rgba(43, 151, 214, 0.14)';
+    ctx.fill();
+  }
   // series
   series.forEach((s) => {
     ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.setLineDash(s.dash || []);

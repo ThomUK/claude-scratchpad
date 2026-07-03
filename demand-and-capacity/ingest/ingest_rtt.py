@@ -107,10 +107,29 @@ def main():
     # calibration. Growth is applied at TRUST level only: per-TFC year-on-year
     # comparisons are dominated by specialty recoding (e.g. NUH's Nov-2025 EPR
     # go-live shifted activity between C_ codes and the X_ 'Other' groups).
-    def pair_metrics(older, newer):
-        """Trust growth, other-removals rate and per-TFC growth between two snapshots."""
+    # April-to-April pairs only cancel seasonality if both Aprils have the same
+    # WORKING DAYS — and Easter moves: April 2024 held only Easter Monday (21
+    # working days) while 2025 and 2026 held Good Friday AND Easter Monday (20).
+    # Flow growth is therefore adjusted to a per-working-day basis; unadjusted,
+    # the 2024→2025 pair reads ~5pp too low (a demand 'fall' that is actually an
+    # Easter artefact).
+    WORKING_DAYS = {"April-2024": 21, "April-2025": 20, "April-2026": 20}
+
+    def wd_ratio(lab1, lab2):
+        w1 = next((v for k, v in WORKING_DAYS.items() if k in lab1), None)
+        w2 = next((v for k, v in WORKING_DAYS.items() if k in lab2), None)
+        if not (w1 and w2):
+            print(f"  WARNING: no working-day counts for {lab1}/{lab2}; growth unadjusted")
+            return 1.0
+        return w1 / w2
+
+    def pair_metrics(older, newer, wd=1.0):
+        """Trust growth, other-removals rate and per-TFC growth between two snapshots.
+        Growth is working-day adjusted (× wd); the removals identity uses flow
+        ratios where the adjustment largely cancels, so it is left unadjusted."""
         n1 = sum(p["newMo"] for p in older.values()); n2 = sum(a["newMo"] for a in newer.values())
-        growth = round(100 * (n2 / n1 - 1), 1)
+        growthRaw = round(100 * (n2 / n1 - 1), 1)
+        growth = round(100 * ((n2 / n1) * wd - 1), 1)
         # Accounting identity over the year: ΔL = new − stops − other.
         # Annual flows approximated as 12 × the mean of the two snapshot months.
         L1 = sum(p["list"] for p in older.values()); L2 = sum(a["list"] for a in newer.values())
@@ -122,8 +141,8 @@ def main():
         for tfc, a in newer.items():
             p = older.get(tfc)
             if p and p["newMo"] >= 50 and a["newMo"] >= 50:
-                byTfc[tfc] = round(100 * (a["newMo"] / p["newMo"] - 1), 1)
-        return growth, removals, byTfc
+                byTfc[tfc] = round(100 * ((a["newMo"] / p["newMo"]) * wd - 1), 1)
+        return growth, growthRaw, removals, byTfc
 
     priorPeriod, trustGrowth, otherRemovalsPct, growthByTfc, calNote = None, None, None, {}, ""
     if prior_srcs:
@@ -133,15 +152,17 @@ def main():
         priors = sorted((aggregate(p, provider) for p in prior_srcs), key=lambda t: t[2])
         chain = [pr[0] for pr in priors] + [acc]
         labels = [pr[2] for pr in priors] + [period]
-        pairs = [(labels[i], labels[i + 1], *pair_metrics(chain[i], chain[i + 1]))
+        pairs = [(labels[i], labels[i + 1],
+                  *pair_metrics(chain[i], chain[i + 1], wd_ratio(labels[i], labels[i + 1])))
                  for i in range(len(chain) - 1)]
-        for lab1, lab2, g, r, byTfc in pairs:
+        for lab1, lab2, g, gRaw, r, byTfc in pairs:
             clamped = sum(1 for v in byTfc.values() if abs(v) > 15)
-            print(f"  pair {lab1} -> {lab2}: trust growth {g:+.1f}%/yr, removals {r:.1%}, "
-                  f"TFC growth swings >15%: {clamped}/{len(byTfc)}")
-        lab1, lab2, trustGrowth, otherRemovalsPct, byTfc = pairs[0]
+            print(f"  pair {lab1} -> {lab2}: trust growth {g:+.1f}%/yr working-day adjusted "
+                  f"(raw {gRaw:+.1f}%), removals {r:.1%}, TFC growth swings >15%: {clamped}/{len(byTfc)}")
+        lab1, lab2, trustGrowth, trustGrowthRaw, otherRemovalsPct, byTfc = pairs[0]
         priorPeriod = f"{lab1} vs {lab2}"
-        calNote = f"calibrated from the earliest pair ({priorPeriod})"
+        calNote = (f"calibrated from the earliest pair ({priorPeriod}), working-day adjusted "
+                   f"(April 2024 had 21 working days vs 20 in 2025/26; raw growth {trustGrowthRaw}%/yr)")
         # Seed per-TFC growth only from the earliest (cleanest) pair, and only
         # where it looks like demand rather than recoding (|growth| <= 15%/yr).
         growthByTfc = {t: g for t, g in byTfc.items() if abs(g) <= 15}
@@ -183,6 +204,7 @@ def main():
     if otherRemovalsPct is not None:
         baseline["levers"]["otherRemovalsPct"] = otherRemovalsPct
         baseline["levers"]["demandGrowthPctYr"] = trustGrowth
+        baseline["levers"]["demandGrowthRawPctYr"] = trustGrowthRaw
         baseline["levers"]["sourceNote"] = (
             f"demandGrowthPctYr ({trustGrowth}%/yr) and otherRemovalsPct ({otherRemovalsPct}) "
             f"{calNote}; per-TFC growth seeded from the same pair where |growth| <= 15%/yr "

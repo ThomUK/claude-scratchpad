@@ -51,7 +51,7 @@
     }
   },
   "levers": {
-    "demandGrowthPctYr": -2.5,
+    "demandGrowthPctYr": 2.3,
     "dnaRate": 0.07,
     "dnaRateTarget": 0.05,
     "clinicUtilisation": 0.85,
@@ -60,9 +60,10 @@
     "theatreUtilisationTarget": 0.85,
     "bedOccupancy": 0.92,
     "bedOccupancyTarget": 0.92,
-    "sourceNote": "demandGrowthPctYr (-2.5%/yr) and otherRemovalsPct (0.107) calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025); per-TFC growth seeded from the same pair where |growth| <= 15%/yr (larger swings treated as recoding); other levers remain typical-acute ESTIMATES with GIRFT/NHS Elect targets",
+    "sourceNote": "demandGrowthPctYr (2.3%/yr) and otherRemovalsPct (0.107) calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr); per-TFC growth seeded from the same pair where |growth| <= 15%/yr (larger swings treated as recoding); other levers remain typical-acute ESTIMATES with GIRFT/NHS Elect targets",
     "otherRemovalsPct": 0.107,
-    "kEndScale": 1.0
+    "kEndScale": 1.0,
+    "demandGrowthRawPctYr": -2.5
   },
   "tfcs": [
     {
@@ -78,7 +79,8 @@
       "newToFuRatio": 2.2,
       "losElectiveIP": 3.0,
       "diagPerReferral": 0.55,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -12.4%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": -12.4
     },
     {
       "code": "C_502",
@@ -93,8 +95,8 @@
       "newToFuRatio": 1.6,
       "losElectiveIP": 1.8,
       "diagPerReferral": 0.45,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -3.3%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": -3.3
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 1.5%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": 1.5
     },
     {
       "code": "C_301",
@@ -109,8 +111,8 @@
       "newToFuRatio": 1.7,
       "losElectiveIP": 2.0,
       "diagPerReferral": 0.8,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 1.1%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": 1.1
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 6.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": 6.2
     },
     {
       "code": "C_330",
@@ -125,8 +127,8 @@
       "newToFuRatio": 1.8,
       "losElectiveIP": 1.0,
       "diagPerReferral": 0.05,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -3.8%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": -3.8
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 1.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": 1.0
     },
     {
       "code": "C_110",
@@ -156,8 +158,8 @@
       "newToFuRatio": 1.8,
       "losElectiveIP": 1.5,
       "diagPerReferral": 0.3,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -0.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": -0.2
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 4.8%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": 4.8
     },
     {
       "code": "C_130",
@@ -172,8 +174,7 @@
       "newToFuRatio": 2.8,
       "losElectiveIP": 1.2,
       "diagPerReferral": 0.15,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 12.7%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": 12.7
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
     },
     {
       "code": "X05",
@@ -188,8 +189,8 @@
       "newToFuRatio": 1.6,
       "losElectiveIP": 2.2,
       "diagPerReferral": 0.35,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -10.7%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": -10.7
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -6.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": -6.2
     },
     {
       "code": "C_101",
@@ -204,7 +205,8 @@
       "newToFuRatio": 1.9,
       "losElectiveIP": 2.0,
       "diagPerReferral": 0.55,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -13.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": -13.0
     },
     {
       "code": "X04",
@@ -219,8 +221,8 @@
       "newToFuRatio": 2.2,
       "losElectiveIP": 2.0,
       "diagPerReferral": 0.3,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 4.3%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": 4.3
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 9.6%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": 9.6
     },
     {
       "code": "C_140",
@@ -235,8 +237,8 @@
       "newToFuRatio": 1.4,
       "losElectiveIP": 1.5,
       "diagPerReferral": 0.25,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 0.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": 0.0
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 5.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": 5.0
     },
     {
       "code": "C_340",
@@ -251,8 +253,7 @@
       "newToFuRatio": 2.3,
       "losElectiveIP": 3.0,
       "diagPerReferral": 0.7,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 10.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": 10.0
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
     },
     {
       "code": "C_400",
@@ -297,8 +298,8 @@
       "newToFuRatio": 2.4,
       "losElectiveIP": 6.0,
       "diagPerReferral": 0.4,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -6.9%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": -6.9
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -2.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": -2.2
     },
     {
       "code": "C_150",
@@ -313,8 +314,8 @@
       "newToFuRatio": 2.0,
       "losElectiveIP": 5.0,
       "diagPerReferral": 0.7,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -3.1%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": -3.1
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 1.7%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": 1.7
     },
     {
       "code": "C_100",
@@ -329,8 +330,8 @@
       "newToFuRatio": 1.5,
       "losElectiveIP": 3.0,
       "diagPerReferral": 0.4,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 0.7%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": 0.7
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 5.8%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": 5.8
     },
     {
       "code": "X06",
@@ -345,8 +346,8 @@
       "newToFuRatio": 1.9,
       "losElectiveIP": 2.2,
       "diagPerReferral": 0.35,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 2.1%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": 2.1
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 7.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": 7.2
     },
     {
       "code": "C_160",
@@ -361,7 +362,8 @@
       "newToFuRatio": 1.5,
       "losElectiveIP": 1.8,
       "diagPerReferral": 0.2,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -12.8%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": -12.8
     },
     {
       "code": "C_410",
@@ -376,8 +378,8 @@
       "newToFuRatio": 3.0,
       "losElectiveIP": 2.0,
       "diagPerReferral": 0.35,
-      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 3.8%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025))",
-      "demandGrowthPctYr": 3.8
+      "sourceNote": "list/pct18/referrals/stops/admittedShare: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 9.0%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
+      "demandGrowthPctYr": 9.0
     },
     {
       "code": "C_170",

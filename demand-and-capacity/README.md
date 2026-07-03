@@ -26,8 +26,9 @@ and the [NHSRwaitinglist](https://nhs-r-community.github.io/NHSRwaitinglist/) pa
 3. **Required clock stops** each month = demand + phased clearance of the excess
    list down to the target size by the next milestone (65/80/92 glide path).
 4. Clock stops convert to deliverable activity per treatment function:
-   - **Outpatients**: first + follow-up attendances (N:FU ratio), uplifted for
-     DNA rate and clinic utilisation → slots required;
+   - **Outpatients**: first attendances driven by *referrals* (the pathway
+     start — they do not surge with clearance), follow-ups by clock stops
+     (N:FU ratio), uplifted for DNA rate and clinic utilisation → slots;
    - **Theatres**: admitted stops → cases → sessions via cases-per-session and
      GIRFT capped utilisation, day-case vs inpatient split (BADS);
    - **Beds**: inpatient electives × specialty LOS ÷ occupancy target;
@@ -48,7 +49,11 @@ ingested by `ingest/ingest_rtt.py` (source ZIPs kept in `source/`):
   Periods, 4,410/wk), clock stops (completed admitted + non-admitted,
   3,026/wk counted in April) and admitted share.
 - **April 2024 + April 2025 extracts** → calibration from the **pre-EPR pair**
-  (Apr-24→Apr-25): trust demand growth **−2.5%/yr**, other-removals rate
+  (Apr-24→Apr-25), **working-day adjusted**: April 2024 had 21 working days but
+  April 2025 only 20 (Easter fell wholly inside April), so the raw −2.5%/yr is
+  an Easter artefact — adjusted, trust demand growth is **+2.3%/yr** (in line
+  with national planning); the charts carry a band spanning both methods.
+  Other-removals rate
   **10.7%** (ΔL = new − stops − other), and **per-TFC demand growth** seeded for
   14/21 TFCs where |growth| ≤ 15%/yr. The EPR-era pair (Apr-25→Apr-26: +8.0%,
   removals 20.3%, 14/21 TFC swings >15%) is reported by the ingest for

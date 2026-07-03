@@ -24,8 +24,16 @@ let selectedTfc = null;
   }
 })();
 
+let resultRaw = null; // same scenario under the RAW (unadjusted) growth calibration
+
 function recompute() {
   result = runScenario(baseline, { levers: scenario.levers, tfcOverrides: scenario.tfcOverrides });
+  const rawShift = (baseline.levers.demandGrowthRawPctYr ?? baseline.levers.demandGrowthPctYr)
+    - baseline.levers.demandGrowthPctYr;
+  resultRaw = runScenario(baseline, {
+    levers: { ...scenario.levers, demandGrowthAdjPctYr: (scenario.levers.demandGrowthAdjPctYr ?? 0) + rawShift },
+    tfcOverrides: scenario.tfcOverrides,
+  });
   if (!selectedTfc) selectedTfc = result.perTfc[0].tfc.code;
   renderCards();
   renderCharts();
@@ -39,6 +47,7 @@ function renderCards() {
   const i27 = ymDiff(cal[0], '2027-04'), i29 = ymDiff(cal[0], '2029-04');
   const upliftPct = 100 * (Math.max(...t.requiredStopsMo) / t.currentStopsMo[0] - 1);
   const rawRefMo = baseline.tfcs.reduce((a, x) => a + x.referralsWk, 0) * (52 / 12);
+  const upliftIfAprilLight = 100 * (Math.max(...t.requiredStopsMo) / (t.currentStopsMo[0] * 1.08) - 1);
   $('cards').innerHTML = `
     <div class="stat"><div class="v">${fmt(t.list[0])}</div><div class="l">Waiting list (published Apr-26)</div></div>
     <div class="stat stat--accent"><div class="v">${t.impliedPct[0].toFixed(1)}%</div><div class="l">Within 18 weeks (published Apr-26)</div></div>
@@ -48,6 +57,7 @@ function renderCards() {
     <div class="stat ${upliftPct > 15 ? 'stat--bad' : upliftPct > 5 ? 'stat--warn' : 'stat--good'}"><div class="v">+${upliftPct.toFixed(1)}%</div><div class="l">Peak capacity uplift required vs current</div></div>
     <div class="stat"><div class="v">${fmt(t.list[i27])}</div><div class="l">List needed by Apr-27 (65%)</div></div>
     <div class="stat"><div class="v">${fmt(t.list[i29])}</div><div class="l">List needed by Apr-29 (92%)</div></div>`;
+  $('level-note').textContent = `April-levels caveat: flow levels (referrals, clock stops) are seeded from April 2026 alone — a bank-holiday-depressed month. If April ran ~8% light, the peak uplift reads ≈+${upliftIfAprilLight.toFixed(1)}% instead of +${upliftPct.toFixed(1)}%. Growth calibration is unaffected (Apr→Apr pairs, working-day adjusted); levels will be re-seeded from a multi-month average when further extracts are loaded.`;
 }
 
 const MS_LABELS = [
@@ -61,19 +71,26 @@ function renderCharts() {
   ], { milestones: MS_LABELS, ymin: 55, ymax: 100, yfmt: (v) => `${v.toFixed(0)}%` });
   const i27 = ymDiff(cal[0], '2027-04'), i28 = ymDiff(cal[0], '2028-04');
   $('ms-note').textContent = `Why the line sits above the milestones: the 65/80/92 milestones are applied to every TFC individually, never below its start position (an equity stance — no specialty is traded off to hit the trust number). The aggregate therefore overshoots: ${t.impliedPct[i27].toFixed(1)}% at Apr-27 vs the 65% trust milestone, ${t.impliedPct[i28].toFixed(1)}% vs 80% at Apr-28. A trust-optimal plan hitting the aggregate exactly would need less capacity — the gap between the line and the milestone is the price of specialty equity.`;
+  const band = (a, b) => ({
+    upper: a.map((v, i) => Math.max(v, b[i])),
+    lower: a.map((v, i) => Math.min(v, b[i])),
+  });
   lineChart($('chart-list'), cal, [
     { name: 'list (required path)', data: t.list, color: S1() },
     { name: 'sustainable target', data: t.targetList, color: S2(), dash: [5, 4] },
-  ], { milestones: MS_LABELS, yfmt: (v) => `${(v / 1000).toFixed(0)}k` });
+  ], { milestones: MS_LABELS, yfmt: (v) => `${(v / 1000).toFixed(0)}k`,
+       band: band(t.targetList, resultRaw.trust.targetList) });
   lineChart($('chart-stops'), cal, [
     { name: 'required', data: t.requiredStopsMo, color: S1() },
     { name: 'current', data: t.currentStopsMo, color: S2(), dash: [5, 4] },
-  ], { milestones: MS_LABELS, yfmt: (v) => `${(v / 1000).toFixed(1)}k` });
+  ], { milestones: MS_LABELS, yfmt: (v) => `${(v / 1000).toFixed(1)}k`,
+       band: band(t.requiredStopsMo, resultRaw.trust.requiredStopsMo) });
+  $('band-note').textContent = `Shaded band: the demand-growth calibration question — the lower edge uses the raw Apr→Apr pair (${baseline.levers.demandGrowthRawPctYr}%/yr, which reads low because April 2024 had 21 working days vs 20 in 2025), the line uses the working-day-adjusted ${baseline.levers.demandGrowthPctYr}%/yr. Demand is most likely growing, not falling.`;
 }
 
 // --- levers -------------------------------------------------------------------
 const LEVERS = [
-  { key: 'demandGrowthAdjPctYr', label: 'Demand growth adjustment (±%/yr)', min: -3, max: 5, step: 0.5, pct: false, bench: 'on calibrated baselines: trust −2.5%/yr, per-TFC where clean (pre-EPR pair Apr-24→Apr-25)' },
+  { key: 'demandGrowthAdjPctYr', label: 'Demand growth adjustment (±%/yr)', min: -3, max: 5, step: 0.5, pct: false, bench: 'on calibrated baselines: trust +2.3%/yr working-day adjusted (raw Apr/Apr −2.5%), per-TFC where clean (pre-EPR pair)' },
   { key: 'otherRemovalsPct', label: 'Referrals leaving without treatment', min: 0, max: 0.4, step: 0.01, pct: true, bench: 'calibrated 10.7% (pre-EPR pair; DNA discharge, duplicates, validation — the EPR year\'s 20.3% is excluded as contaminated)' },
   { key: 'dnaRate', label: 'Outpatient DNA rate', min: 0.03, max: 0.12, step: 0.005, pct: true, bench: 'best practice 5% (NHS Elect)' },
   { key: 'clinicUtilisation', label: 'Clinic utilisation', min: 0.75, max: 0.95, step: 0.01, pct: true, bench: 'target 90% (NHS Elect)' },
