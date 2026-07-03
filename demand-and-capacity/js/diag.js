@@ -63,7 +63,7 @@ function renderCharts() {
 }
 
 const LEVERS = [
-  { key: 'demandGrowthPctYr', label: 'Diagnostic demand growth (%/yr)', min: 0, max: 15, step: 0.5, pct: false, bench: 'calibrated +6.5%/yr: core modalities, working-day adjusted (CDC step-changes excluded; all-modality raw was +12.6%)' },
+  { key: 'demandGrowthPctYr', label: 'Diagnostic demand growth (%/yr)', min: 0, max: 15, step: 0.5, pct: false, bench: 'calibrated +6.5%/yr: core modalities, working-day adjusted (capacity step-changes excluded — NUH CDC opens 2027, so those jumps are insourcing/moves/validation; raw was +12.6%)' },
 ];
 
 function buildLevers() {

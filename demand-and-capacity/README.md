@@ -114,13 +114,16 @@ planned / unscheduled / waiting-list activity. Demand ≈ waiting-list tests +
 year-on-year ΔWL/12. April 2026 position: **25,065 waiting, 57.3% under
 6 weeks** (standard 95/99%) — MRI, CT, NOUS and echo carry the bulk. Demand
 growth **+6.5%/yr**: core modalities only, working-day adjusted. The all-
-modality raw figure (+12.6%) decomposes into three artefacts — CDC capacity
-coming online under the trust code (MRI +32%, DEXA +45%, audiology +64%
-activity: delivered tests measure *capacity*, not demand, in a backlog-
-constrained system), service moves (sleep studies −48%, list 1,303→417) and
-list validation (NOUS census −38% on flat activity). Step-changed modalities
-are excluded from calibration, mirroring the RTT method; the EPR-year pair's
-core reading (−5.8%) confirms that year is contaminated for diagnostics too.
+modality raw figure (+12.6%) decomposes into three artefacts — capacity
+step-changes (MRI +32%, DEXA +45%, audiology +64% activity in one year:
+delivered tests measure *capacity*, not demand, in a backlog-constrained
+system — cause unattributed from published data; it is NOT the Community
+Diagnostic Centre, which [does not open until 2027](https://www.nuh.nhs.uk/community-diagnostic-centre/),
+so insourced/mobile/outsourced capacity or reporting-coverage changes are the
+candidates), a service move (sleep studies −48%, list 1,303→417) and list
+validation (NOUS census −38% on flat activity). Step-changed modalities are
+excluded from calibration, mirroring the RTT method; the EPR-year pair's core
+reading (−5.8%) confirms that year is contaminated for diagnostics too.
 The 95%-by-Apr-27 / 99%-by-Apr-29 milestones are a documented modelling
 assumption aligned to the RTT trajectory.
 

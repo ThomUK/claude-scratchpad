@@ -56,9 +56,13 @@ def main():
 
     # pair diagnostics (demand = wl tests + ΔWL/12, per modality and total).
     # Calibration mirrors the RTT method: (a) exclude modalities with step-
-    # changes (|growth| > 20%: CDC capacity coming online under the trust code,
-    # service moves, list validation) — delivered tests measure CAPACITY, not
-    # demand, when a backlog constrains them; (b) working-day adjust (WL
+    # changes (|growth| > 20%): capacity/coverage events — insourced or mobile
+    # capacity, outsourcing reported under the trust code, service moves, list
+    # validation. Cause unattributed from published data alone (NUH's Community
+    # Diagnostic Centre does not open until 2027, so it is NOT the explanation:
+    # https://www.nuh.nhs.uk/community-diagnostic-centre/). Delivered tests
+    # measure CAPACITY, not demand, when a backlog constrains them.
+    # (b) working-day adjust (WL
     # diagnostics are weekday-delivered; April 2024 had 21 working days vs 20
     # in 2025/26).
     WORKING_DAYS = {"24": 21, "25": 20, "26": 20}
@@ -91,8 +95,9 @@ def main():
         growth, growthRawAll, excluded = pairs[0][2], pairs[0][3], pairs[0][4]
         calNote = (f"core-modality growth from earliest pair ({pairs[0][0]} vs {pairs[0][1]}), "
                    f"working-day adjusted; step-changed modalities excluded from calibration "
-                   f"({', '.join(excluded)}) — CDC capacity, service moves and list validation "
-                   f"are supply/coverage events, not demand (all-modality raw: {growthRawAll}%/yr)")
+                   f"({', '.join(excluded)}) — capacity/coverage step-changes (insourced/mobile/"
+                   f"outsourced capacity, service moves, list validation; cause unattributed — NUH's "
+                   f"CDC does not open until 2027), not demand (all-modality raw: {growthRawAll}%/yr)")
 
     prev = chain[-2] if len(chain) >= 2 else None
     modalities = []
