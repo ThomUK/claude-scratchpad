@@ -105,7 +105,9 @@
   },
   "levers": {
     "attGrowthPctYr": 1.5,
-    "admGrowthPctYr": 1.1
+    "admGrowthPctYr": 1.1,
+    "emergencyLOSDays": 5.3,
+    "bedOccupancyTarget": 0.92
   },
   "standards": {
     "fourHour": {
@@ -121,6 +123,434 @@
       "name": "12-hour decision-to-admit waits",
       "target": 0,
       "note": "should be zero; published measure is DTA-based"
+    }
+  },
+  "beds": {
+    "note": "Winter (Nov-Mar) daily averages from the UEC Daily SitRep provider timeseries. Adult G&A is the emergency/elective shared bed pool; long-stay >21 days is the discharge-delay proxy. These editions carry no ambulance handover sheet \u2014 that is a separate NHSE collection.",
+    "winters": {
+      "W2023-24": {
+        "days": 133,
+        "adultGA": {
+          "open": 1582,
+          "occupied": 1485,
+          "occupancyPct": 93.8
+        },
+        "longStay": {
+          "gt7": 848,
+          "gt14": 518,
+          "gt21": 345,
+          "gt21PctOfOccupied": 23.2
+        },
+        "criticalCare": {
+          "open": 66,
+          "occupied": 51,
+          "occupancyPct": 77.1
+        }
+      },
+      "W2024-25": {
+        "days": 126,
+        "adultGA": {
+          "open": 1602,
+          "occupied": 1505,
+          "occupancyPct": 93.9
+        },
+        "longStay": {
+          "gt7": 790,
+          "gt14": 461,
+          "gt21": 296,
+          "gt21PctOfOccupied": 19.6
+        },
+        "criticalCare": {
+          "open": 66,
+          "occupied": 52,
+          "occupancyPct": 78.1
+        }
+      },
+      "W2025-26": {
+        "days": 126,
+        "adultGA": {
+          "open": 1600,
+          "occupied": 1527,
+          "occupancyPct": 95.4
+        },
+        "longStay": {
+          "gt7": 941,
+          "gt14": 577,
+          "gt21": 387,
+          "gt21PctOfOccupied": 25.3
+        },
+        "criticalCare": {
+          "open": 69,
+          "occupied": 53,
+          "occupancyPct": 76.0
+        }
+      }
+    }
+  },
+  "kh03": {
+    "note": "KH03 quarterly average daily beds. The specialty CSVs are provider-level occupied beds (overnight/day); the published timeseries workbook is England-level and provides the national occupancy context. Latest provider snapshot 2024-06-30 predates the sitrep winters \u2014 used for specialty MIX and long-run trend, not the current base.",
+    "latestSnapshot": "2024-06-30",
+    "totalOccupiedOvernight": 1523,
+    "totalOccupiedDay": 165,
+    "specialties": [
+      {
+        "code": "430",
+        "name": "Geriatric medicine",
+        "occupied": 227
+      },
+      {
+        "code": "340",
+        "name": "Respiratory medicine",
+        "occupied": 143
+      },
+      {
+        "code": "300",
+        "name": "General internal medicine",
+        "occupied": 140
+      },
+      {
+        "code": "110",
+        "name": "Trauma & orthopaedics",
+        "occupied": 138
+      },
+      {
+        "code": "100",
+        "name": "General surgery",
+        "occupied": 123
+      },
+      {
+        "code": "501",
+        "name": "Obstetrics",
+        "occupied": 76
+      },
+      {
+        "code": "800",
+        "name": "Clinical oncology",
+        "occupied": 69
+      },
+      {
+        "code": "320",
+        "name": "Cardiology",
+        "occupied": 64
+      },
+      {
+        "code": "301",
+        "name": "Gastroenterology",
+        "occupied": 62
+      },
+      {
+        "code": "303",
+        "name": "Clinical haematology",
+        "occupied": 60
+      },
+      {
+        "code": "150",
+        "name": "Neurosurgery",
+        "occupied": 59
+      },
+      {
+        "code": "420",
+        "name": "Paediatrics",
+        "occupied": 49
+      },
+      {
+        "code": "326",
+        "name": "Acute internal medicine",
+        "occupied": 33
+      },
+      {
+        "code": "170",
+        "name": "Cardiothoracic surgery",
+        "occupied": 26
+      },
+      {
+        "code": "101",
+        "name": "Urology",
+        "occupied": 23
+      },
+      {
+        "code": "107",
+        "name": "Vascular surgery",
+        "occupied": 22
+      },
+      {
+        "code": "400",
+        "name": "Neurology",
+        "occupied": 21
+      },
+      {
+        "code": "361",
+        "name": "Renal medicine",
+        "occupied": 20
+      },
+      {
+        "code": "302",
+        "name": "Endocrinology",
+        "occupied": 20
+      },
+      {
+        "code": "other",
+        "name": "All other specialties",
+        "occupied": 148
+      }
+    ],
+    "trend": [
+      {
+        "date": "2010-06-30",
+        "occupied": 1407
+      },
+      {
+        "date": "2011-06-30",
+        "occupied": 1299
+      },
+      {
+        "date": "2012-06-30",
+        "occupied": 1372
+      },
+      {
+        "date": "2013-06-30",
+        "occupied": 1404
+      },
+      {
+        "date": "2014-06-30",
+        "occupied": 1432
+      },
+      {
+        "date": "2015-06-30",
+        "occupied": 1407
+      },
+      {
+        "date": "2016-06-30",
+        "occupied": 1432
+      },
+      {
+        "date": "2017-06-30",
+        "occupied": 1425
+      },
+      {
+        "date": "2018-06-30",
+        "occupied": 1374
+      },
+      {
+        "date": "2019-06-30",
+        "occupied": 1428
+      },
+      {
+        "date": "2020-06-30",
+        "occupied": 898
+      },
+      {
+        "date": "2021-06-30",
+        "occupied": 1331
+      },
+      {
+        "date": "2022-06-30",
+        "occupied": 1502
+      },
+      {
+        "date": "2023-06-30",
+        "occupied": 1525
+      },
+      {
+        "date": "2024-06-30",
+        "occupied": 1523
+      }
+    ],
+    "england": [
+      {
+        "q": "2020/21 Q1",
+        "avail": 92559,
+        "occ": 58420,
+        "occPct": 63.1
+      },
+      {
+        "q": "2020/21 Q2",
+        "avail": 94787,
+        "occ": 73321,
+        "occPct": 77.4
+      },
+      {
+        "q": "2020/21 Q3",
+        "avail": 95649,
+        "occ": 79520,
+        "occPct": 83.1
+      },
+      {
+        "q": "2020/21 Q4",
+        "avail": 96298,
+        "occ": 79888,
+        "occPct": 83.0
+      },
+      {
+        "q": "2021/22 Q1",
+        "avail": 97094,
+        "occ": 82848,
+        "occPct": 85.3
+      },
+      {
+        "q": "2021/22 Q2",
+        "avail": 97954,
+        "occ": 85836,
+        "occPct": 87.6
+      },
+      {
+        "q": "2021/22 Q3",
+        "avail": 100019,
+        "occ": 88584,
+        "occPct": 88.6
+      },
+      {
+        "q": "2021/22 Q4",
+        "avail": 101975,
+        "occ": 91108,
+        "occPct": 89.3
+      },
+      {
+        "q": "2022/23 Q1",
+        "avail": 103057,
+        "occ": 92560,
+        "occPct": 89.8
+      },
+      {
+        "q": "2022/23 Q2",
+        "avail": 102305,
+        "occ": 92184,
+        "occPct": 90.1
+      },
+      {
+        "q": "2022/23 Q3",
+        "avail": 103523,
+        "occ": 95274,
+        "occPct": 92.0
+      },
+      {
+        "q": "2022/23 Q4",
+        "avail": 104543,
+        "occ": 96500,
+        "occPct": 92.3
+      },
+      {
+        "q": "2023/24 Q1",
+        "avail": 103818,
+        "occ": 94109,
+        "occPct": 90.6
+      },
+      {
+        "q": "2023/24 Q2",
+        "avail": 102922,
+        "occ": 92371,
+        "occPct": 89.7
+      },
+      {
+        "q": "2023/24 Q3",
+        "avail": 104455,
+        "occ": 95692,
+        "occPct": 91.6
+      },
+      {
+        "q": "2023/24 Q4",
+        "avail": 106475,
+        "occ": 98492,
+        "occPct": 92.5
+      },
+      {
+        "q": "2024/25 Q1",
+        "avail": 105645,
+        "occ": 96361,
+        "occPct": 91.2
+      },
+      {
+        "q": "2024/25 Q2",
+        "avail": 103656,
+        "occ": 93664,
+        "occPct": 90.4
+      },
+      {
+        "q": "2024/25 Q3",
+        "avail": 106432,
+        "occ": 96109,
+        "occPct": 90.3
+      },
+      {
+        "q": "2024/25 Q4",
+        "avail": 106068,
+        "occ": 98146,
+        "occPct": 92.5
+      },
+      {
+        "q": "2025/26 Q1",
+        "avail": 104260,
+        "occ": 95350,
+        "occPct": 91.5
+      },
+      {
+        "q": "2025/26 Q2",
+        "avail": 103120,
+        "occ": 93756,
+        "occPct": 90.9
+      },
+      {
+        "q": "2025/26 Q3",
+        "avail": 103824,
+        "occ": 94969,
+        "occPct": 91.5
+      },
+      {
+        "q": "2025/26 Q4",
+        "avail": 102423,
+        "occ": 94737,
+        "occPct": 92.5
+      }
+    ]
+  },
+  "discharge": {
+    "note": "Discharge Ready Date monthly publication (SUS-based). Bed days lost = discharge-ready date to actual discharge. CAUTION: DRD recording matured over 2024-2026 \u2014 the early-year figures likely UNDERSTATE delay (Apr-24's 5.8% delayed is implausibly good vs ~20% nationally), so the apparent six-fold rise is partly recording, partly real deterioration. The latest month is the reliable anchor.",
+    "months": {
+      "Apr-24": {
+        "discharges": 5478,
+        "bedDaysLost": 903,
+        "impliedBedsOccupiedByDelay": 30,
+        "pctDelayed": 5.8,
+        "bands": {
+          "noDelay": 5160,
+          "d1": 214,
+          "d2to3": 50,
+          "d4to6": 28,
+          "d7to13": 15,
+          "d14to20": 4,
+          "d21plus": 7
+        }
+      },
+      "Apr-25": {
+        "discharges": 5835,
+        "bedDaysLost": 3350,
+        "impliedBedsOccupiedByDelay": 110,
+        "pctDelayed": 17.1,
+        "bands": {
+          "noDelay": 4835,
+          "d1": 486,
+          "d2to3": 237,
+          "d4to6": 154,
+          "d7to13": 88,
+          "d14to20": 21,
+          "d21plus": 14
+        }
+      },
+      "Apr-26": {
+        "discharges": 5627,
+        "bedDaysLost": 5435,
+        "impliedBedsOccupiedByDelay": 179,
+        "pctDelayed": 22.7,
+        "bands": {
+          "noDelay": 4352,
+          "d1": 541,
+          "d2to3": 298,
+          "d4to6": 175,
+          "d7to13": 175,
+          "d14to20": 56,
+          "d21plus": 30
+        }
+      }
     }
   }
 }

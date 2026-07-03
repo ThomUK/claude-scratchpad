@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UEC — Demand &amp; Capacity, NUH (RX1)</title>
+  <link rel="stylesheet" href="styles.css?v=dev" />
+</head>
+<body>
+  <header>
+    <h1>Urgent &amp; Emergency Care — NUH (RX1)</h1>
+    <nav class="crumbs"><a href="./">← Elective (RTT) spine</a> · <a href="diagnostics.html">Diagnostics (DM01)</a> · <a href="cancer.html">Cancer (CWT)</a> · <a href="explainers.html">Explainers →</a></nav>
+    <p class="subtitle">
+      <strong>Phase 4:</strong> the <strong>A&amp;E 4-hour standard</strong> (a flow standard, like cancer —
+      each month's attendances scored on timeliness), <strong>12-hour decision-to-admit waits</strong>, and the
+      <strong>emergency bed base</strong> — where UEC meets the elective spine: average occupied emergency
+      beds = daily admissions × length of stay (Little's Law a third time), and the elective recovery's
+      bed requirement stacks on the same adult G&amp;A pool.
+    </p>
+    <p class="data-note">Seeded from the published <strong>Monthly A&amp;E (MSitAE) provider CSVs (April
+      2024/25/26)</strong> and <strong>UEC Daily SitRep winter timeseries (2023-24 → 2025-26)</strong>. From
+      Apr-26 the co-located UTC activity reports under RX1's code — all-types performance jumps for
+      reporting reasons; type-1 is the comparable ED series. Growth is calibrated from the latest pair
+      (the earliest is contaminated by the UTC split — the reverse of the RTT/DM01 EPR situation).
+      4-hour milestones (78% Apr-27 → 86% Apr-28 → 95% Apr-29) and the 12-hour-to-zero date are
+      modelling assumptions. <strong>Ambulance handover</strong> is a separate NHSE collection not yet
+      loaded — upload it and the ingest will extend.</p>
+    <p id="status" class="status status--loading" role="status">Loading model…</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>UEC position &amp; trajectory</h2>
+      <div id="cards" class="cards"></div>
+      <div class="chart-block">
+        <h3>A&amp;E 4-hour performance — required glide path <span class="muted small">(all types; constitutional 95%)</span></h3>
+        <canvas id="chart-glide" width="1040" height="360"></canvas>
+      </div>
+      <div class="two-col">
+        <div class="chart-block">
+          <h3>Timely attendances per month <span class="muted small">(required vs at today's rate)</span></h3>
+          <canvas id="chart-timely" width="520" height="330"></canvas>
+        </div>
+        <div class="chart-block">
+          <h3>12-hour DTA waits per month <span class="muted small">(assumed path to zero)</span></h3>
+          <canvas id="chart-dta" width="520" height="330"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>The shared bed pool — where UEC meets the elective recovery</h2>
+      <p class="small muted">Emergency occupied beds follow Little's Law (daily admissions × LOS); open
+        beds needed add the occupancy-target headroom. The elective spine's bed requirement (phase 1)
+        is drawn on the same axis — both press on one adult G&amp;A pool of ~1,600 beds.</p>
+      <div class="chart-block">
+        <h3>Adult G&amp;A beds — required vs available <span class="muted small">(emergency + elective vs winter average open)</span></h3>
+        <canvas id="chart-beds" width="1040" height="360"></canvas>
+      </div>
+      <div class="table-wrap">
+        <table id="winter-table">
+          <thead><tr>
+            <th>Winter</th><th class="num">Adult G&amp;A open</th><th class="num">Occupied</th><th class="num">Occupancy</th>
+            <th class="num">Long-stay 7+ d</th><th class="num">14+ d</th><th class="num">21+ d</th><th class="num">21+ share of occ</th>
+            <th class="num">Critical care occ/open</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="muted small">The long-stay columns are the discharge-delay proxy: beds held by patients
+        in hospital over 7/14/21 days. Winter 2025-26 is the tightest of the three years — occupancy
+        95.4% against the 92% planning norm, with a quarter of occupied beds held by 21+ day stayers.
+        Releasing long-stay beds is the biggest single lever on the pool.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Discharge delays <span class="muted small">(Discharge Ready Date, April months)</span></h2>
+      <div id="drd-cards" class="cards"></div>
+      <div class="table-wrap">
+        <table id="drd-table">
+          <thead><tr>
+            <th>Month</th><th class="num">Discharges</th><th class="num">% delayed</th>
+            <th class="num">Bed-days lost</th><th class="num">≈ beds occupied by delay</th>
+            <th class="num">1 day</th><th class="num">2-3</th><th class="num">4-6</th>
+            <th class="num">7-13</th><th class="num">14-20</th><th class="num">21+</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="muted small" id="drd-note"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Bed base by specialty <span class="muted small">(KH03, occupied overnight)</span></h2>
+      <div class="two-col">
+        <div>
+          <div class="table-wrap">
+            <table id="kh03-table">
+              <thead><tr><th>Specialty</th><th class="num">Occupied overnight</th><th class="num">Share</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <div class="chart-block">
+            <h3>Occupied overnight beds — long run <span class="muted small">(June snapshots)</span></h3>
+            <canvas id="chart-kh03" width="520" height="330"></canvas>
+          </div>
+          <p class="muted small" id="kh03-note"></p>
+        </div>
+      </div>
+      <p class="muted small">The emergency-dominated bed base is concentrated in geriatric medicine,
+        respiratory and general internal medicine — the same wards the long-stay and discharge-delay
+        beds sit in. The elective recovery competes for what remains.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Levers</h2>
+      <div id="levers" class="levers"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Ambulance handover <span class="muted small">(data gap)</span></h2>
+      <p class="small">Trust-level handover delays (&gt;30/&gt;60 minutes) are published in a separate
+        NHSE ambulance data collection, not in the sitrep editions loaded here. National reporting has
+        repeatedly identified EMAS handovers at NUH as pressured; the mechanism is the one this page
+        models — handover delay is queueing at the front door for the same beds the long-stay and
+        elective columns are holding. Upload the handover extract and this panel becomes data-driven.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Sources: NHSE Monthly A&amp;E (MSitAE) CSVs and UEC Daily SitRep winter timeseries in
+      <code>source/</code>; ingest in <code>ingest/ingest_ae.py</code> and <code>ingest/ingest_sitrep.py</code>.
+      4-hour milestones and the 12-hour-to-zero date are modelling assumptions (2025/26 planning ambition
+      was 78%). Illustrative planning model — not operational advice.</p>
+  </footer>
+
+  <script type="module" src="js/uec.js?v=dev"></script>
+</body>
+</html>

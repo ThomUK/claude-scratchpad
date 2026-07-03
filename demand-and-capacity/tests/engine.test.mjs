@@ -110,6 +110,28 @@ console.log('— cancer (CWT) module —');
   ok(close(conv.convPct, 100 * conv.treatedMo / conv.referralsMo, 0.06), `treated conversion ${conv.convPct}% (national benchmark ≈ 7%)`);
 }
 
+console.log('— UEC module —');
+{
+  const { runUec } = await import('../js/engine.js');
+  const uec = JSON.parse(readFileSync(new URL('../data/uec.json', import.meta.url)));
+  const u = runUec(uec, { startYM: '2026-07' });
+  const s = u.series, j0 = 0, j27 = ymDiff('2026-07', '2027-04'), j28 = ymDiff('2026-07', '2028-04'), j29 = ymDiff('2026-07', '2029-04');
+  ok(close(s.attMo[j0], 24214, 1), `opening all-type attendances ${s.attMo[j0].toFixed(0)}/mo (published Apr-26)`);
+  ok(close(s.glidePct[j0], 66.9, 0.1), `4h glide starts at published ${s.glidePct[j0].toFixed(1)}%`);
+  ok(close(s.glidePct[j27], 78, 1e-9), '4h glide hits 78% at Apr-27 (planning ambition)');
+  ok(close(s.glidePct[j29], 95, 1e-9), '4h glide hits constitutional 95% at Apr-29');
+  ok(close(s.dta12Mo[j0], 819, 1), `12h DTA starts at published ${s.dta12Mo[j0].toFixed(0)}/mo`);
+  ok(s.dta12Mo[j28] < 1 && s.dta12Mo[u.cal.length - 1] === 0, '12h DTA reaches zero by Apr-28 and stays there');
+  // Little's Law: occupied = daily admissions × LOS; open = occupied / target
+  const expOcc = (uec.current.admTotal / 30.4) * uec.levers.emergencyLOSDays;
+  ok(close(s.emergencyOccupiedBeds[j0], expOcc, 0.5), `emergency occupied beds ${s.emergencyOccupiedBeds[j0].toFixed(0)} = λ×W`);
+  ok(close(s.emergencyOpenBedsNeeded[j0], expOcc / uec.levers.bedOccupancyTarget, 0.5), 'open beds = occupied ÷ occupancy target');
+  // implied LOS reproduces the winter occupied bed base it was derived from
+  const w = uec.beds.winters['W2025-26'];
+  ok(close(s.emergencyOccupiedBeds[j0], w.adultGA.occupied, 10), `implied LOS reproduces winter occupied base (${w.adultGA.occupied}, LOS lever rounded to 0.1d)`);
+  ok(w.adultGA.occupancyPct > 92, `winter 2025-26 occupancy ${w.adultGA.occupancyPct}% above the 92% norm`);
+}
+
 console.log('— explainer maths (census vs flow) —');
 {
   const { erlangCdf, censusCdf, runClearanceSim } = await import('../js/explainmath.js');

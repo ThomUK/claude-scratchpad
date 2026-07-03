@@ -76,8 +76,13 @@ To re-seed with a newer month:
 python3 ingest/ingest_rtt.py source/<latest>.zip --prior source/<yr-1>.zip --prior source/<yr-2>.zip --provider RX1
 python3 ingest/ingest_dm01.py source/<latest-dm01>.xls --prior source/<yr-1>.xls --prior source/<yr-2>.xls --provider RX1
 python3 ingest/ingest_cwt.py source/<latest-cwt>.csv --prior source/<yr-1>.xlsx --prior source/<yr-2>.xlsx --provider RX1
+python3 ingest/ingest_ae.py source/<latest-ae>.csv --prior source/<yr-1>.csv --prior source/<yr-2>.csv --provider RX1
+python3 ingest/ingest_sitrep.py source/<winter1>.xlsx source/<winter2>.xlsx source/<winter3>.xlsx --provider RX1
+python3 ingest/ingest_kh03.py source/<kh03-ts>.xlsx source/<kh03-overnight>.csv source/<kh03-day>.csv --provider RX1
+python3 ingest/ingest_drd.py source/<drd-latest>.xlsx source/<yr-1>.xlsx source/<yr-2>.xlsx --provider RX1
 node tests/engine.test.mjs
 ```
+(The UEC ingests append to `data/uec.json`, so run `ingest_ae.py` first.)
 
 ### Diagnostics (DM01) seeding
 
@@ -104,6 +109,26 @@ glide path; the gap vs today's timely rate is the pathway capacity to add.
 FDS-volume growth **−0.7%/yr** from the pre-EPR pair (the EPR year shows
 +13.4%). Trust PTL data would deepen this to a backlog model.
 
+### UEC seeding
+
+`ingest/ingest_ae.py` reads the Monthly A&E (MSitAE) provider CSVs: April 2026
+position **type-1 44.7% within 4 hours** (all-types 66.9% — flattered by the
+UTC activity merging under RX1's code from Apr-26), **819 twelve-hour DTA
+waits**, 8,717 emergency admissions/month. Growth from the LATEST pair
+(+1.5%/+1.1%): the earliest pair is contaminated by the UTC reporting split —
+the reverse of the RTT/DM01 EPR situation, as attendance counts are not
+clock-rule sensitive. `ingest_sitrep.py` adds winter bed stats from the UEC
+Daily SitRep timeseries (winter 2025-26: adult G&A **95.4% occupied**, a
+quarter of occupied beds held by 21+ day stayers) and derives the implied
+emergency LOS (5.3d) via Little's Law. `ingest_kh03.py` adds the KH03
+specialty bed mix (geriatric medicine is the largest occupied base) and
+England occupancy context. `ingest_drd.py` adds Discharge Ready Date delays
+(Apr-26: 22.7% of discharges delayed, **5,435 bed-days lost ≈ 179 beds**;
+early-year figures understate — DRD recording matured over 2024-26). The
+module models the 4-hour standard as a flow standard (like cancer), 12-hour
+DTA to zero, and the shared bed pool: emergency beds (λ×LOS) + the elective
+spine's requirement vs ~1,600 open.
+
 ## Roadmap
 
 | Phase | Scope |
@@ -111,7 +136,7 @@ FDS-volume growth **−0.7%/yr** from the pre-EPR pair (the EPR year shows
 | **1 — Elective spine (this release)** | RTT waiting list → clock stops → OP / theatres / beds / diagnostics per TFC, trust rollup, levers, scenarios |
 | **2 — Diagnostics (this release)** | DM01 modality-level queues vs the 6-week standard — `diagnostics.html`, seeded from the published DM01 provider files (Apr-24/25/26), same queueing core on a 6-week window |
 | **3 — Cancer (this release)** | FDS / 31-day / 62-day timeliness by tumour site — `cancer.html`, seeded from published CWT provider data (Apr-24/25/26, two formats), flow model on cohort volumes |
-| 4 — UEC | ED four-hour + handover; bed interaction with the elective model |
+| **4 — UEC (this release)** | ED 4-hour, 12-hour DTA, discharge delays and the shared bed pool — `uec.html`, seeded from MSitAE, UEC sitreps, KH03 and Discharge Ready Date; ambulance handover awaits its separate collection |
 | 5 — Workforce | Medical & nursing WTE as the cross-cutting constraint |
 
 ## Explainers

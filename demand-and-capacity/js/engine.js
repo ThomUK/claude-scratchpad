@@ -226,6 +226,52 @@ export function runDiagnostic(mod, levers, cal, milestones, windowWeeks = 6) {
   return s;
 }
 
+// --- UEC (A&E 4-hour, 12-hour DTA, emergency beds) ----------------------------
+// The 4-hour standard is a FLOW standard like cancer: each month's attendances
+// are scored on timeliness (no backlog census — nobody waits in A&E between
+// months). Beds are Little's Law a third time: average occupied emergency beds
+// = daily admissions × length of stay; open beds needed = occupied / occupancy
+// target. Elective beds from the RTT spine stack on top (passed in by the page).
+export function runUec(uec, opts = {}) {
+  const cal = calendar(opts.startYM || '2026-07', opts.endYM || '2030-03');
+  const levers = { ...uec.levers, ...(opts.levers || {}) };
+  const cur = uec.current;
+  const n = cal.length;
+  const gAtt = Math.pow(1 + (levers.attGrowthPctYr ?? 0) / 100, 1 / 12);
+  const gAdm = Math.pow(1 + (levers.admGrowthPctYr ?? 0) / 100, 1 / 12);
+  const msFour = opts.fourHourMilestones || [
+    { ym: '2027-04', pct: 78 }, { ym: '2028-04', pct: 86 }, { ym: '2029-04', pct: 95 },
+  ];
+  const glide4 = glidePath(cal, cur.pct4hAll, msFour);
+  const dtaZero = Math.max(1, ymDiff(cal[0], opts.dtaZeroYM || '2028-04'));
+  const los = levers.emergencyLOSDays ?? 5;
+  const occT = levers.bedOccupancyTarget ?? 0.92;
+
+  const s = {
+    ym: cal, glidePct: glide4,
+    attMo: new Array(n), requiredTimelyMo: new Array(n),
+    currentRateTimelyMo: new Array(n), extraTimelyMo: new Array(n),
+    dta12Mo: new Array(n),
+    admMo: new Array(n), emergencyOccupiedBeds: new Array(n), emergencyOpenBedsNeeded: new Array(n),
+  };
+  let att = cur.attAll, adm = cur.admTotal;
+  for (let i = 0; i < n; i++) {
+    const req = att * glide4[i] / 100;
+    const today = att * cur.pct4hAll / 100;
+    s.attMo[i] = att;
+    s.requiredTimelyMo[i] = req;
+    s.currentRateTimelyMo[i] = today;
+    s.extraTimelyMo[i] = Math.max(0, req - today);
+    s.dta12Mo[i] = Math.max(0, cur.dta12plus * (1 - i / dtaZero));
+    s.admMo[i] = adm;
+    const occupied = (adm / 30.4) * los;         // Little's Law: L = λ × W
+    s.emergencyOccupiedBeds[i] = occupied;
+    s.emergencyOpenBedsNeeded[i] = occupied / occT;
+    att *= gAtt; adm *= gAdm;
+  }
+  return { cal, milestones: msFour, levers, series: s };
+}
+
 // --- cancer (CWT) -------------------------------------------------------------
 // The cancer standards are FLOW standards, unlike RTT/DM01: each month's cohort
 // of diagnoses (FDS) or treatments (31/62-day) is scored on timeliness, and the
