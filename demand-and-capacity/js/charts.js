@@ -1,6 +1,21 @@
 import { ymDiff } from './engine.js?v=dev';
 
 export const fmt = (x, d = 0) => Number(x).toLocaleString(undefined, { maximumFractionDigits: d });
+
+// Renders a module's _provenance block (plus an optional extra note) into a
+// details panel — surfacing the provenance JSON the ingests already write, so
+// the answer to "where does this number come from?" is one click away and can
+// never drift from the data.
+export function provenanceHtml(prov = {}, extra = '') {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const rows = [];
+  if (prov.provider || prov.trust) rows.push(`<p><strong>${esc(prov.trust ?? `Provider ${prov.provider}`)}</strong>${prov.period ? ` — data period ${esc(prov.period)}` : ''}${prov.modelStart ? ` — model start ${esc(prov.modelStart)}` : ''}.</p>`);
+  if (prov.sources?.length) rows.push(`<p>Snapshots used: ${prov.sources.map(esc).join(' · ')}.</p>`);
+  if (prov.dataQuality) rows.push(`<p>${esc(prov.dataQuality)}</p>`);
+  if (extra) rows.push(`<p>${esc(extra)}</p>`);
+  rows.push('<p>Raw source files are committed under <code>source/</code>; the ingest scripts under <code>ingest/</code> turn them into the JSON seed this page reads. Nothing is typed in by hand.</p>');
+  return rows.join('');
+}
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 export const S1 = () => css('--s1'), S2 = () => css('--s2'), S3 = () => css('--s3');
 const INK = () => css('--text'), MUT = () => css('--muted'), GRID = '#242e3a';

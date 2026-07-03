@@ -109,6 +109,19 @@ td .pill { display: inline-block; min-width: 52px; text-align: right; padding: 1
 .phase.done { border-color: var(--good); }
 .phase.done strong { color: var(--good); }
 
+.canvas-scroll { width: 100%; overflow-x: auto; margin-top: 10px; }
+.canvas-scroll canvas { display: block; }
+
+.prov { margin-top: 8px; }
+.prov summary { cursor: pointer; color: var(--accent); font-size: 0.82rem; font-weight: 600; }
+.prov summary:hover { text-decoration: underline; }
+.prov > div { margin-top: 8px; color: var(--muted); }
+.prov > div p { margin: 0 0 8px; }
+.prov code { color: var(--accent); }
+
+.steps { padding-left: 22px; }
+.steps li { margin-bottom: 10px; line-height: 1.5; }
+
 footer { padding: 24px 20px 40px; color: var(--muted); font-size: 0.85rem; }
 footer a, footer code { color: var(--accent); }
 

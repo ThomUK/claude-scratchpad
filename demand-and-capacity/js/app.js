@@ -1,5 +1,5 @@
 import { runScenario, shapeFactor, ymDiff } from './engine.js?v=dev';
-import { lineChart, fmt, S1, S2, S3 } from './charts.js?v=dev';
+import { lineChart, fmt, provenanceHtml, S1, S2, S3 } from './charts.js?v=dev';
 
 const $ = (id) => document.getElementById(id);
 const setStatus = (t, k) => { const el = $('status'); el.textContent = t; el.className = `status status--${k}`; };
@@ -20,6 +20,7 @@ let kRangeText = '';
     const ks = baseline.tfcs.map((t) => shapeFactor(t.list, t.pct18 / 100, t.referralsWk * keep));
     kRangeText = `${Math.min(...ks).toFixed(2)}–${Math.max(...ks).toFixed(2)}`;
     $('k-range').textContent = kRangeText;
+    document.getElementById('prov-body').innerHTML = provenanceHtml(baseline._provenance, baseline.levers.sourceNote);
     buildLevers();
     recompute();
     wire();

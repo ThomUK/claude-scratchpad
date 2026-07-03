@@ -1,5 +1,5 @@
 import { runWorkforce, buildActivityIndex, requiredProductivityPctYr, ymDiff } from './engine.js?v=dev';
-import { lineChart, fmt, S1, S2, S3 } from './charts.js?v=dev';
+import { lineChart, fmt, provenanceHtml, S1, S2, S3 } from './charts.js?v=dev';
 
 const $ = (id) => document.getElementById(id);
 const setStatus = (t, k) => { const el = $('status'); el.textContent = t; el.className = `status status--${k}`; };
@@ -20,6 +20,7 @@ const WEIGHTS = { uec: 0.45, rtt: 0.35, dm01: 0.10, cancer: 0.10 };
       'data/workforce.json', 'data/baseline.json', 'data/dm01.json', 'data/cancer.json', 'data/uec.json',
     ].map(async (p) => (await fetch(`${p}?v=dev`, { cache: 'no-cache' })).json()));
     wf = w;
+    $('prov-body').innerHTML = provenanceHtml(wf._provenance);
     uecData = uec;
     activityIdx = buildActivityIndex(baseline, dm01, cancer, uec, WEIGHTS);
     buildLevers();

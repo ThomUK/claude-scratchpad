@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How the model works — Demand &amp; Capacity, NUH (RX1)</title>
+  <link rel="stylesheet" href="styles.css?v=dev" />
+</head>
+<body>
+  <header>
+    <h1>How the model works — the anatomy of the requirement</h1>
+    <nav class="crumbs"><a href="./">← Elective (RTT) spine</a> · <a href="diagnostics.html">Diagnostics</a> · <a href="cancer.html">Cancer</a> · <a href="uec.html">UEC</a> · <a href="workforce.html">Workforce</a> · <a href="explainers.html">Explainers →</a></nav>
+    <p class="subtitle">
+      This page is the model's method documentation, drawn as <strong>one picture</strong>. It shows
+      how a referral becomes a capacity requirement: referrals arrive, some leave without treatment,
+      the rest need a <strong>"clock stop"</strong> (treatment, or a decision that treatment isn't
+      needed), the backlog adds extra work until it is cleared, and clock stops convert into
+      appointments, theatre sessions, beds and tests. <strong>Every number on this page is computed
+      live from the same engine and data as the model pages</strong> — move a lever and watch the
+      picture change. Nothing is typed in, so this explanation can never disagree with the tool.
+    </p>
+    <p id="status" class="status status--loading" role="status">Loading model…</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="row-between">
+        <h2>The one picture <span class="muted small">(pathways per month, at the selected month)</span></h2>
+        <button id="reset" class="btn btn--ghost">Reset levers</button>
+      </div>
+      <div id="cards" class="cards"></div>
+      <div class="lever" style="margin-top:12px">
+        <label>Month — <span class="val" id="month-label">…</span> <span class="muted small">(defaults to the peak-requirement month)</span></label>
+        <input type="range" id="month-slider" min="0" max="47" value="0" />
+      </div>
+      <div class="canvas-scroll">
+        <canvas id="chart-flow" width="1040" height="480"></canvas>
+      </div>
+      <p class="muted small">Band widths are proportional to pathways per month, so the flow is
+        volume-true from referrals to clock stops. The four boxes on the right change units
+        (appointments, sessions, beds, tests), so those arrows carry the conversion formula instead
+        of a width — the same formulas the levers control. The dashed arrows mark work driven by
+        referrals rather than clock stops: first appointments and diagnostic tests happen at the
+        START of a pathway, so they don't surge with backlog clearance.</p>
+    </section>
+
+    <section class="panel">
+      <h2>The same picture in six sentences</h2>
+      <ol class="steps">
+        <li><strong>Referrals arrive.</strong> In <span id="p-ym">…</span>, <strong><span id="p-raw">…</span></strong> pathways
+          join the queue (GP and other referrals, growing each year).</li>
+        <li><strong>Some leave without treatment.</strong> About <strong><span id="p-rempct">…</span></strong>
+          (<span id="p-rem">…</span>/mo) are discharged after not attending, turn out to be duplicates, are
+          treated elsewhere, or choose not to proceed. This share is calibrated from published data, and it is
+          a lever — it is the single most sensitive assumption in the model.</li>
+        <li><strong>What is left is effective demand.</strong> <strong><span id="p-eff">…</span></strong> pathways a month
+          genuinely need a clock stop — treatment, or a clear decision that treatment isn't needed.</li>
+        <li><strong>The backlog adds extra work.</strong> To hit the milestone dates the trust must also close
+          <strong><span id="p-clr">…</span></strong> pathways a month from the existing waiting list (the amber band).
+          This clearance work is why required activity runs ABOVE demand until the list reaches its sustainable
+          size — and why the requirement falls back towards demand after April 2029.</li>
+        <li><strong>Clock stops become capacity.</strong> Using the trust's own conversion ratios, the selected
+          month's requirement means <strong><span id="p-slots">…</span></strong> outpatient slots,
+          <strong><span id="p-sessions">…</span></strong> theatre sessions,
+          <strong><span id="p-beds">…</span></strong> elective beds and
+          <strong><span id="p-diags">…</span></strong> diagnostic tests.</li>
+        <li><strong>Compare with today.</strong> The trust currently delivers
+          <strong><span id="p-today">…</span></strong> clock stops a month; the selected month requires
+          <strong><span id="p-stops">…</span></strong>. The difference (<strong>+<span id="p-gap">…</span></strong>)
+          is the capacity ask — the red line on the green bar.</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>Levers <span class="muted small">(the same levers as the model pages — the picture updates as you move them)</span></h2>
+      <div id="levers" class="levers"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Where every number comes from</h2>
+      <details class="prov" open>
+        <summary>Provenance — data sources, calibration choices and their caveats</summary>
+        <div id="prov-body" class="small"></div>
+      </details>
+    </section>
+
+    <section class="panel">
+      <h2>Footnotes — the ideas behind the picture</h2>
+      <p class="small">Three pieces of machinery sit underneath this diagram. Each has its own
+        plain-English explainer:</p>
+      <ul class="small">
+        <li><a href="explainers.html">Census vs flow — the two cameras.</a> RTT and diagnostics photograph the
+          queue (how old is everyone waiting today?); cancer and A&amp;E score each month's finishers
+          (how fast were they?). One queue, two cameras — this is why the standards read differently.</li>
+        <li><a href="explainer-attendances.html">New and follow-up attendances — the tandem queue.</a> Why first
+          appointments follow referrals while follow-ups follow treatments, and what that does to clinic
+          templates during a backlog clearance.</li>
+        <li><a href="explainers.html">The shape factor k.</a> Real waiting lists aren't textbook-shaped; k measures
+          how far today's list differs from the theoretical shape and scales the sustainable list size
+          accordingly. It is held at today's value by default and exposed as the booking-discipline lever.</li>
+      </ul>
+      <p class="small muted">The boundary of what the model can support is written down in the
+        <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/demand-and-capacity#known-limitations">Known
+        limitations</a> section of the README — steady-state queueing assumptions, no within-year seasonality,
+        modules don't compete for shared capacity, and workforce counts exclude bank/agency staff.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Everything on this page renders from <code>data/baseline.json</code> through
+      <code>js/engine.js</code> — the same engine the model pages use. Illustrative planning model —
+      not operational advice.</p>
+  </footer>
+
+  <script type="module" src="js/anatomy.js?v=dev"></script>
+</body>
+</html>

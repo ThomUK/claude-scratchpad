@@ -1,5 +1,5 @@
 import { runDiagnostics, ymDiff } from './engine.js?v=dev';
-import { lineChart, fmt, S1, S2, S3 } from './charts.js?v=dev';
+import { lineChart, fmt, provenanceHtml, S1, S2, S3 } from './charts.js?v=dev';
 
 const $ = (id) => document.getElementById(id);
 const setStatus = (t, k) => { const el = $('status'); el.textContent = t; el.className = `status status--${k}`; };
@@ -14,6 +14,7 @@ const MS_LABELS = [{ ym: '2027-04', label: '95%' }, { ym: '2029-04', label: '99%
 (async function init() {
   try {
     dm01 = await (await fetch('data/dm01.json?v=dev', { cache: 'no-cache' })).json();
+    $('prov-body').innerHTML = provenanceHtml(dm01._provenance);
     buildLevers();
     recompute();
     wire();

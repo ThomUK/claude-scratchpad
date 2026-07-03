@@ -259,6 +259,26 @@ down here, by us, rather than left for a critic to discover:
 | **4 — UEC (this release)** | ED 4-hour, 12-hour DTA, discharge delays and the shared bed pool — `uec.html`, seeded from MSitAE, UEC sitreps, KH03 and Discharge Ready Date; including ambulance handover (Handover Times by Acute Trust) |
 | **5 — Workforce (this release)** | Medical & nursing FTE as the cross-cutting constraint — `workforce.html`, activity-driven requirement vs supply at trend, seeded from NHS Workforce Statistics |
 
+## Method documentation — the anatomy page
+
+`anatomy.html` is the model's visual method documentation, built for a
+lay reader and on the same anti-drift principle as the k-range fix:
+**every number is computed live from the engine and the seed, none are
+typed in**, so the explanation can never disagree with the tool. One
+flow picture carries the whole method — referrals → minus removals →
+effective demand → plus backlog clearance → clock stops required →
+converting into outpatient slots, theatre sessions, beds and diagnostic
+tests — with the actual monthly volumes on every band, a month slider, a
+today's-delivery marker, and the model levers redrawing the picture in
+real time. The conversion arrows carry their formulas (the units change
+there, so the flow is only claimed volume-true up to clock stops), and
+work driven by referrals rather than stops (first attendances,
+diagnostics) is drawn from the referrals node — the tandem-queue point.
+The census-vs-flow cameras, the tandem queue and the shape factor are
+footnotes linking to their explainers. Every model page also now carries
+a **"Where do these numbers come from?"** provenance click-through,
+rendering the `_provenance` block its ingest wrote into the JSON seed.
+
 ## Explainers
 
 `explainers.html` hosts interactive explainers for the concepts under the

@@ -1,5 +1,5 @@
 import { runCancer, ymDiff } from './engine.js?v=dev';
-import { lineChart, fmt, S1, S2, S3 } from './charts.js?v=dev';
+import { lineChart, fmt, provenanceHtml, S1, S2, S3 } from './charts.js?v=dev';
 
 const $ = (id) => document.getElementById(id);
 const setStatus = (t, k) => { const el = $('status'); el.textContent = t; el.className = `status status--${k}`; };
@@ -18,6 +18,7 @@ const pill = (pct, target) => {
 (async function init() {
   try {
     cancer = await (await fetch('data/cancer.json?v=dev', { cache: 'no-cache' })).json();
+    $('prov-body').innerHTML = provenanceHtml(cancer._provenance, cancer.milestoneNote);
     buildLevers();
     recompute();
     wire();

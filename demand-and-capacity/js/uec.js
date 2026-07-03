@@ -1,5 +1,5 @@
 import { runUec, runScenario, ymDiff } from './engine.js?v=dev';
-import { lineChart, fmt, S1, S2, S3 } from './charts.js?v=dev';
+import { lineChart, fmt, provenanceHtml, S1, S2, S3 } from './charts.js?v=dev';
 
 const $ = (id) => document.getElementById(id);
 const setStatus = (t, k) => { const el = $('status'); el.textContent = t; el.className = `status status--${k}`; };
@@ -18,6 +18,7 @@ const MS_LABELS = [{ ym: '2027-04', label: '82%' }, { ym: '2028-04', label: '88%
       (await fetch('data/baseline.json?v=dev', { cache: 'no-cache' })).json(),
     ]);
     uec = u;
+    $('prov-body').innerHTML = provenanceHtml(uec._provenance);
     electiveBeds = runScenario(baseline).trust.bedsRequired;
     buildLevers();
     recompute();
