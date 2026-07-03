@@ -19,7 +19,13 @@ export function lineChart(canvas, cal, series, opts = {}) {
   // right padding sized to the widest series label so end labels never clip
   ctx.font = '11px system-ui';
   const maxLabel = Math.max(...series.map((s) => ctx.measureText(s.name).width));
-  const padL = 58, padR = Math.min(Math.ceil(maxLabel) + 24, W * 0.35), padT = 14, padB = 30;
+  // x labels are drawn angled; bottom padding sized to the widest one
+  const xLabelFor = (ym) => (opts.xTickEvery ? ym : ym.replace('-04', ' Apr').replace('-07', ' Jul'));
+  const showX = (ym, i) => (opts.xTickEvery ? i % opts.xTickEvery === 0 : ym.endsWith('-04') || i === 0);
+  const ANGLE = -Math.PI / 5; // ≈ −36°
+  const maxXLabel = Math.max(...cal.filter(showX).map((ym) => ctx.measureText(xLabelFor(ym)).width), 0);
+  const padL = 58, padR = Math.min(Math.ceil(maxLabel) + 24, W * 0.35), padT = 14;
+  const padB = 16 + Math.ceil(maxXLabel * Math.abs(Math.sin(ANGLE))) + 6;
   const iw = W - padL - padR, ih = H - padT - padB;
 
   const all = series.flatMap((s) => s.data);
@@ -38,11 +44,16 @@ export function lineChart(canvas, cal, series, opts = {}) {
     ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(W - padR, yy); ctx.stroke();
     ctx.textAlign = 'right'; ctx.fillText(opts.yfmt ? opts.yfmt(v) : fmt(v), padL - 8, yy + 4);
   }
-  // x labels — Aprils for calendar axes, every n-th tick otherwise
-  ctx.textAlign = 'center';
+  // x labels — Aprils for calendar axes, every n-th tick otherwise; drawn at an
+  // angle so adjacent labels never overlap
   cal.forEach((ym, i) => {
-    const show = opts.xTickEvery ? i % opts.xTickEvery === 0 : ym.endsWith('-04') || i === 0;
-    if (show) ctx.fillText(opts.xTickEvery ? ym : ym.replace('-04', ' Apr').replace('-07', ' Jul'), x(i), H - 10);
+    if (!showX(ym, i)) return;
+    ctx.save();
+    ctx.translate(x(i), padT + ih + 8);
+    ctx.rotate(ANGLE);
+    ctx.textAlign = 'right';
+    ctx.fillText(xLabelFor(ym), 0, 8);
+    ctx.restore();
   });
   // milestone vlines (m.ym for calendar axes, m.i for index axes)
   (opts.milestones || []).forEach((m) => {
