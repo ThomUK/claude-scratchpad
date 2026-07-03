@@ -62,7 +62,17 @@ Two modelling consequences of using real (non-idealised) data:
   performance to its published %<18wk and scales the sustainable-list-size
   relationship consistently.
 - **Other removals**: required clock stops are computed against *effective*
-  demand (referrals × (1 − other-removals rate)), exposed as a lever.
+  demand (referrals × (1 − other-removals rate)), exposed as a lever; the
+  overview cards show the full arithmetic (referrals − removals = effective).
+- **Shape-factor drift**: k is calibrated to today's booking discipline
+  (0.93–1.81 per TFC) and held to 2030 by default — a stated assumption, with a
+  `kEndScale` lever that morphs k towards FIFO (larger sustainable list, less
+  clearance) or memoryless (×1, deeper clearance). t = 0 always keeps the
+  published anchor.
+- **Milestones are per-TFC** (never below start): an equity stance — the trust
+  aggregate deliberately overshoots the literal 65/80/92 (e.g. ~69% at Apr-27),
+  quantified on the page. Bed occupancy is aligned at the 92% planning norm
+  across the spine and UEC modules so bed totals add consistently.
 
 **Still estimates** (flagged in `data/baseline.json`): operational parameters —
 day-case rate, cases/session, N:FU ratio, elective LOS, diagnostics/referral —

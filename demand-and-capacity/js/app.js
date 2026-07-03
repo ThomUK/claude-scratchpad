@@ -42,7 +42,9 @@ function renderCards() {
   $('cards').innerHTML = `
     <div class="stat"><div class="v">${fmt(t.list[0])}</div><div class="l">Waiting list (published Apr-26)</div></div>
     <div class="stat stat--accent"><div class="v">${t.impliedPct[0].toFixed(1)}%</div><div class="l">Within 18 weeks (published Apr-26)</div></div>
-    <div class="stat"><div class="v">${fmt(t.demandMo[0])}</div><div class="l">Effective demand / month (${fmt(rawRefMo)} referrals less ${(100 * result.levers.otherRemovalsPct).toFixed(1)}% other removals)</div></div>
+    <div class="stat"><div class="v">${fmt(rawRefMo)}</div><div class="l">Referrals / month (New RTT Periods)</div></div>
+    <div class="stat"><div class="v">−${fmt(rawRefMo - t.demandMo[0])}</div><div class="l">Other removals / month (${(100 * result.levers.otherRemovalsPct).toFixed(1)}% leave without a counted clock stop)</div></div>
+    <div class="stat"><div class="v">${fmt(t.demandMo[0])}</div><div class="l">Effective demand / month (needs a clock stop)</div></div>
     <div class="stat ${upliftPct > 15 ? 'stat--bad' : upliftPct > 5 ? 'stat--warn' : 'stat--good'}"><div class="v">+${upliftPct.toFixed(1)}%</div><div class="l">Peak capacity uplift required vs current</div></div>
     <div class="stat"><div class="v">${fmt(t.list[i27])}</div><div class="l">List needed by Apr-27 (65%)</div></div>
     <div class="stat"><div class="v">${fmt(t.list[i29])}</div><div class="l">List needed by Apr-29 (92%)</div></div>`;
@@ -57,6 +59,8 @@ function renderCharts() {
   lineChart($('chart-perf'), cal, [
     { name: 'implied % <18wk', data: t.impliedPct, color: S1() },
   ], { milestones: MS_LABELS, ymin: 55, ymax: 100, yfmt: (v) => `${v.toFixed(0)}%` });
+  const i27 = ymDiff(cal[0], '2027-04'), i28 = ymDiff(cal[0], '2028-04');
+  $('ms-note').textContent = `Why the line sits above the milestones: the 65/80/92 milestones are applied to every TFC individually, never below its start position (an equity stance — no specialty is traded off to hit the trust number). The aggregate therefore overshoots: ${t.impliedPct[i27].toFixed(1)}% at Apr-27 vs the 65% trust milestone, ${t.impliedPct[i28].toFixed(1)}% vs 80% at Apr-28. A trust-optimal plan hitting the aggregate exactly would need less capacity — the gap between the line and the milestone is the price of specialty equity.`;
   lineChart($('chart-list'), cal, [
     { name: 'list (required path)', data: t.list, color: S1() },
     { name: 'sustainable target', data: t.targetList, color: S2(), dash: [5, 4] },
@@ -74,7 +78,8 @@ const LEVERS = [
   { key: 'dnaRate', label: 'Outpatient DNA rate', min: 0.03, max: 0.12, step: 0.005, pct: true, bench: 'best practice 5% (NHS Elect)' },
   { key: 'clinicUtilisation', label: 'Clinic utilisation', min: 0.75, max: 0.95, step: 0.01, pct: true, bench: 'target 90% (NHS Elect)' },
   { key: 'theatreUtilisation', label: 'Theatre utilisation (capped)', min: 0.65, max: 0.9, step: 0.01, pct: true, bench: 'GIRFT standard 85%' },
-  { key: 'bedOccupancy', label: 'G&A bed occupancy', min: 0.85, max: 0.98, step: 0.01, pct: true, bench: 'planning ambition 92%' },
+  { key: 'kEndScale', label: 'Booking-discipline drift (× shape factor k by 2029)', min: 0.6, max: 1.5, step: 0.05, bench: 'k today 0.93–1.81 per TFC (census-calibrated, anchored to published %<18wk); FIFO-like discipline raises k and the sustainable list scales linearly with it — memoryless selection → ×1. See the explainer.' },
+  { key: 'bedOccupancy', label: 'G&A bed occupancy', min: 0.85, max: 0.98, step: 0.01, pct: true, bench: 'planning norm 92%, aligned with the UEC module so bed totals add consistently (NUH winter actual 95.4%)' },
 ];
 
 function buildLevers() {

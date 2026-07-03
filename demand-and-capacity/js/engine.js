@@ -96,6 +96,15 @@ export function runTfc(tfc, levers, cal, milestones) {
   const glide = glidePath(cal, tfc.pct18, milestones);
   const msIdx = milestones.map((m) => ymDiff(cal[0], m.ym)).filter((i) => i > 0);
   const k = shapeFactor(tfc.list, tfc.pct18 / 100, tfc.referralsWk * keep);
+  // Booking-discipline drift: k is calibrated to TODAY's census shape and, by
+  // default, held to 2030 (kEndScale = 1). The lever morphs k linearly to
+  // k × kEndScale by the final milestone — FIFO-like discipline raises k (the
+  // sustainable list scales linearly with it), memoryless selection lowers it
+  // towards 1. t = 0 always keeps the calibrated k, preserving the published
+  // %<18wk anchor.
+  const kEnd = k * (levers.kEndScale ?? 1);
+  const lastMs = msIdx.length ? Math.max(...msIdx) : n - 1;
+  const kAt = (i) => k + (kEnd - k) * Math.min(1, i / lastMs);
 
   const s = {
     ym: cal, list: new Array(n), targetList: new Array(n), glidePct: glide,
@@ -116,7 +125,7 @@ export function runTfc(tfc, levers, cal, milestones) {
     const monthsLeft = Math.max(1, nextMs - i);
     const pAtMs = glide[Math.min(nextMs, n - 1)] / 100;
     const refWkAtMs = effRefWk * Math.pow(growth, monthsLeft);
-    const LtargetMs = k * targetListSize(refWkAtMs, pAtMs);
+    const LtargetMs = kAt(nextMs) * targetListSize(refWkAtMs, pAtMs);
     const clearance = Math.max(0, L - LtargetMs) / monthsLeft;
     const required = demandMo + clearance;
 
@@ -137,8 +146,8 @@ export function runTfc(tfc, levers, cal, milestones) {
     const diags = refWk * WKS_PER_MONTH * tfc.diagPerReferral;   // all referrals drive diagnostics
 
     s.list[i] = L;
-    s.targetList[i] = k * targetListSize(effRefWk, glide[i] / 100);
-    s.impliedPct[i] = 100 * impliedPerformance(L, k * effRefWk);
+    s.targetList[i] = kAt(i) * targetListSize(effRefWk, glide[i] / 100);
+    s.impliedPct[i] = 100 * impliedPerformance(L, kAt(i) * effRefWk);
     s.demandMo[i] = demandMo;
     s.requiredStopsMo[i] = required;
     s.currentStopsMo[i] = tfc.clockStopsWk * WKS_PER_MONTH;

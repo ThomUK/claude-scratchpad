@@ -27,7 +27,11 @@
     <p class="data-note">Waiting list, performance, referral demand, clock stops and admitted share are <strong>seeded from the
       published NHSE RTT full extracts (April 2026 position; April 2024/2025 for calibration)</strong>.
       Growth and removals are calibrated from the pre-EPR pair (Apr-24→Apr-25) — the EPR-era year is recoding-contaminated.
-      Operational parameters (day-case rates, cases/session, N:FU, LOS) remain estimates. Every figure is
+      Operational parameters (day-case rates, cases/session, N:FU, LOS) remain estimates. The census
+      <strong>shape factor k</strong> (0.93–1.81 per TFC) anchors implied performance to each TFC's published
+      %&lt;18wk and, by default, is <strong>held at today's value to 2030</strong> — k reflects booking discipline,
+      the sustainable list scales linearly with it, and the booking-discipline-drift lever tests the
+      assumption (see the <a href="explainers.html">explainer</a>). Every figure is
       editable; nothing here is operational advice.</p>
     <p id="status" class="status status--loading" role="status">Loading model…</p>
   </header>
@@ -39,6 +43,7 @@
       <div class="chart-block">
         <h3>RTT performance — required glide path <span class="muted small">(implied % of list waiting &lt;18 weeks, if required capacity is delivered)</span></h3>
         <canvas id="chart-perf" width="1040" height="360"></canvas>
+      <p class="muted small" id="ms-note"></p>
       </div>
       <div class="two-col">
         <div class="chart-block">

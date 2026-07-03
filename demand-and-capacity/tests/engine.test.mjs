@@ -61,6 +61,29 @@ ok(close(t0.list[5], t0.list[4] + t0.demandMo[4] - t0.requiredStopsMo[4], 0.5), 
 // required ≥ demand while above target (clearance phase)
 ok(res.trust.requiredStopsMo[0] > res.trust.demandMo[0], 'clearance phase: required > demand at start');
 
+console.log('— booking-discipline drift (kEndScale) & occupancy alignment —');
+{
+  // occupancy: spine and UEC must divide by the same target so bed totals add
+  const uecSeed = JSON.parse(readFileSync(new URL('../data/uec.json', import.meta.url)));
+  ok(baseline.levers.bedOccupancy === uecSeed.levers.bedOccupancyTarget,
+     `spine bedOccupancy (${baseline.levers.bedOccupancy}) = UEC bedOccupancyTarget (${uecSeed.levers.bedOccupancyTarget})`);
+  // kEndScale = 1 (default) is a no-op; t=0 anchor holds for any scale
+  const hi = runScenario(baseline, { levers: { kEndScale: 1.3 } });
+  const lo = runScenario(baseline, { levers: { kEndScale: 0.8 } });
+  ok(close(hi.trust.impliedPct[0], res.trust.impliedPct[0], 1e-6), 'kEndScale leaves the published t=0 anchor untouched');
+  const iEnd = res.cal.length - 1;
+  ok(hi.trust.targetList[iEnd] > res.trust.targetList[iEnd] * 1.2,
+     `k drift ×1.3 raises the end sustainable list (${Math.round(res.trust.targetList[iEnd]).toLocaleString()} → ${Math.round(hi.trust.targetList[iEnd]).toLocaleString()})`);
+  // direction check: LOWER k → smaller sustainable list → MORE clearance work
+  ok(lo.trust.requiredStopsMo.reduce((a, b) => a + b, 0) > res.trust.requiredStopsMo.reduce((a, b) => a + b, 0),
+     'k drift ×0.8 (towards memoryless) deepens the clearance requirement (smaller sustainable list)');
+  ok(hi.trust.requiredStopsMo.reduce((a, b) => a + b, 0) < res.trust.requiredStopsMo.reduce((a, b) => a + b, 0),
+     'k drift ×1.3 (FIFO-like) eases the clearance requirement (larger list tolerated at the same %)');
+  // sustainable list scales ~linearly with k at the horizon
+  const ratio = hi.trust.targetList[iEnd] / res.trust.targetList[iEnd];
+  ok(close(ratio, 1.3, 0.02), `end sustainable list scales linearly with k (ratio ${ratio.toFixed(3)} ≈ 1.30)`);
+}
+
 console.log('— activity conversion sanity —');
 const req0 = res.trust.requiredStopsMo[0];
 ok(res.trust.opAttendancesMo[0] > req0, 'OP attendances > clock stops (follow-ups included)');

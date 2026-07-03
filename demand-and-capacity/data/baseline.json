@@ -58,10 +58,11 @@
     "clinicUtilisationTarget": 0.9,
     "theatreUtilisation": 0.78,
     "theatreUtilisationTarget": 0.85,
-    "bedOccupancy": 0.94,
+    "bedOccupancy": 0.92,
     "bedOccupancyTarget": 0.92,
     "sourceNote": "demandGrowthPctYr (-2.5%/yr) and otherRemovalsPct (0.107) calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025); per-TFC growth seeded from the same pair where |growth| <= 15%/yr (larger swings treated as recoding); other levers remain typical-acute ESTIMATES with GIRFT/NHS Elect targets",
-    "otherRemovalsPct": 0.107
+    "otherRemovalsPct": 0.107,
+    "kEndScale": 1.0
   },
   "tfcs": [
     {
