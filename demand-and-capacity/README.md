@@ -127,7 +127,11 @@ England occupancy context. `ingest_drd.py` adds Discharge Ready Date delays
 early-year figures understate — DRD recording matured over 2024-26). The
 module models the 4-hour standard as a flow standard (like cancer), 12-hour
 DTA to zero, and the shared bed pool: emergency beds (λ×LOS) + the elective
-spine's requirement vs ~1,600 open.
+spine's requirement vs ~1,600 open. `ingest_handover.py` adds the Ambulance
+Handover Times by Acute Trust collection (Apr-26: mean **31.3 min** vs the
+15-minute standard, 45.9% over 30 min, 747 crew-hours lost; the Jan-24 peak of
+85 min has more than halved). Timeseries cells that lost their time formatting
+arrive as raw Excel day fractions — the ingest converts them.
 
 ## Roadmap
 
@@ -136,7 +140,7 @@ spine's requirement vs ~1,600 open.
 | **1 — Elective spine (this release)** | RTT waiting list → clock stops → OP / theatres / beds / diagnostics per TFC, trust rollup, levers, scenarios |
 | **2 — Diagnostics (this release)** | DM01 modality-level queues vs the 6-week standard — `diagnostics.html`, seeded from the published DM01 provider files (Apr-24/25/26), same queueing core on a 6-week window |
 | **3 — Cancer (this release)** | FDS / 31-day / 62-day timeliness by tumour site — `cancer.html`, seeded from published CWT provider data (Apr-24/25/26, two formats), flow model on cohort volumes |
-| **4 — UEC (this release)** | ED 4-hour, 12-hour DTA, discharge delays and the shared bed pool — `uec.html`, seeded from MSitAE, UEC sitreps, KH03 and Discharge Ready Date; ambulance handover awaits its separate collection |
+| **4 — UEC (this release)** | ED 4-hour, 12-hour DTA, discharge delays and the shared bed pool — `uec.html`, seeded from MSitAE, UEC sitreps, KH03 and Discharge Ready Date; including ambulance handover (Handover Times by Acute Trust) |
 | 5 — Workforce | Medical & nursing WTE as the cross-cutting constraint |
 
 ## Explainers

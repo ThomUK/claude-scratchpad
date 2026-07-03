@@ -24,6 +24,7 @@ const MS_LABELS = [{ ym: '2027-04', label: '78%' }, { ym: '2028-04', label: '86%
     renderWinters();
     renderDischarge();
     renderKh03();
+    renderHandover();
     wire();
     setStatus('Model ready', 'ready');
   } catch (e) {
@@ -124,6 +125,39 @@ function renderKh03() {
     { name: 'occupied', data: k.trend.map((t) => t.occupied), color: S1() },
   ], { xTickEvery: 2, yfmt: (v) => fmt(v) });
   $('kh03-note').textContent = `Latest provider snapshot ${k.latestSnapshot} (plus ${fmt(k.totalOccupiedDay)} day-only beds). England G&A occupancy latest quarter: ${k.england[k.england.length - 1].occPct}%.`;
+}
+
+function renderHandover() {
+  if (!uec.handover) return;
+  const months = uec.handover.months, ts = uec.handover.timeseries;
+  const labels = Object.keys(months);
+  const latest = months[labels[labels.length - 1]];
+  const hoursPerDay = latest.hoursLostOver30 / 30.4;
+  $('ho-cards').innerHTML = `
+    <div class="stat stat--bad"><div class="v">${latest.meanMin} min</div><div class="l">Mean handover, Apr-26 (standard: 15 min)</div></div>
+    <div class="stat stat--bad"><div class="v">${latest.over30Pct}%</div><div class="l">Handovers over 30 minutes</div></div>
+    <div class="stat stat--warn"><div class="v">${latest.over60Pct}%</div><div class="l">Handovers over 60 minutes (Apr-24: ${months[labels[0]].over60Pct}%)</div></div>
+    <div class="stat stat--accent"><div class="v">${fmt(latest.hoursLostOver30)} h</div><div class="l">Crew hours lost / month ≈ ${hoursPerDay.toFixed(0)} h/day queued outside ED</div></div>`;
+  const xs = ts.map((r) => {
+    const [y, m] = r.ym.split('-');
+    return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m - 1]}-${y.slice(2)}`;
+  });
+  lineChart($('chart-handover'), xs, [
+    { name: 'mean handover', data: ts.map((r) => r.meanMin), color: S1() },
+    { name: '30-min threshold', data: ts.map(() => 30), color: S2(), dash: [5, 4] },
+    { name: '15-min standard', data: ts.map(() => 15), color: S3(), dash: [2, 3] },
+  ], { xTickEvery: 6, ymin: 0, yfmt: (v) => `${v.toFixed(0)}m` });
+  $('ho-table').querySelector('tbody').innerHTML = labels.map((l) => {
+    const m = months[l];
+    const cls = m.over30Pct > 40 ? 'bad' : m.over30Pct > 20 ? 'warn' : 'good';
+    return `<tr>
+      <td>${l}</td><td class="num">${fmt(m.handovers)}</td><td class="num">${m.meanMin} min</td>
+      <td class="num">${m.over15Pct}%</td>
+      <td class="num"><span class="pill pill--${cls}">${m.over30Pct}%</span></td>
+      <td class="num">${m.over60Pct}%</td>
+      <td class="num">${fmt(m.hoursLostOver30)}</td>
+    </tr>`;
+  }).join('');
 }
 
 const LEVERS = [

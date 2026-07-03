@@ -23,8 +23,8 @@
       reporting reasons; type-1 is the comparable ED series. Growth is calibrated from the latest pair
       (the earliest is contaminated by the UTC split — the reverse of the RTT/DM01 EPR situation).
       4-hour milestones (78% Apr-27 → 86% Apr-28 → 95% Apr-29) and the 12-hour-to-zero date are
-      modelling assumptions. <strong>Ambulance handover</strong> is a separate NHSE collection not yet
-      loaded — upload it and the ingest will extend.</p>
+      modelling assumptions. <strong>Ambulance handover</strong> is seeded from the NHSE Ambulance
+      Handover Times by Acute Trust collection (monthly timeseries from Oct-2023 + April snapshots).</p>
     <p id="status" class="status status--loading" role="status">Loading model…</p>
   </header>
 
@@ -120,12 +120,26 @@
     </section>
 
     <section class="panel">
-      <h2>Ambulance handover <span class="muted small">(data gap)</span></h2>
-      <p class="small">Trust-level handover delays (&gt;30/&gt;60 minutes) are published in a separate
-        NHSE ambulance data collection, not in the sitrep editions loaded here. National reporting has
-        repeatedly identified EMAS handovers at NUH as pressured; the mechanism is the one this page
-        models — handover delay is queueing at the front door for the same beds the long-stay and
-        elective columns are holding. Upload the handover extract and this panel becomes data-driven.</p>
+      <h2>Ambulance handover <span class="muted small">(handovers at NUH, all types)</span></h2>
+      <div id="ho-cards" class="cards"></div>
+      <div class="chart-block">
+        <h3>Mean handover time by month <span class="muted small">(standard: 15 minutes; hours lost counted beyond 30)</span></h3>
+        <canvas id="chart-handover" width="1040" height="330"></canvas>
+      </div>
+      <div class="table-wrap">
+        <table id="ho-table">
+          <thead><tr>
+            <th>Month</th><th class="num">Handovers</th><th class="num">Mean</th>
+            <th class="num">&gt;15 min</th><th class="num">&gt;30 min</th><th class="num">&gt;60 min</th>
+            <th class="num">Crew hours lost (&gt;30 min)</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="muted small">Handover delay is queueing at the front door for the same beds the
+        long-stay, discharge-delay and elective columns are competing for. The Jan-2024 peak (mean
+        85 minutes) has more than halved, but the mean still sits at twice the 15-minute standard —
+        and April 2026's 747 crew-hours lost ≈ an ambulance crew permanently parked outside ED.</p>
     </section>
   </main>
 

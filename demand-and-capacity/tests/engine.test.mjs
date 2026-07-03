@@ -130,6 +130,17 @@ console.log('— UEC module —');
   const w = uec.beds.winters['W2025-26'];
   ok(close(s.emergencyOccupiedBeds[j0], w.adultGA.occupied, 10), `implied LOS reproduces winter occupied base (${w.adultGA.occupied}, LOS lever rounded to 0.1d)`);
   ok(w.adultGA.occupancyPct > 92, `winter 2025-26 occupancy ${w.adultGA.occupancyPct}% above the 92% norm`);
+  // handover seed: cross-validated snapshot vs timeseries, thresholds ordered
+  const ho = uec.handover;
+  const apr26 = ho.months['Apr-26'];
+  ok(close(apr26.meanMin, 31.3, 0.1), `Apr-26 mean handover ${apr26.meanMin} min (snapshot)`);
+  const tsApr26 = ho.timeseries.find((r) => r.ym === '2026-04');
+  ok(close(tsApr26.meanMin, apr26.meanMin, 0.1), 'timeseries Apr-26 matches the snapshot workbook');
+  ok(tsApr26.handovers === apr26.handovers, `timeseries count ${tsApr26.handovers} matches snapshot`);
+  ok(apr26.over15 >= apr26.over30 && apr26.over30 >= apr26.over60, 'threshold counts are nested (>15 ≥ >30 ≥ >60)');
+  ok(ho.timeseries.length >= 30, `handover timeseries spans ${ho.timeseries.length} months`);
+  const peak = Math.max(...ho.timeseries.map((r) => r.meanMin));
+  ok(close(peak, 84.8, 0.1) && ho.timeseries[ho.timeseries.length - 1].meanMin < peak / 2, `Jan-24 peak ${peak} min has more than halved`);
 }
 
 console.log('— explainer maths (census vs flow) —');

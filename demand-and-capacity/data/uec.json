@@ -552,5 +552,211 @@
         }
       }
     }
+  },
+  "handover": {
+    "note": "Ambulance Handover Times by Acute Trust (NHSE management information, 'All handovers'). National standard: handover within 15 minutes; hours lost counted beyond 30 minutes. Mean is over handovers with known time.",
+    "months": {
+      "Apr-24": {
+        "handovers": 5391,
+        "known": 5391,
+        "over15": 4012,
+        "over30": 2299,
+        "over45": null,
+        "over60": 1240,
+        "meanMin": 47.9,
+        "hoursLostOver30": 2302,
+        "over15Pct": 74.4,
+        "over30Pct": 42.6,
+        "over60Pct": 23.0
+      },
+      "Apr-25": {
+        "handovers": 5329,
+        "known": 5329,
+        "over15": 3987,
+        "over30": 2230,
+        "over45": 1353,
+        "over60": 553,
+        "meanMin": 32.4,
+        "hoursLostOver30": 906,
+        "over15Pct": 74.8,
+        "over30Pct": 41.8,
+        "over60Pct": 10.4
+      },
+      "Apr-26": {
+        "handovers": 5535,
+        "known": 5535,
+        "over15": 4300,
+        "over30": 2538,
+        "over45": 1249,
+        "over60": 407,
+        "meanMin": 31.3,
+        "hoursLostOver30": 747,
+        "over15Pct": 77.7,
+        "over30Pct": 45.9,
+        "over60Pct": 7.4
+      }
+    },
+    "timeseries": [
+      {
+        "ym": "2023-10",
+        "meanMin": 41.5,
+        "handovers": 5474
+      },
+      {
+        "ym": "2023-11",
+        "meanMin": 40.0,
+        "handovers": 5516
+      },
+      {
+        "ym": "2023-12",
+        "meanMin": 56.0,
+        "handovers": 5885
+      },
+      {
+        "ym": "2024-01",
+        "meanMin": 84.8,
+        "handovers": 6078
+      },
+      {
+        "ym": "2024-02",
+        "meanMin": 71.3,
+        "handovers": 5570
+      },
+      {
+        "ym": "2024-03",
+        "meanMin": 52.7,
+        "handovers": 5489
+      },
+      {
+        "ym": "2024-04",
+        "meanMin": 47.9,
+        "handovers": 5391
+      },
+      {
+        "ym": "2024-05",
+        "meanMin": 44.2,
+        "handovers": 5717
+      },
+      {
+        "ym": "2024-06",
+        "meanMin": 41.2,
+        "handovers": 5479
+      },
+      {
+        "ym": "2024-07",
+        "meanMin": 34.2,
+        "handovers": 5547
+      },
+      {
+        "ym": "2024-08",
+        "meanMin": 32.6,
+        "handovers": 5343
+      },
+      {
+        "ym": "2024-09",
+        "meanMin": 45.0,
+        "handovers": 5569
+      },
+      {
+        "ym": "2024-10",
+        "meanMin": 60.5,
+        "handovers": 5533
+      },
+      {
+        "ym": "2024-11",
+        "meanMin": 58.0,
+        "handovers": 5255
+      },
+      {
+        "ym": "2024-12",
+        "meanMin": 43.5,
+        "handovers": 5349
+      },
+      {
+        "ym": "2025-01",
+        "meanMin": 38.4,
+        "handovers": 5344
+      },
+      {
+        "ym": "2025-02",
+        "meanMin": 35.0,
+        "handovers": 4913
+      },
+      {
+        "ym": "2025-03",
+        "meanMin": 32.2,
+        "handovers": 5350
+      },
+      {
+        "ym": "2025-04",
+        "meanMin": 32.4,
+        "handovers": 5329
+      },
+      {
+        "ym": "2025-05",
+        "meanMin": 32.5,
+        "handovers": 5591
+      },
+      {
+        "ym": "2025-06",
+        "meanMin": 34.2,
+        "handovers": 5193
+      },
+      {
+        "ym": "2025-07",
+        "meanMin": 32.4,
+        "handovers": 5415
+      },
+      {
+        "ym": "2025-08",
+        "meanMin": 38.8,
+        "handovers": 5372
+      },
+      {
+        "ym": "2025-09",
+        "meanMin": 46.6,
+        "handovers": 5355
+      },
+      {
+        "ym": "2025-10",
+        "meanMin": 65.1,
+        "handovers": 5389
+      },
+      {
+        "ym": "2025-11",
+        "meanMin": 54.3,
+        "handovers": 5253
+      },
+      {
+        "ym": "2025-12",
+        "meanMin": 42.5,
+        "handovers": 5735
+      },
+      {
+        "ym": "2026-01",
+        "meanMin": 37.8,
+        "handovers": 5517
+      },
+      {
+        "ym": "2026-02",
+        "meanMin": 36.3,
+        "handovers": 5144
+      },
+      {
+        "ym": "2026-03",
+        "meanMin": 36.4,
+        "handovers": 5634
+      },
+      {
+        "ym": "2026-04",
+        "meanMin": 31.3,
+        "handovers": 5535
+      },
+      {
+        "ym": "2026-05",
+        "meanMin": 36.4,
+        "handovers": 5646
+      }
+    ]
   }
 }
