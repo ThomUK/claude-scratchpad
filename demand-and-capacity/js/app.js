@@ -26,6 +26,88 @@ let selectedTfc = null;
 
 let resultRaw = null; // same scenario under the RAW (unadjusted) growth calibration
 
+function upliftUnder(leverOverrides) {
+  const r = runScenario(baseline, { levers: { ...scenario.levers, ...leverOverrides }, tfcOverrides: scenario.tfcOverrides });
+  return 100 * (Math.max(...r.trust.requiredStopsMo) / r.trust.currentStopsMo[0] - 1);
+}
+
+function renderSensitivity() {
+  const central = upliftUnder({});
+  const rawShift = (baseline.levers.demandGrowthRawPctYr ?? baseline.levers.demandGrowthPctYr) - baseline.levers.demandGrowthPctYr;
+  const adjNow = scenario.levers.demandGrowthAdjPctYr ?? 0;
+  const rows = [
+    { label: `shape-factor drift ×0.8 … ×1.2`, lo: upliftUnder({ kEndScale: 0.8 }), hi: upliftUnder({ kEndScale: 1.2 }) },
+    { label: `demand growth ${baseline.levers.demandGrowthRawPctYr}% … +2.0%/yr`, lo: upliftUnder({ demandGrowthAdjPctYr: adjNow + rawShift }), hi: upliftUnder({ demandGrowthAdjPctYr: adjNow + (2 - baseline.levers.demandGrowthPctYr) }) },
+    { label: 'other removals 5% … 20%', lo: upliftUnder({ otherRemovalsPct: 0.05 }), hi: upliftUnder({ otherRemovalsPct: 0.20 }) },
+  ];
+  drawTornado($('chart-tornado'), rows, central);
+  const span = rows.map((r) => Math.max(r.lo, r.hi) - Math.min(r.lo, r.hi));
+  $('tornado-note').textContent = `Central headline +${central.toFixed(1)}%. Each bar shows the peak uplift across the stated range of one assumption, others held. Widest swing: ${rows[span.indexOf(Math.max(...span))].label}. Note the removals bar reads intuitively backwards — FEWER other-removals means MORE pathways need a clock stop.`;
+}
+
+function drawTornado(canvas, rows, central) {
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.clientWidth || +canvas.getAttribute('width');
+  const H = +canvas.getAttribute('height');
+  canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.height = `${H}px`;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const padL = 250, padR = 90, padT = 18, padB = 26;
+  const vals = rows.flatMap((r) => [r.lo, r.hi]).concat([central]);
+  const vmin = Math.min(...vals) - 2, vmax = Math.max(...vals) + 2;
+  const x = (v) => padL + ((v - vmin) / (vmax - vmin)) * (W - padL - padR);
+  ctx.clearRect(0, 0, W, H);
+  ctx.font = '11px system-ui';
+  // central line
+  ctx.strokeStyle = '#37465a'; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(x(central), padT - 6); ctx.lineTo(x(central), H - padB); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = css('--muted'); ctx.textAlign = 'center';
+  ctx.fillText(`central +${central.toFixed(1)}%`, x(central), padT - 8);
+  const rh = (H - padT - padB) / rows.length;
+  rows.forEach((r, i) => {
+    const yMid = padT + rh * i + rh / 2;
+    const lo = Math.min(r.lo, r.hi), hi = Math.max(r.lo, r.hi);
+    ctx.fillStyle = 'rgba(43, 151, 214, 0.45)';
+    ctx.fillRect(x(lo), yMid - 9, Math.max(2, x(hi) - x(lo)), 18);
+    ctx.fillStyle = css('--text'); ctx.textAlign = 'right';
+    ctx.fillText(r.label, padL - 10, yMid + 4);
+    ctx.textAlign = 'right'; ctx.fillText(`+${lo.toFixed(1)}%`, x(lo) - 5, yMid + 4);
+    ctx.textAlign = 'left'; ctx.fillText(`+${hi.toFixed(1)}%`, x(hi) + 5, yMid + 4);
+  });
+}
+
+function renderCapacity() {
+  const t = result.trust;
+  const { dnaRate, clinicUtilisation, theatreUtilisation } = result.levers;
+  const rawRefMo = baseline.tfcs.reduce((a, x) => a + x.referralsWk, 0) * (52 / 12);
+  // delivered-now denominators derived through the SAME conversions as the requirement
+  const slotsNow = baseline.tfcs.reduce((a, x) => {
+    const stopsMo = x.clockStopsWk * (52 / 12);
+    return a + (x.referralsWk * (52 / 12) + stopsMo * x.newToFuRatio) / (1 - dnaRate) / clinicUtilisation;
+  }, 0);
+  const sessionsNow = baseline.tfcs.reduce((a, x) =>
+    a + (x.clockStopsWk * (52 / 12) * x.admittedShare / x.casesPerSession) / theatreUtilisation, 0);
+  const rows = [
+    ['Clock stops', t.currentStopsMo[0], Math.max(...t.requiredStopsMo), 'published (RTT completed pathways, Feb–Apr-26 mean)'],
+    ['Outpatient slots', slotsNow, Math.max(...t.opSlotsMo), 'DERIVED from current activity (N:FU, DNA, utilisation are estimates)'],
+    ['Theatre sessions', sessionsNow, Math.max(...t.theatreSessionsMo), 'DERIVED from current activity (cases/session, utilisation are estimates)'],
+    ['Elective beds', null, Math.max(...t.bedsRequired), 'shared pool: 1,600 adult G&A open (UEC sitrep) — see the UEC page for the full bed picture'],
+  ];
+  $('cap-table').querySelector('tbody').innerHTML = rows.map(([name, now, req, basis]) => {
+    const uplift = now ? 100 * (req / now - 1) : null;
+    const cls = uplift === null ? '' : uplift > 15 ? 'bad' : uplift > 5 ? 'warn' : 'good';
+    return `<tr>
+      <td>${name}</td>
+      <td class="num">${now ? fmt(now) : '—'}</td>
+      <td class="num">${fmt(req)}</td>
+      <td class="num">${uplift === null ? '—' : `<span class="pill pill--${cls}">+${uplift.toFixed(0)}%</span>`}</td>
+      <td class="small muted">${basis}</td>
+    </tr>`;
+  }).join('');
+}
+
 function recompute() {
   result = runScenario(baseline, { levers: scenario.levers, tfcOverrides: scenario.tfcOverrides });
   const rawShift = (baseline.levers.demandGrowthRawPctYr ?? baseline.levers.demandGrowthPctYr)
@@ -39,6 +121,8 @@ function recompute() {
   renderCharts();
   renderTable();
   renderTfcChart();
+  renderSensitivity();
+  renderCapacity();
 }
 
 // --- overview cards -----------------------------------------------------------
@@ -46,6 +130,9 @@ function renderCards() {
   const t = result.trust, cal = result.cal;
   const i27 = ymDiff(cal[0], '2027-04'), i29 = ymDiff(cal[0], '2029-04');
   const upliftPct = 100 * (Math.max(...t.requiredStopsMo) / t.currentStopsMo[0] - 1);
+  // cumulative gap is robust to the month-0 denominator, unlike the peak uplift
+  const cumExtra = t.requiredStopsMo.slice(0, i29 + 1)
+    .reduce((a, v, i) => a + Math.max(0, v - t.currentStopsMo[i]), 0);
   const rawRefMo = baseline.tfcs.reduce((a, x) => a + x.referralsWk, 0) * (52 / 12);
   $('cards').innerHTML = `
     <div class="stat"><div class="v">${fmt(t.list[0])}</div><div class="l">Waiting list (published Apr-26)</div></div>
@@ -54,6 +141,7 @@ function renderCards() {
     <div class="stat"><div class="v">−${fmt(rawRefMo - t.demandMo[0])}</div><div class="l">Other removals / month (${(100 * result.levers.otherRemovalsPct).toFixed(1)}% leave without a counted clock stop)</div></div>
     <div class="stat"><div class="v">${fmt(t.demandMo[0])}</div><div class="l">Effective demand / month (needs a clock stop)</div></div>
     <div class="stat ${upliftPct > 15 ? 'stat--bad' : upliftPct > 5 ? 'stat--warn' : 'stat--good'}"><div class="v">+${upliftPct.toFixed(1)}%</div><div class="l">Peak capacity uplift required vs current</div></div>
+    <div class="stat stat--accent"><div class="v">${fmt(cumExtra)}</div><div class="l">Extra clock stops needed, Jul-26 → Apr-29 (cumulative above the Apr-26 rate)</div></div>
     <div class="stat"><div class="v">${fmt(t.list[i27])}</div><div class="l">List at Apr-27 on the required path (≠ sustainable target)</div></div>
     <div class="stat"><div class="v">${fmt(t.list[i29])}</div><div class="l">List at Apr-29 on the required path</div></div>`;
   $('level-note').textContent = `Flow levels are working-day-normalised means over Feb–Apr 2026 (a standard 21-working-day month): per working day, April referrals were actually the HIGHEST of the four observed months (956/wd vs 902–928) — the apparent April dip was entirely working-day count. January is excluded (EPR catch-up tail: 615 stops/wd vs 656–688 later). The census (list, bands) is April's, post the Feb→Mar validation purge of ~8,500 migrated pathways.`;
@@ -81,10 +169,12 @@ function renderCharts() {
        band: band(t.targetList, resultRaw.trust.targetList) });
   lineChart($('chart-stops'), cal, [
     { name: 'required', data: t.requiredStopsMo, color: S1() },
+    { name: 'effective demand', data: t.demandMo, color: S3(), dash: [2, 3] },
     { name: 'held at Apr-26 rate', data: t.currentStopsMo, color: S2(), dash: [5, 4] },
   ], { milestones: MS_LABELS, yfmt: (v) => `${(v / 1000).toFixed(1)}k`,
-       band: band(t.requiredStopsMo, resultRaw.trust.requiredStopsMo) });
-  $('band-note').textContent = `Shaded band: the demand-growth calibration question — the lower edge uses the raw Apr→Apr pair (${baseline.levers.demandGrowthRawPctYr}%/yr, which reads low because April 2024 had 21 working days vs 20 in 2025), the line uses the working-day-adjusted ${baseline.levers.demandGrowthPctYr}%/yr. Demand is most likely growing, not falling.`;
+       band: { lower: t.demandMo, upper: t.requiredStopsMo, color: 'rgba(192, 138, 30, 0.16)' } });
+  $('stops-note').textContent = `The shaded wedge decomposes the requirement: everything between effective demand and the required line is BACKLOG CLEARANCE — that is where the uplift goes. The wedge is deepest before each milestone and closes after Apr-29, when required activity settles back towards demand.`;
+  $('band-note').textContent = `List chart band: the demand-growth calibration question — the lower edge uses the raw Apr→Apr pair (${baseline.levers.demandGrowthRawPctYr}%/yr, which reads low because April 2024 had 21 working days vs 20 in 2025), the line uses the working-day-adjusted ${baseline.levers.demandGrowthPctYr}%/yr. Demand is most likely growing, not falling.`;
 }
 
 // --- levers -------------------------------------------------------------------
@@ -184,5 +274,5 @@ function wire() {
     e.target.value = '';
   });
 
-  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { renderCharts(); renderTfcChart(); }, 150); });
+  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { renderCharts(); renderTfcChart(); renderSensitivity(); }, 150); });
 }

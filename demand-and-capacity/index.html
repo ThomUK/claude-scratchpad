@@ -20,8 +20,9 @@
       A trust-wide, specialty-connected demand &amp; capacity model for Nottingham University Hospitals,
       built to answer: <strong>what capacity is needed to meet the NHS constitutional standards</strong> —
       RTT (65% by Apr&nbsp;2027, 80% by Apr&nbsp;2028, 92% by Apr&nbsp;2029), cancer, diagnostics (DM01) and
-      urgent care. <strong>Phase&nbsp;1: the elective (RTT) spine</strong> — waiting list → required clock
-      stops → outpatient, theatre, bed and diagnostic capacity, per treatment function. Method:
+      urgent care. All five phases are live — this page is the <strong>elective (RTT) spine</strong>
+      (waiting list → required clock stops → outpatient, theatre, bed and diagnostic capacity, per
+      treatment function); diagnostics, cancer, UEC and workforce are linked above. Method:
       Fong&nbsp;et&nbsp;al. (2022) / NHSRwaitinglist queueing theory.
     </p>
     <p class="data-note">Waiting list, performance, referral demand, clock stops and admitted share are <strong>seeded from the
@@ -40,6 +41,9 @@
     <section class="panel">
       <h2>Trust position &amp; trajectory</h2>
       <div id="cards" class="cards"></div>
+      <p class="muted small"><strong>Illustrative planning model — not operational advice.</strong> Figures
+        seeded from published NHSE data except operational parameters flagged ESTIMATE in the provenance;
+        every lever is editable and every assumption is stated where it bites.</p>
       <p class="muted small" id="level-note"></p>
       <div class="chart-block">
         <h3>RTT performance — required glide path <span class="muted small">(implied % of list waiting &lt;18 weeks, if required capacity is delivered)</span></h3>
@@ -54,9 +58,34 @@
         <div class="chart-block">
           <h3>Clock stops per month <span class="muted small">(required vs current delivery)</span></h3>
           <canvas id="chart-stops" width="520" height="330"></canvas>
+          <p class="muted small" id="stops-note"></p>
           <p class="muted small" id="band-note"></p>
         </div>
       </div>
+    </section>
+
+    <section class="panel">
+      <h2>Sensitivity of the headline <span class="muted small">(peak capacity uplift under the obvious challenges)</span></h2>
+      <canvas id="chart-tornado" width="1040" height="240"></canvas>
+      <p class="muted small" id="tornado-note"></p>
+    </section>
+
+    <section class="panel">
+      <h2>Required vs what we have <span class="muted small">(capacity denominators)</span></h2>
+      <div class="table-wrap">
+        <table id="cap-table">
+          <thead><tr>
+            <th>Activity</th><th class="num">Delivered now /mo</th><th class="num">Required at peak /mo</th>
+            <th class="num">Uplift</th><th>Denominator basis</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="muted small">Published denominators exist for clock stops (RTT completed pathways) and the
+        shared bed pool (UEC sitrep); slots and sessions denominators are DERIVED from current activity
+        through the same conversion parameters as the requirement — consistent, but they inherit the
+        ESTIMATE flags. Trust theatre-timetable and clinic-template data would replace them. The DM01 and
+        UEC pages carry their own delivered-vs-required comparisons.</p>
     </section>
 
     <section class="panel">

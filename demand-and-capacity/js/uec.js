@@ -23,6 +23,7 @@ const MS_LABELS = [{ ym: '2027-04', label: '82%' }, { ym: '2028-04', label: '88%
     recompute();
     renderWinters();
     renderDischarge();
+    renderRecoverable();
     renderKh03();
     renderHandover();
     wire();
@@ -112,6 +113,73 @@ function renderDischarge() {
     </tr>`;
   }).join('');
   $('drd-note').textContent = uec.discharge.note;
+}
+
+// one horizontal stacked bar: occupied = emergency core + elective + delay-attributable,
+// with markers for the 92% norm and the open pool
+function renderRecoverable() {
+  const w = uec.beds.winters, latest = w[Object.keys(w).sort().pop()];
+  const occupied = latest.adultGA.occupied, open = latest.adultGA.open;
+  const delay = uec.discharge ? uec.discharge.months[Object.keys(uec.discharge.months).pop()].impliedBedsOccupiedByDelay : 0;
+  const elective = uec.electiveOccupiedEstimate ?? 0;
+  const core = occupied - delay - elective;
+  const norm = Math.round(open * (uec.levers.bedOccupancyTarget ?? 0.92));
+  const overshoot = occupied - norm;
+
+  $('recov-cards').innerHTML = `
+    <div class="stat"><div class="v">${fmt(occupied)}</div><div class="l">Occupied (winter avg) of ${fmt(open)} open</div></div>
+    <div class="stat stat--bad"><div class="v">${fmt(delay)}</div><div class="l">Occupied by discharge delay (DRD bed-days ÷ days)</div></div>
+    <div class="stat stat--warn"><div class="v">+${fmt(overshoot)}</div><div class="l">Above the ${Math.round(100 * (uec.levers.bedOccupancyTarget ?? 0.92))}% occupancy norm (${fmt(norm)})</div></div>
+    <div class="stat stat--good"><div class="v">${fmt(delay - overshoot)}</div><div class="l">Headroom recovered if delay beds are released — enough for the elective ramp</div></div>`;
+
+  const canvas = $('chart-recover');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.clientWidth || +canvas.getAttribute('width');
+  const H = +canvas.getAttribute('height');
+  canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.height = `${H}px`;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const padL = 16, padR = 16, y0 = 60, bh = 46;
+  const x = (v) => padL + (v / open) * (W - padL - padR);
+  ctx.clearRect(0, 0, W, H);
+  ctx.font = '11.5px system-ui';
+  const segs = [
+    ['emergency core', core, '#2b97d6'],
+    ['elective', elective, '#3fae52'],
+    ['discharge delay', delay, '#f85149'],
+  ];
+  let acc = 0;
+  segs.forEach(([name, v, color]) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(x(acc) + 1, y0, Math.max(2, x(acc + v) - x(acc) - 2), bh);
+    const cx = (x(acc) + x(acc + v)) / 2;
+    ctx.fillStyle = css('--text'); ctx.textAlign = 'center';
+    const clampX = (txt) => Math.max(ctx.measureText(txt).width / 2 + 2, Math.min(cx, W - ctx.measureText(txt).width / 2 - 2));
+    if (v > open * 0.06) { ctx.fillText(name, clampX(name), y0 - 22); ctx.fillText(fmt(v), clampX(fmt(v)), y0 - 8); }
+    else {
+      ctx.textAlign = 'left';
+      ctx.fillText(`${name} ${fmt(v)}`, x(acc), y0 + bh + 50);
+      ctx.strokeStyle = color; ctx.beginPath(); ctx.moveTo(cx, y0 + bh); ctx.lineTo(cx, y0 + bh + 38); ctx.stroke();
+    }
+    acc += v;
+  });
+  // open-pool outline + markers (labels right-aligned to their line, staggered rows so they never collide)
+  ctx.strokeStyle = '#37465a';
+  ctx.strokeRect(padL, y0, W - padL - padR, bh);
+  const marker = (v, label, color, row) => {
+    const yLbl = y0 + bh + 18 + row * 16;
+    ctx.strokeStyle = color; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(x(v), y0 - 4); ctx.lineTo(x(v), yLbl - 10); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = css('--muted'); ctx.textAlign = 'right';
+    ctx.fillText(label, x(v) - 5, yLbl);
+  };
+  const norm2 = Math.round((uec.levers.bedOccupancyTarget ?? 0.92) * open);
+  marker(norm2, `${Math.round(100 * (uec.levers.bedOccupancyTarget ?? 0.92))}% norm (${fmt(norm2)})`, '#c08a1e', 0);
+  marker(open, `open (${fmt(open)})`, '#3fae52', 1);
+
+  $('recov-note').textContent = `Reading the bar: the pool runs ${fmt(occupied - norm2)} beds above the ${Math.round(100 * (uec.levers.bedOccupancyTarget ?? 0.92))}% norm, while ${fmt(delay)} beds are held by patients past their discharge-ready date and roughly a quarter of the pool is occupied by 21+ day stayers. Releasing the delay beds alone clears the occupancy overshoot AND funds the elective ramp (~${fmt(elective)} beds today, rising through the recovery) — the bed gap is largely a discharge problem, not a build problem. Delay beds and long-stay beds overlap (delayed patients become long-stayers), so the two figures are one population counted two ways, not additive.`;
 }
 
 function renderKh03() {
