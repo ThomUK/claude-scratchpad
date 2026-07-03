@@ -4,6 +4,10 @@ for the demand-and-capacity model.
 
 Usage:
     python3 ingest/ingest_rtt.py <full-extract.csv or .zip> [--provider RX1]
+        [--prior <older extract>]...   growth/removals calibration (earliest pair)
+        [--level <recent extract>]...  multi-month flow-level averaging
+        [--history <extract>]...       extra months for ANOMALY DETECTION only
+                                       (not averaged into the seed levels)
 
 The full extract (published monthly on the NHSE RTT statistics page as the
 "Full CSV data file" ZIP) contains, per provider x commissioner x treatment
@@ -103,6 +107,7 @@ def main():
     provider = sys.argv[sys.argv.index("--provider") + 1] if "--provider" in sys.argv else "RX1"
     prior_srcs = [sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == "--prior"]
     level_srcs = [sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == "--level"]
+    hist_srcs = [sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == "--history"]
 
     acc, names, period, provname, srcname = aggregate(src, provider)
 
@@ -216,7 +221,9 @@ def main():
                     lacc[FOLD_INTO][k] += v
                 del lacc[tfc]
             months.append((lperiod, lacc))
-        months.append((period, acc))
+        # pristine copy: level averaging below overwrites acc's flows with the
+        # multi-month means, but the anomaly rules need April's ACTUAL flows
+        months.append((period, {t: dict(a) for t, a in acc.items()}))
         for lp, _ in months:
             if wd_of(lp) is None:
                 raise SystemExit(f"no working-day count for level month {lp} — extend WORKING_DAYS")
@@ -228,6 +235,84 @@ def main():
         levelNote = (f"flow levels are working-day-normalised means over {labels_lv} "
                      f"(standard {STD_WD}-working-day month); census from {period}")
         print(f"  levels: {levelNote}")
+
+    # --- Business-rule anomaly flags (reviewer feedback: the table should WARN,
+    # not assert — a model that flags its own least-reliable rows is worth more
+    # than one that is silently wrong about the twenty-first specialty).
+    # Rules, evaluated per TFC on the monthly extracts:
+    #   A  seeded stops > raw referrals        (impossible in steady state)
+    #   B  month-on-month referral step > 25%  (recoding/diversion, not demand)
+    #   C  implied other-removals < 0          (reopens / validation churn)
+    # --history months join the level months for detection only.
+    def fold_months(lacc):
+        for t in [t for t in list(lacc) if t in fold_set]:
+            for k, v in lacc[t].items():
+                lacc[FOLD_INTO][k] += v
+            del lacc[t]
+        return lacc
+
+    MONTH_NUM = {m: i + 1 for i, m in enumerate((
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"))}
+
+    def month_key(lbl):
+        y = next((int(p) for p in lbl.split("-") if p.isdigit()), 0)
+        m = next((MONTH_NUM[p] for p in lbl.split("-") if p in MONTH_NUM), 0)
+        return (y, m)
+
+    diag_months = []
+    for p in hist_srcs:
+        hacc, _, hperiod, _, _ = aggregate(p, provider)
+        if wd_of(hperiod) is None:
+            raise SystemExit(f"no working-day count for history month {hperiod} — extend WORKING_DAYS")
+        diag_months.append((hperiod, fold_months(hacc)))
+    diag_months.extend(months if level_srcs else [(period, acc)])
+    diag_months.sort(key=lambda t: month_key(t[0]))
+
+    anomaliesByTfc = defaultdict(list)
+    for tfc in acc:
+        seq = [(lp, la[tfc]) for lp, la in diag_months if tfc in la]
+        # B: month-on-month referral step change (per working day, floor 3/wd)
+        worstB = None
+        for (l1, a1), (l2, a2) in zip(seq, seq[1:]):
+            r1, r2 = a1["newMo"] / wd_of(l1), a2["newMo"] / wd_of(l2)
+            if r1 >= 3:
+                chg = r2 / r1 - 1
+                if abs(chg) > 0.25 and (worstB is None or abs(chg) > abs(worstB[2])):
+                    worstB = (l1.replace("RTT-", ""), l2.replace("RTT-", ""), chg, r1, r2)
+        if worstB:
+            l1, l2, chg, r1, r2 = worstB
+            anomaliesByTfc[tfc].append({
+                "rule": "referral-step",
+                "title": "referral step change",
+                "detail": (f"Referrals stepped {r1:.0f}/working-day ({l1}) → {r2:.0f}/working-day ({l2}), "
+                           f"{100 * chg:+.0f}% in one month. Demand does not move like this: a step this "
+                           "size is recoding, advice-&-guidance conversion or route diversion — the seeded "
+                           "demand level may be calibrated to the wrong side of the step. Check the e-RS "
+                           "referral routes for this specialty from the step month, and where the volume "
+                           "reappears (an offsetting jump in an 'Other' TFC means recoding, and the leaked "
+                           "demand then carries the wrong conversion parameters).")})
+        # C: implied negative other-removals (ΔL = new − stops − other, within a
+        # month). Threshold −15% of referrals: April 2026 shows mild trust-wide
+        # validation churn (−5..−10%) on many TFCs post-EPR; the flag is for the
+        # specialty-specific cases well beyond that ambient level.
+        worstC = None
+        for (l1, a1), (l2, a2) in zip(seq, seq[1:]):
+            dl = a2["list"] - a1["list"]
+            new2, stops2 = a2["newMo"], a2["admMo"] + a2["nonMo"]
+            other = new2 - stops2 - dl
+            if new2 > 0 and other < -0.15 * new2 and (worstC is None or other < worstC[1]):
+                worstC = (l2.replace("RTT-", ""), other, dl, new2, stops2)
+        if worstC:
+            l2, other, dl, new2, stops2 = worstC
+            anomaliesByTfc[tfc].append({
+                "rule": "negative-removals",
+                "title": "implied negative removals",
+                "detail": (f"In {l2} the list moved {dl:+.0f} while referrals were {new2:.0f} and clock "
+                           f"stops {stops2:.0f} — the accounting identity implies ≈{-other:.0f} pathways "
+                           "REJOINED the list (reopens or validation churn). The trust-wide other-removals "
+                           "assumption is unreliable for this specialty right now; a PTL audit of the "
+                           "reopens is the check.")})
 
     tfcs = []
     for tfc, a in sorted(acc.items(), key=lambda kv: -kv[1]["list"]):
@@ -251,6 +336,21 @@ def main():
         if tfc in growthByTfc:
             row["demandGrowthPctYr"] = growthByTfc[tfc]
             row["sourceNote"] += f"; demand growth {growthByTfc[tfc]}%/yr ({calNote})"
+        # A: seeded stops exceed raw referrals — impossible in steady state
+        if row["clockStopsWk"] > row["referralsWk"] and row["referralsWk"] > 0:
+            excessWk = row["clockStopsWk"] - row["referralsWk"]
+            emptyMo = row["list"] / excessWk / WKS_PER_MONTH
+            anomaliesByTfc[tfc].insert(0, {
+                "rule": "stops-exceed-referrals",
+                "title": "stops exceed referrals",
+                "detail": (f"Seeded clock stops ({row['clockStopsWk']}/wk) exceed RAW referrals "
+                           f"({row['referralsWk']}/wk) — before any removals. No specialty can complete "
+                           f"more pathways than it receives in steady state; at this rate the list of "
+                           f"{row['list']:,} would empty in ≈{emptyMo:.0f} months. This is the tail of a "
+                           "clearance drive and/or a referral undercount — not a structural surplus that "
+                           "can be re-deployed on the model's say-so.")})
+        if anomaliesByTfc.get(tfc):
+            row["anomalies"] = anomaliesByTfc[tfc]
         tfcs.append(row)
 
     totL = sum(t["list"] for t in tfcs)
@@ -278,13 +378,20 @@ def main():
            "month — pass --level extracts to average. ")
         + "Operational parameters "
         "(day-case rate, cases/session, N:FU, LOS, diagnostics/referral) remain "
-        f"estimates. Folded into Other: {', '.join(folded) or 'none'}.")
+        f"estimates. Folded into Other: {', '.join(folded) or 'none'}. "
+        + (f"ANOMALY FLAGS: {sum(1 for t in tfcs if t.get('anomalies'))} TFC(s) breach "
+           "business rules (stops>referrals, referral step >25%/mo, implied negative "
+           "removals) — flagged in the specialty table, not silently corrected."
+           if any(t.get('anomalies') for t in tfcs) else ""))
     prov["researchedAnchors"]["rttPct18"] = {
         "value": round(100 * w / totL, 1), "asOf": period,
         "note": "computed from published wait bands", "source": "NHSE RTT statistics, full CSV extract"}
     prov["researchedAnchors"]["waitingList"] = {
         "value": totL, "asOf": period,
         "note": "published incomplete pathways (sum of TFCs)", "source": "NHSE RTT statistics, full CSV extract"}
+    for t in tfcs:
+        for a in t.get("anomalies", []):
+            print(f"  ANOMALY {t['code']} ({t['name']}): {a['title']}")
     json.dump(baseline, open(base_path, "w"), indent=2)
     print(f"{provider} {period}: list {totL:,} | {100*w/totL:.1f}% <18wk | "
           f"demand {sum(t['referralsWk'] for t in tfcs):,.0f}/wk | "

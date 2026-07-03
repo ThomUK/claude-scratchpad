@@ -109,6 +109,10 @@ td .pill { display: inline-block; min-width: 52px; text-align: right; padding: 1
 .phase.done { border-color: var(--good); }
 .phase.done strong { color: var(--good); }
 
+.flag { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px;
+  border-radius: 50%; background: rgba(248, 81, 73, 0.18); color: var(--bad);
+  font-weight: 800; font-size: 11px; line-height: 1; cursor: help; vertical-align: 1px; }
+
 .canvas-scroll { width: 100%; overflow-x: auto; margin-top: 10px; }
 .canvas-scroll canvas { display: block; }
 

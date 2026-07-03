@@ -42,6 +42,17 @@ ok(worst < 0.75, `per-TFC implied(t=0) matches published pct18 (worst |Δ| = ${w
   const refWk = baseline.tfcs.reduce((a, t) => a + t.referralsWk, 0);
   ok(close(refWk, 4531, 5), `seeded demand ${refWk.toFixed(0)}/wk (Feb-Apr working-day-normalised mean)`);
   ok(close(shapeFactor(85166, 0.628, refWk * keep), 1.16, 0.1), `trust census shape factor ≈ ${shapeFactor(85166, 0.628, refWk * keep).toFixed(2)} (front-loaded vs exponential)`);
+
+  // seed anomaly flags (business rules evaluated by the ingest)
+  const rulesOf = (code) => (baseline.tfcs.find((t) => t.code === code)?.anomalies ?? []).map((a) => a.rule);
+  ok(['stops-exceed-referrals', 'referral-step', 'negative-removals'].every((r) => rulesOf('C_320').includes(r)),
+    `cardiology (C_320) carries all three business-rule flags [${rulesOf('C_320').join(', ')}]`);
+  ok(rulesOf('X02').includes('referral-step'), 'X02 (Other - Medicals) flags the offsetting referral step (recoding counterpart)');
+  ok(baseline.tfcs.flatMap((t) => t.anomalies ?? []).every((a) => a.title && a.detail?.length > 40),
+    'every anomaly flag carries a title and a substantive explainer');
+  const flaggedN = baseline.tfcs.filter((t) => t.anomalies?.length).length;
+  ok(flaggedN >= 3 && flaggedN < baseline.tfcs.length / 2,
+    `${flaggedN}/${baseline.tfcs.length} TFCs flagged — enough to matter, not so many the warning dilutes`);
 }
 // per-TFC calibrated growth is used where seeded; trust fallback otherwise
 {

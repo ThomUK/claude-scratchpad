@@ -89,6 +89,22 @@ Two modelling consequences of using real (non-idealised) data:
   `kEndScale` lever that morphs k towards FIFO (larger sustainable list, less
   clearance) or memoryless (×1, deeper clearance). t = 0 always keeps the
   published anchor.
+- **Seed anomaly flags**: the ingest evaluates three business rules per TFC
+  and writes breaches into the seed, which the specialty table renders as a
+  red ! with a click-through explainer — the table **warns rather than
+  asserts** on unreliable rows. Rules: seeded clock stops exceeding raw
+  referrals (impossible in steady state — a clearance tail and/or referral
+  undercount, not surplus); a month-on-month referral step beyond ±25% per
+  working day (recoding/A&G/route diversion, never demand — Jan-26 is passed
+  via `--history` so the post-EPR cliff is visible); and implied negative
+  other-removals beyond −15% of referrals (reopens/validation churn; April
+  2026 shows −5..−10% ambient churn trust-wide, so the threshold targets the
+  specialty-specific cases). Case study: cardiology trips all three — its
+  apparent ~100 stops/mo of headroom is a finished two-year clearance
+  (list 3,674 → 1,508) sitting on top of a referral collapse that reappears
+  in X02 at the same moment. The recommended checks (e-RS routes from the
+  step month, EPR specialty mapping, PTL audit of reopens) are stated on
+  the page.
 - **Milestones are per-TFC** (never below start): an equity stance — the trust
   aggregate deliberately overshoots the literal 65/80/92 (e.g. ~69% at Apr-27),
   quantified on the page. Bed occupancy is aligned at the 92% planning norm

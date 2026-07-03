@@ -239,8 +239,11 @@ function renderTable() {
     const uplift = 100 * (peak / s.currentStopsMo[0] - 1);
     const cls = uplift > 15 ? 'bad' : uplift > 5 ? 'warn' : 'good';
     const iPk = s.requiredStopsMo.indexOf(peak);
+    const flag = tfc.anomalies?.length
+      ? ` <span class="flag" title="Seed reliability warning: ${tfc.anomalies.map((a) => a.title).join('; ')} — details below the table">!</span>`
+      : '';
     return `<tr data-code="${tfc.code}" class="${tfc.code === selectedTfc ? 'sel' : ''}">
-      <td>${tfc.code}</td><td>${tfc.name}</td>
+      <td>${tfc.code}</td><td>${tfc.name}${flag}</td>
       <td class="num">${fmt(tfc.list)}</td><td class="num">${tfc.pct18}%</td>
       <td class="num">${fmt(tfc.referralsWk)}</td>
       <td class="num">${fmt(s.currentStopsMo[0])}</td>
@@ -253,6 +256,28 @@ function renderTable() {
     </tr>`;
   }).join('');
   $('tfc-table').querySelector('tbody').innerHTML = rows;
+  renderAnomalies();
+}
+
+// Seed reliability warnings — business-rule breaches detected by the ingest and
+// written into the seed. The table warns rather than asserts on these rows: in
+// front of a sceptical audience, a model that flags its own least-reliable rows
+// is worth more than one that is silently wrong about the twenty-first specialty.
+function renderAnomalies() {
+  const flagged = baseline.tfcs.filter((t) => t.anomalies?.length);
+  $('anomaly-notes').innerHTML = !flagged.length ? '' : `
+    <p class="small" style="margin-top:10px"><span class="flag">!</span> <strong>Seed reliability
+    warnings</strong> — ${flagged.length} specialties break logical business rules in the published
+    monthly data (stops exceeding referrals, one-month referral steps too large to be demand, or
+    implied negative removals). Treat these rows' requirements — and especially any apparent
+    headroom — as <strong>unvalidated</strong>: an apparent surplus on a flagged row is usually a
+    finished clearance drive sitting on top of a recoding artefact, not spare capacity. Before
+    acting on one, check the e-RS referral routes from the step month, the EPR specialty mapping,
+    and a PTL audit of reopens.</p>` +
+    flagged.map((t) => `<details class="prov">
+      <summary>${t.name} (${t.code}) — ${t.anomalies.map((a) => a.title).join(' · ')}</summary>
+      <div class="small">${t.anomalies.map((a) => `<p>${a.detail}</p>`).join('')}</div>
+    </details>`).join('');
 }
 
 function renderTfcChart() {

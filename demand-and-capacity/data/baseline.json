@@ -2,7 +2,7 @@
   "_provenance": {
     "trust": "Nottingham University Hospitals NHS Trust (RX1)",
     "modelStart": "2026-07",
-    "dataQuality": "SEEDED FROM PUBLISHED DATA: NHSE RTT full extract '20260430-RTT-April-2026-full-extract.csv' (RTT-April-2026), provider RX1 (NOTTINGHAM UNIVERSITY HOSPITALS NHS TRUST), aggregated over commissioners per treatment function. Wait bands give list and %<18wk; New RTT Periods give referral demand; completed admitted/non-admitted give clock stops and admitted share. LEVELS: flow levels are working-day-normalised means over RTT-February-2026, RTT-March-2026, RTT-April-2026 (standard 21-working-day month); census from RTT-April-2026. Operational parameters (day-case rate, cases/session, N:FU, LOS, diagnostics/referral) remain estimates. Folded into Other: X03 (Other - Mental Healths), C_300 (General Internal Medicine).",
+    "dataQuality": "SEEDED FROM PUBLISHED DATA: NHSE RTT full extract '20260430-RTT-April-2026-full-extract.csv' (RTT-April-2026), provider RX1 (NOTTINGHAM UNIVERSITY HOSPITALS NHS TRUST), aggregated over commissioners per treatment function. Wait bands give list and %<18wk; New RTT Periods give referral demand; completed admitted/non-admitted give clock stops and admitted share. LEVELS: flow levels are working-day-normalised means over RTT-February-2026, RTT-March-2026, RTT-April-2026 (standard 21-working-day month); census from RTT-April-2026. Operational parameters (day-case rate, cases/session, N:FU, LOS, diagnostics/referral) remain estimates. Folded into Other: X03 (Other - Mental Healths), C_300 (General Internal Medicine). ANOMALY FLAGS: 9 TFC(s) breach business rules (stops>referrals, referral step >25%/mo, implied negative removals) \u2014 flagged in the specialty table, not silently corrected.",
     "researchedAnchors": {
       "rttPct18": {
         "value": 62.8,
@@ -80,7 +80,14 @@
       "losElectiveIP": 3.0,
       "diagPerReferral": 0.55,
       "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -12.4%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
-      "demandGrowthPctYr": -12.4
+      "demandGrowthPctYr": -12.4,
+      "anomalies": [
+        {
+          "rule": "referral-step",
+          "title": "referral step change",
+          "detail": "Referrals stepped 134/working-day (January-2026) \u2192 174/working-day (February-2026), +30% in one month. Demand does not move like this: a step this size is recoding, advice-&-guidance conversion or route diversion \u2014 the seeded demand level may be calibrated to the wrong side of the step. Check the e-RS referral routes for this specialty from the step month, and where the volume reappears (an offsetting jump in an 'Other' TFC means recoding, and the leaked demand then carries the wrong conversion parameters)."
+        }
+      ]
     },
     {
       "code": "C_502",
@@ -159,7 +166,14 @@
       "losElectiveIP": 1.5,
       "diagPerReferral": 0.3,
       "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 4.8%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
-      "demandGrowthPctYr": 4.8
+      "demandGrowthPctYr": 4.8,
+      "anomalies": [
+        {
+          "rule": "referral-step",
+          "title": "referral step change",
+          "detail": "Referrals stepped 51/working-day (January-2026) \u2192 68/working-day (February-2026), +34% in one month. Demand does not move like this: a step this size is recoding, advice-&-guidance conversion or route diversion \u2014 the seeded demand level may be calibrated to the wrong side of the step. Check the e-RS referral routes for this specialty from the step month, and where the volume reappears (an offsetting jump in an 'Other' TFC means recoding, and the leaked demand then carries the wrong conversion parameters)."
+        }
+      ]
     },
     {
       "code": "C_130",
@@ -174,7 +188,14 @@
       "newToFuRatio": 2.8,
       "losElectiveIP": 1.2,
       "diagPerReferral": 0.15,
-      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)",
+      "anomalies": [
+        {
+          "rule": "negative-removals",
+          "title": "implied negative removals",
+          "detail": "In April-2026 the list moved +812 while referrals were 1271 and clock stops 1248 \u2014 the accounting identity implies \u2248789 pathways REJOINED the list (reopens or validation churn). The trust-wide other-removals assumption is unreliable for this specialty right now; a PTL audit of the reopens is the check."
+        }
+      ]
     },
     {
       "code": "X05",
@@ -253,7 +274,14 @@
       "newToFuRatio": 2.3,
       "losElectiveIP": 3.0,
       "diagPerReferral": 0.7,
-      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)",
+      "anomalies": [
+        {
+          "rule": "referral-step",
+          "title": "referral step change",
+          "detail": "Referrals stepped 30/working-day (March-2026) \u2192 38/working-day (April-2026), +28% in one month. Demand does not move like this: a step this size is recoding, advice-&-guidance conversion or route diversion \u2014 the seeded demand level may be calibrated to the wrong side of the step. Check the e-RS referral routes for this specialty from the step month, and where the volume reappears (an offsetting jump in an 'Other' TFC means recoding, and the leaked demand then carries the wrong conversion parameters)."
+        }
+      ]
     },
     {
       "code": "C_400",
@@ -268,7 +296,14 @@
       "newToFuRatio": 2.4,
       "losElectiveIP": 3.0,
       "diagPerReferral": 0.6,
-      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)",
+      "anomalies": [
+        {
+          "rule": "referral-step",
+          "title": "referral step change",
+          "detail": "Referrals stepped 11/working-day (March-2026) \u2192 23/working-day (April-2026), +113% in one month. Demand does not move like this: a step this size is recoding, advice-&-guidance conversion or route diversion \u2014 the seeded demand level may be calibrated to the wrong side of the step. Check the e-RS referral routes for this specialty from the step month, and where the volume reappears (an offsetting jump in an 'Other' TFC means recoding, and the leaked demand then carries the wrong conversion parameters)."
+        }
+      ]
     },
     {
       "code": "C_320",
@@ -283,7 +318,24 @@
       "newToFuRatio": 2.5,
       "losElectiveIP": 2.5,
       "diagPerReferral": 0.9,
-      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)"
+      "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms)",
+      "anomalies": [
+        {
+          "rule": "stops-exceed-referrals",
+          "title": "stops exceed referrals",
+          "detail": "Seeded clock stops (103.8/wk) exceed RAW referrals (90.6/wk) \u2014 before any removals. No specialty can complete more pathways than it receives in steady state; at this rate the list of 1,508 would empty in \u224826 months. This is the tail of a clearance drive and/or a referral undercount \u2014 not a structural surplus that can be re-deployed on the model's say-so."
+        },
+        {
+          "rule": "referral-step",
+          "title": "referral step change",
+          "detail": "Referrals stepped 30/working-day (January-2026) \u2192 20/working-day (February-2026), -34% in one month. Demand does not move like this: a step this size is recoding, advice-&-guidance conversion or route diversion \u2014 the seeded demand level may be calibrated to the wrong side of the step. Check the e-RS referral routes for this specialty from the step month, and where the volume reappears (an offsetting jump in an 'Other' TFC means recoding, and the leaked demand then carries the wrong conversion parameters)."
+        },
+        {
+          "rule": "negative-removals",
+          "title": "implied negative removals",
+          "detail": "In April-2026 the list moved +124 while referrals were 400 and clock stops 342 \u2014 the accounting identity implies \u224866 pathways REJOINED the list (reopens or validation churn). The trust-wide other-removals assumption is unreliable for this specialty right now; a PTL audit of the reopens is the check."
+        }
+      ]
     },
     {
       "code": "C_430",
@@ -299,7 +351,19 @@
       "losElectiveIP": 6.0,
       "diagPerReferral": 0.4,
       "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth -2.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
-      "demandGrowthPctYr": -2.2
+      "demandGrowthPctYr": -2.2,
+      "anomalies": [
+        {
+          "rule": "referral-step",
+          "title": "referral step change",
+          "detail": "Referrals stepped 3/working-day (January-2026) \u2192 7/working-day (February-2026), +122% in one month. Demand does not move like this: a step this size is recoding, advice-&-guidance conversion or route diversion \u2014 the seeded demand level may be calibrated to the wrong side of the step. Check the e-RS referral routes for this specialty from the step month, and where the volume reappears (an offsetting jump in an 'Other' TFC means recoding, and the leaked demand then carries the wrong conversion parameters)."
+        },
+        {
+          "rule": "negative-removals",
+          "title": "implied negative removals",
+          "detail": "In February-2026 the list moved +217 while referrals were 133 and clock stops 31 \u2014 the accounting identity implies \u2248115 pathways REJOINED the list (reopens or validation churn). The trust-wide other-removals assumption is unreliable for this specialty right now; a PTL audit of the reopens is the check."
+        }
+      ]
     },
     {
       "code": "C_150",
@@ -331,7 +395,14 @@
       "losElectiveIP": 3.0,
       "diagPerReferral": 0.4,
       "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 5.8%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
-      "demandGrowthPctYr": 5.8
+      "demandGrowthPctYr": 5.8,
+      "anomalies": [
+        {
+          "rule": "referral-step",
+          "title": "referral step change",
+          "detail": "Referrals stepped 6/working-day (January-2026) \u2192 10/working-day (February-2026), +58% in one month. Demand does not move like this: a step this size is recoding, advice-&-guidance conversion or route diversion \u2014 the seeded demand level may be calibrated to the wrong side of the step. Check the e-RS referral routes for this specialty from the step month, and where the volume reappears (an offsetting jump in an 'Other' TFC means recoding, and the leaked demand then carries the wrong conversion parameters)."
+        }
+      ]
     },
     {
       "code": "X06",
@@ -347,7 +418,19 @@
       "losElectiveIP": 2.2,
       "diagPerReferral": 0.35,
       "sourceNote": "admittedShare: pre-EPR pooled (Apr-24+Apr-25 flows; current share is EPR/backlog-distorted); list/pct18/referrals/stops: NHSE RTT full extract (RTT-April-2026); operational parameters: ESTIMATE (GIRFT/BADS norms); demand growth 7.2%/yr (calibrated from the earliest pair (RTT-April-2024 vs RTT-April-2025), working-day adjusted (April 2024 had 21 working days vs 20 in 2025/26; raw growth -2.5%/yr))",
-      "demandGrowthPctYr": 7.2
+      "demandGrowthPctYr": 7.2,
+      "anomalies": [
+        {
+          "rule": "stops-exceed-referrals",
+          "title": "stops exceed referrals",
+          "detail": "Seeded clock stops (249.9/wk) exceed RAW referrals (105.2/wk) \u2014 before any removals. No specialty can complete more pathways than it receives in steady state; at this rate the list of 990 would empty in \u22482 months. This is the tail of a clearance drive and/or a referral undercount \u2014 not a structural surplus that can be re-deployed on the model's say-so."
+        },
+        {
+          "rule": "negative-removals",
+          "title": "implied negative removals",
+          "detail": "In March-2026 the list moved -93 while referrals were 440 and clock stops 1239 \u2014 the accounting identity implies \u2248706 pathways REJOINED the list (reopens or validation churn). The trust-wide other-removals assumption is unreliable for this specialty right now; a PTL audit of the reopens is the check."
+        }
+      ]
     },
     {
       "code": "C_160",
