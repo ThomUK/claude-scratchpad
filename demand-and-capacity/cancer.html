@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cancer (CWT) — Demand &amp; Capacity, NUH (RX1)</title>
+  <link rel="stylesheet" href="styles.css?v=dev" />
+</head>
+<body>
+  <header>
+    <h1>Cancer (CWT) — NUH (RX1)</h1>
+    <nav class="crumbs"><a href="./">← Elective (RTT) spine</a> · <a href="diagnostics.html">Diagnostics (DM01)</a></nav>
+    <p class="subtitle">
+      <strong>Phase 3:</strong> the three cancer waiting-time standards —
+      <strong>Faster Diagnosis (28-day, 80%)</strong>, <strong>31-day decision-to-treat (96%)</strong>
+      and <strong>62-day referral-to-treatment (85%, interim 70%)</strong>. Unlike RTT and DM01 these
+      are <em>flow</em> standards: each month's cohort is scored on timeliness and there is no
+      published backlog census. The model therefore works on cohort volumes × a timeliness glide
+      path — the gap between required timely activity and today's timely rate is the pathway
+      capacity to add.
+    </p>
+    <p class="data-note">Seeded from published <strong>CWT provider data (April 2026 combined CSV;
+      April 2024/2025 CRS provider workbooks — two formats, one statistic)</strong>. April volumes are
+      bank-holiday depressed. Demand growth calibrated from the pre-EPR pair (Apr-24→Apr-25); the
+      Apr-25→Apr-26 FDS jump (+13.4%) is EPR-affected. Milestones are modelling assumptions aligned
+      to the RTT trajectory. Trust PTL data would deepen this to a backlog model.</p>
+    <p id="status" class="status status--loading" role="status">Loading model…</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Cancer position &amp; trajectory</h2>
+      <div id="cards" class="cards"></div>
+      <div class="chart-block">
+        <h3>Performance glide paths <span class="muted small">(required trajectory per standard)</span></h3>
+        <canvas id="chart-glide" width="1040" height="360"></canvas>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Standards</h2>
+      <div class="table-wrap">
+        <table id="std-table">
+          <thead>
+            <tr>
+              <th>Standard</th><th class="num">Target</th>
+              <th class="num">Apr-24</th><th class="num">Apr-25</th><th class="num">Apr-26</th>
+              <th class="num">Cohort /mo</th><th class="num">Timely now /mo</th>
+              <th class="num">Extra timely /mo (peak)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="chart-block">
+        <h3 id="std-chart-title">Standard trajectory</h3>
+        <canvas id="chart-std" width="1040" height="330"></canvas>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Levers</h2>
+      <div id="levers" class="levers"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Tumour-site detail <span class="muted small">(April 2026)</span></h2>
+      <div class="two-col">
+        <div>
+          <h3>Faster Diagnosis by suspected cancer <span class="muted small">(referral route)</span></h3>
+          <div class="table-wrap">
+            <table id="fds-table">
+              <thead><tr><th>Suspected cancer</th><th class="num">Cohort</th><th class="num">%&lt;28 days</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <h3>Treatment standards by cancer type</h3>
+          <div class="table-wrap">
+            <table id="treat-table">
+              <thead><tr><th>Cancer type</th><th class="num">31-day</th><th class="num">62-day</th><th class="num">62-day cohort</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <p class="muted small">Constrained pathways at NUH mirror the national picture: gynaecology,
+        urology (prostate and other), lower GI and breast carry the largest 62-day gaps; FDS pressure
+        is concentrated in gynaecology, haematology and urology. Pathway-level linkage (FDS demand →
+        diagnostic modality → theatre) is a phase 3.1 refinement.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Source: NHSE Cancer Waiting Times provider data in <code>source/</code>; ingest in
+      <code>ingest/ingest_cwt.py</code>. Standards: FDS 80% by Apr-27, 31-day 96% by Apr-27, 62-day
+      interim 70% by Apr-27 and constitutional 85% by Apr-29 (modelling assumptions on milestone
+      dates). Illustrative planning model — not operational advice.</p>
+  </footer>
+
+  <script type="module" src="js/cancer.js?v=dev"></script>
+</body>
+</html>

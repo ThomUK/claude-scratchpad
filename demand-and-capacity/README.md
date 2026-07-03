@@ -75,6 +75,7 @@ To re-seed with a newer month:
 ```sh
 python3 ingest/ingest_rtt.py source/<latest>.zip --prior source/<yr-1>.zip --prior source/<yr-2>.zip --provider RX1
 python3 ingest/ingest_dm01.py source/<latest-dm01>.xls --prior source/<yr-1>.xls --prior source/<yr-2>.xls --provider RX1
+python3 ingest/ingest_cwt.py source/<latest-cwt>.csv --prior source/<yr-1>.xlsx --prior source/<yr-2>.xlsx --provider RX1
 node tests/engine.test.mjs
 ```
 
@@ -89,13 +90,27 @@ growth **+12.6%/yr** from the pre-EPR pair (the EPR year shows −13.2%,
 recoding/counting-contaminated as with RTT). The 95%-by-Apr-27 / 99%-by-Apr-29
 milestones are a documented modelling assumption aligned to the RTT trajectory.
 
+### Cancer (CWT) seeding
+
+`ingest/ingest_cwt.py` reads the published CWT provider data in both NHSE
+formats: the monthly combined CSV (2026+) and the CRS provider workbooks
+(2024/25). Some workbooks carry a broken worksheet dimension record (`A1:A1`),
+which silently empties openpyxl's read-only iteration — the ingest calls
+`reset_dimensions()` to recover the real rows. April 2026 position: **FDS
+71.0%** (target 80%), **31-day 93.7%** (96%), **62-day 68.1%** (interim 70% by
+Apr-27, 85% by Apr-29). Unlike RTT/DM01 these are *flow* standards with no
+published backlog census, so the model works on cohort volumes × a timeliness
+glide path; the gap vs today's timely rate is the pathway capacity to add.
+FDS-volume growth **−0.7%/yr** from the pre-EPR pair (the EPR year shows
++13.4%). Trust PTL data would deepen this to a backlog model.
+
 ## Roadmap
 
 | Phase | Scope |
 | --- | --- |
 | **1 — Elective spine (this release)** | RTT waiting list → clock stops → OP / theatres / beds / diagnostics per TFC, trust rollup, levers, scenarios |
 | **2 — Diagnostics (this release)** | DM01 modality-level queues vs the 6-week standard — `diagnostics.html`, seeded from the published DM01 provider files (Apr-24/25/26), same queueing core on a 6-week window |
-| 3 — Cancer | FDS / 31-day / 62-day capacity by tumour site |
+| **3 — Cancer (this release)** | FDS / 31-day / 62-day timeliness by tumour site — `cancer.html`, seeded from published CWT provider data (Apr-24/25/26, two formats), flow model on cohort volumes |
 | 4 — UEC | ED four-hour + handover; bed interaction with the elective model |
 | 5 — Workforce | Medical & nursing WTE as the cross-cutting constraint |
 

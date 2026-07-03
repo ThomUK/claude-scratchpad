@@ -1,8 +1,9 @@
 // Engine validation — run with: node tests/engine.test.mjs
 import { readFileSync } from 'node:fs';
-import { meanWaitFor, targetListSize, impliedPerformance, glidePath, calendar, runScenario, ymDiff, shapeFactor, runDiagnostics } from '../js/engine.js';
+import { meanWaitFor, targetListSize, impliedPerformance, glidePath, calendar, runScenario, ymDiff, shapeFactor, runDiagnostics, runCancer } from '../js/engine.js';
 
 const dm01 = JSON.parse(readFileSync(new URL('../data/dm01.json', import.meta.url)));
+const cancer = JSON.parse(readFileSync(new URL('../data/cancer.json', import.meta.url)));
 
 const baseline = JSON.parse(readFileSync(new URL('../data/baseline.json', import.meta.url)));
 let fails = 0;
@@ -79,6 +80,28 @@ console.log('— diagnostics (DM01) module —');
   const m0 = d.perMod[0].series;
   ok(close(m0.list[5], m0.list[4] + m0.demandMo[4] - m0.requiredTestsMo[4], 0.5), 'DM01 list conservation holds');
   console.log(`  DM01 peak required tests/mo: ${Math.round(Math.max(...d.total.requiredTestsMo)).toLocaleString()} vs current ${Math.round(d.total.currentTestsMo[0]).toLocaleString()}`);
+}
+
+console.log('— cancer (CWT) module —');
+{
+  const c = runCancer(cancer, { startYM: '2026-07' });
+  const j0 = 0, j27 = ymDiff('2026-07', '2027-04'), j29 = ymDiff('2026-07', '2029-04');
+  ok(close(c.perStd.fds.series.glidePct[j0], 71.0, 0.1), `FDS glide starts at published ${c.perStd.fds.series.glidePct[j0].toFixed(1)}%`);
+  ok(close(c.perStd.fds.series.glidePct[j27], 80, 1e-9), 'FDS glide hits 80% at Apr-27');
+  ok(close(c.perStd.d31.series.glidePct[j27], 96, 1e-9), '31-day glide hits 96% at Apr-27');
+  ok(close(c.perStd.d62.series.glidePct[j27], 70, 1e-9), '62-day glide hits interim 70% at Apr-27');
+  ok(close(c.perStd.d62.series.glidePct[j29], 85, 1e-9), '62-day glide hits constitutional 85% at Apr-29');
+  // at t=0 required timely equals today's timely rate (no gap yet)
+  const s62 = c.perStd.d62.series;
+  ok(close(s62.requiredTimelyMo[j0], s62.currentRateTimelyMo[j0], 0.5), '62-day required = current timely at t=0');
+  ok(close(s62.volumeMo[j0], 444, 0.5), `62-day cohort ${s62.volumeMo[j0].toFixed(0)}/mo (published Apr-26)`);
+  // volume identity: required timely + breaches = cohort
+  ok(c.cal.every((_, i) => close(s62.requiredTimelyMo[i] + s62.breachesMo[i], s62.volumeMo[i], 1e-6)), 'timely + breaches = cohort (all months)');
+  // growth lever compounds annually on volumes
+  const g = runCancer(cancer, { levers: { demandGrowthPctYr: 6 } });
+  ok(close(g.perStd.fds.series.volumeMo[12] / g.perStd.fds.series.volumeMo[0], 1.06, 0.005), 'growth lever compounds to +6% over 12 months');
+  const extra62 = s62.extraTimelyMo[j29];
+  console.log(`  62-day: extra timely treatments/mo at Apr-29 = ${extra62.toFixed(0)} (${(100 * extra62 / s62.volumeMo[j29]).toFixed(0)}% of cohort)`);
 }
 
 console.log('— headline numbers (eyeball) —');

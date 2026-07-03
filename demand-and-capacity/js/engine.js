@@ -226,6 +226,47 @@ export function runDiagnostic(mod, levers, cal, milestones, windowWeeks = 6) {
   return s;
 }
 
+// --- cancer (CWT) -------------------------------------------------------------
+// The cancer standards are FLOW standards, unlike RTT/DM01: each month's cohort
+// of diagnoses (FDS) or treatments (31/62-day) is scored on timeliness, and the
+// published data carries no backlog census. So the model works on volumes ×
+// timeliness: required timely activity per month = glide-path % × cohort volume.
+// The gap vs today's timely rate is the pathway capacity that must be added
+// (faster diagnostics, earlier DTT, escalation of long waiters).
+export function runCancerStandard(std, levers, cal) {
+  const n = cal.length;
+  const growthPctYr = (levers.demandGrowthPctYr ?? 0) + (levers.demandGrowthAdjPctYr ?? 0);
+  const growth = Math.pow(1 + growthPctYr / 100, 1 / 12);
+  const glide = glidePath(cal, std.current.pct, std.milestones);
+  const s = {
+    ym: cal, glidePct: glide, volumeMo: new Array(n),
+    requiredTimelyMo: new Array(n), currentRateTimelyMo: new Array(n),
+    breachesMo: new Array(n), extraTimelyMo: new Array(n),
+  };
+  let vol = std.current.total;
+  for (let i = 0; i < n; i++) {
+    const req = vol * glide[i] / 100;
+    const atCurrentRate = vol * std.current.pct / 100;
+    s.volumeMo[i] = vol;
+    s.requiredTimelyMo[i] = req;
+    s.currentRateTimelyMo[i] = atCurrentRate;
+    s.breachesMo[i] = vol - req;
+    s.extraTimelyMo[i] = Math.max(0, req - atCurrentRate);
+    vol *= growth;
+  }
+  return s;
+}
+
+export function runCancer(cancer, opts = {}) {
+  const cal = calendar(opts.startYM || '2026-07', opts.endYM || '2030-03');
+  const levers = { ...cancer.levers, ...(opts.levers || {}) };
+  const perStd = {};
+  for (const [key, std] of Object.entries(cancer.standards)) {
+    perStd[key] = { std, series: runCancerStandard(std, levers, cal) };
+  }
+  return { cal, levers, perStd };
+}
+
 export function runDiagnostics(dm01, opts = {}) {
   const cal = calendar(opts.startYM || '2026-07', opts.endYM || '2030-03');
   const milestones = opts.milestones || dm01.standard.milestones;
