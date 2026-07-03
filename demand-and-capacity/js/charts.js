@@ -80,6 +80,21 @@ export function lineChart(canvas, cal, series, opts = {}) {
     s.data.forEach((v, i) => (i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v))));
     ctx.stroke(); ctx.setLineDash([]);
   });
+  // gap marker: labelled I-beam between two values at one month (e.g. the headline uplift)
+  if (opts.gapMarker) {
+    const gm = opts.gapMarker, gx = x(gm.i), gy1 = y(gm.from), gy2 = y(gm.to);
+    ctx.strokeStyle = INK(); ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(gx, gy1); ctx.lineTo(gx, gy2);
+    ctx.moveTo(gx - 5, gy1); ctx.lineTo(gx + 5, gy1);
+    ctx.moveTo(gx - 5, gy2); ctx.lineTo(gx + 5, gy2);
+    ctx.stroke(); ctx.lineWidth = 1;
+    ctx.fillStyle = INK(); ctx.font = 'bold 11px system-ui';
+    const onLeft = gx > padL + iw * 0.6;
+    ctx.textAlign = onLeft ? 'right' : 'left';
+    ctx.fillText(gm.label, gx + (onLeft ? -9 : 9), (gy1 + gy2) / 2 + 4);
+    ctx.font = '11px system-ui';
+  }
   // direct end labels (text ink, colored chip), nudged apart where series converge
   const MINGAP = 14;
   const labels = series

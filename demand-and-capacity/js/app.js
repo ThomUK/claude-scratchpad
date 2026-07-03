@@ -178,13 +178,16 @@ function renderCharts() {
     { name: 'sustainable target', data: t.targetList, color: S2(), dash: [5, 4] },
   ], { milestones: MS_LABELS, yfmt: (v) => `${(v / 1000).toFixed(0)}k`,
        band: band(t.targetList, resultRaw.trust.targetList) });
+  const iPk = t.requiredStopsMo.indexOf(Math.max(...t.requiredStopsMo));
+  const upliftPct = 100 * (Math.max(...t.requiredStopsMo) / t.currentStopsMo[0] - 1);
   lineChart($('chart-stops'), cal, [
     { name: 'required', data: t.requiredStopsMo, color: S1() },
     { name: 'effective demand', data: t.demandMo, color: S3(), dash: [2, 3] },
     { name: 'held at Apr-26 rate', data: t.currentStopsMo, color: S2(), dash: [5, 4] },
   ], { milestones: MS_LABELS, yfmt: (v) => `${(v / 1000).toFixed(1)}k`,
-       band: { lower: t.demandMo, upper: t.requiredStopsMo, color: 'rgba(192, 138, 30, 0.16)' } });
-  $('stops-note').textContent = `The shaded wedge decomposes the requirement: everything between effective demand and the required line is BACKLOG CLEARANCE — that is where the uplift goes. The wedge is deepest before each milestone and closes after Apr-29, when required activity settles back towards demand.`;
+       band: { lower: t.demandMo, upper: t.requiredStopsMo, color: 'rgba(192, 138, 30, 0.16)' },
+       gapMarker: { i: iPk, from: t.currentStopsMo[iPk], to: t.requiredStopsMo[iPk], label: `+${upliftPct.toFixed(1)}% vs today` } });
+  $('stops-note').textContent = `The shaded wedge decomposes the requirement: everything between effective demand and the required line is BACKLOG CLEARANCE — that is where the uplift goes. The wedge is deepest before each milestone and closes after Apr-29, when required activity settles back towards demand. The labelled bracket marks the headline uplift at the peak month (${cal[iPk]}): required clock stops vs the Apr-26 delivery rate — the same +${upliftPct.toFixed(1)}% the sensitivity tornado below stress-tests.`;
   $('band-note').textContent = `List chart band: the demand-growth calibration question — the lower edge uses the raw Apr→Apr pair (${baseline.levers.demandGrowthRawPctYr}%/yr, which reads low because April 2024 had 21 working days vs 20 in 2025), the line uses the working-day-adjusted ${baseline.levers.demandGrowthPctYr}%/yr. Demand is most likely growing, not falling.`;
 }
 
