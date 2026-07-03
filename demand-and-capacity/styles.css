@@ -63,6 +63,9 @@ main { margin-top: 24px; display: flex; flex-direction: column; gap: 20px; }
 .chart-block { margin-top: 10px; position: relative; }
 canvas { width: 100%; height: auto; border-radius: 8px; background: var(--panel); display: block; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+/* let grid items shrink below their table's intrinsic width so .table-wrap
+   scrolls internally instead of overflowing the page on mobile */
+.two-col > * { min-width: 0; }
 @media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
 
 .tooltip {

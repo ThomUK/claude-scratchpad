@@ -22,6 +22,7 @@ const pill = (pct, target) => {
     recompute();
     wire();
     renderSites();
+    renderConversion();
     setStatus('Model ready', 'ready');
   } catch (e) {
     console.error(e);
@@ -122,6 +123,128 @@ function renderSites() {
   </tr>`).join('');
 }
 
+// --- referral → treated-cancer conversion (sankey) ---------------------------
+function renderConversion() {
+  const c = cancer.conversion;
+  if (!c) return;
+  const ruleOuts = c.referralsMo / c.treatedMo - 1;
+  $('conv-cards').innerHTML = `
+    <div class="stat"><div class="v">${fmt(c.referralsMo)}</div><div class="l">Urgent suspected cancer referrals / month</div></div>
+    <div class="stat"><div class="v">${fmt(c.treatedMo)}</div><div class="l">First treatments on the USC 62-day pathway / month</div></div>
+    <div class="stat stat--accent"><div class="v">${c.convPct}%</div><div class="l">Treated conversion (national benchmark ≈ 7%)</div></div>
+    <div class="stat"><div class="v">≈ ${ruleOuts.toFixed(0)} : 1</div><div class="l">Rule-outs per treated cancer — the diagnostic workload behind each diagnosis</div></div>`;
+  $('conv-table').querySelector('tbody').innerHTML = c.sites.map((s) => `<tr>
+    <td>${s.name}</td>
+    <td class="num">${fmt(s.referralsMo)}</td>
+    <td class="num">${fmt(s.treatedMo)}</td>
+    <td class="num"><strong>${s.convPct}%</strong></td>
+  </tr>`).join('');
+  $('conv-note').textContent = c.note;
+  drawSankey($('chart-sankey'), c);
+}
+
+function drawSankey(canvas, c) {
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.clientWidth || canvas.width;
+  const H = canvas.getAttribute('height') * Math.min(1.15, Math.max(0.85, W / canvas.getAttribute('width')));
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.height = `${H}px`;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const INK = css('--text'), MUT = css('--muted'), GOOD = S3();
+  const narrow = W < 560;
+  const treatedTot = c.sites.reduce((a, s) => a + s.treatedMo, 0);
+  const totalRefs = c.sites.reduce((a, s) => a + s.referralsMo, 0);
+  const rLabels = [
+    ['Cancer treated', `${fmt(treatedTot)} (${c.convPct}%)`],
+    ['No cancer treated', `${fmt(totalRefs - treatedTot)} (${(100 - c.convPct).toFixed(1)}%)`],
+  ];
+  ctx.font = '11px system-ui';
+  // right padding sized to the widest label so nothing clips at the edge
+  const padR = Math.ceil(Math.max(...rLabels.flat().map((t) => ctx.measureText(t).width))) + 20;
+  const padL = narrow ? 118 : 168, padT = 16, padB = 12;
+  const nodeW = 10, gap = 6, minH = 12;
+  const x0 = padL, x1 = W - padR - nodeW;
+
+  // proportional node heights with a minimum so every label stays legible;
+  // the excess is taken from nodes above the minimum (values are printed, so
+  // honesty is kept by the labels and the table alongside)
+  const avail = H - padT - padB - gap * (c.sites.length - 1);
+  const total = c.sites.reduce((a, s) => a + s.referralsMo, 0);
+  let hs = c.sites.map((s) => (s.referralsMo / total) * avail);
+  const deficit = hs.reduce((a, h) => a + Math.max(0, minH - h), 0);
+  const shrinkable = hs.reduce((a, h) => a + Math.max(0, h - minH), 0);
+  hs = hs.map((h) => (h < minH ? minH : h - (deficit * (h - minH)) / shrinkable));
+
+  const left = []; let y = padT;
+  c.sites.forEach((s, i) => { left.push({ s, y, h: hs[i] }); y += hs[i] + gap; });
+
+  // right column: treated on top, everything else below, same value scale
+  const scale = (H - padT - padB - gap) / total;
+  const treated = treatedTot;
+  const rTreated = { y: padT, h: Math.max(minH, treated * scale) };
+  const rRest = { y: rTreated.y + rTreated.h + gap, h: H - padB - (rTreated.y + rTreated.h + gap) };
+
+  ctx.clearRect(0, 0, W, H);
+
+  // ribbons (behind nodes): treated slice from the top of each left node
+  const ribbon = (ya, hA, yb, hB, fill) => {
+    const xa = x0 + nodeW, xb = x1, mx = (xa + xb) / 2;
+    ctx.beginPath();
+    ctx.moveTo(xa, ya);
+    ctx.bezierCurveTo(mx, ya, mx, yb, xb, yb);
+    ctx.lineTo(xb, yb + hB);
+    ctx.bezierCurveTo(mx, yb + hB, mx, ya + hA, xa, ya + hA);
+    ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+  };
+  let tOff = 0, nOff = 0;
+  left.forEach(({ s, y: ly, h }) => {
+    const th = h * (s.treatedMo / s.referralsMo);
+    const tH = (treated ? rTreated.h * (s.treatedMo / treated) : 0);
+    const nH = rRest.h * ((s.referralsMo - s.treatedMo) / (total - treated));
+    ribbon(ly, th, rTreated.y + tOff, tH, 'rgba(63, 174, 82, 0.55)');
+    ribbon(ly + th, h - th, rRest.y + nOff, nH, 'rgba(85, 99, 122, 0.28)');
+    tOff += tH; nOff += nH;
+  });
+
+  // nodes + labels (ink, outside the marks)
+  ctx.font = '11px system-ui';
+  left.forEach(({ s, y: ly, h }) => {
+    ctx.fillStyle = '#3a4a5e'; ctx.fillRect(x0, ly, nodeW, h);
+    ctx.fillStyle = INK; ctx.textAlign = 'right';
+    const label = narrow ? s.name : `${s.name} · ${fmt(s.referralsMo)}`;
+    ctx.fillText(label, x0 - 8, ly + h / 2 + 4);
+  });
+  ctx.fillStyle = GOOD; ctx.fillRect(x1, rTreated.y, nodeW, rTreated.h);
+  ctx.fillStyle = '#3a4a5e'; ctx.fillRect(x1, rRest.y, nodeW, rRest.h);
+  ctx.textAlign = 'left';
+  const rl = (lines, yc) => {
+    ctx.fillStyle = INK; ctx.fillText(lines[0], x1 + nodeW + 8, yc - 2);
+    ctx.fillStyle = MUT; ctx.fillText(lines[1], x1 + nodeW + 8, yc + 12);
+  };
+  rl(rLabels[0], rTreated.y + rTreated.h / 2);
+  rl(rLabels[1], rRest.y + rRest.h / 2);
+
+  // hover: per-site tooltip over the left half
+  let tip = canvas.parentElement.querySelector('.tooltip');
+  if (!tip) { tip = document.createElement('div'); tip.className = 'tooltip'; canvas.parentElement.appendChild(tip); }
+  canvas.onmousemove = (e) => {
+    const r = canvas.getBoundingClientRect();
+    const my = e.clientY - r.top;
+    const hit = left.find(({ y: ly, h }) => my >= ly && my <= ly + h);
+    if (!hit) { tip.style.display = 'none'; return; }
+    tip.style.display = 'block';
+    tip.style.left = `${Math.min(e.clientX - r.left + 14, r.width - 190)}px`;
+    tip.style.top = `${my + 14}px`;
+    tip.innerHTML = `<div class="t-ym">${hit.s.name}</div>
+      <div>referrals: <strong>${fmt(hit.s.referralsMo)}</strong>/mo</div>
+      <div>treated: <strong>${fmt(hit.s.treatedMo)}</strong>/mo</div>
+      <div>conversion: <strong>${hit.s.convPct}%</strong></div>`;
+  };
+  canvas.onmouseleave = () => { tip.style.display = 'none'; };
+}
+
 function wire() {
   $('levers').addEventListener('input', (e) => {
     const key = e.target.dataset.lever; if (!key) return;
@@ -135,5 +258,5 @@ function wire() {
     selectedStd = tr.dataset.std;
     renderStdTable(); renderStdChart();
   });
-  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { renderGlide(); renderStdChart(); }, 150); });
+  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { renderGlide(); renderStdChart(); if (cancer.conversion) drawSankey($('chart-sankey'), cancer.conversion); }, 150); });
 }

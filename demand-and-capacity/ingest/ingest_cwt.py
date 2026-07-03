@@ -23,7 +23,7 @@ import sys
 
 
 def read_combined_csv(path, provider):
-    out = {"fds": None, "d31": None, "d62": None, "sites": {}}
+    out = {"fds": None, "d31": None, "d62": None, "sites": {}, "uscReferrals": {}, "usc62": {}}
     period = None
     with open(path, encoding="utf-8-sig") as f:
         for d in csv.DictReader(f):
@@ -35,6 +35,12 @@ def read_combined_csv(path, provider):
             mod = d["Treatment_Modality"].strip().upper()
             tot = float(d["Total"] or 0); win = float(d["Within"] or 0)
             rec = {"total": tot, "within": win, "pct": round(100 * win / tot, 1) if tot else None}
+            # referral→treatment conversion inputs (USC route only)
+            if std == "Urgent Suspected Cancer referral":
+                out["uscReferrals"][ct] = tot
+                continue
+            if std == "62D" and route == "URGENT SUSPECTED CANCER" and mod == "ALL MODALITIES":
+                out["usc62"][ct] = tot
             allroute = route in ("ALL ROUTES", "ALL STAGES") and mod in ("", "ALL MODALITIES")
             if not allroute:
                 continue
@@ -94,6 +100,54 @@ def read_crs_workbook(path, provider):
     return out, period or os.path.basename(path)
 
 
+# Suspected-site referral routes → treated cancer types. The published data links
+# the USC route to the TREATED site, not the referral site, so per-site conversion
+# is approximate (a skin referral diagnosed with lymphoma counts under lymphoma).
+CONV_GROUPS = [
+    ("Skin", ["Suspected skin cancer"], ["Skin"]),
+    ("Breast", ["Suspected breast cancer"], ["Breast"]),
+    ("Lower GI", ["Suspected lower gastrointestinal cancer"], ["Lower Gastrointestinal"]),
+    ("Head & neck", ["Suspected head & neck cancer"], ["Head & Neck"]),
+    ("Upper GI", ["Suspected upper gastrointestinal cancer"],
+     ["Upper Gastrointestinal - Hepatobiliary", "Upper Gastrointestinal - Oesophagus & Stomach"]),
+    ("Urological", ["Suspected urological malignancies (excluding testicular)", "Suspected testicular cancer"],
+     ["Urological - Prostate", "Urological - Other (a)"]),
+    ("Gynaecological", ["Suspected gynaecological cancer"], ["Gynaecological"]),
+    ("Lung", ["Suspected lung cancer"], ["Lung"]),
+    ("Haematological", ["Suspected haematological malignancies (excluding acute leukaemia)"],
+     ["Haematological - Lymphoma", "Haematological - Other (a)"]),
+    ("Other / non-specific", ["Suspected cancer - non-specific symptoms", "Suspected children's cancer", "Suspected sarcoma"],
+     ["Other (a)"]),
+]
+
+
+def build_conversion(cur):
+    refs, treated = cur.get("uscReferrals", {}), cur.get("usc62", {})
+    if not refs or not treated:
+        return None
+    sites = []
+    for name, ref_keys, ct_keys in CONV_GROUPS:
+        r = sum(refs.get(k, 0) for k in ref_keys)
+        t = sum(treated.get(k, 0) for k in ct_keys)
+        if r == 0 and t == 0:
+            continue
+        sites.append({"name": name, "referralsMo": r, "treatedMo": t,
+                      "convPct": round(100 * t / r, 1) if r else None})
+    sites.sort(key=lambda s: -s["referralsMo"])
+    totR = refs.get("ALL CANCERS", sum(s["referralsMo"] for s in sites))
+    totT = treated.get("ALL CANCERS", sum(s["treatedMo"] for s in sites))
+    return {
+        "referralsMo": totR, "treatedMo": totT,
+        "convPct": round(100 * totT / totR, 1),
+        "sites": sites,
+        "note": ("Treated conversion: first treatments on the urgent-suspected-cancer 62-day "
+                 "pathway ÷ USC referrals, same month. The true diagnosis rate sits a little "
+                 "higher — it excludes patients diagnosed but not (yet) treated, treated "
+                 "elsewhere, or managed by surveillance. Site mapping is by treated cancer "
+                 "type, not referral route."),
+    }
+
+
 def read_any(path, provider):
     if path.lower().endswith(".csv"):
         return read_combined_csv(path, provider)
@@ -148,6 +202,7 @@ def main():
         "milestoneNote": "milestones are modelling assumptions: FDS 80% and 31D 96% by Apr-27; 62D interim 70% by Apr-27, constitutional 85% by Apr-29 — aligned to the RTT trajectory shape",
         "levers": {"demandGrowthPctYr": growth},
         "sites": cur["sites"],
+        "conversion": build_conversion(cur),
     }
     path = os.path.join(os.path.dirname(__file__), "..", "data", "cancer.json")
     json.dump(out, open(path, "w"), indent=2)

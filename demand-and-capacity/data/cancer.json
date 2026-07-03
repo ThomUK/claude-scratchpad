@@ -378,5 +378,73 @@
         "pct": 63.2
       }
     }
+  },
+  "conversion": {
+    "referralsMo": 3372.0,
+    "treatedMo": 232.5,
+    "convPct": 6.9,
+    "sites": [
+      {
+        "name": "Skin",
+        "referralsMo": 798.0,
+        "treatedMo": 40.0,
+        "convPct": 5.0
+      },
+      {
+        "name": "Breast",
+        "referralsMo": 681.0,
+        "treatedMo": 24.5,
+        "convPct": 3.6
+      },
+      {
+        "name": "Lower GI",
+        "referralsMo": 400.0,
+        "treatedMo": 31.5,
+        "convPct": 7.9
+      },
+      {
+        "name": "Head & neck",
+        "referralsMo": 371.0,
+        "treatedMo": 12.5,
+        "convPct": 3.4
+      },
+      {
+        "name": "Upper GI",
+        "referralsMo": 339.0,
+        "treatedMo": 12.0,
+        "convPct": 3.5
+      },
+      {
+        "name": "Urological",
+        "referralsMo": 301.0,
+        "treatedMo": 66.5,
+        "convPct": 22.1
+      },
+      {
+        "name": "Gynaecological",
+        "referralsMo": 270.0,
+        "treatedMo": 14.5,
+        "convPct": 5.4
+      },
+      {
+        "name": "Other / non-specific",
+        "referralsMo": 127.0,
+        "treatedMo": 4.5,
+        "convPct": 3.5
+      },
+      {
+        "name": "Lung",
+        "referralsMo": 61.0,
+        "treatedMo": 17.0,
+        "convPct": 27.9
+      },
+      {
+        "name": "Haematological",
+        "referralsMo": 24.0,
+        "treatedMo": 9.5,
+        "convPct": 39.6
+      }
+    ],
+    "note": "Treated conversion: first treatments on the urgent-suspected-cancer 62-day pathway \u00f7 USC referrals, same month. The true diagnosis rate sits a little higher \u2014 it excludes patients diagnosed but not (yet) treated, treated elsewhere, or managed by surveillance. Site mapping is by treated cancer type, not referral route."
   }
 }

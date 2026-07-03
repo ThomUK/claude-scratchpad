@@ -102,6 +102,12 @@ console.log('— cancer (CWT) module —');
   ok(close(g.perStd.fds.series.volumeMo[12] / g.perStd.fds.series.volumeMo[0], 1.06, 0.005), 'growth lever compounds to +6% over 12 months');
   const extra62 = s62.extraTimelyMo[j29];
   console.log(`  62-day: extra timely treatments/mo at Apr-29 = ${extra62.toFixed(0)} (${(100 * extra62 / s62.volumeMo[j29]).toFixed(0)}% of cohort)`);
+  // referral → treated-cancer conversion block (seeded from the combined CSV)
+  const conv = cancer.conversion;
+  ok(conv && conv.sites.length >= 8, `conversion block seeded (${conv.sites.length} site groups)`);
+  ok(close(conv.sites.reduce((a, s) => a + s.referralsMo, 0), conv.referralsMo, 0.5), 'site referrals sum to USC total');
+  ok(close(conv.sites.reduce((a, s) => a + s.treatedMo, 0), conv.treatedMo, 0.5), 'site treated sum to USC 62-day total');
+  ok(close(conv.convPct, 100 * conv.treatedMo / conv.referralsMo, 0.06), `treated conversion ${conv.convPct}% (national benchmark ≈ 7%)`);
 }
 
 console.log('— headline numbers (eyeball) —');

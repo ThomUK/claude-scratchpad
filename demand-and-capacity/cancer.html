@@ -59,6 +59,27 @@
     </section>
 
     <section class="panel">
+      <h2>From urgent referral to treated cancer <span class="muted small">(April 2026, per month)</span></h2>
+      <div id="conv-cards" class="cards"></div>
+      <div class="two-col">
+        <div class="chart-block">
+          <h3>Referrals by suspected site → outcome <span class="muted small">(62-day USC pathway)</span></h3>
+          <canvas id="chart-sankey" width="520" height="480"></canvas>
+        </div>
+        <div>
+          <h3>Treated conversion by site</h3>
+          <div class="table-wrap">
+            <table id="conv-table">
+              <thead><tr><th>Suspected site</th><th class="num">Referrals /mo</th><th class="num">Treated /mo</th><th class="num">Conversion</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p class="muted small" id="conv-note"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>Levers</h2>
       <div id="levers" class="levers"></div>
     </section>
