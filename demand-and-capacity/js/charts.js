@@ -16,7 +16,10 @@ export function lineChart(canvas, cal, series, opts = {}) {
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
   const W = wCss, H = hCss;
-  const padL = 58, padR = 88, padT = 14, padB = 30;
+  // right padding sized to the widest series label so end labels never clip
+  ctx.font = '11px system-ui';
+  const maxLabel = Math.max(...series.map((s) => ctx.measureText(s.name).width));
+  const padL = 58, padR = Math.min(Math.ceil(maxLabel) + 24, W * 0.35), padT = 14, padB = 30;
   const iw = W - padL - padR, ih = H - padT - padB;
 
   const all = series.flatMap((s) => s.data);
@@ -52,11 +55,23 @@ export function lineChart(canvas, cal, series, opts = {}) {
     ctx.beginPath();
     s.data.forEach((v, i) => (i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v))));
     ctx.stroke(); ctx.setLineDash([]);
-    // direct end label (text ink, colored chip)
-    const ex = x(cal.length - 1), ey = y(s.data[s.data.length - 1]);
-    ctx.fillStyle = s.color; ctx.fillRect(ex + 6, ey - 4, 8, 8);
+  });
+  // direct end labels (text ink, colored chip), nudged apart where series converge
+  const MINGAP = 14;
+  const labels = series
+    .map((s) => ({ s, ly: y(s.data[s.data.length - 1]) }))
+    .sort((a, b) => a.ly - b.ly);
+  labels.forEach((l, i) => { if (i) l.ly = Math.max(l.ly, labels[i - 1].ly + MINGAP); });
+  const over = labels.length ? labels[labels.length - 1].ly - (padT + ih) : 0;
+  if (over > 0) {
+    labels[labels.length - 1].ly -= over;
+    for (let i = labels.length - 2; i >= 0; i--) labels[i].ly = Math.min(labels[i].ly, labels[i + 1].ly - MINGAP);
+  }
+  const ex = x(cal.length - 1);
+  labels.forEach(({ s, ly }) => {
+    ctx.fillStyle = s.color; ctx.fillRect(ex + 6, ly - 4, 8, 8);
     ctx.fillStyle = INK(); ctx.textAlign = 'left'; ctx.font = '11px system-ui';
-    ctx.fillText(s.name, ex + 18, ey + 4);
+    ctx.fillText(s.name, ex + 18, ly + 4);
   });
 
   // hover layer
