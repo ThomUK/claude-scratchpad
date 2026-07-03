@@ -38,12 +38,15 @@ export function lineChart(canvas, cal, series, opts = {}) {
     ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(W - padR, yy); ctx.stroke();
     ctx.textAlign = 'right'; ctx.fillText(opts.yfmt ? opts.yfmt(v) : fmt(v), padL - 8, yy + 4);
   }
-  // x labels — Aprils
+  // x labels — Aprils for calendar axes, every n-th tick otherwise
   ctx.textAlign = 'center';
-  cal.forEach((ym, i) => { if (ym.endsWith('-04') || i === 0) ctx.fillText(ym.replace('-04', ' Apr').replace('-07', ' Jul'), x(i), H - 10); });
-  // milestone vlines
+  cal.forEach((ym, i) => {
+    const show = opts.xTickEvery ? i % opts.xTickEvery === 0 : ym.endsWith('-04') || i === 0;
+    if (show) ctx.fillText(opts.xTickEvery ? ym : ym.replace('-04', ' Apr').replace('-07', ' Jul'), x(i), H - 10);
+  });
+  // milestone vlines (m.ym for calendar axes, m.i for index axes)
   (opts.milestones || []).forEach((m) => {
-    const i = ymDiff(cal[0], m.ym); if (i < 0 || i >= cal.length) return;
+    const i = m.i ?? ymDiff(cal[0], m.ym); if (i < 0 || i >= cal.length) return;
     ctx.strokeStyle = '#37465a'; ctx.setLineDash([4, 4]);
     ctx.beginPath(); ctx.moveTo(x(i), padT); ctx.lineTo(x(i), padT + ih); ctx.stroke();
     ctx.setLineDash([]);

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Explainers — Demand &amp; Capacity, NUH (RX1)</title>
+  <link rel="stylesheet" href="styles.css?v=dev" />
+</head>
+<body>
+  <header>
+    <h1>Explainers</h1>
+    <nav class="crumbs"><a href="./">← Elective (RTT) spine</a> · <a href="diagnostics.html">Diagnostics (DM01)</a> · <a href="cancer.html">Cancer (CWT)</a></nav>
+    <p class="subtitle">
+      Short, interactive explainers for the concepts the model is built on. First up:
+      why RTT/DM01 and the cancer standards <em>feel</em> like different worlds — and the
+      single queueing model that converts between them.
+    </p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>1 &nbsp;One queue, two cameras — census vs flow standards</h2>
+      <p>
+        Every waiting-time standard watches the same thing: a queue with referrals arriving at
+        rate <strong>λ</strong> and patients leaving when treated. The standards differ only in
+        <em>where the camera points</em>.
+      </p>
+      <div class="chart-block">
+        <svg viewBox="0 0 1040 300" role="img" aria-label="Diagram: referrals flow into a waiting list photographed by the census camera; completions leave past the flow camera" style="width:100%;height:auto;display:block">
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#9aa7b4"/>
+            </marker>
+          </defs>
+          <!-- inflow -->
+          <line x1="30" y1="150" x2="180" y2="150" stroke="#9aa7b4" stroke-width="2" marker-end="url(#arr)"/>
+          <text x="100" y="132" fill="#e6edf3" font-size="15" text-anchor="middle">referrals</text>
+          <text x="100" y="176" fill="#9aa7b4" font-size="13" text-anchor="middle">λ per week</text>
+          <!-- the stock -->
+          <rect x="190" y="60" width="420" height="180" rx="12" fill="#0f1620" stroke="#2a3441"/>
+          <text x="400" y="92" fill="#e6edf3" font-size="15" text-anchor="middle" font-weight="600">the waiting list (the stock)</text>
+          <text x="400" y="112" fill="#9aa7b4" font-size="13" text-anchor="middle">L people, mean wait W · Little’s Law: L = λ × W</text>
+          <!-- dots: waiters shaded by age -->
+          <g>
+            <circle cx="240" cy="160" r="7" fill="#2b97d6"/><circle cx="270" cy="190" r="7" fill="#2b97d6"/>
+            <circle cx="300" cy="150" r="7" fill="#2b97d6"/><circle cx="330" cy="200" r="7" fill="#2b97d6"/>
+            <circle cx="360" cy="165" r="7" fill="#2b97d6"/><circle cx="395" cy="195" r="7" fill="#2b97d6"/>
+            <circle cx="425" cy="155" r="7" fill="#c08a1e"/><circle cx="455" cy="195" r="7" fill="#c08a1e"/>
+            <circle cx="490" cy="160" r="7" fill="#c08a1e"/><circle cx="525" cy="195" r="7" fill="#f85149"/>
+            <circle cx="555" cy="160" r="7" fill="#f85149"/>
+          </g>
+          <text x="400" y="228" fill="#9aa7b4" font-size="12" text-anchor="middle">short waits <tspan fill="#2b97d6">●</tspan> · medium <tspan fill="#c08a1e">●</tspan> · long waits <tspan fill="#f85149">●</tspan></text>
+          <!-- outflow -->
+          <line x1="610" y1="150" x2="790" y2="150" stroke="#9aa7b4" stroke-width="2" marker-end="url(#arr)"/>
+          <text x="700" y="132" fill="#e6edf3" font-size="15" text-anchor="middle">completions</text>
+          <text x="700" y="176" fill="#9aa7b4" font-size="13" text-anchor="middle">clock stops / treatments</text>
+          <!-- census camera -->
+          <g transform="translate(345, 12)">
+            <rect x="0" y="0" width="110" height="30" rx="6" fill="#12283a" stroke="#2b97d6"/>
+            <text x="55" y="20" fill="#4cc2ff" font-size="13" text-anchor="middle" font-weight="600">census camera</text>
+          </g>
+          <line x1="400" y1="42" x2="400" y2="58" stroke="#2b97d6" stroke-dasharray="3 3"/>
+          <text x="640" y="24" fill="#9aa7b4" font-size="12.5">photographs <tspan fill="#e6edf3">everyone still waiting</tspan> each month:</text>
+          <text x="640" y="42" fill="#9aa7b4" font-size="12.5">“what share of the stock is under T weeks?” — <tspan fill="#4cc2ff">RTT, DM01</tspan></text>
+          <!-- flow camera -->
+          <g transform="translate(645, 250)">
+            <rect x="0" y="0" width="100" height="30" rx="6" fill="#12331c" stroke="#3fae52"/>
+            <text x="50" y="20" fill="#3fb950" font-size="13" text-anchor="middle" font-weight="600">flow camera</text>
+          </g>
+          <line x1="700" y1="248" x2="700" y2="160" stroke="#3fae52" stroke-dasharray="3 3"/>
+          <text x="40" y="262" fill="#9aa7b4" font-size="12.5">times <tspan fill="#e6edf3">each completion once</tspan>, as it crosses the line:</text>
+          <text x="40" y="280" fill="#9aa7b4" font-size="12.5">“what share of this month’s cohort finished within T?” — <tspan fill="#3fb950">cancer FDS / 31-day / 62-day</tspan></text>
+        </svg>
+      </div>
+      <div class="two-col">
+        <div>
+          <h3 style="color:var(--accent)">Census standards — RTT &amp; DM01</h3>
+          <p class="small">A monthly <strong>photograph of the stock</strong>. Everyone still waiting is
+            counted <em>every month until they leave</em>, so long waiters accumulate in the metric.
+            RTT: 92% of the list under 18 weeks. DM01: &lt;1% of the list over 6 weeks. You can run
+            this standard because a register (the PTL) exists to photograph.</p>
+        </div>
+        <div>
+          <h3 style="color:var(--good)">Flow standards — cancer CWT</h3>
+          <p class="small">A <strong>stopwatch at the exit</strong>. Each completed pathway is scored
+            once, in the month it completes — then it leaves the metric forever. FDS: 80% told
+            within 28 days. 62-day: 85% treated within 62 days. There is no published stock at
+            all — only the timed cohort.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>2 &nbsp;The unifying model — converting between the two</h2>
+      <p>
+        In steady state the two cameras are linked by two facts, and together they form a
+        mental conversion recipe:
+      </p>
+      <p class="data-note" style="font-size:0.95rem">
+        <strong>① Little’s Law:</strong> list size = demand × mean wait &nbsp;(L = λ·W)<br/>
+        <strong>② Memoryless queue:</strong> if selection is roughly random (not strict FIFO), both cameras
+        read the <em>same</em> number: &nbsp;% within T = 1 − e<sup>−T/W</sup>
+      </p>
+      <p>
+        So any standard — census or flow — can be translated into a <strong>mean wait</strong>, and via
+        Little’s Law into a <strong>sustainable list size</strong>: <em>W = −T / ln(1 − p)</em>. That is
+        the conversion this model runs on: the RTT and DM01 modules apply it to the photographed stock,
+        the cancer module applies it to the timed cohort — one queueing engine, two camera angles.
+      </p>
+      <div class="table-wrap">
+        <table id="conv-standards">
+          <thead><tr>
+            <th>Standard</th><th class="num">Camera</th><th class="num">Target</th><th class="num">Window T</th>
+            <th class="num">Implied mean wait W</th><th class="num">Sustainable list per 100 referrals/wk</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="muted small">Reading the table: a <em>harder</em> percentage or a <em>shorter</em> window forces a shorter
+        mean wait, and via Little’s Law a smaller queue relative to demand. The cancer 62-day standard, read
+        through the same lens, is far more demanding than RTT-92 — which is why cancer pathways run on
+        booking disciplines and escalation rather than list management alone. (Flow standards have no
+        published stock; the “list” column is what an equivalent census queue would look like.)</p>
+    </section>
+
+    <section class="panel">
+      <h2>3 &nbsp;Same queue, two readings — when the cameras disagree</h2>
+      <p>
+        The equality in ② holds when waits are roughly exponential. Booking discipline changes the
+        <em>shape</em>: strict FIFO makes everyone wait about the same time. Drag the shape slider from
+        memoryless towards FIFO and watch the two cameras separate — the flow camera sees a sharp
+        all-or-nothing step around the mean wait, while the census camera always sees a spread of ages.
+      </p>
+      <div id="shape-cards" class="cards"></div>
+      <div class="levers" id="shape-levers"></div>
+      <div class="chart-block">
+        <h3>Share within x weeks — flow (completions) vs census (stock) <span class="muted small">(vertical line = the standard’s window T)</span></h3>
+        <canvas id="chart-shape" width="1040" height="360"></canvas>
+      </div>
+      <p class="muted small">Two rules of thumb. <strong>① FIFO-like booking flatters the census camera at every
+        threshold</strong>: the stock is a fresh, evenly-aged mix (at strict FIFO, uniform between 0 and the
+        mean wait — the census reads ≈ T/W), while the flow camera sees an all-or-nothing step at the mean
+        wait — a FIFO pathway whose mean sits just past the window reads near-zero on flow yet respectable
+        on census. <strong>② The reverse asymmetry is the stagnant tail</strong> (not shown by the slider):
+        patients who never complete never appear on the flow camera at all, but sit in the census
+        photograph month after month — so a long-waiter backlog drags the census while barely denting the
+        flow. Neither camera is wrong; they answer different questions.</p>
+    </section>
+
+    <section class="panel">
+      <h2>4 &nbsp;Same action, opposite optics — the clearance drive</h2>
+      <p>
+        The cameras also disagree <em>in time</em>. Here a queue with a heavy backlog runs a
+        clearance drive: for six months, extra capacity treats the <strong>longest waiters first</strong>.
+        Watch the same events through both cameras:
+      </p>
+      <div class="chart-block">
+        <h3>A backlog clearance drive, read by both cameras <span class="muted small">(% within 18 weeks)</span></h3>
+        <canvas id="chart-drive" width="1040" height="360"></canvas>
+      </div>
+      <p class="muted small">
+        During the drive the <strong>census</strong> reading climbs — long waiters are leaving the
+        photograph. The <strong>flow</strong> reading collapses — this month’s completions <em>are</em> the
+        long waiters. After the drive, both settle high. The same is true in reverse: a growing backlog
+        shows up in the census immediately but poisons the flow metric only later, as those waits
+        complete. <strong>Mental conversion: the flow camera is the census camera plus a lag — it reports
+        on decisions the system made months ago, while the census reports on the stock as it stands.</strong>
+        This is why a trust mid-recovery can show an improving RTT list while its 62-day cancer
+        performance is still deteriorating — and why neither number alone tells the story.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Method: Fong et al. (2022) / <a href="https://nhs-r-community.github.io/NHSRwaitinglist/" target="_blank" rel="noopener">NHSRwaitinglist</a>;
+      census-age distribution from renewal theory (the equilibrium distribution of the completed-wait
+      distribution). Maths in <code>js/explainmath.js</code>, checks in <code>tests/engine.test.mjs</code>.
+      Illustrative teaching model — not operational advice.</p>
+  </footer>
+
+  <script type="module" src="js/explain.js?v=dev"></script>
+</body>
+</html>

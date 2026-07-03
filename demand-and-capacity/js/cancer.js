@@ -145,8 +145,16 @@ function renderConversion() {
 
 function drawSankey(canvas, c) {
   const dpr = window.devicePixelRatio || 1;
-  const W = canvas.clientWidth || canvas.width;
-  const H = canvas.getAttribute('height') * Math.min(1.15, Math.max(0.85, W / canvas.getAttribute('width')));
+  // cache the design size: canvas.width/height are overwritten with
+  // dpr-scaled values below, so re-reading them on redraw (mobile URL-bar
+  // resizes) would compound the scaling and balloon the canvas
+  if (!canvas.dataset.baseW) {
+    canvas.dataset.baseW = canvas.getAttribute('width');
+    canvas.dataset.baseH = canvas.getAttribute('height');
+  }
+  const baseW = +canvas.dataset.baseW, baseH = +canvas.dataset.baseH;
+  const W = canvas.clientWidth || baseW;
+  const H = baseH * Math.min(1.15, Math.max(0.85, W / baseW));
   canvas.width = W * dpr; canvas.height = H * dpr;
   canvas.style.height = `${H}px`;
   const ctx = canvas.getContext('2d');

@@ -114,6 +114,19 @@ FDS-volume growth **−0.7%/yr** from the pre-EPR pair (the EPR year shows
 | 4 — UEC | ED four-hour + handover; bed interaction with the elective model |
 | 5 — Workforce | Medical & nursing WTE as the cross-cutting constraint |
 
+## Explainers
+
+`explainers.html` hosts interactive explainers for the concepts under the
+model. The first covers **census standards (RTT/DM01) vs flow standards
+(cancer CWT)**: one queue watched by two cameras — a monthly photograph of
+the stock vs a stopwatch at the exit — unified by Little's Law (L = λ·W)
+and, for memoryless queues, the identity %-within-T = 1 − e^(−T/W), under
+which both cameras read the same number. Interactive panels show when they
+diverge: booking-discipline shape (Erlang k, memoryless → FIFO) and
+transients (a backlog clearance drive lifts the census reading while it
+tanks the flow reading — same events, opposite optics). Maths in
+`js/explainmath.js`, checks in the test suite.
+
 ## Running locally
 
 ```sh

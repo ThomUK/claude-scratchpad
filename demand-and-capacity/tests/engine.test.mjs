@@ -110,6 +110,26 @@ console.log('— cancer (CWT) module —');
   ok(close(conv.convPct, 100 * conv.treatedMo / conv.referralsMo, 0.06), `treated conversion ${conv.convPct}% (national benchmark ≈ 7%)`);
 }
 
+console.log('— explainer maths (census vs flow) —');
+{
+  const { erlangCdf, censusCdf, runClearanceSim } = await import('../js/explainmath.js');
+  // memoryless (k=1): both cameras read 1 − e^(−T/W)
+  const W = 10, T = 18;
+  const expct = 1 - Math.exp(-T / W);
+  ok(close(erlangCdf(T, 1, W), expct, 1e-9), `k=1 flow CDF = 1 − e^(−T/W) = ${(100 * expct).toFixed(1)}%`);
+  ok(close(censusCdf(T, 1, W), expct, 2e-3), `k=1 census CDF agrees (memoryless: cameras read the same)`);
+  // strict-FIFO limit (large k): flow steps at W, census is ~linear T/W below W
+  ok(erlangCdf(0.8 * W, 8, W) < 0.35 && erlangCdf(1.3 * W, 8, W) > 0.75, 'k=8 flow CDF steps around the mean wait');
+  ok(close(censusCdf(0.5 * W, 8, W), 0.5, 0.05), 'k=8 census CDF ≈ T/W below the mean (linear ages)');
+  // Erlang mean is W regardless of k (integral of survival = mean)
+  ok(close(censusCdf(1000, 4, W) * W, W, 0.01), 'census CDF normalises (∫S = W)');
+  // clearance drive: census improves during the drive while flow collapses, both end high
+  const sim = runClearanceSim();
+  ok(sim.censusPct[50] > sim.censusPct[25] + 10, `drive lifts census reading (${sim.censusPct[25].toFixed(0)}% → ${sim.censusPct[50].toFixed(0)}%)`);
+  ok(sim.flowPct[40] < sim.flowPct[24] - 20, `drive tanks flow reading (${sim.flowPct[24].toFixed(0)}% → ${sim.flowPct[40].toFixed(0)}%)`);
+  ok(sim.censusPct[103] > 78 && sim.flowPct[103] > 78, `both cameras read high after the drive (census ${sim.censusPct[103].toFixed(0)}%, flow ${sim.flowPct[103].toFixed(0)}%)`);
+}
+
 console.log('— headline numbers (eyeball) —');
 console.log(`  peak required stops/mo: ${Math.round(Math.max(...res.trust.requiredStopsMo)).toLocaleString()} vs current ${Math.round(res.trust.currentStopsMo[0]).toLocaleString()}`);
 console.log(`  list: ${Math.round(res.trust.list[0]).toLocaleString()} → ${Math.round(res.trust.list[res.cal.length - 1]).toLocaleString()} (Mar-30)`);
