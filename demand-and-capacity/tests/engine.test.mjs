@@ -53,6 +53,19 @@ ok(worst < 0.75, `per-TFC implied(t=0) matches published pct18 (worst |Δ| = ${w
   const flaggedN = baseline.tfcs.filter((t) => t.anomalies?.length).length;
   ok(flaggedN >= 3 && flaggedN < baseline.tfcs.length / 2,
     `${flaggedN}/${baseline.tfcs.length} TFCs flagged — enough to matter, not so many the warning dilutes`);
+
+  // recording-vs-real witness seed (data/recording.json, built by ingest_recording.py)
+  const rec = JSON.parse(readFileSync(new URL('../data/recording.json', import.meta.url)));
+  const wAdm = rec.witnesses.find((w) => w.label.includes('ADMITTED'));
+  const wEl = rec.witnesses.find((w) => w.label.includes('elective'));
+  ok(rec.witnesses.length === 5 && wAdm.pct < -25 && wEl.pct > -10,
+    `recorded admitted stops ${wAdm.pct}% vs real elective ${wEl.pct}% — the recording gap`);
+  ok(wAdm.pct - wEl.pct < -20, `the recorded-vs-real gap exceeds 20pp (${(wAdm.pct - wEl.pct).toFixed(1)}pp)`);
+  const nov = rec.hesYoY.find((m) => m.goLive);
+  ok(nov && nov.month === 'Nov-25' && nov.elective < -10 && nov.elective > -20,
+    `go-live month real dip is real but bounded (elective ${nov.elective}%)`);
+  const lastRtt = rec.rttMonths[rec.rttMonths.length - 1];
+  ok(lastRtt.removalsPctRefs > 25, `latest implied removals ${lastRtt.removalsPctRefs}% of referrals — the surge persists`);
 }
 // per-TFC calibrated growth is used where seeded; trust fallback otherwise
 {

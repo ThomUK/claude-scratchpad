@@ -10,11 +10,13 @@ let scenario = { levers: {}, tfcOverrides: {} };   // user deltas over the basel
 let result = null;
 let selectedTfc = null;
 let kRangeText = '';
+let recording = null;   // 'where did the clock stops go?' witness seed
 
 // --- boot -------------------------------------------------------------------
 (async function init() {
   try {
     baseline = await (await fetch('data/baseline.json?v=dev', { cache: 'no-cache' })).json();
+    try { recording = await (await fetch('data/recording.json?v=dev', { cache: 'no-cache' })).json(); } catch { recording = null; }
     // derived k range, computed from the seed so the prose cannot drift from the data
     const keep = 1 - (baseline.levers.otherRemovalsPct ?? 0);
     const ks = baseline.tfcs.map((t) => shapeFactor(t.list, t.pct18 / 100, t.referralsWk * keep));
@@ -23,6 +25,7 @@ let kRangeText = '';
     document.getElementById('prov-body').innerHTML = provenanceHtml(baseline._provenance, baseline.levers.sourceNote);
     buildLevers();
     recompute();
+    renderRecording();
     wire();
     setStatus('Model ready — every figure is editable', 'ready');
   } catch (e) {
@@ -105,6 +108,89 @@ function drawTornado(canvas, rows, central, opts = {}) {
     ctx.fillText(loTxt, Math.max(x(lo) - 5, ctx.measureText(loTxt).width + 2), yMid + 4);
     ctx.textAlign = 'left';
     ctx.fillText(hiTxt, Math.min(x(hi) + 5, W - ctx.measureText(hiTxt).width - 2), yMid + 4);
+  });
+}
+
+// --- 'where did the clock stops go?' — recorded vs real activity ---------------
+// Static evidence panel from data/recording.json (built by ingest_recording.py
+// from the committed RTT / HES-MAR / DM01 / CWT files). Renders once.
+function renderRecording() {
+  if (!recording) return;
+  const r = recording;
+  const latest = r.rttMonths[r.rttMonths.length - 1];
+  const ref = r.rttMonths.find((m) => m.label.includes('April-2025'));
+  const admFall = 100 * (latest.admWd / ref.admWd - 1);
+  const realEl = r.witnesses.find((w) => w.label.includes('elective')).pct;
+
+  $('rec-cards').innerHTML = `
+    <div class="stat stat--bad"><div class="v">${(100 * (latest.stopsWd / ref.stopsWd - 1)).toFixed(0)}%</div>
+      <div class="l">Recorded clock stops vs pre-EPR (admitted: ${admFall.toFixed(0)}%)</div></div>
+    <div class="stat stat--good"><div class="v">${realEl > 0 ? '+' : ''}${realEl.toFixed(1)}%</div>
+      <div class="l">REAL elective admissions (HES activity return, Jan/Feb-26 YoY)</div></div>
+    <div class="stat stat--warn"><div class="v">${latest.removalsPctRefs?.toFixed(0)}%</div>
+      <div class="l">Implied removals rate now (historic ~10%; model seeds ${r.seededRemovalsPct}%)</div></div>
+    <div class="stat"><div class="v">${fmt(latest.list)}</div>
+      <div class="l">List — flat for 2+ years, held by removals rather than treatment</div></div>`;
+
+  drawWitnessBars($('chart-witness'), r.witnesses);
+
+  $('hes-table').querySelector('tbody').innerHTML = r.hesYoY.map((m) => {
+    const cell = (v) => v == null ? '<td class="num">—</td>'
+      : `<td class="num"><span class="pill pill--${v < -10 ? 'bad' : v < -3 ? 'warn' : 'good'}">${v > 0 ? '+' : ''}${v.toFixed(1)}%</span></td>`;
+    return `<tr${m.goLive ? ' style="box-shadow: inset 3px 0 0 var(--bad)"' : ''}>
+      <td>${m.month}${m.goLive ? ' <span class="muted small">go-live</span>' : ''}</td>
+      ${cell(m.elective)}${cell(m.opFirst)}${cell(m.opFu)}</tr>`;
+  }).join('');
+
+  $('identity-table').querySelector('tbody').innerHTML = r.rttMonths.map((m) => {
+    const lbl = m.label.replace('January-', 'Jan-').replace('February-', 'Feb-').replace('March-', 'Mar-')
+      .replace('April-', 'Apr-').replace('May-', 'May-').replace('2026', '26').replace('2025', '25').replace('2024', '24');
+    const rem = m.removalsPctRefs == null ? '—'
+      : `${fmt(m.impliedRemovalsMo)}/mo (${m.removalsPctRefs.toFixed(0)}%)${lbl === 'Mar-26' ? ' *' : ''}`;
+    return `<tr><td>${lbl}</td><td class="num">${fmt(m.list)}</td>
+      <td class="num">${fmt(m.refsWd)}</td><td class="num">${fmt(m.stopsWd)}</td>
+      <td class="num"><span class="pill pill--${m.stopsPctRefs > 85 ? 'good' : m.stopsPctRefs > 78 ? 'warn' : 'bad'}">${m.stopsPctRefs.toFixed(0)}%</span></td>
+      <td class="num">${rem}</td></tr>`;
+  }).join('');
+
+  $('rec-note').textContent = `Reading the evidence: pre-EPR, ~90% of referrals left the list via a recorded clock stop. Since go-live that share is ~70%, and the balance exits as validation removals — ${fmt(latest.impliedRemovalsMo)}/mo (${latest.removalsPctRefs.toFixed(0)}% of referrals) in the latest month, with no sign of decay six months on. Meanwhile real activity barely moved: elective admissions ${realEl.toFixed(1)}% YoY (after a one-month ${r.hesYoY.find((m) => m.goLive)?.elective.toFixed(0)}% go-live dip), diagnostics ${r.witnesses.find((w) => w.label.includes('diagnostic')).pct.toFixed(1)}%, cancer treatments ${r.witnesses.find((w) => w.label.includes('cancer')).pct > 0 ? '+' : ''}${r.witnesses.find((w) => w.label.includes('cancer')).pct.toFixed(1)}%. The coherent story: treated patients' pathways are not being closed as completions in the new EPR and exit later via validation — so the admitted-stops collapse is mostly a recording failure, and the cheapest capacity gain available is fixing the closure workflow, not buying sessions. Model implication: the +uplift headline compares required activity against RECORDED delivery, so it is an upper reading; the removals lever (drag it to ~28%) shows the alternative world where today's leak is permanent. HES scope differs from RTT (planned/non-RTT work included) — trends, not levels, are the evidence. Note the OP follow-up decline PRE-DATES the go-live (−4..−13% through spring/summer 2025) — that looks like deliberate outpatient transformation (PIFU), not an EPR effect. * Mar-26 includes the one-off EPR migration purge (−8,536), so its implied removals overstate the underlying rate; Jan-26 has no identity row because Dec-25 is not in the witness set.`;
+}
+
+function drawWitnessBars(canvas, rows) {
+  if (!canvas.dataset.baseW) { canvas.dataset.baseW = canvas.getAttribute('width'); canvas.dataset.baseH = canvas.getAttribute('height'); }
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.clientWidth || +canvas.dataset.baseW;
+  const H = +canvas.dataset.baseH;
+  canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.height = `${H}px`;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  ctx.clearRect(0, 0, W, H);
+  ctx.font = '11.5px system-ui';
+  const narrow = W < 640;
+  const padL = narrow ? 10 : 300, padR = 60, padT = 12, padB = 6;
+  const vmin = Math.min(...rows.map((r) => r.pct), 0) * 1.12;
+  const vmax = Math.max(...rows.map((r) => r.pct), 0) * 1.4 + 2;
+  const x = (v) => padL + ((v - vmin) / (vmax - vmin)) * (W - padL - padR);
+  const rh = (H - padT - padB) / rows.length;
+  // zero line
+  ctx.strokeStyle = '#37465a'; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(x(0), padT - 4); ctx.lineTo(x(0), H - padB); ctx.stroke();
+  ctx.setLineDash([]);
+  rows.forEach((r, i) => {
+    const yMid = padT + rh * i + (narrow ? rh * 0.72 : rh / 2);
+    ctx.fillStyle = r.kind === 'recorded' ? 'rgba(248, 81, 73, 0.55)' : 'rgba(63, 174, 82, 0.55)';
+    const x0 = Math.min(x(0), x(r.pct)), x1 = Math.max(x(0), x(r.pct));
+    ctx.fillRect(x0, yMid - 9, Math.max(2, x1 - x0), 18);
+    ctx.fillStyle = css('--text');
+    if (narrow) { ctx.textAlign = 'left'; ctx.fillText(r.label, padL, padT + rh * i + 13); }
+    else { ctx.textAlign = 'right'; ctx.fillText(r.label, padL - 10, yMid + 4); }
+    const txt = `${r.pct > 0 ? '+' : ''}${r.pct.toFixed(1)}%`;
+    ctx.textAlign = r.pct < 0 ? 'right' : 'left';
+    ctx.fillText(txt,
+      r.pct < 0 ? Math.max(x0 - 5, ctx.measureText(txt).width + 2)
+                : Math.min(x1 + 5, W - ctx.measureText(txt).width - 2),
+      yMid + 4);
   });
 }
 
@@ -206,7 +292,7 @@ function renderCharts() {
   ], { milestones: MS_LABELS, yfmt: (v) => `${(v / 1000).toFixed(1)}k`,
        band: { lower: t.demandMo, upper: t.requiredStopsMo, color: 'rgba(192, 138, 30, 0.16)' },
        gapMarker: { i: iPk, from: t.currentStopsMo[iPk], to: t.requiredStopsMo[iPk], label: `+${upliftPct.toFixed(1)}% vs today` } });
-  $('stops-note').textContent = `The shaded wedge decomposes the requirement: everything between effective demand and the required line is BACKLOG CLEARANCE — that is where the uplift goes. The wedge is deepest before each milestone and closes after Apr-29, when required activity settles back towards demand. The labelled bracket marks the headline uplift at the peak month (${cal[iPk]}): required clock stops vs the Apr-26 delivery rate — the same +${upliftPct.toFixed(1)}% the sensitivity tornado below stress-tests.`;
+  $('stops-note').textContent = `The shaded wedge decomposes the requirement: everything between effective demand and the required line is BACKLOG CLEARANCE — that is where the uplift goes. The wedge is deepest before each milestone and closes after Apr-29, when required activity settles back towards demand. The labelled bracket marks the headline uplift at the peak month (${cal[iPk]}): required clock stops vs the Apr-26 delivery rate — the same +${upliftPct.toFixed(1)}% the sensitivity tornado below stress-tests. Caveat: the 'held at Apr-26 rate' line is RECORDED delivery, which post-EPR understates real activity — see 'Where did the clock stops go?' below.`;
   $('band-note').textContent = `List chart band: the demand-growth calibration question — the lower edge uses the raw Apr→Apr pair (${baseline.levers.demandGrowthRawPctYr}%/yr, which reads low because April 2024 had 21 working days vs 20 in 2025), the line uses the working-day-adjusted ${baseline.levers.demandGrowthPctYr}%/yr. Demand is most likely growing, not falling.`;
 }
 

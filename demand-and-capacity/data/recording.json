@@ -1,0 +1,205 @@
+{
+  "_provenance": {
+    "provider": "RX1",
+    "sources": [
+      "RTT full extracts (Apr-24, Apr-25, Jan..May-26)",
+      "HES/MAR provider activity (Apr-18..Mar-25 + 2025-26 M11)",
+      "DM01 provider files (Apr-25, Apr-26, May-26)",
+      "CWT provider data (Apr-25, Apr-26, May-26 provisional)"
+    ],
+    "dataQuality": "Four independent witnesses on the same question. HES/MAR counts real activity from the activity return (the MAR collection was retired; the same data now publishes inside NHS Digital's Provisional Monthly HES) \u2014 it cannot be affected by RTT pathway-closure recording. HES latest month is Feb-26 (M11); CWT May-26 is provisional. Elective-admission and RTT-completion SCOPES differ (HES includes planned/non-RTT work), so levels are not comparable \u2014 the year-on-year TRENDS are the evidence."
+  },
+  "goLive": "2025-11",
+  "rttMonths": [
+    {
+      "label": "April-2024",
+      "wd": 21,
+      "list": 86007,
+      "refsWd": 864,
+      "stopsWd": 791,
+      "admWd": 162.7,
+      "nonWd": 628.4,
+      "stopsPctRefs": 91.5
+    },
+    {
+      "label": "April-2025",
+      "wd": 20,
+      "list": 83094,
+      "refsWd": 885,
+      "stopsWd": 794,
+      "admWd": 160.2,
+      "nonWd": 633.9,
+      "stopsPctRefs": 89.8
+    },
+    {
+      "label": "January-2026",
+      "wd": 21,
+      "list": 92790,
+      "refsWd": 902,
+      "stopsWd": 615,
+      "admWd": 84.6,
+      "nonWd": 530.1,
+      "stopsPctRefs": 68.2
+    },
+    {
+      "label": "February-2026",
+      "wd": 20,
+      "list": 91723,
+      "refsWd": 921,
+      "stopsWd": 668,
+      "admWd": 109.0,
+      "nonWd": 558.7,
+      "stopsPctRefs": 72.5,
+      "impliedRemovalsMo": 6133,
+      "removalsPctRefs": 33.3
+    },
+    {
+      "label": "March-2026",
+      "wd": 22,
+      "list": 83187,
+      "refsWd": 928,
+      "stopsWd": 688,
+      "admWd": 99.4,
+      "nonWd": 588.7,
+      "stopsPctRefs": 74.1,
+      "impliedRemovalsMo": 13822,
+      "removalsPctRefs": 67.7
+    },
+    {
+      "label": "April-2026",
+      "wd": 20,
+      "list": 85166,
+      "refsWd": 956,
+      "stopsWd": 656,
+      "admWd": 99.2,
+      "nonWd": 556.5,
+      "stopsPctRefs": 68.6,
+      "impliedRemovalsMo": 4019,
+      "removalsPctRefs": 21.0
+    },
+    {
+      "label": "May-2026",
+      "wd": 19,
+      "list": 84603,
+      "refsWd": 943,
+      "stopsWd": 666,
+      "admWd": 113.1,
+      "nonWd": 553.2,
+      "stopsPctRefs": 70.7,
+      "impliedRemovalsMo": 5821,
+      "removalsPctRefs": 32.5
+    }
+  ],
+  "hesYoY": [
+    {
+      "month": "Apr-25",
+      "goLive": false,
+      "elective": -0.0,
+      "opFirst": 0.8,
+      "opFu": -10.8
+    },
+    {
+      "month": "May-25",
+      "goLive": false,
+      "elective": 0.0,
+      "opFirst": -3.1,
+      "opFu": -12.8
+    },
+    {
+      "month": "Jun-25",
+      "goLive": false,
+      "elective": 4.1,
+      "opFirst": 4.2,
+      "opFu": -4.1
+    },
+    {
+      "month": "Jul-25",
+      "goLive": false,
+      "elective": 4.2,
+      "opFirst": 3.7,
+      "opFu": -8.2
+    },
+    {
+      "month": "Aug-25",
+      "goLive": false,
+      "elective": -3.7,
+      "opFirst": -6.4,
+      "opFu": -10.2
+    },
+    {
+      "month": "Sep-25",
+      "goLive": false,
+      "elective": 5.0,
+      "opFirst": 6.5,
+      "opFu": -0.2
+    },
+    {
+      "month": "Oct-25",
+      "goLive": false,
+      "elective": -0.7,
+      "opFirst": -11.3,
+      "opFu": -8.5
+    },
+    {
+      "month": "Nov-25",
+      "goLive": true,
+      "elective": -13.4,
+      "opFirst": -22.8,
+      "opFu": -16.5
+    },
+    {
+      "month": "Dec-25",
+      "goLive": false,
+      "elective": 2.3,
+      "opFirst": -11.2,
+      "opFu": -7.3
+    },
+    {
+      "month": "Jan-26",
+      "goLive": false,
+      "elective": -5.2,
+      "opFirst": -12.9,
+      "opFu": -8.5
+    },
+    {
+      "month": "Feb-26",
+      "goLive": false,
+      "elective": -4.0,
+      "opFirst": -7.2,
+      "opFu": -4.0
+    }
+  ],
+  "witnesses": [
+    {
+      "label": "RTT recorded ADMITTED clock stops",
+      "pct": -29.4,
+      "kind": "recorded",
+      "basis": "May-26 vs Apr-25, per working day (160.2 \u2192 113.1/wd)"
+    },
+    {
+      "label": "RTT recorded clock stops (all)",
+      "pct": -16.1,
+      "kind": "recorded",
+      "basis": "May-26 vs Apr-25, per working day (794 \u2192 666/wd)"
+    },
+    {
+      "label": "REAL elective admissions (HES)",
+      "pct": -4.6,
+      "kind": "real",
+      "basis": "Jan+Feb-26 mean YoY \u2014 activity return, independent of RTT closure"
+    },
+    {
+      "label": "REAL diagnostic tests (DM01)",
+      "pct": -2.2,
+      "kind": "real",
+      "basis": "May-26 vs Apr-25, per working day (1,512 \u2192 1,479/wd)"
+    },
+    {
+      "label": "REAL cancer treatments (CWT 31-day)",
+      "pct": 9.1,
+      "kind": "real",
+      "basis": "May-26 vs Apr-25, per working day (46 \u2192 50/wd)"
+    }
+  ],
+  "seededRemovalsPct": 10.7
+}

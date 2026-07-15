@@ -69,6 +69,43 @@
     </section>
 
     <section class="panel">
+      <h2>Where did the clock stops go? <span class="muted small">(recorded completions vs real activity, across the Nov-25 EPR go-live)</span></h2>
+      <p class="small">
+        Recorded clock stops fell hard after the EPR go-live — but four independent public
+        counters of the <em>same physical activity</em> say the hospital kept working. The exits
+        didn't stop happening; they moved columns, from recorded completions into validation
+        removals. This panel is why the "held at Apr-26 rate" line above should be read as a
+        <strong>recording floor, not a capacity ceiling</strong>.
+      </p>
+      <div id="rec-cards" class="cards"></div>
+      <div class="chart-block">
+        <h3>Five witnesses, one question <span class="muted small">(change vs pre-EPR; red = recorded RTT, green = real activity)</span></h3>
+        <canvas id="chart-witness" width="1040" height="230"></canvas>
+      </div>
+      <div class="two-col">
+        <div>
+          <h3>Real activity, year on year <span class="muted small">(HES/MAR activity return)</span></h3>
+          <div class="table-wrap">
+            <table id="hes-table">
+              <thead><tr><th>Month</th><th class="num">Elective admissions</th><th class="num">OP firsts</th><th class="num">OP follow-ups</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <h3>The list identity, month by month <span class="muted small">(RTT extracts)</span></h3>
+          <div class="table-wrap">
+            <table id="identity-table">
+              <thead><tr><th>Month</th><th class="num">List</th><th class="num">Refs /wd</th><th class="num">Stops /wd</th><th class="num">Stops÷refs</th><th class="num">Implied removals</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <p class="muted small" id="rec-note"></p>
+    </section>
+
+    <section class="panel">
       <h2>Sensitivity of the headline <span class="muted small">(same challenges, two metrics)</span></h2>
       <h3>Peak capacity uplift <span class="muted small">(the +% headline)</span></h3>
       <canvas id="chart-tornado" width="1040" height="240"></canvas>

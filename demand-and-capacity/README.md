@@ -105,6 +105,22 @@ Two modelling consequences of using real (non-idealised) data:
   in X02 at the same moment. The recommended checks (e-RS routes from the
   step month, EPR specialty mapping, PTL audit of reopens) are stated on
   the page.
+- **Recorded vs real delivery ("where did the clock stops go?")**: recorded
+  clock stops fell ~16% (admitted ~29%) after the Nov-25 EPR go-live while
+  four independent public counters of real activity barely moved — HES/MAR
+  elective admissions −4.6% YoY (after a one-month −13% go-live dip), DM01
+  tests −2.2%, CWT 31-day treatments +9.1% — and the list has been held flat
+  by validation removals running at ~32% of referrals (historic ~10%), with
+  no decay six months on. `ingest_recording.py` distils the four witnesses
+  from the committed source files into `data/recording.json`, and a panel on
+  the RTT page renders the witness comparison, the HES year-on-year table and
+  the monthly list identity. Conclusion stated on the page: the admitted-
+  stops collapse is dominated by pathway-closure RECORDING failure (treated
+  patients exiting via validation instead of recorded completion), so the
+  current-delivery denominator is a floor and the uplift headline an upper
+  reading; the cheapest capacity gain is fixing the closure workflow. HES
+  scope differs from RTT (planned/non-RTT included) — trends, not levels,
+  are the evidence; HES latest month is Feb-26 (M11).
 - **Milestones are per-TFC** (never below start): an equity stance — the trust
   aggregate deliberately overshoots the literal 65/80/92 (e.g. ~69% at Apr-27),
   quantified on the page. Bed occupancy is aligned at the 92% planning norm
