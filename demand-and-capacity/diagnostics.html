@@ -70,7 +70,8 @@
               <th>Modality</th>
               <th class="num">List</th><th class="num">%&lt;6wk</th><th class="num">13+ wk</th>
               <th class="num">Demand /wk</th><th class="num">Census refs /wk</th><th class="num">WL tests /mo (now)</th>
-              <th class="num">Required /mo (peak)</th><th class="num">Uplift</th>
+              <th class="num">Required /mo (peak)</th><th class="num">Uplift (of WL tests)</th>
+              <th class="num">Uplift (of ALL activity)</th>
               <th class="num">Planned /mo</th><th class="num">Unscheduled /mo</th>
             </tr>
           </thead>
@@ -85,6 +86,7 @@
         arrivals. Where the floor exceeds the flow figure by &gt;20% the row is flagged: demand (and
         the required-capacity column) is understated there.</p>
       <div id="anomaly-notes"></div>
+      <p class="muted small" id="streams-note"></p>
       <div class="chart-block">
         <h3 id="mod-chart-title">Modality trajectory</h3>
         <canvas id="chart-mod" width="1040" height="330"></canvas>

@@ -38,13 +38,16 @@ function renderCards() {
   const t = result.total, cal = result.cal;
   const i27 = ymDiff(cal[0], '2027-04');
   const uplift = 100 * (Math.max(...t.requiredTestsMo) / t.currentTestsMo[0] - 1);
+  // the same extra tests as a share of the TOTAL activity envelope (all streams)
+  const totalEnv = dm01.modalities.reduce((a, m) => a + (m.totalTestsMo ?? 0), 0);
+  const envUplift = 100 * (Math.max(...t.requiredTestsMo) - t.currentTestsMo[0]) / totalEnv;
   const over13 = dm01.modalities.reduce((a, m) => a + m.over13, 0);
   $('cards').innerHTML = `
     <div class="stat"><div class="v">${fmt(t.list[0])}</div><div class="l">Diagnostic waiting list (published Apr-26)</div></div>
     <div class="stat stat--accent"><div class="v">${t.impliedPct[0].toFixed(1)}%</div><div class="l">Within 6 weeks (standard: 95% / 99%)</div></div>
     <div class="stat stat--bad"><div class="v">${fmt(over13)}</div><div class="l">Waiting 13+ weeks</div></div>
     <div class="stat"><div class="v">${fmt(t.demandMo[0])}</div><div class="l">Waiting-list demand / month</div></div>
-    <div class="stat ${uplift > 15 ? 'stat--bad' : uplift > 5 ? 'stat--warn' : 'stat--good'}"><div class="v">+${uplift.toFixed(1)}%</div><div class="l">Peak capacity uplift required</div></div>
+    <div class="stat ${uplift > 15 ? 'stat--bad' : uplift > 5 ? 'stat--warn' : 'stat--good'}"><div class="v">+${uplift.toFixed(1)}%</div><div class="l">Peak uplift of WL tests (+${envUplift.toFixed(1)}% of ALL diagnostic activity)</div></div>
     <div class="stat"><div class="v">${fmt(t.list[i27])}</div><div class="l">List needed by Apr-27 (95%)</div></div>`;
 }
 
@@ -83,6 +86,11 @@ function renderTable() {
     const peak = Math.max(...s.requiredTestsMo);
     const uplift = 100 * (peak / Math.max(1, s.currentTestsMo[0]) - 1);
     const cls = uplift > 15 ? 'bad' : uplift > 5 ? 'warn' : 'good';
+    // same extra tests, expressed against the modality's TOTAL activity
+    // envelope (WL + planned + unscheduled) — the ask on the actual asset
+    const total = mod.totalTestsMo ?? ((mod.testsWk * 52 / 12) + mod.plannedMo + mod.unschedMo);
+    const envUp = total > 0 ? 100 * (peak - s.currentTestsMo[0]) / total : null;
+    const envCls = envUp > 15 ? 'bad' : envUp > 5 ? 'warn' : 'good';
     const flag = mod.anomalies?.length
       ? ` <span class="flag" title="Seed reliability warning: ${mod.anomalies.map((a) => a.title).join('; ')} — details below the table">!</span>`
       : '';
@@ -95,11 +103,24 @@ function renderTable() {
       <td class="num">${fmt(s.currentTestsMo[0])}</td>
       <td class="num">${fmt(peak)}</td>
       <td class="num"><span class="pill pill--${cls}">+${uplift.toFixed(0)}%</span></td>
+      <td class="num">${envUp == null ? '—' : `<span class="pill pill--${envCls}">+${envUp.toFixed(0)}%</span>`}</td>
       <td class="num">${fmt(mod.plannedMo)}</td><td class="num">${fmt(mod.unschedMo)}</td>
     </tr>`;
   }).join('');
   $('mod-table').querySelector('tbody').innerHTML = rows;
   renderAnomalies();
+  renderStreamsNote();
+}
+
+// the three delivery streams share one asset: express the ask against all of it
+function renderStreamsNote() {
+  const s = dm01.streams;
+  if (!s) { $('streams-note').textContent = ''; return; }
+  const labs = Object.keys(s);
+  const cur = s[labs.find((l) => l.includes('2026') && l.includes('April')) ?? labs[labs.length - 1]];
+  const pre = s[labs.find((l) => l.includes('2025'))] ?? cur;
+  const tot = (x) => x.wl + x.planned + x.unsched;
+  $('streams-note').textContent = `The capacity envelope: DM01 counts three delivery streams from the same scanners and staff — waiting-list tests (governed by the 6-week standard), planned/surveillance tests (clinically timed) and unscheduled tests (emergency and inpatient, must-serve). Trust-wide the WL stream is only ${(100 * cur.wl / tot(cur)).toFixed(0)}% of total activity (${fmt(cur.wl)} of ${fmt(tot(cur))}/mo), which is why the table now shows the uplift both ways: 'of WL tests' is the growth of the governed stream; 'of ALL activity' is the same extra tests as a share of everything the asset delivers — the honest ask on the fleet and workforce, to the extent streams are fungible (unscheduled demand cannot be displaced; planned can flex timing but not volume). The stream MIX is itself a witness: between ${labs.find((l) => l.includes('2025')) ?? 'the prior year'} and ${labs.find((l) => l.includes('April') && l.includes('2026'))}, WL tests fell ${(100 * (1 - cur.wl / pre.wl)).toFixed(0)}% (${fmt(pre.wl)} → ${fmt(cur.wl)}/mo) while planned rose ${(100 * (cur.planned / pre.planned - 1)).toFixed(0)}% (${fmt(pre.planned)} → ${fmt(cur.planned)}/mo) and unscheduled held (${fmt(pre.unsched)} → ${fmt(cur.unsched)}/mo) — consistent with post-EPR reclassification between streams rather than a change in what the machines actually did, and one more reason to read WL-only figures with care.`;
 }
 
 // modality-level seed reliability warnings, mirroring the RTT specialty table

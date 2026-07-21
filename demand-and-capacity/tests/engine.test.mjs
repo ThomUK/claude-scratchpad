@@ -75,6 +75,14 @@ ok(worst < 0.75, `per-TFC implied(t=0) matches published pct18 (worst |Δ| = ${w
   const dmFlagged = dm01.modalities.filter((m) => m.anomalies?.length).length;
   ok(dmFlagged >= 3 && dm01.modalities.every((m) => m.censusRefsWk == null || m.censusRefsWk >= 0),
     `${dmFlagged}/${dm01.modalities.length} modalities flagged; census floors well-formed`);
+
+  // activity envelope: all three DM01 streams (WL + planned + unscheduled)
+  ok(dm01.modalities.every((m) => Math.abs(m.totalTestsMo - (m.testsWk * 52 / 12 + m.plannedMo + m.unschedMo)) < 2),
+    'totalTestsMo = WL + planned + unscheduled for every modality');
+  const envTot = Object.values(dm01.streams['April 2026']).reduce((a, v) => a + v, 0);
+  const wlShare = dm01.streams['April 2026'].wl / envTot;
+  ok(wlShare > 0.4 && wlShare < 0.65, `WL tests are ${(100 * wlShare).toFixed(0)}% of total diagnostic activity — envelope restatement matters`);
+  ok(echo.totalTestsMo > 1500 && echo.totalTestsMo < 1800, `echo envelope ${echo.totalTestsMo}/mo (WL 787 + planned + unscheduled)`);
 }
 // per-TFC calibrated growth is used where seeded; trust fallback otherwise
 {

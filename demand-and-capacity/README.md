@@ -133,6 +133,17 @@ Two modelling consequences of using real (non-idealised) data:
   >20% carry the same red-! warning as the RTT table (7/13 modalities at
   seed time; echo 337 vs 194/wk, cystoscopy 44 vs 10/wk). No attrition
   correction is applied — the floor is deliberately conservative.
+- **DM01 activity envelope**: the three DM01 delivery streams (waiting-list,
+  planned/surveillance, unscheduled) share the same scanners and staff, and
+  trust-wide the WL stream is only ~52% of total activity (CT: 18% —
+  emergency CT dominates that fleet). The modality table therefore shows the
+  required uplift both ways: as growth of the governed WL stream AND as a
+  share of ALL activity the asset delivers — the honest ask on the fleet, to
+  the extent streams are fungible (unscheduled cannot be displaced; planned
+  can flex timing, not volume). Trust stream totals per snapshot are written
+  into the seed; the mix shift (Apr-25→Apr-26: WL −17%, planned +10%,
+  unscheduled −6%) is flagged on-page as consistent with post-EPR
+  reclassification rather than a change in what the machines did.
 - **Milestones are per-TFC** (never below start): an equity stance — the trust
   aggregate deliberately overshoots the literal 65/80/92 (e.g. ~69% at Apr-27),
   quantified on the page. Bed occupancy is aligned at the 92% planning norm

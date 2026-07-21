@@ -38,6 +38,7 @@
       "testsWk": 1178.5,
       "plannedMo": 874,
       "unschedMo": 19,
+      "totalTestsMo": 6000,
       "over13": 799,
       "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year",
       "censusRefsWk": 805.2,
@@ -61,6 +62,7 @@
       "testsWk": 698.8,
       "plannedMo": 512,
       "unschedMo": 1341,
+      "totalTestsMo": 4881,
       "over13": 246,
       "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year",
       "censusRefsWk": 665.0,
@@ -84,6 +86,7 @@
       "testsWk": 413.8,
       "plannedMo": 1210,
       "unschedMo": 7197,
+      "totalTestsMo": 10200,
       "over13": 610,
       "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year",
       "censusRefsWk": 559.5,
@@ -114,6 +117,7 @@
       "testsWk": 181.6,
       "plannedMo": 282,
       "unschedMo": 572,
+      "totalTestsMo": 1641,
       "over13": 3,
       "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year",
       "censusRefsWk": 337.2,
@@ -144,6 +148,7 @@
       "testsWk": 184.4,
       "plannedMo": 74,
       "unschedMo": 0,
+      "totalTestsMo": 873,
       "over13": 231,
       "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year",
       "censusRefsWk": 217.0,
@@ -167,6 +172,7 @@
       "testsWk": 115.8,
       "plannedMo": 54,
       "unschedMo": 0,
+      "totalTestsMo": 556,
       "over13": 84,
       "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year",
       "censusRefsWk": 144.2,
@@ -197,6 +203,7 @@
       "testsWk": 158.3,
       "plannedMo": 247,
       "unschedMo": 0,
+      "totalTestsMo": 933,
       "over13": 9,
       "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year",
       "censusRefsWk": 168.0,
@@ -220,6 +227,7 @@
       "testsWk": 121.8,
       "plannedMo": 631,
       "unschedMo": 0,
+      "totalTestsMo": 1159,
       "over13": 0,
       "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year",
       "censusRefsWk": 160.0,
@@ -250,6 +258,7 @@
       "testsWk": 57.2,
       "plannedMo": 12,
       "unschedMo": 0,
+      "totalTestsMo": 260,
       "over13": 11,
       "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year",
       "censusRefsWk": 78.0,
@@ -280,6 +289,7 @@
       "testsWk": 42.7,
       "plannedMo": 15,
       "unschedMo": 0,
+      "totalTestsMo": 200,
       "over13": 36,
       "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year",
       "censusRefsWk": 61.8,
@@ -310,6 +320,7 @@
       "testsWk": 47.1,
       "plannedMo": 2,
       "unschedMo": 12,
+      "totalTestsMo": 218,
       "over13": 28,
       "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year",
       "censusRefsWk": 46.0,
@@ -333,6 +344,7 @@
       "testsWk": 10.2,
       "plannedMo": 112,
       "unschedMo": 0,
+      "totalTestsMo": 156,
       "over13": 6,
       "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year",
       "censusRefsWk": 44.0,
@@ -363,6 +375,7 @@
       "testsWk": 1.8,
       "plannedMo": 142,
       "unschedMo": 0,
+      "totalTestsMo": 150,
       "over13": 3,
       "sourceNote": "DM01 provider file (April 2026); demand = waiting-list tests + \u0394WL/12 vs prior year",
       "censusRefsWk": 0.8,
@@ -377,5 +390,27 @@
         ]
       }
     }
-  ]
+  ],
+  "streams": {
+    "April 2024": {
+      "wl": 14693,
+      "planned": 3430,
+      "unsched": 9421
+    },
+    "April 2025": {
+      "wl": 16754,
+      "planned": 3776,
+      "unsched": 9700
+    },
+    "April 2026": {
+      "wl": 13919,
+      "planned": 4167,
+      "unsched": 9141
+    },
+    "May 2026": {
+      "wl": 14737,
+      "planned": 3835,
+      "unsched": 9526
+    }
+  }
 }

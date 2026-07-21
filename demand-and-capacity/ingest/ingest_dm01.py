@@ -137,6 +137,11 @@ def main():
             "demandWk": round(demandMo / WKS_PER_MONTH, 1),
             "testsWk": round(v["wlTestsMo"] / WKS_PER_MONTH, 1),
             "plannedMo": int(v["plannedMo"]), "unschedMo": int(v["unschedMo"]),
+            # total delivered activity across all three streams: the capacity
+            # ENVELOPE of the asset (same scanners/staff serve WL, planned and
+            # unscheduled work), against which a required WL uplift should also
+            # be expressed
+            "totalTestsMo": int(v["wlTestsMo"] + v["plannedMo"] + v["unschedMo"]),
             "over13": int(v["over13"]),
             "sourceNote": f"DM01 provider file ({period}); demand = waiting-list tests + ΔWL/12 vs prior year",
         }
@@ -188,6 +193,18 @@ def main():
                      "note": "milestones are a modelling assumption aligned to the RTT trajectory: 95% under 6 weeks by Apr-27, 99% (constitutional <1% over) by Apr-29"},
         "levers": {"demandGrowthPctYr": growth if growth is not None else 0},
         "modalities": modalities,
+        # trust totals by delivery stream per snapshot: WL + planned +
+        # unscheduled = the total activity envelope; the stream MIX shift is
+        # itself a signal (post-EPR: WL down while planned up = possible
+        # reclassification)
+        "streams": {
+            lab: {
+                "wl": round(sum(v["wlTestsMo"] for v in snap.values())),
+                "planned": round(sum(v["plannedMo"] for v in snap.values())),
+                "unsched": round(sum(v["unschedMo"] for v in snap.values())),
+            }
+            for lab, snap in (list(zip(labels, chain)) + [(l, s) for l, s in band_snaps if l != period])
+        },
     }
     path = os.path.join(os.path.dirname(__file__), "..", "data", "dm01.json")
     json.dump(out, open(path, "w"), indent=2)
