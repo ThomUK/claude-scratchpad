@@ -69,7 +69,7 @@
             <tr>
               <th>Modality</th>
               <th class="num">List</th><th class="num">%&lt;6wk</th><th class="num">13+ wk</th>
-              <th class="num">Demand /wk</th><th class="num">WL tests /mo (now)</th>
+              <th class="num">Demand /wk</th><th class="num">Census refs /wk</th><th class="num">WL tests /mo (now)</th>
               <th class="num">Required /mo (peak)</th><th class="num">Uplift</th>
               <th class="num">Planned /mo</th><th class="num">Unscheduled /mo</th>
             </tr>
@@ -77,6 +77,14 @@
           <tbody></tbody>
         </table>
       </div>
+      <p class="muted small"><strong>Two demand estimators, one queue.</strong> Demand /wk is the flow
+        formula (waiting-list tests + year-on-year list change ÷ 12) — it assumes nobody leaves the
+        list without a test, and under-reads when a queue is capacity-constrained and leaky. Census
+        refs /wk is an independent check: the mean of the 0–1 and 1–2 week wait bands (Apr + May 2026)
+        — each band is an arrival cohort minus early exits, so it is a <em>floor</em> under gross
+        arrivals. Where the floor exceeds the flow figure by &gt;20% the row is flagged: demand (and
+        the required-capacity column) is understated there.</p>
+      <div id="anomaly-notes"></div>
       <div class="chart-block">
         <h3 id="mod-chart-title">Modality trajectory</h3>
         <canvas id="chart-mod" width="1040" height="330"></canvas>

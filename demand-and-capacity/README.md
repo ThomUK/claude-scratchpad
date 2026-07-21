@@ -121,6 +121,18 @@ Two modelling consequences of using real (non-idealised) data:
   reading; the cheapest capacity gain is fixing the closure workflow. HES
   scope differs from RTT (planned/non-RTT included) — trends, not levels,
   are the evidence; HES latest month is Feb-26 (M11).
+- **DM01 census referral floor**: DM01 publishes no referral stream, so the
+  flow formula (WL tests + ΔWL/12) infers demand assuming nobody leaves the
+  list without a test — an assumption that fails where a parallel
+  unscheduled/planned stream serves listed patients (echocardiography being
+  the worked example: ~611 unscheduled echoes/mo). The ingest therefore
+  computes a second, independent estimator per modality — the mean of the
+  0–1 and 1–2 week wait bands (Apr + May 2026), each band being an arrival
+  cohort minus early exits, hence a FLOOR on gross arrivals — rendered as a
+  "Census refs /wk" column. Rows where the floor exceeds the flow figure by
+  >20% carry the same red-! warning as the RTT table (7/13 modalities at
+  seed time; echo 337 vs 194/wk, cystoscopy 44 vs 10/wk). No attrition
+  correction is applied — the floor is deliberately conservative.
 - **Milestones are per-TFC** (never below start): an equity stance — the trust
   aggregate deliberately overshoots the literal 65/80/92 (e.g. ~69% at Apr-27),
   quantified on the page. Bed occupancy is aligned at the 92% planning norm

@@ -42,6 +42,8 @@ def read_dm01(path, provider):
             "wlTestsMo": g('Waiting list tests / procedures (excluding planned)'),
             "plannedMo": g('Planned tests / procedures'),
             "unschedMo": g('Unscheduled tests / procedures'),
+            "band01": g('0 <01 weeks'),
+            "band12": g('01 <02 weeks'),
         }
     return out, period
 
@@ -50,6 +52,7 @@ def main():
     src = sys.argv[1]
     provider = sys.argv[sys.argv.index("--provider") + 1] if "--provider" in sys.argv else "RX1"
     prior_srcs = [sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == "--prior"]
+    band_srcs = [sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == "--bands"]
 
     cur, period = read_dm01(src, provider)
     priors = sorted((read_dm01(p, provider) for p in prior_srcs), key=lambda t: t[1])
@@ -99,13 +102,35 @@ def main():
                    f"outsourced capacity, service moves, list validation; cause unattributed — NUH's "
                    f"CDC does not open until 2027), not demand (all-modality raw: {growthRawAll}%/yr)")
 
+    # Census-based referral floor (reviewer feedback): each wait band is an
+    # arrival cohort minus everyone already tested or removed, so the YOUNG
+    # bands put a floor under gross arrivals per week — an estimator that is
+    # independent of delivered tests, unlike the flow formula (which assumes
+    # zero removals and degenerates towards the delivery rate when a queue is
+    # capacity-constrained and leaky). We take the mean of the 0-1 and 1-2
+    # week bands across the current snapshot plus any --bands snapshots, and
+    # report it as a FLOOR (survivors only; no attrition correction).
+    band_snaps = [(period, cur)]
+    for p in band_srcs:
+        bsnap, bperiod = read_dm01(p, provider)
+        band_snaps.append((bperiod, bsnap))
+
+    def census_refs(name):
+        obs, byPeriod = [], {}
+        for lab, snap in band_snaps:
+            v2 = snap.get(name)
+            if v2 is not None:
+                obs += [v2["band01"], v2["band12"]]
+                byPeriod[lab] = [round(v2["band01"]), round(v2["band12"])]
+        return (round(sum(obs) / len(obs), 1) if obs else None), byPeriod
+
     prev = chain[-2] if len(chain) >= 2 else None
     modalities = []
     for name, v in sorted(cur.items(), key=lambda kv: -kv[1]["list"]):
         dWL = (v["list"] - prev[name]["list"]) / 12 if prev and name in prev else 0
         demandMo = v["wlTestsMo"] + dWL
         within6 = v["list"] - v["over6"]
-        modalities.append({
+        row = {
             "id": v["id"], "name": name,
             "list": int(v["list"]),
             "pct6": round(100 * within6 / v["list"], 1) if v["list"] else 100,
@@ -114,7 +139,28 @@ def main():
             "plannedMo": int(v["plannedMo"]), "unschedMo": int(v["unschedMo"]),
             "over13": int(v["over13"]),
             "sourceNote": f"DM01 provider file ({period}); demand = waiting-list tests + ΔWL/12 vs prior year",
-        })
+        }
+        refsWk, byPeriod = census_refs(name)
+        if refsWk is not None:
+            row["censusRefsWk"] = refsWk
+            row["bandsYoung"] = byPeriod
+            # flag where the census floor exceeds the flow-formula demand by
+            # >20% (noise floor 30/wk): the flow demand is then an understatement
+            if refsWk >= 30 and row["demandWk"] > 0 and refsWk > 1.2 * row["demandWk"]:
+                bandsTxt = "; ".join(f"{lab}: {b[0]}, {b[1]}" for lab, b in byPeriod.items())
+                row["anomalies"] = [{
+                    "rule": "census-exceeds-flow",
+                    "title": "demand likely understated",
+                    "detail": (f"The census-implied referral floor ({refsWk:.0f}/wk — mean of the 0-1 and "
+                               f"1-2 week wait bands: {bandsTxt}) exceeds the flow-formula demand "
+                               f"({row['demandWk']:.0f}/wk) by {100 * (refsWk / row['demandWk'] - 1):.0f}%. "
+                               "The young bands are arrival cohorts minus early exits, so they FLOOR gross "
+                               "arrivals; the flow formula (WL tests + ΔWL/12) assumes zero removals and "
+                               "under-reads when patients leave the list without a waiting-list test (e.g. "
+                               "served via the parallel unscheduled/planned streams, duplicates, or "
+                               "validation). Treat this modality's demand and required-capacity rows as "
+                               "understated pending a removal-reasons audit.")}]
+        modalities.append(row)
 
     out = {
         "_provenance": {
@@ -129,7 +175,13 @@ def main():
                             "for RTT — the EPR-year pair swings in implausible and OPPOSITE "
                             "directions across modules (RTT +8.0%, DM01 core −5.8%), which is "
                             "recording disruption, not demand. The pre-EPR pair may still "
-                            "embed recovery-drive catch-up, so growth remains a lever."),
+                            "embed recovery-drive catch-up, so growth remains a lever. "
+                            "CENSUS REFERRAL FLOOR: a second, independent demand estimator per "
+                            "modality — the mean of the 0-1 and 1-2 week wait bands "
+                            f"({', '.join(lab for lab, _ in band_snaps)}) — which floors gross "
+                            "arrivals (survivors only, no attrition correction). Rows where the "
+                            "floor exceeds the flow-formula demand by >20% are flagged: there "
+                            "the flow formula (which assumes zero removals) is understating."),
         },
         "standard": {"windowWeeks": 6, "interimPct": 95, "constitutionalPct": 99,
                      "milestones": [{"ym": "2027-04", "pct": 95}, {"ym": "2029-04", "pct": 99}],
@@ -139,6 +191,9 @@ def main():
     }
     path = os.path.join(os.path.dirname(__file__), "..", "data", "dm01.json")
     json.dump(out, open(path, "w"), indent=2)
+    for m in modalities:
+        if m.get("anomalies"):
+            print(f"  FLAG {m['name']}: census floor {m['censusRefsWk']:.0f}/wk vs flow demand {m['demandWk']:.0f}/wk")
     totL = sum(m["list"] for m in modalities)
     w = sum(m["list"] * m["pct6"] / 100 for m in modalities)
     print(f"{provider} {period}: DM01 list {totL:,} | {100*w/totL:.1f}% <6wk | "

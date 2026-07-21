@@ -66,6 +66,15 @@ ok(worst < 0.75, `per-TFC implied(t=0) matches published pct18 (worst |Δ| = ${w
     `go-live month real dip is real but bounded (elective ${nov.elective}%)`);
   const lastRtt = rec.rttMonths[rec.rttMonths.length - 1];
   ok(lastRtt.removalsPctRefs > 25, `latest implied removals ${lastRtt.removalsPctRefs}% of referrals — the surge persists`);
+
+  // DM01 census referral floor (young wait bands, independent of delivered tests)
+  const echo = dm01.modalities.find((m) => m.name.includes('chocardiog'));
+  ok(echo.censusRefsWk > 300 && echo.censusRefsWk > 1.5 * echo.demandWk,
+    `echo census floor ${echo.censusRefsWk}/wk vs flow demand ${echo.demandWk}/wk — the estimators disagree as the reviewer showed`);
+  ok(echo.anomalies?.some((a) => a.rule === 'census-exceeds-flow'), 'echo carries the census-exceeds-flow flag');
+  const dmFlagged = dm01.modalities.filter((m) => m.anomalies?.length).length;
+  ok(dmFlagged >= 3 && dm01.modalities.every((m) => m.censusRefsWk == null || m.censusRefsWk >= 0),
+    `${dmFlagged}/${dm01.modalities.length} modalities flagged; census floors well-formed`);
 }
 // per-TFC calibrated growth is used where seeded; trust fallback otherwise
 {

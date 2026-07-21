@@ -83,11 +83,15 @@ function renderTable() {
     const peak = Math.max(...s.requiredTestsMo);
     const uplift = 100 * (peak / Math.max(1, s.currentTestsMo[0]) - 1);
     const cls = uplift > 15 ? 'bad' : uplift > 5 ? 'warn' : 'good';
+    const flag = mod.anomalies?.length
+      ? ` <span class="flag" title="Seed reliability warning: ${mod.anomalies.map((a) => a.title).join('; ')} — details below the table">!</span>`
+      : '';
     return `<tr data-mod="${mod.name}" class="${mod.name === selectedMod ? 'sel' : ''}">
-      <td>${mod.name}</td>
+      <td>${mod.name}${flag}</td>
       <td class="num">${fmt(mod.list)}</td><td class="num">${mod.pct6}%</td>
       <td class="num">${fmt(mod.over13)}</td>
       <td class="num">${fmt(mod.demandWk)}</td>
+      <td class="num">${mod.censusRefsWk != null ? fmt(mod.censusRefsWk) : '—'}</td>
       <td class="num">${fmt(s.currentTestsMo[0])}</td>
       <td class="num">${fmt(peak)}</td>
       <td class="num"><span class="pill pill--${cls}">+${uplift.toFixed(0)}%</span></td>
@@ -95,6 +99,23 @@ function renderTable() {
     </tr>`;
   }).join('');
   $('mod-table').querySelector('tbody').innerHTML = rows;
+  renderAnomalies();
+}
+
+// modality-level seed reliability warnings, mirroring the RTT specialty table
+function renderAnomalies() {
+  const flagged = dm01.modalities.filter((m) => m.anomalies?.length);
+  $('anomaly-notes').innerHTML = !flagged.length ? '' : `
+    <p class="small" style="margin-top:10px"><span class="flag">!</span> <strong>Demand likely
+    understated on ${flagged.length} modalities</strong> — their census referral floor exceeds the
+    flow-formula demand by more than 20%, meaning patients are leaving these lists without a
+    waiting-list test (served via the parallel unscheduled/planned streams, duplicates, or
+    validation) at a rate the flow formula cannot see. Their Required /mo columns inherit the
+    understatement.</p>` +
+    flagged.map((m) => `<details class="prov">
+      <summary>${m.name} — ${m.anomalies.map((a) => a.title).join(' · ')} (census ${fmt(m.censusRefsWk)}/wk vs flow ${fmt(m.demandWk)}/wk)</summary>
+      <div class="small">${m.anomalies.map((a) => `<p>${a.detail}</p>`).join('')}</div>
+    </details>`).join('');
 }
 
 function renderModChart() {
