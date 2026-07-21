@@ -116,6 +116,12 @@ td .pill { display: inline-block; min-width: 52px; text-align: right; padding: 1
 .canvas-scroll { width: 100%; overflow-x: auto; margin-top: 10px; }
 .canvas-scroll canvas { display: block; }
 
+/* 100% stacked stream-mix spark bar (diagnostics table) */
+.sparkmix { display: inline-flex; width: 96px; height: 9px; border-radius: 3px; overflow: hidden;
+  vertical-align: middle; background: #0f1620; }
+.sparkmix span { height: 100%; }
+.mixk { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin: 0 4px 0 2px; vertical-align: -1px; }
+
 .prov { margin-top: 8px; }
 .prov summary { cursor: pointer; color: var(--accent); font-size: 0.82rem; font-weight: 600; }
 .prov summary:hover { text-decoration: underline; }

@@ -102,14 +102,30 @@ function renderTable() {
       <td class="num">${mod.censusRefsWk != null ? fmt(mod.censusRefsWk) : '—'}</td>
       <td class="num">${fmt(s.currentTestsMo[0])}</td>
       <td class="num">${fmt(peak)}</td>
-      <td class="num"><span class="pill pill--${cls}">+${uplift.toFixed(0)}%</span></td>
-      <td class="num">${envUp == null ? '—' : `<span class="pill pill--${envCls}">+${envUp.toFixed(0)}%</span>`}</td>
+      <td class="num"><span class="pill pill--${cls}">${uplift >= 0 ? '+' : ''}${uplift.toFixed(0)}%</span></td>
+      <td class="num">${envUp == null ? '—' : `<span class="pill pill--${envCls}">${envUp >= 0 ? '+' : ''}${envUp.toFixed(0)}%</span>`}</td>
       <td class="num">${fmt(mod.plannedMo)}</td><td class="num">${fmt(mod.unschedMo)}</td>
+      <td>${sparkMix(mod)}</td>
     </tr>`;
   }).join('');
   $('mod-table').querySelector('tbody').innerHTML = rows;
   renderAnomalies();
   renderStreamsNote();
+}
+
+// 100% stacked spark bar of the modality's delivery-stream mix
+const MIX_COLORS = { wl: '#6db9e8', planned: '#2b5e97', unsched: '#9a6fd0' };
+function sparkMix(mod) {
+  const wl = mod.testsWk * 52 / 12, pl = mod.plannedMo, un = mod.unschedMo;
+  const tot = wl + pl + un;
+  if (!(tot > 0)) return '—';
+  const pct = (v) => (100 * v / tot);
+  const title = `WL ${fmt(wl)} (${pct(wl).toFixed(0)}%) · planned ${fmt(pl)} (${pct(pl).toFixed(0)}%) · unscheduled ${fmt(un)} (${pct(un).toFixed(0)}%)`;
+  return `<span class="sparkmix" title="${title}">
+    <span style="width:${pct(wl)}%;background:${MIX_COLORS.wl}"></span>
+    <span style="width:${pct(pl)}%;background:${MIX_COLORS.planned}"></span>
+    <span style="width:${pct(un)}%;background:${MIX_COLORS.unsched}"></span>
+  </span>`;
 }
 
 // the three delivery streams share one asset: express the ask against all of it
@@ -120,7 +136,10 @@ function renderStreamsNote() {
   const cur = s[labs.find((l) => l.includes('2026') && l.includes('April')) ?? labs[labs.length - 1]];
   const pre = s[labs.find((l) => l.includes('2025'))] ?? cur;
   const tot = (x) => x.wl + x.planned + x.unsched;
-  $('streams-note').textContent = `The capacity envelope: DM01 counts three delivery streams from the same scanners and staff — waiting-list tests (governed by the 6-week standard), planned/surveillance tests (clinically timed) and unscheduled tests (emergency and inpatient, must-serve). Trust-wide the WL stream is only ${(100 * cur.wl / tot(cur)).toFixed(0)}% of total activity (${fmt(cur.wl)} of ${fmt(tot(cur))}/mo), which is why the table now shows the uplift both ways: 'of WL tests' is the growth of the governed stream; 'of ALL activity' is the same extra tests as a share of everything the asset delivers — the honest ask on the fleet and workforce, to the extent streams are fungible (unscheduled demand cannot be displaced; planned can flex timing but not volume). The stream MIX is itself a witness: between ${labs.find((l) => l.includes('2025')) ?? 'the prior year'} and ${labs.find((l) => l.includes('April') && l.includes('2026'))}, WL tests fell ${(100 * (1 - cur.wl / pre.wl)).toFixed(0)}% (${fmt(pre.wl)} → ${fmt(cur.wl)}/mo) while planned rose ${(100 * (cur.planned / pre.planned - 1)).toFixed(0)}% (${fmt(pre.planned)} → ${fmt(cur.planned)}/mo) and unscheduled held (${fmt(pre.unsched)} → ${fmt(cur.unsched)}/mo) — consistent with post-EPR reclassification between streams rather than a change in what the machines actually did, and one more reason to read WL-only figures with care.`;
+  const legend = `Stream-mix bar: <span class="mixk" style="background:${MIX_COLORS.wl}"></span>waiting list · ` +
+    `<span class="mixk" style="background:${MIX_COLORS.planned}"></span>planned · ` +
+    `<span class="mixk" style="background:${MIX_COLORS.unsched}"></span>emergency/unscheduled. `;
+  $('streams-note').innerHTML = legend + `The capacity envelope: DM01 counts three delivery streams from the same scanners and staff — waiting-list tests (governed by the 6-week standard), planned/surveillance tests (clinically timed) and unscheduled tests (emergency and inpatient, must-serve). Trust-wide the WL stream is only ${(100 * cur.wl / tot(cur)).toFixed(0)}% of total activity (${fmt(cur.wl)} of ${fmt(tot(cur))}/mo), which is why the table now shows the uplift both ways: 'of WL tests' is the growth of the governed stream; 'of ALL activity' is the same extra tests as a share of everything the asset delivers — the honest ask on the fleet and workforce, to the extent streams are fungible (unscheduled demand cannot be displaced; planned can flex timing but not volume). The stream MIX is itself a witness: between ${labs.find((l) => l.includes('2025')) ?? 'the prior year'} and ${labs.find((l) => l.includes('April') && l.includes('2026'))}, WL tests fell ${(100 * (1 - cur.wl / pre.wl)).toFixed(0)}% (${fmt(pre.wl)} → ${fmt(cur.wl)}/mo) while planned rose ${(100 * (cur.planned / pre.planned - 1)).toFixed(0)}% (${fmt(pre.planned)} → ${fmt(cur.planned)}/mo) and unscheduled held (${fmt(pre.unsched)} → ${fmt(cur.unsched)}/mo) — consistent with post-EPR reclassification between streams rather than a change in what the machines actually did, and one more reason to read WL-only figures with care.`;
 }
 
 // modality-level seed reliability warnings, mirroring the RTT specialty table
