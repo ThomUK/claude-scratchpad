@@ -1,4 +1,6 @@
-import { WebR } from 'https://webr.r-wasm.org/latest/webr.mjs';
+// Pinned webR version (immutable path). The floating /latest/ channel can
+// change under a deployed app; versioned releases cannot.
+import { WebR } from 'https://webr.r-wasm.org/v0.6.0/webr.mjs';
 
 const $ = (id) => document.getElementById(id);
 const statusEl   = $('status');
@@ -220,7 +222,7 @@ let shelter;
   try {
     await webR.init();
     shelter = await new webR.Shelter();
-    await setupR();                       // install tidyverse + source R/ chart files
+    await setupR();                       // source the base-R chart files from R/
     await loadLevel(currentLevel);
     // Pre-load region at boot: tiny (306 KB) and needed for "rest of England" in later phases
     if (currentLevel !== 'region') await loadLevel('region');
@@ -239,11 +241,10 @@ async function fetchText(name) {
   return (await fetch(`data/${name}?v=dev`, { cache: 'no-cache' })).text();
 }
 
-// Install the tidyverse packages used for wrangling and source the chart
-// functions from R/. Runs once at boot (first load downloads the packages).
+// Source the chart functions from R/. Base R only — no runtime package
+// installs: boot used to depend on repo.r-wasm.org's day-to-day dependency
+// state, which broke (dplyr/vctrs mismatch, r-wasm/webr#602).
 async function setupR() {
-  setStatus('Installing R packages (dplyr, tidyr)…', 'busy');
-  await webR.installPackages(['dplyr', 'tidyr']);
   setStatus('Loading R code…', 'busy');
   for (const f of ['data.R', 'pyramids.R', 'compare.R']) {
     const src = await (await fetch(`R/${f}?v=dev`, { cache: 'no-cache' })).text();

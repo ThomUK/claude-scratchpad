@@ -71,14 +71,23 @@ The chart logic lives in `R/`, sourced into the webR session at boot:
 
 | File | Purpose |
 | --- | --- |
-| `R/data.R` | dplyr/tidyr wrangling helpers (`band_vec`, `england_vec`, `band_share`) + shared constants |
+| `R/data.R` | Base-R wrangling helpers (`band_vec`, `england_vec`, `band_share`) + shared constants |
 | `R/pyramids.R` | `pyramid_chart()` — time-mode two-pyramid + change chart |
 | `R/compare.R` | `compare_chart()` — compare-mode A vs B chart |
 | `R/local_dev.R` | Local harness: loads the CSVs into `D` and sources the above so you can develop in RStudio |
 
-Data wrangling uses **dplyr/tidyr**; plotting is base graphics. The app installs
-`dplyr` and `tidyr` in webR on first load (a one-off package download), then
-`source()`s the files. `app.js` only builds the one-line call into these functions.
+Data wrangling and plotting are **base R only** — deliberately. The app used
+to install dplyr/tidyr from repo.r-wasm.org at every page load, which made
+boot depend on that repository's day-to-day dependency state; in 2026 it
+served dplyr 1.2.1 alongside vctrs 0.6.5 (< the required 0.7.1 —
+[r-wasm/webr#602](https://github.com/r-wasm/webr/issues/602)), so
+`library(dplyr)` failed and the app never booted. The rewrite removed all
+runtime package downloads. For the same reason the webR import is pinned to
+the immutable `/v0.6.0/` release path (never the floating `/latest/`
+channel), and Leaflet is vendored under `vendor/leaflet/` rather than pulled
+from unpkg. The only runtime network dependency left outside this repo is
+webR itself, on a versioned, immutable URL. `app.js` only builds the one-line
+call into these functions.
 
 Develop the R locally without the browser:
 

@@ -1,4 +1,6 @@
-import { WebR } from 'https://webr.r-wasm.org/latest/webr.mjs';
+// Pinned webR version (immutable path). The floating /latest/ channel can
+// change under a deployed app; versioned releases cannot.
+import { WebR } from 'https://webr.r-wasm.org/v0.6.0/webr.mjs';
 
 // --- DOM ---------------------------------------------------------------
 const $ = (id) => document.getElementById(id);

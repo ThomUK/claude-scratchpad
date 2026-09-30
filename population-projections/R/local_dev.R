@@ -1,22 +1,19 @@
 # Local development harness — NOT loaded by the web app.
 #
 # Run this from RStudio (or Rscript) with the working directory set to
-# population-projections/. It installs/loads the packages, builds the global
-# data frame `D` from the CSVs exactly as the web app does in webR, sources the
-# chart functions, and shows an example call.
+# population-projections/. Base R only (as is the app's R code — no packages
+# to install). It builds the global data frame `D` from the CSVs exactly as
+# the web app does in webR, sources the chart functions, and shows an example
+# call.
 #
 #   setwd("population-projections")   # if needed
 #   source("R/local_dev.R")
 #
 # Then iterate on R/data.R, R/pyramids.R, R/compare.R and re-source them.
 
-# install.packages(c("dplyr", "tidyr"))   # uncomment on first run
-library(dplyr)
-library(tidyr)
-
 # Build D from all three geography levels, matching how the app appends them.
 levels <- c("region", "subicb", "la")
-D <<- bind_rows(lapply(levels, function(lv) {
+D <<- do.call(rbind, lapply(levels, function(lv) {
   read.csv(file.path("data", paste0(lv, ".csv")),
            stringsAsFactors = FALSE, colClasses = c(code = "character"))
 }))
