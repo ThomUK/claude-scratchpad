@@ -55,6 +55,30 @@
         </div>
       </div>
 
+      <div class="ctl" data-param="plinth">
+        <label>Plinth height <span class="muted">(floor to first shelf, clears skirting, mm)</span></label>
+        <div class="row">
+          <input type="range"  min="0" max="250" step="5" value="120" />
+          <input type="number" min="0" max="250" step="5" value="120" />
+        </div>
+      </div>
+
+      <div class="ctl" data-param="cutout">
+        <label>Skirting cutout depth <span class="muted">(notch in the sides at the back; its height = plinth, mm)</span></label>
+        <div class="row">
+          <input type="range"  min="0" max="50" step="1" value="25" />
+          <input type="number" min="0" max="50" step="1" value="25" />
+        </div>
+      </div>
+
+      <div class="ctl" data-param="setback">
+        <label>Front setback <span class="muted">(shelf fronts &amp; plinth rail behind the side fronts, mm)</span></label>
+        <div class="row">
+          <input type="range"  min="0" max="60" step="1" value="20" />
+          <input type="number" min="0" max="60" step="1" value="20" />
+        </div>
+      </div>
+
       <div class="ctl">
         <label>Ply thickness</label>
         <div class="row">
@@ -80,8 +104,10 @@
   <footer>
     <p>Rendered with <a href="https://threejs.org/" target="_blank" rel="noopener">three.js</a>
       (pinned r186, vendored in <code>vendor/three/</code> — no CDN dependency). Carcass: sides full
-      height; top, bottom and shelves housed between them; optional 6&thinsp;mm back inset within
-      the frame. Weight estimate uses 680&thinsp;kg/m³ for birch ply.</p>
+      height and depth, notched at the back-bottom to clear skirting; bottom shelf sits on a plinth
+      zone with a set-back front rail; top, bottom flush with the side fronts; internal shelves set
+      back by the same amount as the plinth rail; optional 6&thinsp;mm back inset within the frame.
+      Weight estimate uses 680&thinsp;kg/m³ for birch ply.</p>
   </footer>
 
   <script type="module" src="app.js?v=dev"></script>

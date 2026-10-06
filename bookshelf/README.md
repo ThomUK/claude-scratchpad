@@ -13,16 +13,22 @@ the mouse.
 | Depth | 150–600 mm | front to back |
 | Height | 300–2400 mm | floor to top |
 | Shelves | 0–12 | internal, evenly spaced; capped so every bay keeps ≥ 30 mm clear |
+| Plinth height | 0–250 mm | floor to the underside of the bottom shelf, so the first shelf clears any skirting; adds a set-back front rail |
+| Skirting cutout depth | 0–50 mm | notch in the back-bottom of each side (its height = plinth height) so the unit pushes back to the wall over the skirting |
+| Front setback | 0–60 mm | internal shelf fronts and the plinth rail sit this far behind the side fronts; top and bottom stay flush |
 | Ply thickness | 12 / 18 / 24 mm | applies to all structural panels |
-| Back panel | on/off | fixed 6 mm, inset within the frame; shelves shallow by 6 mm when on |
+| Back panel | on/off | fixed 6 mm, inset within the frame between bottom and top; shelves shallow by 6 mm when on |
 
 Readout: external dimensions, clear bay height, total ply volume + panel
 count, and an approximate weight at 680 kg/m³.
 
 ## Construction modelled
 
-Sides run full height; top, bottom and shelves are housed between them
-(inner width = width − 2 × thickness). Every panel is built as a flat box
+Sides run full height and full depth, notched at the back-bottom corner to
+clear skirting (extruded L-profiles with a custom UV generator so the edge
+laminations stay correct on the cut faces). The bottom shelf sits on the
+plinth zone; top, bottom and shelves are housed between the sides (inner
+width = width − 2 × thickness). Every flat panel is built as a box
 with its thickness on one axis so the two big faces take the birch *face*
 material and the four rims take the laminated *edge* material — the
 alternating veneer stripes that make ply read as ply (9/13/17 plies for
@@ -39,6 +45,6 @@ outside the repo.
 
 ## Ideas for later
 
-Shelf-pin vs housed-dado toggle, kick plate, dividers, a cut list with sheet
+Shelf-pin vs housed-dado toggle, dividers, a cut list with sheet
 nesting (how many 2440×1220 sheets), cost at £/sheet, and export of the cut
 list as CSV.
