@@ -37,47 +37,63 @@ function faceTexture() {
   const g = c.getContext('2d');
   g.fillStyle = '#ecdcb6';
   g.fillRect(0, 0, S, S);
+  // The side caps TILE this texture (metre-scaled UVs), so everything here
+  // must wrap seamlessly: blobs and flecks are stamped at 3×3 offsets, and
+  // every grain wave uses a wavelength that divides S exactly.
+  const OFF = [-S, 0, S];
   // broad warm/pale drift so large faces do not read as one flat colour
   for (let i = 0; i < 26; i++) {
     const r = 120 + Math.random() * 420;
     const x = Math.random() * S, y = Math.random() * S;
-    const grad = g.createRadialGradient(x, y, 0, x, y, r);
-    grad.addColorStop(0, Math.random() < 0.5
+    const col = Math.random() < 0.5
       ? `rgba(213,185,134,${0.04 + Math.random() * 0.07})`
-      : `rgba(250,243,224,${0.05 + Math.random() * 0.08})`);
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = grad;
-    g.fillRect(x - r, y - r, 2 * r, 2 * r);
+      : `rgba(250,243,224,${0.05 + Math.random() * 0.08})`;
+    for (const dx of OFF) for (const dy of OFF) {
+      const grad = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r);
+      grad.addColorStop(0, col);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = grad;
+      g.fillRect(x + dx - r, y + dy - r, 2 * r, 2 * r);
+    }
   }
-  // grain: long wavy streaks running along x, in loose clusters
+  // grain: long wavy streaks running along x, in loose clusters, with the
+  // odd strong band so the figure reads clearly at room distance
   let gy = -10;
   while (gy < S + 10) {
     const cluster = 1 + Math.floor(Math.random() * 4);
     for (let k = 0; k < cluster; k++) {
       const y0 = gy + k * (2 + Math.random() * 5);
-      const amp = 1.5 + Math.random() * 5;
-      const wl = 260 + Math.random() * 640;
+      const amp = 1.5 + Math.random() * 6;
+      const cycles = 2 + Math.floor(Math.random() * 7);     // integer: periodic over S
       const ph = Math.random() * Math.PI * 2;
-      const a = 0.08 + Math.random() * 0.13;
-      g.strokeStyle = Math.random() < 0.72
-        ? `rgba(180,144,90,${a})` : `rgba(250,241,218,${a + 0.03})`;
-      g.lineWidth = 0.7 + Math.random() * 1.5;
-      g.beginPath();
-      for (let x = -8; x <= S + 8; x += 7) {
-        const yy = y0 + amp * Math.sin((x / wl) * Math.PI * 2 + ph) + Math.sin(x * 0.05 + ph) * 0.6;
-        if (x === -8) g.moveTo(x, yy); else g.lineTo(x, yy);
+      const strong = Math.random() < 0.18;
+      const a = strong ? 0.26 + Math.random() * 0.12 : 0.12 + Math.random() * 0.14;
+      g.strokeStyle = Math.random() < 0.75
+        ? `rgba(172,134,80,${a})` : `rgba(252,244,222,${a + 0.04})`;
+      g.lineWidth = strong ? 1.4 + Math.random() * 1.4 : 0.7 + Math.random() * 1.6;
+      for (const dy of OFF) {
+        g.beginPath();
+        for (let x = -8; x <= S + 8; x += 7) {
+          const yy = y0 + dy + amp * Math.sin((x / S) * Math.PI * 2 * cycles + ph)
+            + 0.6 * Math.sin((x / S) * Math.PI * 2 * 13 + ph);
+          if (x === -8) g.moveTo(x, yy); else g.lineTo(x, yy);
+        }
+        g.stroke();
       }
-      g.stroke();
     }
-    gy += 6 + Math.random() * 26;
+    gy += 5 + Math.random() * 20;
   }
   // birch flecks: small dark lenses lying along the grain
-  for (let i = 0; i < 130; i++) {
-    g.fillStyle = `rgba(146,108,62,${0.08 + Math.random() * 0.12})`;
-    g.beginPath();
-    g.ellipse(Math.random() * S, Math.random() * S, 4 + Math.random() * 14,
-      0.8 + Math.random() * 1.1, (Math.random() - 0.5) * 0.06, 0, Math.PI * 2);
-    g.fill();
+  for (let i = 0; i < 170; i++) {
+    const x = Math.random() * S, y = Math.random() * S;
+    const w = 4 + Math.random() * 14, h = 0.8 + Math.random() * 1.2;
+    const rot = (Math.random() - 0.5) * 0.06;
+    g.fillStyle = `rgba(140,102,58,${0.12 + Math.random() * 0.14})`;
+    for (const dx of OFF) for (const dy of OFF) {
+      g.beginPath();
+      g.ellipse(x + dx, y + dy, w, h, rot, 0, Math.PI * 2);
+      g.fill();
+    }
   }
   // fine pore speckle
   for (let i = 0; i < 1600; i++) {
@@ -176,7 +192,15 @@ function concreteTexture() {
   return t;
 }
 
-const faceMat = new THREE.MeshStandardMaterial({ map: faceTexture(), roughness: 0.72, metalness: 0 });
+const faceTex = faceTexture();
+const faceMat = new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.72, metalness: 0 });
+// same image rotated 90°, for panels whose long edge runs across the
+// texture's grain axis — grain always follows a panel's long edge
+const faceTexV = faceTex.clone();
+faceTexV.center.set(0.5, 0.5);
+faceTexV.rotation = Math.PI / 2;
+faceTexV.needsUpdate = true;
+const faceMatV = new THREE.MeshStandardMaterial({ map: faceTexV, roughness: 0.72, metalness: 0 });
 // Baltic birch ply counts: ~1.4mm veneers, always an odd number
 const PLIES = { 12: 9, 18: 13, 24: 17, [BACK_T]: 5 };
 const edgeMats = {};
@@ -244,8 +268,10 @@ scene.add(front);
 
 // sharper oblique sampling for the big face + floor textures
 const maxAniso = renderer.capabilities.getMaxAnisotropy();
-faceMat.map.anisotropy = maxAniso;
-faceMat.map.needsUpdate = true;
+for (const t of [faceTex, faceTexV]) {
+  t.anisotropy = maxAniso;
+  t.needsUpdate = true;
+}
 
 // rough concrete hexagon slab
 const concrete = concreteTexture();
@@ -270,7 +296,10 @@ let unit = null;
 function panel(len_mm, dep_mm, t_mm) {
   const geo = new THREE.BoxGeometry(len_mm * MM, t_mm * MM, dep_mm * MM);
   const e = edgeMat(t_mm);
-  const mesh = new THREE.Mesh(geo, [e, e, faceMat, faceMat, e, e]);
+  // grain follows the long edge: the texture's grain runs along local x
+  // (len), so a panel deeper than it is long takes the rotated variant
+  const f = dep_mm > len_mm ? faceMatV : faceMat;
+  const mesh = new THREE.Mesh(geo, [e, e, f, f, e, e]);
   mesh.castShadow = mesh.receiveShadow = true;
   return mesh;
 }
@@ -278,8 +307,10 @@ function panel(len_mm, dep_mm, t_mm) {
 function sideUVGenerator(depthM) {
   return {
     generateTopUV(geometry, vertices, iA, iB, iC) {
-      // caps: metres -> texture tiles (constant texel scale across the L-shape)
-      const p = (i) => new THREE.Vector2(vertices[i * 3] * 1.5, vertices[i * 3 + 1] * 1.5);
+      // caps: metres -> texture tiles (constant texel scale across the
+      // L-shape). u takes the shape's HEIGHT axis so the grain (which runs
+      // along texture u) stands vertical — along the side's long edge.
+      const p = (i) => new THREE.Vector2(vertices[i * 3 + 1] * 1.5, vertices[i * 3] * 1.5);
       return [p(iA), p(iB), p(iC)];
     },
     generateSideWallUV(geometry, vertices, iA, iB, iC, iD) {
