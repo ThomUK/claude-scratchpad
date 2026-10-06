@@ -40,9 +40,12 @@ edge a through-cut on a panel/track saw) and **CNC freeform** (MaxRects —
 tighter stepped layouts). Each nest is a deterministic search: five sorted
 part orderings plus up to 200 seeded shuffles, keeping the result with the
 fewest sheets and then the emptiest last sheet (biggest reusable offcut).
-Parts go long-edge-along-the-sheet (grain along the part) unless their
-**Rot** box is ticked in the cut list, which permits 90° rotation for that
-part during nesting. An **edge trim** parameter (0–25 mm) shrinks the
+Each cut-list part has a three-way **grain** radio: *long edge* (default —
+grain along the part's long edge, long edge along the sheet), *short edge*
+(forced 90° rotation, for customers who want grain across a part), or
+*max nest* (either direction — the nest may orient each instance of the
+same part differently for the tightest packing). A forced orientation
+that cannot fit the sheet is flagged rather than silently dropped. An **edge trim** parameter (0–25 mm) shrinks the
 usable sheet for damaged factory edges, and a 4 mm kerf separates every
 cut. When building more than one bookcase, **all parts nest together** in
 one pool per thickness, which packs sheets tighter than nesting each

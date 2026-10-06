@@ -19,7 +19,7 @@ const params = {
   qty: 1,                  // bookcases to build: cut list totals + combined nesting
   nest: 'strip',           // 'strip' (straight cuts) or 'maxrects' (CNC freeform)
   trim: 0,                 // mm shaved off every sheet edge before nesting
-  rot: {},                 // per part name: may this part rotate 90° when nesting?
+  grain: {},               // per part name: 'long' | 'short' | 'any' (default 'long')
 };
 
 // --- procedural textures --------------------------------------------------------
@@ -331,12 +331,16 @@ function orderings(parts) {
   return list;
 }
 
-// Long edge along the sheet by default; a part may present its rotated
-// orientation only when its cut-list Rot box is ticked.
+// Sheet grain runs along the 2440 length, so a part's grain policy fixes its
+// placement: 'long' = grain along the part's long edge (long edge along the
+// sheet, the default), 'short' = grain along its short edge (forced rotated),
+// 'any' = maximise nest — the packer orients each instance independently.
 function orientationsOf(pt) {
-  const os = [{ l: pt.L, w: pt.W, rot: false }];
-  if (pt.mayRotate && pt.L !== pt.W) os.push({ l: pt.W, w: pt.L, rot: true });
-  return os;
+  const long = { l: pt.L, w: pt.W, rot: false };
+  const short = { l: pt.W, w: pt.L, rot: true };
+  if (pt.grain === 'short') return [short];
+  if (pt.grain === 'any') return pt.L === pt.W ? [long] : [long, short];
+  return [long];
 }
 
 // Strip nest: strips run the sheet length, so every edge is a straight
@@ -428,11 +432,11 @@ function packMaxRects(parts, SL, SW) {
 // which packs sheets tighter than nesting each bookcase separately. Each part
 // remembers which bookcase it belongs to when more than one is being built.
 // opts: { mode: 'strip'|'maxrects', trim: mm off every sheet edge,
-//         rot: { partName: true } — parts allowed to rotate 90° }
+//         grain: { partName: 'long'|'short'|'any' } }
 function nestSheets(rows, units = 1, opts = {}) {
   const mode = opts.mode ?? 'strip';
   const trim = Math.max(0, opts.trim ?? 0);
-  const rot = opts.rot ?? {};
+  const grain = opts.grain ?? {};
   const SL = SHEET_L - 2 * trim, SW = SHEET_W - 2 * trim;
   const byT = {};
   for (let u = 1; u <= units; u++) {
@@ -440,7 +444,7 @@ function nestSheets(rows, units = 1, opts = {}) {
       for (let i = 0; i < r.qty; i++) {
         (byT[r.t] ??= []).push({
           L: Math.max(r.len, r.wid), W: Math.min(r.len, r.wid), label: r.part,
-          unit: units > 1 ? u : undefined, mayRotate: !!rot[r.part],
+          unit: units > 1 ? u : undefined, grain: grain[r.part] ?? 'long',
         });
       }
     }
@@ -448,7 +452,7 @@ function nestSheets(rows, units = 1, opts = {}) {
   const pack = mode === 'maxrects' ? packMaxRects : packStrip;
   return Object.keys(byT).map(Number).sort((a, b) => b - a).map((t) => {
     const all = byT[t];
-    const fits = (pt) => (pt.L <= SL && pt.W <= SW) || (pt.mayRotate && pt.W <= SL && pt.L <= SW);
+    const fits = (pt) => orientationsOf(pt).some((o) => o.l <= SL && o.w <= SW);
     const oversize = all.filter((pt) => !fits(pt)).length;
     const pool = all.filter(fits);
     let best = null, runs = 0;
@@ -567,7 +571,7 @@ function statsFor({ bay, n, vol, panels }) {
   ];
 }
 
-const nestOpts = () => ({ mode: params.nest, trim: params.trim, rot: params.rot });
+const nestOpts = () => ({ mode: params.nest, trim: params.trim, grain: params.grain });
 
 function renderSheets(nest) {
   $('#sheets').innerHTML = nest.map((s) => `
@@ -580,7 +584,7 @@ function renderSheets(nest) {
   $('#nestnote').textContent = g
     ? `${g.mode === 'maxrects' ? 'CNC freeform nest (MaxRects)' : 'Straight-cut strip nest (guillotine)'} — ` +
       `best of ${g.runs} part orderings · 4 mm kerf${g.trim ? ` · ${g.trim} mm edge trim` : ''} · ` +
-      'long edge along the sheet unless Rot is ticked in the cut list.'
+      'grain per part as set in the cut list.'
     : '';
 }
 
@@ -599,16 +603,26 @@ function renderReadout() {
 
 function renderCutList(rows) {
   const q = params.qty;
+  const grainRow = (part) => {
+    const g = params.grain[part] ?? 'long';
+    const opt = (v, label, title) => `
+      <label title="${title}"><input type="radio" name="grain-${part}" value="${v}"
+        data-grain="${part}"${g === v ? ' checked' : ''}>${label}</label>`;
+    return `<div class="grain"><span class="muted">grain:</span>
+      ${opt('long', 'long edge', 'grain along the long edge — long edge along the sheet')}
+      ${opt('short', 'short edge', 'grain along the short edge — part always rotated 90°')}
+      ${opt('any', 'max nest', 'either direction — the nest may orient each piece differently')}
+    </div>`;
+  };
   $('#cutlist').innerHTML = `
-    <thead><tr><th>Part</th><th title="per bookcase">Qty</th><th title="all ${q} bookcases">Total</th><th>L × W (mm)</th><th>T</th><th title="allow 90° rotation when nesting">Rot</th></tr></thead>
+    <thead><tr><th>Part</th><th title="per bookcase">Qty</th><th title="all ${q} bookcases">Total</th><th>L × W (mm)</th><th>T</th></tr></thead>
     <tbody>${rows.map((r) => `
       <tr>
-        <td><div>${r.part}</div><div class="muted note">${r.note}</div></td>
+        <td><div>${r.part}</div><div class="muted note">${r.note}</div>${grainRow(r.part)}</td>
         <td>${r.qty}</td>
         <td>${r.qty * q}</td>
         <td class="num">${r.len} × ${r.wid}</td>
         <td class="num">${r.t}</td>
-        <td><input type="checkbox" data-rot="${r.part}"${params.rot[r.part] ? ' checked' : ''}></td>
       </tr>`).join('')}</tbody>`;
 }
 
@@ -621,8 +635,9 @@ function cutListCsv(p) {
     `${p.shelves} shelves, back ${p.back ? 'yes (6 mm)' : 'no'}, quantity ${p.qty}`;
   const lines = [
     [spec], [],
-    ['Part', 'Qty per bookcase', 'Total qty', 'Length (mm)', 'Width (mm)', 'Thickness (mm)', 'Rotation allowed', 'Notes'],
-    ...cutList(p).map((r) => [r.part, r.qty, r.qty * p.qty, r.len, r.wid, r.t, p.rot[r.part] ? 'yes' : 'no', r.note]),
+    ['Part', 'Qty per bookcase', 'Total qty', 'Length (mm)', 'Width (mm)', 'Thickness (mm)', 'Grain', 'Notes'],
+    ...cutList(p).map((r) => [r.part, r.qty, r.qty * p.qty, r.len, r.wid, r.t,
+      { long: 'along long edge', short: 'along short edge', any: 'either (max nest)' }[p.grain[r.part] ?? 'long'], r.note]),
   ];
   // Excel guesses Windows-1252 for CSVs without a BOM, mangling × and — into
   // "Ã—"/"â€”". Emit plain ASCII and prepend a BOM (at the Blob) so every
@@ -762,12 +777,12 @@ $('#trim').addEventListener('input', (e) => {
   if (e.target.value !== '' && +e.target.value !== v) e.target.value = v;
   renderReadout();
 });
-// per-part rotation permissions live in the cut-list rows (delegated: the
-// table is re-rendered wholesale, the listener survives on the table itself)
+// per-part grain policy lives in the cut-list rows (delegated: the table is
+// re-rendered wholesale, the listener survives on the table itself)
 $('#cutlist').addEventListener('input', (e) => {
-  const name = e.target.dataset?.rot;
+  const name = e.target.dataset?.grain;
   if (name === undefined) return;
-  params.rot[name] = e.target.checked;
+  params.grain[name] = e.target.value;
   renderSheets(nestSheets(cutList(params), params.qty, nestOpts()));
 });
 
