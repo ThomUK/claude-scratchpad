@@ -119,6 +119,11 @@ function sideElevation(doc, p, x0, baseY, s) {
   };
   board(p.plinth, 0, p.depth);
   board(p.height - p.thickness, 0, p.depth);
+  // plinth rail (toe-kick): on edge, floor to plinth, set back from the front
+  if (p.plinth > 0) {
+    doc.line(x(p.setback), y(0), x(p.setback), y(p.plinth));
+    doc.line(x(p.setback + p.thickness), y(0), x(p.setback + p.thickness), y(p.plinth));
+  }
   const n = p.shelves;
   const bay = (p.height - p.plinth - 2 * p.thickness - n * p.thickness) / (n + 1);
   for (let i = 0; i < n; i++) {
