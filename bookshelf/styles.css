@@ -51,6 +51,10 @@ main {
 .cutlist td { padding: 6px 6px 6px 0; border-bottom: 1px solid var(--panel-border); vertical-align: top; }
 .cutlist td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .cutlist .note { font-size: 0.7rem; font-weight: 400; line-height: 1.35; margin-top: 1px; }
+.sbars { display: flex; flex-direction: column; gap: 3px; margin: 7px 0 5px; }
+.sbar { height: 5px; background: #0b1119; border: 1px solid var(--panel-border); border-radius: 3px; overflow: hidden; }
+.sbar i { display: block; height: 100%; background: var(--accent); opacity: 0.75; }
+
 .cutlist .grain { display: flex; flex-wrap: wrap; gap: 2px 9px; margin-top: 3px; font-size: 0.68rem; font-weight: 400; align-items: center; }
 .cutlist .grain label { display: inline-flex; align-items: center; gap: 3px; cursor: pointer; color: var(--text); }
 .cutlist .grain input { accent-color: var(--accent); width: 11px; height: 11px; margin: 0; }

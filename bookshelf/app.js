@@ -469,7 +469,12 @@ function nestSheets(rows, units = 1, opts = {}) {
     const sheets = best ? best.sheets : [];
     const area = pool.reduce((a, pt) => a + pt.L * pt.W, 0);
     const used = sheets.length ? Math.round(100 * area / (sheets.length * SHEET_L * SHEET_W)) : 0;
-    return { t, n: sheets.length, parts: all.length, used, oversize,
+    // per-sheet usage (of a full sheet): the distribution is what separates a
+    // consolidating nest (fuller early sheets, one nearly-empty last sheet =
+    // big reusable offcut) from an evenly-smeared one at the same overall %
+    const usage = sheets.map((sh) =>
+      Math.round(100 * sh.placed.reduce((a, q) => a + q.L * q.W, 0) / (SHEET_L * SHEET_W)));
+    return { t, n: sheets.length, parts: all.length, used, usage, oversize,
              sheets: sheets.map((sh) => sh.placed), runs, mode, trim };
   });
 }
@@ -573,13 +578,28 @@ function statsFor({ bay, n, vol, panels }) {
 
 const nestOpts = () => ({ mode: params.nest, trim: params.trim, grain: params.grain });
 
+const median = (arr) => {
+  const s2 = [...arr].sort((a, b) => a - b);
+  const m = s2.length >> 1;
+  return s2.length % 2 ? s2[m] : Math.round((s2[m - 1] + s2[m]) / 2);
+};
+
 function renderSheets(nest) {
-  $('#sheets').innerHTML = nest.map((s) => `
+  $('#sheets').innerHTML = nest.map((s) => {
+    const last = s.usage[s.n - 1];
+    const dist = s.n > 1
+      ? `min ${Math.min(...s.usage)}% · median ${median(s.usage)}% · last ${last}%`
+      : s.n === 1 ? `${last}% used` : '';
+    return `
     <div class="stat">
       <div class="v">${s.n} ${s.n === 1 ? 'sheet' : 'sheets'}</div>
-      <div class="l">${s.t} mm ply — ${s.parts} ${s.parts === 1 ? 'part' : 'parts'}, ${s.used}% used${s.oversize
+      <div class="l">${s.t} mm ply — ${s.parts} ${s.parts === 1 ? 'part' : 'parts'}, ${s.used}% used overall${s.oversize
         ? ` (+${s.oversize} too big for a sheet)` : ''}</div>
-    </div>`).join('');
+      <div class="sbars">${s.usage.map((u, i) =>
+        `<div class="sbar" title="sheet ${i + 1}: ${u}% used"><i style="width:${u}%"></i></div>`).join('')}</div>
+      ${s.n ? `<div class="l">${dist} — ≈${100 - last}% of the last sheet spare</div>` : ''}
+    </div>`;
+  }).join('');
   const g = nest[0];
   $('#nestnote').textContent = g
     ? `${g.mode === 'maxrects' ? 'CNC freeform nest (MaxRects)' : 'Straight-cut strip nest (guillotine)'} — ` +

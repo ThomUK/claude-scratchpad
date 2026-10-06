@@ -328,13 +328,24 @@ function sheetLayoutPages(doc, p, sheets) {
   const shH = SHEET_W * sc;           // ≈ 90 mm per sheet
   doc.addPage();
   const hy3 = pageHeader(doc, 'Sheet layouts', 16, p);
-  const summary = 'Sheets (2440 × 1220 mm): ' + sheets.map((g) =>
-    `${g.t} mm: ${g.n} ${g.n === 1 ? 'sheet' : 'sheets'} (${g.parts} ${g.parts === 1 ? 'part' : 'parts'}, ${g.used}% used${g.oversize
-      ? `; ${g.oversize} too big for a sheet` : ''})`).join('  ·  ');
+  const median = (arr) => {
+    const s2 = [...arr].sort((a, b) => a - b);
+    const m = s2.length >> 1;
+    return s2.length % 2 ? s2[m] : Math.round((s2[m - 1] + s2[m]) / 2);
+  };
+  const summary = 'Sheets (2440 × 1220 mm): ' + sheets.map((g) => {
+    const last = g.usage[g.n - 1];
+    const dist = g.n > 1 ? `, median ${median(g.usage)}%, last ${last}% — ≈${100 - last}% of it spare`
+      : g.n === 1 ? ` — ≈${100 - last}% of it spare` : '';
+    return `${g.t} mm: ${g.n} ${g.n === 1 ? 'sheet' : 'sheets'} (${g.parts} ${g.parts === 1 ? 'part' : 'parts'}, ` +
+      `${g.used}% overall${dist}${g.oversize ? `; ${g.oversize} too big for a sheet` : ''})`;
+  }).join('  ·  ');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(INK);
-  doc.text(wa(summary), 15, hy3 + 6);
+  const sumLines = doc.splitTextToSize(wa(summary), 180);
+  doc.text(sumLines, 15, hy3 + 6);
+  const sumShift = (sumLines.length - 1) * 3.8;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(GREY);
@@ -346,8 +357,8 @@ function sheetLayoutPages(doc, p, sheets) {
     `${g0?.trim ? `, ${g0.trim} mm trimmed off every sheet edge (dashed line)` : ''}. Blank areas are offcut.` +
     (anyRotated ? ' (R) = part rotated 90°: grain along its short edge.' : '') +
     (p.qty > 1 ? ' Circled numbers mark the bookcase each part belongs to.' : ''), 180);
-  doc.text(noteLines, 15, hy3 + 11);
-  let y = hy3 + 11 + noteLines.length * 3 + 4;
+  doc.text(noteLines, 15, hy3 + 11 + sumShift);
+  let y = hy3 + 11 + sumShift + noteLines.length * 3 + 4;
   for (const g of sheets) {
     g.sheets.forEach((placed, i) => {
       if (y + 3 + shH > 278) { doc.addPage(); y = 24; }

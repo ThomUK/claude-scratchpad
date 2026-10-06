@@ -34,7 +34,11 @@ The CSV is emitted as pure ASCII with a UTF-8 BOM, because Excel guesses
 Windows-1252 for BOM-less CSVs and mangles × / — into `Ã—` / `â€”`.
 
 Under the cut list, a **sheet nesting** summary estimates how many
-2440 × 1220 sheets to buy per thickness, with part count and utilisation.
+2440 × 1220 sheets to buy per thickness, with part count and utilisation —
+overall %, a usage bar per sheet, and min/median/last-sheet figures with
+the spare fraction of the final sheet, since two nests with the same
+overall % can leave very different offcuts (a consolidating nest fills
+early sheets and leaves one nearly-empty sheet to reuse).
 Two nest styles are offered: **straight-cut** (guillotine strips — every
 edge a through-cut on a panel/track saw) and **CNC freeform** (MaxRects —
 tighter stepped layouts). Each nest is a deterministic search: five sorted
