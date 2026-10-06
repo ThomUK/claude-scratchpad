@@ -113,8 +113,13 @@
             <option value="strip" selected>Straight-cut nest</option>
             <option value="maxrects">CNC nest (freeform)</option>
           </select>
-          <label class="trim">Edge trim
-            <input id="trim" type="number" min="0" max="25" step="1" value="0" /> mm
+        </div>
+        <div class="row nestnums">
+          <label class="trim" title="width the saw blade eats between cuts">Kerf
+            <input id="kerf" type="number" min="0" max="25" step="1" value="4" /> mm
+          </label>
+          <label class="trim" title="shaved off every sheet edge before nesting (damaged factory edges)">Edge trim
+            <input id="trim" type="number" min="0" max="25" step="1" value="10" /> mm
           </label>
         </div>
       </div>

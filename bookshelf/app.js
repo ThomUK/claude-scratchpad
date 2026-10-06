@@ -18,7 +18,8 @@ const params = {
   thickness: 18, back: false,
   qty: 1,                  // bookcases to build: cut list totals + combined nesting
   nest: 'strip',           // 'strip' (straight cuts) or 'maxrects' (CNC freeform)
-  trim: 0,                 // mm shaved off every sheet edge before nesting
+  trim: 10,                // mm shaved off every sheet edge before nesting
+  kerf: 4,                 // mm the saw blade eats between cuts
   grain: {},               // per part name: 'long' | 'short' | 'any' (default 'long')
 };
 
@@ -297,7 +298,7 @@ function cutList(p) {
 // seeded shuffles — and keeps the best result: fewest sheets, then the
 // emptiest final sheet (biggest reusable offcut). Everything is seeded, so
 // the same inputs always produce the same layout.
-const SHEET_L = 2440, SHEET_W = 1220, KERF = 4;
+const SHEET_L = 2440, SHEET_W = 1220;
 
 // mulberry32: tiny deterministic PRNG for the shuffled orderings
 function mulberry32(seed) {
@@ -346,7 +347,7 @@ function orientationsOf(pt) {
 // Strip nest: strips run the sheet length, so every edge is a straight
 // through-cut. Kerf is handled by inflating footprints against an inflated
 // sheet, so a part may finish flush with a sheet edge.
-function packStrip(parts, SL, SW) {
+function packStrip(parts, SL, SW, K) {
   const sheets = [];   // { usedW, strips: [{ y, W, usedL }], placed: [] }
   for (const pt of parts) {
     const os = orientationsOf(pt);
@@ -371,20 +372,20 @@ function packStrip(parts, SL, SW) {
     if (!st) {
       st = { y: sh.usedW, W: o.w, usedL: 0 };
       sh.strips.push(st);
-      sh.usedW += o.w + KERF;
+      sh.usedW += o.w + K;
     }
     sh.placed.push({ x: st.usedL, y: st.y, L: o.l, W: o.w, rotated: o.rot, label: pt.label, unit: pt.unit });
-    st.usedL += o.l + KERF;
+    st.usedL += o.l + K;
   }
   return sheets;
 }
 
 // MaxRects (best-short-side-fit): classic freeform rectangle nesting. The
 // stepped layouts pack tighter but need a CNC or a patient tracksaw.
-function packMaxRects(parts, SL, SW) {
+function packMaxRects(parts, SL, SW, K) {
   const sheets = [];   // { free: [{x,y,w,h}], placed: [] }
   const place = (sh, fr, o, pt) => {
-    const used = { x: fr.x, y: fr.y, w: o.l + KERF, h: o.w + KERF };
+    const used = { x: fr.x, y: fr.y, w: o.l + K, h: o.w + K };
     sh.placed.push({ x: used.x, y: used.y, L: o.l, W: o.w, rotated: o.rot, label: pt.label, unit: pt.unit });
     const next = [];
     for (const r of sh.free) {
@@ -408,18 +409,18 @@ function packMaxRects(parts, SL, SW) {
     for (const sh of sheets) {
       for (const fr of sh.free) {
         for (const o of os) {
-          if (o.l + KERF <= fr.w && o.w + KERF <= fr.h) {
-            const score = Math.min(fr.w - o.l - KERF, fr.h - o.w - KERF);
+          if (o.l + K <= fr.w && o.w + K <= fr.h) {
+            const score = Math.min(fr.w - o.l - K, fr.h - o.w - K);
             if (!best || score < best.score) best = { sh, fr, o, score };
           }
         }
       }
     }
     if (!best) {
-      const sh = { free: [{ x: 0, y: 0, w: SL + KERF, h: SW + KERF }], placed: [] };
+      const sh = { free: [{ x: 0, y: 0, w: SL + K, h: SW + K }], placed: [] };
       sheets.push(sh);
       const fr = sh.free[0];
-      const o = os.find((ori) => ori.l + KERF <= fr.w && ori.w + KERF <= fr.h);
+      const o = os.find((ori) => ori.l + K <= fr.w && ori.w + K <= fr.h);
       if (!o) continue;
       best = { sh, fr, o };
     }
@@ -436,6 +437,7 @@ function packMaxRects(parts, SL, SW) {
 function nestSheets(rows, units = 1, opts = {}) {
   const mode = opts.mode ?? 'strip';
   const trim = Math.max(0, opts.trim ?? 0);
+  const kerf = Math.min(25, Math.max(0, opts.kerf ?? 4));
   const grain = opts.grain ?? {};
   const SL = SHEET_L - 2 * trim, SW = SHEET_W - 2 * trim;
   const byT = {};
@@ -457,7 +459,7 @@ function nestSheets(rows, units = 1, opts = {}) {
     const pool = all.filter(fits);
     let best = null, runs = 0;
     for (const order of orderings(pool)) {
-      const sheets = pack(order, SL, SW);
+      const sheets = pack(order, SL, SW, kerf);
       runs++;
       const lastUsed = sheets.length
         ? sheets[sheets.length - 1].placed.reduce((a, q) => a + q.L * q.W, 0) : 0;
@@ -475,7 +477,7 @@ function nestSheets(rows, units = 1, opts = {}) {
     const usage = sheets.map((sh) =>
       Math.round(100 * sh.placed.reduce((a, q) => a + q.L * q.W, 0) / (SHEET_L * SHEET_W)));
     return { t, n: sheets.length, parts: all.length, used, usage, oversize,
-             sheets: sheets.map((sh) => sh.placed), runs, mode, trim };
+             sheets: sheets.map((sh) => sh.placed), runs, mode, trim, kerf };
   });
 }
 
@@ -576,7 +578,7 @@ function statsFor({ bay, n, vol, panels }) {
   ];
 }
 
-const nestOpts = () => ({ mode: params.nest, trim: params.trim, grain: params.grain });
+const nestOpts = () => ({ mode: params.nest, trim: params.trim, kerf: params.kerf, grain: params.grain });
 
 const median = (arr) => {
   const s2 = [...arr].sort((a, b) => a - b);
@@ -603,7 +605,7 @@ function renderSheets(nest) {
   const g = nest[0];
   $('#nestnote').textContent = g
     ? `${g.mode === 'maxrects' ? 'CNC freeform nest (MaxRects)' : 'Straight-cut strip nest (guillotine)'} — ` +
-      `best of ${g.runs} part orderings · 4 mm kerf${g.trim ? ` · ${g.trim} mm edge trim` : ''} · ` +
+      `best of ${g.runs} part orderings · ${g.kerf} mm kerf${g.trim ? ` · ${g.trim} mm edge trim` : ''} · ` +
       'grain per part as set in the cut list.'
     : '';
 }
@@ -791,12 +793,14 @@ $('#back').addEventListener('input', (e) => { params.back = e.target.checked; bu
 
 // nesting options: none of these touch the 3D model, only the paperwork
 $('#nestmode').addEventListener('input', (e) => { params.nest = e.target.value; renderReadout(); });
-$('#trim').addEventListener('input', (e) => {
-  const v = Math.min(25, Math.max(0, Math.round(+e.target.value) || 0));
-  params.trim = v;
-  if (e.target.value !== '' && +e.target.value !== v) e.target.value = v;
-  renderReadout();
-});
+for (const [id, key] of [['#trim', 'trim'], ['#kerf', 'kerf']]) {
+  $(id).addEventListener('input', (e) => {
+    const v = Math.min(25, Math.max(0, Math.round(+e.target.value) || 0));
+    params[key] = v;
+    if (e.target.value !== '' && +e.target.value !== v) e.target.value = v;
+    renderReadout();
+  });
+}
 // per-part grain policy lives in the cut-list rows (delegated: the table is
 // re-rendered wholesale, the listener survives on the table itself)
 $('#cutlist').addEventListener('input', (e) => {

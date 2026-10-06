@@ -60,6 +60,7 @@ main {
 .cutlist .grain input { accent-color: var(--accent); width: 11px; height: 11px; margin: 0; }
 .trim { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
 .trim input { width: 58px !important; }
+.nestnums { margin-top: 8px; }
 .btns { display: flex; gap: 8px; }
 .btns .btn { flex: 1; width: auto; }
 .btn {

@@ -353,7 +353,7 @@ function sheetLayoutPages(doc, p, sheets) {
   const anyRotated = sheets.some((g) => g.sheets.some((sh) => sh.some((q) => q.rotated)));
   const noteLines = doc.splitTextToSize(
     `Buying estimate: ${g0?.mode === 'maxrects' ? 'CNC freeform nest (MaxRects)' : 'straight-cut strip nest (guillotine)'}, ` +
-    `best of ${g0?.runs ?? 0} part orderings, 4 mm kerf between cuts` +
+    `best of ${g0?.runs ?? 0} part orderings, ${g0?.kerf ?? 4} mm kerf between cuts` +
     `${g0?.trim ? `, ${g0.trim} mm trimmed off every sheet edge (dashed line)` : ''}. Blank areas are offcut.` +
     (anyRotated ? ' (R) = part rotated 90°: grain along its short edge.' : '') +
     (p.qty > 1 ? ' Circled numbers mark the bookcase each part belongs to.' : ''), 180);

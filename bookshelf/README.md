@@ -49,9 +49,9 @@ grain along the part's long edge, long edge along the sheet), *short edge*
 (forced 90° rotation, for customers who want grain across a part), or
 *max nest* (either direction — the nest may orient each instance of the
 same part differently for the tightest packing). A forced orientation
-that cannot fit the sheet is flagged rather than silently dropped. An **edge trim** parameter (0–25 mm) shrinks the
-usable sheet for damaged factory edges, and a 4 mm kerf separates every
-cut. When building more than one bookcase, **all parts nest together** in
+that cannot fit the sheet is flagged rather than silently dropped. An **edge trim** parameter (0–25 mm, default 10) shrinks the
+usable sheet for damaged factory edges, and a **kerf** parameter
+(0–25 mm, default 4) sets the width the saw eats between cuts. When building more than one bookcase, **all parts nest together** in
 one pool per thickness, which packs sheets tighter than nesting each
 bookcase separately. The PDF dedicates page 3 (and beyond,
 as needed) to **drawn sheet layouts**: each sheet as a rectangle with
