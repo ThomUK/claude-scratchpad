@@ -226,6 +226,44 @@ function maxShelves(p) {
   return Math.max(0, Math.floor((cavity - MIN_BAY) / (p.thickness + MIN_BAY)));
 }
 
+// --- cut list ----------------------------------------------------------------------
+// Single source of truth for what the unit is made of: the 3D build, the
+// readout (volume, weight, panel count) and the CSV download all derive from
+// these rows, so they can never disagree. len × wid are the rectangular blank
+// to cut; notchArea (mm²) is material removed afterwards (the skirting notch).
+function cutList(p) {
+  const T = p.thickness;
+  const innerW = p.width - 2 * T;
+  const shelfD = p.depth - p.setback - (p.back ? BACK_T : 0);
+  const notch = p.plinth > 0 && p.cutout > 0;
+  const rows = [{
+    part: 'Side', qty: 2, len: p.height, wid: p.depth, t: T,
+    notchArea: notch ? p.plinth * p.cutout : 0,
+    note: notch
+      ? `full height and depth; notch ${p.cutout} × ${p.plinth} mm out of the back-bottom corner to clear skirting`
+      : 'full height and depth',
+  }, {
+    part: 'Bottom', qty: 1, len: innerW, wid: p.depth, t: T,
+    note: 'sits on top of the plinth zone, flush with the side fronts',
+  }, {
+    part: 'Top', qty: 1, len: innerW, wid: p.depth, t: T,
+    note: 'flush with the side fronts',
+  }];
+  if (p.plinth > 0) rows.push({
+    part: 'Plinth rail', qty: 1, len: innerW, wid: p.plinth, t: T,
+    note: `kick board: stands on edge under the bottom, front face set back ${p.setback} mm`,
+  });
+  if (p.shelves > 0) rows.push({
+    part: 'Shelf', qty: p.shelves, len: innerW, wid: shelfD, t: T,
+    note: `front set back ${p.setback} mm${p.back ? '; 6 mm shallower to clear the back' : ''}`,
+  });
+  if (p.back) rows.push({
+    part: 'Back', qty: 1, len: innerW, wid: p.height - p.plinth - 2 * T, t: BACK_T,
+    note: 'thin ply, inset within the frame between bottom and top',
+  });
+  return rows;
+}
+
 function buildUnit() {
   if (unit) {
     scene.remove(unit);
@@ -290,20 +328,15 @@ function buildUnit() {
     camera.position.copy(controls.target).add(v);
   }
 
-  renderReadout({ innerW, shelfD, bay, n });
+  renderReadout({ bay, n });
 }
 
-function renderReadout({ innerW, shelfD, bay, n }) {
-  const p = params, T = p.thickness;
-  const sideArea = p.height * p.depth - p.plinth * p.cutout;   // mm2, notch removed
-  const m3 =
-    2 * (sideArea * T) +                                 // sides
-    2 * (innerW * p.depth * T) +                          // bottom + top
-    (p.plinth > 0 ? innerW * p.plinth * T : 0) +          // plinth rail
-    n * (innerW * shelfD * T) +                           // shelves
-    (p.back ? innerW * (p.height - p.plinth - 2 * T) * BACK_T : 0);
-  const vol = m3 * 1e-9;                                  // mm3 -> m3
-  const panels = 4 + n + (p.plinth > 0 ? 1 : 0) + (p.back ? 1 : 0);
+function renderReadout({ bay, n }) {
+  const p = params;
+  const rows = cutList(p);
+  const vol = rows.reduce((a, r) => a + r.qty * (r.len * r.wid - (r.notchArea ?? 0)) * r.t, 0) * 1e-9; // mm3 -> m3
+  const panels = rows.reduce((a, r) => a + r.qty, 0);
+  renderCutList(rows);
   $('#readout').innerHTML = `
     <div class="stat"><div class="v">${p.width} × ${p.depth} × ${p.height}</div><div class="l">External W × D × H (mm)</div></div>
     <div class="stat"><div class="v">${Math.round(bay)} mm</div><div class="l">Clear height per bay (${n + 1} ${n ? 'bays' : 'bay'})</div></div>
@@ -313,6 +346,42 @@ function renderReadout({ innerW, shelfD, bay, n }) {
     ? `Shelf count is capped at ${maxShelves(p)} for this height/plinth/thickness so each bay keeps ≥ ${MIN_BAY} mm clear.`
     : '';
 }
+
+function renderCutList(rows) {
+  $('#cutlist').innerHTML = `
+    <thead><tr><th>Part</th><th>Qty</th><th>L × W (mm)</th><th>T</th></tr></thead>
+    <tbody>${rows.map((r) => `
+      <tr>
+        <td><div>${r.part}</div><div class="muted note">${r.note}</div></td>
+        <td>${r.qty}</td>
+        <td class="num">${r.len} × ${r.wid}</td>
+        <td class="num">${r.t}</td>
+      </tr>`).join('')}</tbody>`;
+}
+
+// --- CSV download ------------------------------------------------------------------
+const csvEscape = (s) => (/[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
+
+function cutListCsv(p) {
+  const spec = `Bookshelf ${p.width} × ${p.depth} × ${p.height} mm — plinth ${p.plinth}, ` +
+    `skirting cutout ${p.cutout}, front setback ${p.setback}, ply ${p.thickness} mm, ` +
+    `${p.shelves} shelves, back ${p.back ? 'yes (6 mm)' : 'no'}`;
+  const lines = [
+    [spec], [],
+    ['Part', 'Qty', 'Length (mm)', 'Width (mm)', 'Thickness (mm)', 'Notes'],
+    ...cutList(p).map((r) => [r.part, r.qty, r.len, r.wid, r.t, r.note]),
+  ];
+  return lines.map((cols) => cols.map((c) => csvEscape(String(c))).join(',')).join('\r\n') + '\r\n';
+}
+
+$('#downloadCsv').addEventListener('click', () => {
+  const blob = new Blob([cutListCsv(params)], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `bookshelf-cutlist-${params.width}x${params.depth}x${params.height}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
 
 // --- controls wiring ---------------------------------------------------------------
 function clampShelves() {

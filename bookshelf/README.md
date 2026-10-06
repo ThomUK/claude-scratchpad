@@ -22,6 +22,16 @@ the mouse.
 Readout: external dimensions, clear bay height, total ply volume + panel
 count, and an approximate weight at 680 kg/m³.
 
+## Cut list
+
+A live cut list sits under the readout: every panel with quantity, blank
+length × width, thickness and a construction note (the sides list the
+skirting notch to cut out of the blank; the plinth rail — the kick board
+that stands on edge under the bottom shelf — lists its setback). It is
+downloadable as CSV, headed by a one-line spec of the full parameter set.
+The 3D build, the readout figures and the CSV all derive from the same
+`cutList()` rows, so they cannot disagree (the repo-wide anti-drift rule).
+
 ## Construction modelled
 
 Sides run full height and full depth, notched at the back-bottom corner to
@@ -45,6 +55,5 @@ outside the repo.
 
 ## Ideas for later
 
-Shelf-pin vs housed-dado toggle, dividers, a cut list with sheet
-nesting (how many 2440×1220 sheets), cost at £/sheet, and export of the cut
-list as CSV.
+Shelf-pin vs housed-dado toggle, dividers, sheet nesting for the cut list
+(how many 2440×1220 sheets), and cost at £/sheet.
