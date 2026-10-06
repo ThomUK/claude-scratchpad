@@ -72,7 +72,7 @@
       </div>
 
       <div class="ctl" data-param="setback">
-        <label>Front setback <span class="muted">(shelf fronts &amp; plinth rail behind the side fronts, mm)</span></label>
+        <label>Front setback <span class="muted">(shelf fronts &amp; toe rail behind the side fronts, mm)</span></label>
         <div class="row">
           <input type="range"  min="0" max="60" step="1" value="20" />
           <input type="number" min="0" max="60" step="1" value="20" />
@@ -110,8 +110,8 @@
       <div class="ctl">
         <div class="row">
           <select id="nestmode" title="cutting method the layout must suit">
-            <option value="strip" selected>Straight-cut nest</option>
-            <option value="maxrects">CNC nest (freeform)</option>
+            <option value="strip" selected>Nest for straight cutting (no interlocking shapes)</option>
+            <option value="maxrects">Nest for CNC cutting (interlocking shapes)</option>
           </select>
         </div>
         <div class="row nestnums">
@@ -138,7 +138,6 @@
       <div id="loading" class="loading" aria-live="polite">
         <div class="spin"></div>
         <div>Loading the 3D engine…</div>
-        <div class="muted small">Any settings you change now are picked up as soon as it's ready.</div>
       </div>
       <canvas id="scene"></canvas>
     </section>
@@ -150,7 +149,7 @@
       vendored in <code>vendor/jspdf/</code>) — no CDN dependencies. Carcass: sides full
       height and depth, notched at the back-bottom to clear skirting; bottom shelf sits on a plinth
       zone with a set-back front rail; top, bottom flush with the side fronts; internal shelves set
-      back by the same amount as the plinth rail; optional 6&thinsp;mm back rebated into the sides,
+      back by the same amount as the toe rail; optional 6&thinsp;mm back rebated into the sides,
       top and bottom (lap ¾ of the ply thickness, rebate 1&thinsp;mm deeper than the back ply).
       Weight estimate uses 680&thinsp;kg/m³ for birch ply. The 3D model, the readout, the sheet
       estimate and the downloadable cut list all derive from the same panel rows, so they cannot

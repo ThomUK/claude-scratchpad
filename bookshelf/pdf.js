@@ -101,7 +101,7 @@ function frontElevation(doc, p, x0, baseY, s) {
   const W = p.width * s, H = p.height * s, T = p.thickness * s;
   const y = (mm) => baseY - mm * s;
   const xi = x0 + T, wi = W - 2 * T;
-  // plinth rail face (set back, so a shade lighter) first, lines over it
+  // toe rail face (set back, so a shade lighter) first, lines over it
   if (p.plinth > 0) {
     doc.setFillColor(235);
     doc.rect(xi, y(p.plinth), wi, p.plinth * s, 'F');
@@ -139,7 +139,7 @@ function sideElevation(doc, p, x0, baseY, s) {
   };
   board(p.plinth, 0, p.depth);
   board(p.height - p.thickness, 0, p.depth);
-  // plinth rail (toe-kick): on edge, floor to plinth, set back from the front
+  // toe rail (toe-kick): on edge, floor to plinth, set back from the front
   if (p.plinth > 0) {
     doc.line(x(p.setback), y(0), x(p.setback), y(p.plinth));
     doc.line(x(p.setback + p.thickness), y(0), x(p.setback + p.thickness), y(p.plinth));
@@ -171,7 +171,7 @@ function sideElevation(doc, p, x0, baseY, s) {
 
 // Top (plan) view: the full W × D footprint seen from above. Solid seams
 // where the top panel meets the side tops; hidden detail (shelf fronts /
-// plinth rail at the setback, back panel) dashed. Front of the unit is the
+// toe rail at the setback, back panel) dashed. Front of the unit is the
 // bottom edge, third-angle, so it sits directly above the front elevation.
 function topElevation(doc, p, x0, yTop, s) {
   const W = p.width * s, D = p.depth * s, T = p.thickness * s;

@@ -14,7 +14,7 @@ const params = {
   width: 900, depth: 300, height: 1800, shelves: 4,
   plinth: 120,             // mm, floor to UNDERSIDE of the bottom shelf
   cutout: 25,              // mm, skirting cutout depth (notch height = plinth)
-  setback: 20,             // mm, shelf fronts + plinth rail behind the side fronts
+  setback: 20,             // mm, shelf fronts + toe rail behind the side fronts
   thickness: 18, back: false,
   qty: 1,                  // bookcases to build: cut list totals + combined nesting
   nest: 'strip',           // 'strip' (straight cuts) or 'maxrects' (CNC freeform)
@@ -27,22 +27,62 @@ const params = {
 // Birch face: pale with faint long grain streaks. Birch edge: the laminated
 // stripe that makes ply read as ply. Concrete: multi-scale grey noise, used as
 // both colour and bump.
+// Birch face, drawn rather than downloaded (zero network cost): warm tonal
+// drift, long wavy grain in loose clusters, the short dark lens-shaped
+// flecks characteristic of birch, and fine pore speckle.
 function faceTexture() {
+  const S = 1024;
   const c = document.createElement('canvas');
-  c.width = c.height = 512;
+  c.width = c.height = S;
   const g = c.getContext('2d');
-  g.fillStyle = '#e8d6ac';
-  g.fillRect(0, 0, 512, 512);
-  for (let i = 0; i < 160; i++) {
-    const y = Math.random() * 512;
-    const w = 40 + Math.random() * 470;
-    const x = Math.random() * (512 - w);
-    g.fillStyle = Math.random() < 0.5 ? 'rgba(197,166,112,0.10)' : 'rgba(248,236,205,0.12)';
-    g.fillRect(x, y, w, 1 + Math.random() * 2);
+  g.fillStyle = '#ecdcb6';
+  g.fillRect(0, 0, S, S);
+  // broad warm/pale drift so large faces do not read as one flat colour
+  for (let i = 0; i < 26; i++) {
+    const r = 120 + Math.random() * 420;
+    const x = Math.random() * S, y = Math.random() * S;
+    const grad = g.createRadialGradient(x, y, 0, x, y, r);
+    grad.addColorStop(0, Math.random() < 0.5
+      ? `rgba(213,185,134,${0.04 + Math.random() * 0.07})`
+      : `rgba(250,243,224,${0.05 + Math.random() * 0.08})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grad;
+    g.fillRect(x - r, y - r, 2 * r, 2 * r);
   }
-  for (let i = 0; i < 900; i++) {
-    g.fillStyle = `rgba(160,130,80,${0.02 + Math.random() * 0.04})`;
-    g.fillRect(Math.random() * 512, Math.random() * 512, 1.5, 1.5);
+  // grain: long wavy streaks running along x, in loose clusters
+  let gy = -10;
+  while (gy < S + 10) {
+    const cluster = 1 + Math.floor(Math.random() * 4);
+    for (let k = 0; k < cluster; k++) {
+      const y0 = gy + k * (2 + Math.random() * 5);
+      const amp = 1.5 + Math.random() * 5;
+      const wl = 260 + Math.random() * 640;
+      const ph = Math.random() * Math.PI * 2;
+      const a = 0.08 + Math.random() * 0.13;
+      g.strokeStyle = Math.random() < 0.72
+        ? `rgba(180,144,90,${a})` : `rgba(250,241,218,${a + 0.03})`;
+      g.lineWidth = 0.7 + Math.random() * 1.5;
+      g.beginPath();
+      for (let x = -8; x <= S + 8; x += 7) {
+        const yy = y0 + amp * Math.sin((x / wl) * Math.PI * 2 + ph) + Math.sin(x * 0.05 + ph) * 0.6;
+        if (x === -8) g.moveTo(x, yy); else g.lineTo(x, yy);
+      }
+      g.stroke();
+    }
+    gy += 6 + Math.random() * 26;
+  }
+  // birch flecks: small dark lenses lying along the grain
+  for (let i = 0; i < 130; i++) {
+    g.fillStyle = `rgba(146,108,62,${0.08 + Math.random() * 0.12})`;
+    g.beginPath();
+    g.ellipse(Math.random() * S, Math.random() * S, 4 + Math.random() * 14,
+      0.8 + Math.random() * 1.1, (Math.random() - 0.5) * 0.06, 0, Math.PI * 2);
+    g.fill();
+  }
+  // fine pore speckle
+  for (let i = 0; i < 1600; i++) {
+    g.fillStyle = `rgba(160,130,80,${0.015 + Math.random() * 0.035})`;
+    g.fillRect(Math.random() * S, Math.random() * S, 1.3, 1.3);
   }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
@@ -67,42 +107,72 @@ function edgeTexture(plies) {
   return t;
 }
 
+// One un-tiled 2048px canvas covering the whole slab — the old version tiled
+// a 1024px texture 2×2, and the tile boundaries read as straight join lines
+// in the concrete. Trowel sweeps, aggregate, pinholes and stains for interest.
 function concreteTexture() {
+  const S = 2048;
   const c = document.createElement('canvas');
-  c.width = c.height = 1024;
+  c.width = c.height = S;
   const g = c.getContext('2d');
-  g.fillStyle = '#c3c7cc';
-  g.fillRect(0, 0, 1024, 1024);
-  // broad tonal blotches
-  for (let i = 0; i < 70; i++) {
-    const r = 60 + Math.random() * 220;
-    const x = Math.random() * 1024, y = Math.random() * 1024;
+  g.fillStyle = '#c5c9ce';
+  g.fillRect(0, 0, S, S);
+  // broad tonal patches
+  for (let i = 0; i < 90; i++) {
+    const r = 140 + Math.random() * 560;
+    const x = Math.random() * S, y = Math.random() * S;
     const grad = g.createRadialGradient(x, y, 0, x, y, r);
-    const tone = Math.random() < 0.5 ? '176,180,186' : '204,208,213';
-    grad.addColorStop(0, `rgba(${tone},${0.10 + Math.random() * 0.12})`);
+    const tone = ['174,178,185', '204,208,214', '189,195,202'][Math.floor(Math.random() * 3)];
+    grad.addColorStop(0, `rgba(${tone},${0.07 + Math.random() * 0.10})`);
     grad.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = grad;
     g.fillRect(x - r, y - r, 2 * r, 2 * r);
   }
-  // fine aggregate speckle
-  for (let i = 0; i < 14000; i++) {
-    const v = 150 + Math.floor(Math.random() * 80);
-    g.fillStyle = `rgba(${v},${v},${v + 4},${0.12 + Math.random() * 0.25})`;
-    g.fillRect(Math.random() * 1024, Math.random() * 1024, 1 + Math.random(), 1 + Math.random());
-  }
-  // a few hairline marks
-  g.strokeStyle = 'rgba(120,124,130,0.18)';
-  for (let i = 0; i < 6; i++) {
+  // faint circular trowel sweeps
+  for (let i = 0; i < 12; i++) {
+    g.strokeStyle = `rgba(${Math.random() < 0.5 ? '160,164,171' : '214,218,224'},${0.025 + Math.random() * 0.035})`;
+    g.lineWidth = 26 + Math.random() * 70;
+    const a0 = Math.random() * Math.PI * 2;
     g.beginPath();
-    let x = Math.random() * 1024, y = Math.random() * 1024;
+    g.arc(Math.random() * S, Math.random() * S, 240 + Math.random() * 720, a0, a0 + 0.5 + Math.random() * 1.3);
+    g.stroke();
+  }
+  // watery stains
+  for (let i = 0; i < 7; i++) {
+    const r = 80 + Math.random() * 240;
+    const x = Math.random() * S, y = Math.random() * S;
+    const grad = g.createRadialGradient(x, y, r * 0.55, x, y, r);
+    grad.addColorStop(0, 'rgba(0,0,0,0)');
+    grad.addColorStop(0.85, `rgba(120,124,132,${0.05 + Math.random() * 0.06})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grad;
+    g.fillRect(x - r, y - r, 2 * r, 2 * r);
+  }
+  // aggregate speckle
+  for (let i = 0; i < 42000; i++) {
+    const v = 148 + Math.floor(Math.random() * 84);
+    g.fillStyle = `rgba(${v},${v},${v + 4},${0.10 + Math.random() * 0.22})`;
+    g.fillRect(Math.random() * S, Math.random() * S, 1 + Math.random() * 1.6, 1 + Math.random() * 1.6);
+  }
+  // pinholes (dark air pockets)
+  for (let i = 0; i < 900; i++) {
+    g.fillStyle = `rgba(92,96,104,${0.10 + Math.random() * 0.18})`;
+    g.beginPath();
+    g.arc(Math.random() * S, Math.random() * S, 0.6 + Math.random() * 1.8, 0, Math.PI * 2);
+    g.fill();
+  }
+  // a few hairline cracks
+  g.strokeStyle = 'rgba(116,120,127,0.20)';
+  g.lineWidth = 1.2;
+  for (let i = 0; i < 5; i++) {
+    g.beginPath();
+    let x = Math.random() * S, y = Math.random() * S;
     g.moveTo(x, y);
-    for (let s = 0; s < 8; s++) { x += (Math.random() - 0.5) * 160; y += (Math.random() - 0.5) * 160; g.lineTo(x, y); }
+    for (let s = 0; s < 10; s++) { x += (Math.random() - 0.5) * 260; y += (Math.random() - 0.5) * 260; g.lineTo(x, y); }
     g.stroke();
   }
   const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(2, 2);
+  t.colorSpace = THREE.SRGBColorSpace;   // drawn once, never tiled: no seams
   return t;
 }
 
@@ -138,10 +208,9 @@ controls.maxDistance = 10;
 
 scene.add(new THREE.HemisphereLight(0xdfe9f3, 0x8a8378, 1.0));
 const key = new THREE.DirectionalLight(0xfff2dd, 2.0);
-key.position.set(2.4, 3.4, 1.9);
 key.castShadow = true;
 key.shadow.mapSize.set(4096, 4096);
-key.shadow.camera.left = key.shadow.camera.bottom = -2.2;
+key.shadow.camera.left = key.shadow.camera.bottom = -2.6;
 key.shadow.camera.right = key.shadow.camera.top = 2.6;
 // Keep the depth range tight: bias is applied in normalized depth, so with
 // the default far=500 even a tiny value displaces shadows ~20 cm (detached
@@ -152,6 +221,19 @@ key.shadow.camera.far = 12;
 key.shadow.bias = -0.00005;
 key.shadow.normalBias = 0.008;
 scene.add(key);
+
+// The key light is fixed RELATIVE TO THE CAMERA — raised and rotated ~30° to
+// the left of the view direction — so orbiting sweeps light and shadows
+// across the unit instead of the lighting staying glued to the model.
+const UPV = new THREE.Vector3(0, 1, 0);
+const keyVec = new THREE.Vector3();
+function aimKeyLight(camPos, target) {
+  keyVec.copy(camPos).sub(target);
+  keyVec.applyAxisAngle(UPV, 0.55);
+  keyVec.y = Math.max(keyVec.y, keyVec.length() * 0.45);
+  key.position.copy(target).add(keyVec.setLength(5));
+}
+
 const fill = new THREE.DirectionalLight(0xdde8f5, 0.45);
 fill.position.set(-2.2, 1.4, -1.6);
 scene.add(fill);
@@ -160,8 +242,14 @@ const front = new THREE.DirectionalLight(0xf2ead9, 0.5);
 front.position.set(0.4, 1.6, 3.2);
 scene.add(front);
 
+// sharper oblique sampling for the big face + floor textures
+const maxAniso = renderer.capabilities.getMaxAnisotropy();
+faceMat.map.anisotropy = maxAniso;
+faceMat.map.needsUpdate = true;
+
 // rough concrete hexagon slab
 const concrete = concreteTexture();
+concrete.anisotropy = maxAniso;
 const floor = new THREE.Mesh(
   new THREE.CircleGeometry(2.6, 6),
   new THREE.MeshStandardMaterial({ map: concrete, bumpMap: concrete, bumpScale: 2.5, roughness: 0.95, metalness: 0 })
@@ -276,7 +364,7 @@ function cutList(p) {
     note: 'flush with the side fronts' + rebNote,
   }];
   if (p.plinth > 0) rows.push({
-    part: 'Plinth rail', qty: 1, len: innerW, wid: p.plinth, t: T,
+    part: 'Toe rail', qty: 1, len: innerW, wid: p.plinth, t: T,
     note: `kick board: stands on edge under the bottom, front face set back ${p.setback} mm`,
   });
   if (p.shelves > 0) rows.push({
@@ -703,6 +791,9 @@ function captureCamera(aspect) {
 function captureView(w, h) {
   const prevBg = scene.background;
   scene.background = new THREE.Color('#ffffff');
+  // aim the camera-locked key light for the brochure viewpoint; the
+  // animation loop re-aims it for the interactive camera on the next frame
+  const capTarget = new THREE.Vector3(0, params.height / 2 * MM, 0);
   try {
     // preferred: a throwaway offscreen renderer at a fixed 4:3 size
     const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -712,7 +803,9 @@ function captureView(w, h) {
       r.shadowMap.enabled = true;
       r.shadowMap.type = THREE.PCFSoftShadowMap;
       r.toneMapping = THREE.ACESFilmicToneMapping;
-      r.render(scene, captureCamera(w / h));
+      const cam = captureCamera(w / h);
+      aimKeyLight(cam.position, capTarget);
+      r.render(scene, cam);
       return { data: r.domElement.toDataURL('image/jpeg', 0.88), w, h };
     } finally {
       r.dispose();
@@ -725,8 +818,11 @@ function captureView(w, h) {
     // preserveDrawingBuffer), then put the interactive view straight back.
     console.warn('offscreen capture failed, reusing the main canvas', err);
     const el = renderer.domElement;
-    renderer.render(scene, captureCamera(el.width / el.height));
+    const cam = captureCamera(el.width / el.height);
+    aimKeyLight(cam.position, capTarget);
+    renderer.render(scene, cam);
     const data = el.toDataURL('image/jpeg', 0.88);
+    aimKeyLight(camera.position, controls.target);
     renderer.render(scene, camera);
     return { data, w: el.width, h: el.height };
   } finally {
@@ -847,5 +943,6 @@ resize();
 $('#loading')?.remove();
 renderer.setAnimationLoop(() => {
   controls.update();
+  aimKeyLight(camera.position, controls.target);
   renderer.render(scene, camera);
 });

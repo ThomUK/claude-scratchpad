@@ -15,7 +15,7 @@ the mouse.
 | Shelves | 0–12 | internal, evenly spaced; capped so every bay keeps ≥ 30 mm clear |
 | Plinth height | 0–250 mm | floor to the underside of the bottom shelf, so the first shelf clears any skirting; adds a set-back front rail |
 | Skirting cutout depth | 0–50 mm | notch in the back-bottom of each side (its height = plinth height) so the unit pushes back to the wall over the skirting |
-| Front setback | 0–60 mm | internal shelf fronts and the plinth rail sit this far behind the side fronts; top and bottom stay flush |
+| Front setback | 0–60 mm | internal shelf fronts and the toe rail sit this far behind the side fronts; top and bottom stay flush |
 | Ply thickness | 12 / 18 / 24 mm | applies to all structural panels |
 | Back panel | on/off | fixed 6 mm, rebated into the sides, top and bottom: lap = ¾ of the main ply thickness, rebate cut 1 mm deeper than the back ply so it seats 1 mm below flush; shelves shallow by 7 mm when on |
 | Quantity | 1–10 | bookcases to build: cut list shows per-bookcase and total quantities; all parts nest together on shared sheets |
@@ -27,7 +27,7 @@ count, and an approximate weight at 680 kg/m³.
 
 A live cut list sits under the readout: every panel with quantity, blank
 length × width, thickness and a construction note (the sides list the
-skirting notch to cut out of the blank; the plinth rail — the kick board
+skirting notch to cut out of the blank; the toe rail — the kick board
 that stands on edge under the bottom shelf — lists its setback). It is
 downloadable as CSV, headed by a one-line spec of the full parameter set.
 The CSV is emitted as pure ASCII with a UTF-8 BOM, because Excel guesses
