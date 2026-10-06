@@ -135,10 +135,17 @@ scene.add(new THREE.HemisphereLight(0xdfe9f3, 0x8a8378, 1.0));
 const key = new THREE.DirectionalLight(0xfff2dd, 2.0);
 key.position.set(2.4, 3.4, 1.9);
 key.castShadow = true;
-key.shadow.mapSize.set(2048, 2048);
+key.shadow.mapSize.set(4096, 4096);
 key.shadow.camera.left = key.shadow.camera.bottom = -2.2;
 key.shadow.camera.right = key.shadow.camera.top = 2.6;
-key.shadow.bias = -0.0004;
+// Keep the depth range tight: bias is applied in normalized depth, so with
+// the default far=500 even a tiny value displaces shadows ~20 cm (detached
+// contact shadows, light leaking onto the inside of the sides). normalBias
+// (metres, < panel thickness) handles acne without shifting the shadow.
+key.shadow.camera.near = 0.5;
+key.shadow.camera.far = 12;
+key.shadow.bias = -0.00005;
+key.shadow.normalBias = 0.008;
 scene.add(key);
 const fill = new THREE.DirectionalLight(0xdde8f5, 0.45);
 fill.position.set(-2.2, 1.4, -1.6);
