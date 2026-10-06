@@ -402,11 +402,17 @@ function cutListCsv(p) {
     .replace(/×/g, 'x').replace(/—/g, '-') + '\r\n';
 }
 
+// local-time yyyymmdd_hhmmss, so repeat downloads sort chronologically
+function stamp() {
+  const d = new Date(), z = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}`;
+}
+
 $('#downloadCsv').addEventListener('click', () => {
   const blob = new Blob(['﻿' + cutListCsv(params)], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `bookshelf-cutlist-${params.width}x${params.depth}x${params.height}.csv`;
+  a.download = `bookshelf-cutlist-${params.width}x${params.depth}x${params.height}-${stamp()}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 });
@@ -472,6 +478,7 @@ $('#downloadPdf').addEventListener('click', async () => {
       stats: statsFor(d),
       totals: `${d.panels} panels  ·  ${(d.vol * 1000).toFixed(1)} L of ply  ·  ≈ ${(d.vol * DENSITY).toFixed(1)} kg`,
       image: captureView(1296, 972),
+      filename: `bookshelf-${params.width}x${params.depth}x${params.height}-${stamp()}.pdf`,
     });
   } catch (err) {
     console.error(err);

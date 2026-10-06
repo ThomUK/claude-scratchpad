@@ -165,7 +165,7 @@ function topElevation(doc, p, x0, yTop, s) {
 }
 
 // --- the document ------------------------------------------------------------------
-export async function downloadPdf({ p, rows, stats, totals, image }) {
+export async function downloadPdf({ p, rows, stats, totals, image, filename }) {
   const jsPDF = await ensureJsPDF();
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
@@ -293,5 +293,5 @@ export async function downloadPdf({ p, rows, stats, totals, image }) {
   doc.text('L × W are rectangular blanks; the sides are cut as full blanks, then notched at the back-bottom corner.', 15, y + 8);
   footer(doc, 2);
 
-  doc.save(`bookshelf-${p.width}x${p.depth}x${p.height}.pdf`);
+  doc.save(filename);
 }
