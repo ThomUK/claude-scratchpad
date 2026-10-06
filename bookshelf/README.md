@@ -17,7 +17,7 @@ the mouse.
 | Skirting cutout depth | 0–50 mm | notch in the back-bottom of each side (its height = plinth height) so the unit pushes back to the wall over the skirting |
 | Front setback | 0–60 mm | internal shelf fronts and the plinth rail sit this far behind the side fronts; top and bottom stay flush |
 | Ply thickness | 12 / 18 / 24 mm | applies to all structural panels |
-| Back panel | on/off | fixed 6 mm, inset within the frame between bottom and top; shelves shallow by 6 mm when on |
+| Back panel | on/off | fixed 6 mm, rebated into the sides, top and bottom: lap = ¾ of the main ply thickness, rebate cut 1 mm deeper than the back ply so it seats 1 mm below flush; shelves shallow by 7 mm when on |
 
 Readout: external dimensions, clear bay height, total ply volume + panel
 count, and an approximate weight at 680 kg/m³.
@@ -31,6 +31,11 @@ that stands on edge under the bottom shelf — lists its setback). It is
 downloadable as CSV, headed by a one-line spec of the full parameter set.
 The CSV is emitted as pure ASCII with a UTF-8 BOM, because Excel guesses
 Windows-1252 for BOM-less CSVs and mangles × / — into `Ã—` / `â€”`.
+
+Under the cut list, a **sheet nesting** summary estimates how many
+2440 × 1220 sheets to buy per thickness (first-fit-decreasing guillotine
+strip nesting, long edge along the sheet, 4 mm kerf), with part count and
+utilisation; it also appears on page 2 of the PDF.
 
 There is also a two-page **PDF download** (jsPDF, vendored): page 1 is a
 brochure-style summary — a 3D view captured from the live scene at a
@@ -67,5 +72,5 @@ outside the repo.
 
 ## Ideas for later
 
-Shelf-pin vs housed-dado toggle, dividers, sheet nesting for the cut list
-(how many 2440×1220 sheets), and cost at £/sheet.
+Shelf-pin vs housed-dado toggle, dividers, a drawn sheet-nesting layout
+(the current summary is count + utilisation only), and cost at £/sheet.

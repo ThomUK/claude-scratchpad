@@ -97,6 +97,12 @@
 
       <h2>Cut list</h2>
       <table id="cutlist" class="cutlist"></table>
+
+      <h2>Sheets <span class="muted">(2440 × 1220 mm)</span></h2>
+      <div id="sheets" class="cards"></div>
+      <p class="muted small">Buying estimate: guillotine strip nesting, long edge along the sheet,
+        4&thinsp;mm kerf between cuts.</p>
+
       <div class="btns">
         <button id="downloadCsv" class="btn" type="button">Download CSV</button>
         <button id="downloadPdf" class="btn" type="button">Download PDF</button>
@@ -116,9 +122,11 @@
       vendored in <code>vendor/jspdf/</code>) — no CDN dependencies. Carcass: sides full
       height and depth, notched at the back-bottom to clear skirting; bottom shelf sits on a plinth
       zone with a set-back front rail; top, bottom flush with the side fronts; internal shelves set
-      back by the same amount as the plinth rail; optional 6&thinsp;mm back inset within the frame.
-      Weight estimate uses 680&thinsp;kg/m³ for birch ply. The 3D model, the readout and the
-      downloadable cut list all derive from the same panel rows, so they cannot disagree.</p>
+      back by the same amount as the plinth rail; optional 6&thinsp;mm back rebated into the sides,
+      top and bottom (lap ¾ of the ply thickness, rebate 1&thinsp;mm deeper than the back ply).
+      Weight estimate uses 680&thinsp;kg/m³ for birch ply. The 3D model, the readout, the sheet
+      estimate and the downloadable cut list all derive from the same panel rows, so they cannot
+      disagree.</p>
   </footer>
 
   <script type="module" src="app.js?v=dev"></script>

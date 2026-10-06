@@ -238,23 +238,37 @@ function maxShelves(p) {
 // readout (volume, weight, panel count) and the CSV download all derive from
 // these rows, so they can never disagree. len × wid are the rectangular blank
 // to cut; notchArea (mm²) is material removed afterwards (the skirting notch).
+// The back is rebated into the sides, top and bottom: the rebate laps 3/4 of
+// the main ply thickness into each panel, and is cut 1 mm deeper than the
+// back ply so the back sits 1 mm below flush with the rear edges.
+function backJoint(p) {
+  return { lap: 0.75 * p.thickness, reb: BACK_T + 1 };
+}
+
 function cutList(p) {
   const T = p.thickness;
   const innerW = p.width - 2 * T;
-  const shelfD = p.depth - p.setback - (p.back ? BACK_T : 0);
+  const { lap, reb } = backJoint(p);
+  const shelfD = p.depth - p.setback - (p.back ? reb : 0);
   const notch = p.plinth > 0 && p.cutout > 0;
+  // material a rear rebate removes, per mm of rebate length (mm3/mm)
+  const rebCut = p.back ? lap * reb : 0;
+  const rebNote = p.back ? `; ${lap} × ${reb} mm rebate along the rear inside edge for the back` : '';
   const rows = [{
     part: 'Side', qty: 2, len: p.height, wid: p.depth, t: T,
     notchArea: notch ? p.plinth * p.cutout : 0,
-    note: notch
+    cutVol: rebCut * p.height,
+    note: (notch
       ? `full height and depth; notch ${p.cutout} × ${p.plinth} mm out of the back-bottom corner to clear skirting`
-      : 'full height and depth',
+      : 'full height and depth') + rebNote,
   }, {
     part: 'Bottom', qty: 1, len: innerW, wid: p.depth, t: T,
-    note: 'sits on top of the plinth zone, flush with the side fronts',
+    cutVol: rebCut * innerW,
+    note: 'sits on top of the plinth zone, flush with the side fronts' + rebNote,
   }, {
     part: 'Top', qty: 1, len: innerW, wid: p.depth, t: T,
-    note: 'flush with the side fronts',
+    cutVol: rebCut * innerW,
+    note: 'flush with the side fronts' + rebNote,
   }];
   if (p.plinth > 0) rows.push({
     part: 'Plinth rail', qty: 1, len: innerW, wid: p.plinth, t: T,
@@ -262,13 +276,59 @@ function cutList(p) {
   });
   if (p.shelves > 0) rows.push({
     part: 'Shelf', qty: p.shelves, len: innerW, wid: shelfD, t: T,
-    note: `front set back ${p.setback} mm${p.back ? '; 6 mm shallower to clear the back' : ''}`,
+    note: `front set back ${p.setback} mm${p.back ? `; ${reb} mm shallower to clear the rebated back` : ''}`,
   });
   if (p.back) rows.push({
-    part: 'Back', qty: 1, len: innerW, wid: p.height - p.plinth - 2 * T, t: BACK_T,
-    note: 'thin ply, inset within the frame between bottom and top',
+    part: 'Back', qty: 1, len: innerW + 2 * lap, wid: p.height - p.plinth - 2 * T + 2 * lap, t: BACK_T,
+    note: `thin ply, rebated in on all four edges: ${lap} mm lap, rebate ${reb} mm deep seats it 1 mm below flush`,
   });
   return rows;
+}
+
+// --- sheet nesting -----------------------------------------------------------------
+// Sheets of 2440 × 1220 per thickness: first-fit-decreasing strip (guillotine)
+// nesting, each part's long edge along the sheet length, a saw kerf between
+// cuts. An estimate for buying, not an optimised layout.
+const SHEET_L = 2440, SHEET_W = 1220, KERF = 4;
+
+function nestSheets(rows) {
+  const byT = {};
+  for (const r of rows) {
+    for (let i = 0; i < r.qty; i++) {
+      (byT[r.t] ??= []).push({ L: Math.max(r.len, r.wid), W: Math.min(r.len, r.wid) });
+    }
+  }
+  return Object.keys(byT).map(Number).sort((a, b) => b - a).map((t) => {
+    const all = byT[t];
+    const oversize = all.filter((pt) => pt.L > SHEET_L || pt.W > SHEET_W).length;
+    const parts = all.filter((pt) => pt.L <= SHEET_L && pt.W <= SHEET_W)
+      .sort((a, b) => b.W - a.W || b.L - a.L);
+    const sheets = [];   // each: { freeW, strips: [{ W, free }] } — strips run the sheet length
+    for (const pt of parts) {
+      let placed = false;
+      for (const sh of sheets) {
+        for (const strip of sh.strips) {
+          if (pt.W <= strip.W && pt.L + KERF <= strip.free) {
+            strip.free -= pt.L + KERF;
+            placed = true;
+            break;
+          }
+        }
+        if (!placed && pt.W + KERF <= sh.freeW) {
+          sh.strips.push({ W: pt.W, free: SHEET_L - pt.L - KERF });
+          sh.freeW -= pt.W + KERF;
+          placed = true;
+        }
+        if (placed) break;
+      }
+      if (!placed) {
+        sheets.push({ freeW: SHEET_W - pt.W - KERF, strips: [{ W: pt.W, free: SHEET_L - pt.L - KERF }] });
+      }
+    }
+    const area = parts.reduce((a, pt) => a + pt.L * pt.W, 0);
+    const used = sheets.length ? Math.round(100 * area / (sheets.length * SHEET_L * SHEET_W)) : 0;
+    return { t, n: sheets.length, parts: all.length, used, oversize };
+  });
 }
 
 function buildUnit() {
@@ -305,10 +365,12 @@ function buildUnit() {
     unit.add(rail);
   }
   // internal shelves: evenly spaced in the cavity, set back at the front and
-  // clear of the back panel when fitted
+  // clear of the rebated back when fitted
   const n = p.shelves;
-  const shelfD = D - setback - (p.back ? BACK_T : 0);
-  const zC = ((p.back ? BACK_T : 0) - setback) / 2;
+  const { lap, reb } = backJoint(p);
+  const backClear = p.back ? reb : 0;
+  const shelfD = D - setback - backClear;
+  const zC = (backClear - setback) / 2;
   const cavity = H - plinth - 2 * T;
   const bay = (cavity - n * T) / (n + 1);
   for (let i = 0; i < n; i++) {
@@ -316,12 +378,16 @@ function buildUnit() {
     s.position.set(0, (plinth + T + (i + 1) * bay + i * T + T / 2) * MM, zC * MM);
     unit.add(s);
   }
-  // optional thin back, inset within the frame between bottom and top
+  // optional thin back, rebated into sides, top and bottom: oversized by the
+  // lap on each edge, rear face 1 mm inside the carcass rear. (The grooves
+  // themselves are not modelled — the back's edges sit inside the solid
+  // panels, which renders identically from any normal viewpoint.)
   if (p.back) {
-    const bH = H - plinth - 2 * T;
-    const b = panel(innerW, bH, BACK_T);
+    const bW = innerW + 2 * lap;
+    const bH = H - plinth - 2 * T + 2 * lap;
+    const b = panel(bW, bH, BACK_T);
     b.rotation.x = Math.PI / 2;
-    b.position.set(0, (plinth + T + bH / 2) * MM, (-D / 2 + BACK_T / 2) * MM);
+    b.position.set(0, (plinth + T - lap + bH / 2) * MM, (-D / 2 + 1 + BACK_T / 2) * MM);
     unit.add(b);
   }
   scene.add(unit);
@@ -344,7 +410,8 @@ function derived(p) {
   const rows = cutList(p);
   const n = p.shelves;
   const bay = (p.height - p.plinth - 2 * p.thickness - n * p.thickness) / (n + 1);
-  const vol = rows.reduce((a, r) => a + r.qty * (r.len * r.wid - (r.notchArea ?? 0)) * r.t, 0) * 1e-9; // mm3 -> m3
+  const vol = rows.reduce((a, r) =>
+    a + r.qty * ((r.len * r.wid - (r.notchArea ?? 0)) * r.t - (r.cutVol ?? 0)), 0) * 1e-9; // mm3 -> m3
   const panels = rows.reduce((a, r) => a + r.qty, 0);
   return { rows, n, bay, vol, panels };
 }
@@ -359,10 +426,20 @@ function statsFor({ bay, n, vol, panels }) {
   ];
 }
 
+function renderSheets(nest) {
+  $('#sheets').innerHTML = nest.map((s) => `
+    <div class="stat">
+      <div class="v">${s.n} ${s.n === 1 ? 'sheet' : 'sheets'}</div>
+      <div class="l">${s.t} mm ply — ${s.parts} ${s.parts === 1 ? 'part' : 'parts'}, ${s.used}% used${s.oversize
+        ? ` (+${s.oversize} too big for a sheet)` : ''}</div>
+    </div>`).join('');
+}
+
 function renderReadout() {
   const p = params;
   const d = derived(p);
   renderCutList(d.rows);
+  renderSheets(nestSheets(d.rows));
   $('#readout').innerHTML = statsFor(d)
     .map(([v, l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`)
     .join('');
@@ -477,6 +554,7 @@ $('#downloadPdf').addEventListener('click', async () => {
       rows: d.rows,
       stats: statsFor(d),
       totals: `${d.panels} panels  ·  ${(d.vol * 1000).toFixed(1)} L of ply  ·  ≈ ${(d.vol * DENSITY).toFixed(1)} kg`,
+      sheets: nestSheets(d.rows),
       image: captureView(1296, 972),
       filename: `bookshelf-${params.width}x${params.depth}x${params.height}-${stamp()}.pdf`,
     });

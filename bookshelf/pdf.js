@@ -112,7 +112,7 @@ function sideElevation(doc, p, x0, baseY, s) {
   doc.setDrawColor(150);
   doc.setLineWidth(0.2);
   doc.setLineDashPattern([1.1, 1.1], 0);
-  const backT = p.back ? p.backT : 0;
+  const backClear = p.back ? p.backT + 1 : 0;   // rebate depth: back ply + 1 mm
   const board = (bot, dFrom, dTo) => {
     doc.line(x(dFrom), y(bot), x(dTo), y(bot));
     doc.line(x(dFrom), y(bot + p.thickness), x(dTo), y(bot + p.thickness));
@@ -127,9 +127,15 @@ function sideElevation(doc, p, x0, baseY, s) {
   const n = p.shelves;
   const bay = (p.height - p.plinth - 2 * p.thickness - n * p.thickness) / (n + 1);
   for (let i = 0; i < n; i++) {
-    board(p.plinth + p.thickness + (i + 1) * bay + i * p.thickness, p.setback, p.depth - backT);
+    board(p.plinth + p.thickness + (i + 1) * bay + i * p.thickness, p.setback, p.depth - backClear);
   }
-  if (p.back) doc.line(x(p.depth - backT), y(p.plinth + p.thickness), x(p.depth - backT), y(p.height - p.thickness));
+  // back, rebated: sits 1 mm inside the rear edge, laps 3/4 T into top/bottom
+  if (p.back) {
+    const lap = 0.75 * p.thickness;
+    const yBot = p.plinth + p.thickness - lap, yTop = p.height - p.thickness + lap;
+    doc.line(x(p.depth - backClear), y(yBot), x(p.depth - backClear), y(yTop));
+    doc.line(x(p.depth - 1), y(yBot), x(p.depth - 1), y(yTop));
+  }
   doc.setLineDashPattern([], 0);
   // side-panel profile: notch (cutout deep × plinth tall) at the back-bottom
   doc.setDrawColor(INK);
@@ -154,7 +160,12 @@ function topElevation(doc, p, x0, yTop, s) {
   doc.setLineWidth(0.2);
   doc.setLineDashPattern([1.1, 1.1], 0);
   if (p.setback > 0) doc.line(x0 + T, yFront - p.setback * s, x0 + W - T, yFront - p.setback * s);
-  if (p.back) doc.line(x0 + T, yTop + p.backT * s, x0 + W - T, yTop + p.backT * s);
+  if (p.back) {
+    // rebated back: front face at (back + 1) mm from the rear, lapping 3/4 T
+    // into each side
+    const inset = (p.thickness - 0.75 * p.thickness) * s;
+    doc.line(x0 + inset, yTop + (p.backT + 1) * s, x0 + W - inset, yTop + (p.backT + 1) * s);
+  }
   doc.setLineDashPattern([], 0);
   doc.setDrawColor(70);
   doc.line(x0 + T, yTop, x0 + T, yFront);
@@ -165,7 +176,7 @@ function topElevation(doc, p, x0, yTop, s) {
 }
 
 // --- the document ------------------------------------------------------------------
-export async function downloadPdf({ p, rows, stats, totals, image, filename }) {
+export async function downloadPdf({ p, rows, stats, totals, sheets, image, filename }) {
   const jsPDF = await ensureJsPDF();
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
@@ -287,10 +298,16 @@ export async function downloadPdf({ p, rows, stats, totals, image, filename }) {
   doc.setFontSize(9.5);
   doc.setTextColor(INK);
   doc.text(wa(totals), 15, y + 2);
+  const sheetTxt = 'Sheets (2440 × 1220 mm): ' + sheets.map((sh) =>
+    `${sh.t} mm: ${sh.n} ${sh.n === 1 ? 'sheet' : 'sheets'} (${sh.parts} ${sh.parts === 1 ? 'part' : 'parts'}, ${sh.used}% used${sh.oversize
+      ? `; ${sh.oversize} too big for a sheet` : ''})`).join('  ·  ');
+  doc.text(wa(sheetTxt), 15, y + 8);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(GREY);
-  doc.text('L × W are rectangular blanks; the sides are cut as full blanks, then notched at the back-bottom corner.', 15, y + 8);
+  doc.text(doc.splitTextToSize(
+    'L × W are rectangular blanks; sides are cut as full blanks, then notched. Sheet count is a buying estimate: ' +
+    'guillotine strip nesting, long edge along the sheet, 4 mm kerf.', 180), 15, y + 14);
   footer(doc, 2);
 
   doc.save(filename);
