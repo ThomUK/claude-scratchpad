@@ -29,8 +29,18 @@ length × width, thickness and a construction note (the sides list the
 skirting notch to cut out of the blank; the plinth rail — the kick board
 that stands on edge under the bottom shelf — lists its setback). It is
 downloadable as CSV, headed by a one-line spec of the full parameter set.
-The 3D build, the readout figures and the CSV all derive from the same
-`cutList()` rows, so they cannot disagree (the repo-wide anti-drift rule).
+The CSV is emitted as pure ASCII with a UTF-8 BOM, because Excel guesses
+Windows-1252 for BOM-less CSVs and mangles × / — into `Ã—` / `â€”`.
+
+There is also a two-page **PDF download** (jsPDF, vendored): page 1 is a
+brochure-style summary — a 3D view captured from the live scene at a
+canonical angle, dimensioned front/side elevations (external dimensions
+only, drawn as vectors), and the readout stats; page 2 is the cut list
+with the same totals.
+
+The 3D build, the readout figures, the CSV and the PDF all derive from the
+same `cutList()` rows and `derived()` figures, so they cannot disagree
+(the repo-wide anti-drift rule).
 
 ## Construction modelled
 
@@ -48,7 +58,9 @@ alternating veneer stripes that make ply read as ply (9/13/17 plies for
 
 three.js is **pinned (r186) and vendored** in `vendor/three/`
 (`three.module.js`, `three.core.js`, `OrbitControls.js`, wired by an import
-map in `index.html`) — repo policy after the population-projections outage:
+map in `index.html`), and jsPDF is **pinned (4.2.1) and vendored** in
+`vendor/jspdf/` (UMD build, lazy-loaded on first PDF download) — repo
+policy after the population-projections outage:
 a deployed app should not change behaviour because a third-party host or a
 floating "latest" channel moved. This app makes zero runtime requests
 outside the repo.

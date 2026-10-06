@@ -97,7 +97,12 @@
 
       <h2>Cut list</h2>
       <table id="cutlist" class="cutlist"></table>
-      <button id="downloadCsv" class="btn" type="button">Download cut list (CSV)</button>
+      <div class="btns">
+        <button id="downloadCsv" class="btn" type="button">Download CSV</button>
+        <button id="downloadPdf" class="btn" type="button">Download PDF</button>
+      </div>
+      <p class="muted small">The PDF is a two-page sheet: 3D view, dimensioned elevations and readout,
+        then the cut list. The CSV is the cut list alone.</p>
     </aside>
 
     <section class="panel viewport">
@@ -107,7 +112,8 @@
 
   <footer>
     <p>Rendered with <a href="https://threejs.org/" target="_blank" rel="noopener">three.js</a>
-      (pinned r186, vendored in <code>vendor/three/</code> — no CDN dependency). Carcass: sides full
+      (pinned r186, vendored in <code>vendor/three/</code>); PDF export with jsPDF (pinned 4.2.1,
+      vendored in <code>vendor/jspdf/</code>) — no CDN dependencies. Carcass: sides full
       height and depth, notched at the back-bottom to clear skirting; bottom shelf sits on a plinth
       zone with a set-back front rail; top, bottom flush with the side fronts; internal shelves set
       back by the same amount as the plinth rail; optional 6&thinsp;mm back inset within the frame.

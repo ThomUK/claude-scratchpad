@@ -328,20 +328,37 @@ function buildUnit() {
     camera.position.copy(controls.target).add(v);
   }
 
-  renderReadout({ bay, n });
+  renderReadout();
 }
 
-function renderReadout({ bay, n }) {
-  const p = params;
+// Everything the readout, the CSV and the PDF report derives from the same
+// cutList() rows + these shared figures, so no two outputs can disagree.
+function derived(p) {
   const rows = cutList(p);
+  const n = p.shelves;
+  const bay = (p.height - p.plinth - 2 * p.thickness - n * p.thickness) / (n + 1);
   const vol = rows.reduce((a, r) => a + r.qty * (r.len * r.wid - (r.notchArea ?? 0)) * r.t, 0) * 1e-9; // mm3 -> m3
   const panels = rows.reduce((a, r) => a + r.qty, 0);
-  renderCutList(rows);
-  $('#readout').innerHTML = `
-    <div class="stat"><div class="v">${p.width} × ${p.depth} × ${p.height}</div><div class="l">External W × D × H (mm)</div></div>
-    <div class="stat"><div class="v">${Math.round(bay)} mm</div><div class="l">Clear height per bay (${n + 1} ${n ? 'bays' : 'bay'})</div></div>
-    <div class="stat"><div class="v">${(vol * 1000).toFixed(1)} L</div><div class="l">Ply volume (${panels} panels)</div></div>
-    <div class="stat"><div class="v">≈ ${(vol * DENSITY).toFixed(1)} kg</div><div class="l">Weight at 680 kg/m³</div></div>`;
+  return { rows, n, bay, vol, panels };
+}
+
+function statsFor({ bay, n, vol, panels }) {
+  const p = params;
+  return [
+    [`${p.width} × ${p.depth} × ${p.height}`, 'External W × D × H (mm)'],
+    [`${Math.round(bay)} mm`, `Clear height per bay (${n + 1} ${n ? 'bays' : 'bay'})`],
+    [`${(vol * 1000).toFixed(1)} L`, `Ply volume (${panels} panels)`],
+    [`≈ ${(vol * DENSITY).toFixed(1)} kg`, 'Weight at 680 kg/m³'],
+  ];
+}
+
+function renderReadout() {
+  const p = params;
+  const d = derived(p);
+  renderCutList(d.rows);
+  $('#readout').innerHTML = statsFor(d)
+    .map(([v, l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`)
+    .join('');
   $('#note').textContent = p.shelves >= maxShelves(p)
     ? `Shelf count is capped at ${maxShelves(p)} for this height/plinth/thickness so each bay keeps ≥ ${MIN_BAY} mm clear.`
     : '';
@@ -371,16 +388,69 @@ function cutListCsv(p) {
     ['Part', 'Qty', 'Length (mm)', 'Width (mm)', 'Thickness (mm)', 'Notes'],
     ...cutList(p).map((r) => [r.part, r.qty, r.len, r.wid, r.t, r.note]),
   ];
-  return lines.map((cols) => cols.map((c) => csvEscape(String(c))).join(',')).join('\r\n') + '\r\n';
+  // Excel guesses Windows-1252 for CSVs without a BOM, mangling × and — into
+  // "Ã—"/"â€”". Emit plain ASCII and prepend a BOM (at the Blob) so every
+  // opener agrees.
+  return lines.map((cols) => cols.map((c) => csvEscape(String(c))).join(',')).join('\r\n')
+    .replace(/×/g, 'x').replace(/—/g, '-') + '\r\n';
 }
 
 $('#downloadCsv').addEventListener('click', () => {
-  const blob = new Blob([cutListCsv(params)], { type: 'text/csv;charset=utf-8' });
+  const blob = new Blob(['﻿' + cutListCsv(params)], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `bookshelf-cutlist-${params.width}x${params.depth}x${params.height}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
+});
+
+// --- PDF download ------------------------------------------------------------------
+// Renders the live scene once through a throwaway offscreen renderer at a
+// canonical three-quarter view (white sky, print-friendly), independent of
+// wherever the user has orbited the interactive camera.
+function captureView(w, h) {
+  const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  r.setSize(w, h);
+  r.setPixelRatio(1);
+  r.shadowMap.enabled = true;
+  r.shadowMap.type = THREE.PCFSoftShadowMap;
+  r.toneMapping = THREE.ACESFilmicToneMapping;
+  const cam = new THREE.PerspectiveCamera(42, w / h, 0.05, 50);
+  const p = params;
+  const target = new THREE.Vector3(0, p.height / 2 * MM, 0);
+  const dir = new THREE.Vector3(0.72, 0.5, 1).normalize();
+  cam.position.copy(target).addScaledVector(dir, Math.hypot(p.width, p.height, p.depth) * MM * 1.45);
+  cam.lookAt(target);
+  const prevBg = scene.background;
+  scene.background = new THREE.Color('#ffffff');
+  r.render(scene, cam);
+  // JPEG: the white-sky capture has no alpha, and PNG would be ~10× larger
+  const jpg = r.domElement.toDataURL('image/jpeg', 0.88);
+  scene.background = prevBg;
+  r.dispose();
+  r.forceContextLoss?.();
+  return jpg;
+}
+
+$('#downloadPdf').addEventListener('click', async () => {
+  const btn = $('#downloadPdf');
+  btn.disabled = true;
+  try {
+    const { downloadPdf } = await import('./pdf.js?v=dev');
+    const d = derived(params);
+    await downloadPdf({
+      p: { ...params, backT: BACK_T },
+      rows: d.rows,
+      stats: statsFor(d),
+      totals: `${d.panels} panels  ·  ${(d.vol * 1000).toFixed(1)} L of ply  ·  ≈ ${(d.vol * DENSITY).toFixed(1)} kg`,
+      image: captureView(1296, 972),
+    });
+  } catch (err) {
+    console.error(err);
+    btn.textContent = 'PDF failed — see console';
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 // --- controls wiring ---------------------------------------------------------------
