@@ -355,7 +355,7 @@ function sheetLayoutPages(doc, p, sheets) {
     `Buying estimate: ${g0?.mode === 'maxrects' ? 'CNC freeform nest (MaxRects)' : 'straight-cut strip nest (guillotine)'}, ` +
     `best of ${g0?.runs ?? 0} part orderings, ${g0?.kerf ?? 4} mm kerf between cuts` +
     `${g0?.trim ? `, ${g0.trim} mm trimmed off every sheet edge (dashed line)` : ''}. Blank areas are offcut. ` +
-    'Fine hatching shows each part’s grain direction.' +
+    'Fine hatching is the sheet’s grain, running along its length.' +
     (anyRotated ? ' (R) = part rotated 90°: grain along its short edge.' : '') +
     (p.qty > 1 ? ' Circled numbers mark the bookcase each part belongs to.' : ''), 180);
   doc.text(noteLines, 15, hy3 + 11 + sumShift);
@@ -389,17 +389,13 @@ function sheetLayoutPages(doc, p, sheets) {
         doc.setDrawColor(110);
         doc.setLineWidth(0.25);
         doc.rect(rx, ry, rw, rh, 'FD');
-        // faint hatch along each part's grain axis: horizontal for parts laid
-        // long-edge-along-the-sheet, vertical for rotated ones — so rotation
-        // is visible at a glance
+        // faint hatch for the SHEET's grain, which always runs along the
+        // sheet length — uniform across every part. A rotated part reveals
+        // itself because the grain crosses its long edge, as in real wood.
         doc.setDrawColor(213, 204, 184);
         doc.setLineWidth(0.16);
         const step = 2.6;
-        if (q.rotated) {
-          for (let gx = rx + step; gx < rx + rw - 0.5; gx += step) doc.line(gx, ry + 0.5, gx, ry + rh - 0.5);
-        } else {
-          for (let gy2 = ry + step; gy2 < ry + rh - 0.5; gy2 += step) doc.line(rx + 0.5, gy2, rx + rw - 0.5, gy2);
-        }
+        for (let gy2 = ry + step; gy2 < ry + rh - 0.5; gy2 += step) doc.line(rx + 0.5, gy2, rx + rw - 0.5, gy2);
         const name = q.label + (q.rotated ? ' (R)' : '');
         if (rh > rw && rw < 24) {
           // tall rect (a rotated part): run the label up the part instead
