@@ -17,6 +17,9 @@ const params = {
   setback: 20,             // mm, shelf fronts + plinth rail behind the side fronts
   thickness: 18, back: false,
   qty: 1,                  // bookcases to build: cut list totals + combined nesting
+  nest: 'strip',           // 'strip' (straight cuts) or 'maxrects' (CNC freeform)
+  trim: 0,                 // mm shaved off every sheet edge before nesting
+  rot: {},                 // per part name: may this part rotate 90° when nesting?
 };
 
 // --- procedural textures --------------------------------------------------------
@@ -287,57 +290,183 @@ function cutList(p) {
 }
 
 // --- sheet nesting -----------------------------------------------------------------
-// Sheets of 2440 × 1220 per thickness: first-fit-decreasing strip (guillotine)
-// nesting, each part's long edge along the sheet length, a saw kerf between
-// cuts. An estimate for buying, not an optimised layout.
+// Sheets of 2440 × 1220 per thickness. Two packers share one search driver:
+// 'strip' keeps every layout cuttable with straight through-cuts (panel/track
+// saw); 'maxrects' nests freeform rectangles (tighter, suits a CNC). Each
+// nest tries a portfolio of part orderings — five deterministic sorts plus
+// seeded shuffles — and keeps the best result: fewest sheets, then the
+// emptiest final sheet (biggest reusable offcut). Everything is seeded, so
+// the same inputs always produce the same layout.
 const SHEET_L = 2440, SHEET_W = 1220, KERF = 4;
+
+// mulberry32: tiny deterministic PRNG for the shuffled orderings
+function mulberry32(seed) {
+  return () => {
+    seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function orderings(parts) {
+  const by = (cmp) => parts.slice().sort(cmp);
+  const list = [
+    by((a, b) => b.W - a.W || b.L - a.L),
+    by((a, b) => b.L - a.L || b.W - a.W),
+    by((a, b) => b.L * b.W - a.L * a.W),
+    by((a, b) => (b.L + b.W) - (a.L + a.W)),
+    by((a, b) => Math.max(b.L, b.W) - Math.max(a.L, a.W)),
+  ];
+  const shuffles = parts.length > 60 ? 60 : 200;   // keep big jobs responsive
+  for (let s = 1; s <= shuffles; s++) {
+    const rnd = mulberry32(s);
+    const arr = parts.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    list.push(arr);
+  }
+  return list;
+}
+
+// Long edge along the sheet by default; a part may present its rotated
+// orientation only when its cut-list Rot box is ticked.
+function orientationsOf(pt) {
+  const os = [{ l: pt.L, w: pt.W, rot: false }];
+  if (pt.mayRotate && pt.L !== pt.W) os.push({ l: pt.W, w: pt.L, rot: true });
+  return os;
+}
+
+// Strip nest: strips run the sheet length, so every edge is a straight
+// through-cut. Kerf is handled by inflating footprints against an inflated
+// sheet, so a part may finish flush with a sheet edge.
+function packStrip(parts, SL, SW) {
+  const sheets = [];   // { usedW, strips: [{ y, W, usedL }], placed: [] }
+  for (const pt of parts) {
+    const os = orientationsOf(pt);
+    let sh = null, st = null, o = null;
+    outer:
+    for (const cand of sheets) {
+      for (const strip of cand.strips) {
+        for (const ori of os) {
+          if (ori.w <= strip.W && strip.usedL + ori.l <= SL) { sh = cand; st = strip; o = ori; break outer; }
+        }
+      }
+      for (const ori of os) {
+        if (cand.usedW + ori.w <= SW && ori.l <= SL) { sh = cand; o = ori; break outer; }
+      }
+    }
+    if (!sh) {
+      sh = { usedW: 0, strips: [], placed: [] };
+      sheets.push(sh);
+      o = os.find((ori) => ori.l <= SL && ori.w <= SW);
+      if (!o) continue;   // unfittable parts are filtered out before packing
+    }
+    if (!st) {
+      st = { y: sh.usedW, W: o.w, usedL: 0 };
+      sh.strips.push(st);
+      sh.usedW += o.w + KERF;
+    }
+    sh.placed.push({ x: st.usedL, y: st.y, L: o.l, W: o.w, rotated: o.rot, label: pt.label, unit: pt.unit });
+    st.usedL += o.l + KERF;
+  }
+  return sheets;
+}
+
+// MaxRects (best-short-side-fit): classic freeform rectangle nesting. The
+// stepped layouts pack tighter but need a CNC or a patient tracksaw.
+function packMaxRects(parts, SL, SW) {
+  const sheets = [];   // { free: [{x,y,w,h}], placed: [] }
+  const place = (sh, fr, o, pt) => {
+    const used = { x: fr.x, y: fr.y, w: o.l + KERF, h: o.w + KERF };
+    sh.placed.push({ x: used.x, y: used.y, L: o.l, W: o.w, rotated: o.rot, label: pt.label, unit: pt.unit });
+    const next = [];
+    for (const r of sh.free) {
+      if (used.x >= r.x + r.w || used.x + used.w <= r.x || used.y >= r.y + r.h || used.y + used.h <= r.y) {
+        next.push(r);
+        continue;
+      }
+      if (used.x > r.x) next.push({ x: r.x, y: r.y, w: used.x - r.x, h: r.h });
+      if (used.x + used.w < r.x + r.w) next.push({ x: used.x + used.w, y: r.y, w: r.x + r.w - used.x - used.w, h: r.h });
+      if (used.y > r.y) next.push({ x: r.x, y: r.y, w: r.w, h: used.y - r.y });
+      if (used.y + used.h < r.y + r.h) next.push({ x: r.x, y: used.y + used.h, w: r.w, h: r.y + r.h - used.y - used.h });
+    }
+    // drop free rects contained in another (ties keep the first)
+    sh.free = next.filter((a, i) => !next.some((b, j) => j !== i &&
+      (b.w * b.h > a.w * a.h || (b.w * b.h === a.w * a.h && j < i)) &&
+      b.x <= a.x && b.y <= a.y && b.x + b.w >= a.x + a.w && b.y + b.h >= a.y + a.h));
+  };
+  for (const pt of parts) {
+    const os = orientationsOf(pt);
+    let best = null;
+    for (const sh of sheets) {
+      for (const fr of sh.free) {
+        for (const o of os) {
+          if (o.l + KERF <= fr.w && o.w + KERF <= fr.h) {
+            const score = Math.min(fr.w - o.l - KERF, fr.h - o.w - KERF);
+            if (!best || score < best.score) best = { sh, fr, o, score };
+          }
+        }
+      }
+    }
+    if (!best) {
+      const sh = { free: [{ x: 0, y: 0, w: SL + KERF, h: SW + KERF }], placed: [] };
+      sheets.push(sh);
+      const fr = sh.free[0];
+      const o = os.find((ori) => ori.l + KERF <= fr.w && ori.w + KERF <= fr.h);
+      if (!o) continue;
+      best = { sh, fr, o };
+    }
+    place(best.sh, best.fr, best.o, pt);
+  }
+  return sheets;
+}
 
 // All bookcases' parts are nested together (one combined pool per thickness),
 // which packs sheets tighter than nesting each bookcase separately. Each part
 // remembers which bookcase it belongs to when more than one is being built.
-function nestSheets(rows, units = 1) {
+// opts: { mode: 'strip'|'maxrects', trim: mm off every sheet edge,
+//         rot: { partName: true } — parts allowed to rotate 90° }
+function nestSheets(rows, units = 1, opts = {}) {
+  const mode = opts.mode ?? 'strip';
+  const trim = Math.max(0, opts.trim ?? 0);
+  const rot = opts.rot ?? {};
+  const SL = SHEET_L - 2 * trim, SW = SHEET_W - 2 * trim;
   const byT = {};
   for (let u = 1; u <= units; u++) {
     for (const r of rows) {
       for (let i = 0; i < r.qty; i++) {
         (byT[r.t] ??= []).push({
           L: Math.max(r.len, r.wid), W: Math.min(r.len, r.wid), label: r.part,
-          unit: units > 1 ? u : undefined,
+          unit: units > 1 ? u : undefined, mayRotate: !!rot[r.part],
         });
       }
     }
   }
+  const pack = mode === 'maxrects' ? packMaxRects : packStrip;
   return Object.keys(byT).map(Number).sort((a, b) => b - a).map((t) => {
     const all = byT[t];
-    const oversize = all.filter((pt) => pt.L > SHEET_L || pt.W > SHEET_W).length;
-    const parts = all.filter((pt) => pt.L <= SHEET_L && pt.W <= SHEET_W)
-      .sort((a, b) => b.W - a.W || b.L - a.L);
-    // each sheet: usedW across the 1220 width; strips run the 2440 length;
-    // placed records every part's x/y so layouts can be drawn
-    const sheets = [];
-    for (const pt of parts) {
-      let home = null, strip = null;
-      for (const sh of sheets) {
-        const st = sh.strips.find((s2) => pt.W <= s2.W && pt.L + KERF <= SHEET_L - s2.usedL);
-        if (st) { home = sh; strip = st; break; }
-        if (pt.W + KERF <= SHEET_W - sh.usedW) { home = sh; break; }
+    const fits = (pt) => (pt.L <= SL && pt.W <= SW) || (pt.mayRotate && pt.W <= SL && pt.L <= SW);
+    const oversize = all.filter((pt) => !fits(pt)).length;
+    const pool = all.filter(fits);
+    let best = null, runs = 0;
+    for (const order of orderings(pool)) {
+      const sheets = pack(order, SL, SW);
+      runs++;
+      const lastUsed = sheets.length
+        ? sheets[sheets.length - 1].placed.reduce((a, q) => a + q.L * q.W, 0) : 0;
+      if (!best || sheets.length < best.sheets.length ||
+          (sheets.length === best.sheets.length && lastUsed < best.lastUsed)) {
+        best = { sheets, lastUsed };
       }
-      if (!home) {
-        home = { usedW: 0, strips: [], placed: [] };
-        sheets.push(home);
-      }
-      if (!strip) {
-        strip = { y: home.usedW, W: pt.W, usedL: 0 };
-        home.strips.push(strip);
-        home.usedW += pt.W + KERF;
-      }
-      home.placed.push({ x: strip.usedL, y: strip.y, L: pt.L, W: pt.W, label: pt.label, unit: pt.unit });
-      strip.usedL += pt.L + KERF;
     }
-    const area = parts.reduce((a, pt) => a + pt.L * pt.W, 0);
+    const sheets = best ? best.sheets : [];
+    const area = pool.reduce((a, pt) => a + pt.L * pt.W, 0);
     const used = sheets.length ? Math.round(100 * area / (sheets.length * SHEET_L * SHEET_W)) : 0;
     return { t, n: sheets.length, parts: all.length, used, oversize,
-             sheets: sheets.map((sh) => sh.placed) };
+             sheets: sheets.map((sh) => sh.placed), runs, mode, trim };
   });
 }
 
@@ -438,6 +567,8 @@ function statsFor({ bay, n, vol, panels }) {
   ];
 }
 
+const nestOpts = () => ({ mode: params.nest, trim: params.trim, rot: params.rot });
+
 function renderSheets(nest) {
   $('#sheets').innerHTML = nest.map((s) => `
     <div class="stat">
@@ -445,13 +576,19 @@ function renderSheets(nest) {
       <div class="l">${s.t} mm ply — ${s.parts} ${s.parts === 1 ? 'part' : 'parts'}, ${s.used}% used${s.oversize
         ? ` (+${s.oversize} too big for a sheet)` : ''}</div>
     </div>`).join('');
+  const g = nest[0];
+  $('#nestnote').textContent = g
+    ? `${g.mode === 'maxrects' ? 'CNC freeform nest (MaxRects)' : 'Straight-cut strip nest (guillotine)'} — ` +
+      `best of ${g.runs} part orderings · 4 mm kerf${g.trim ? ` · ${g.trim} mm edge trim` : ''} · ` +
+      'long edge along the sheet unless Rot is ticked in the cut list.'
+    : '';
 }
 
 function renderReadout() {
   const p = params;
   const d = derived(p);
   renderCutList(d.rows);
-  renderSheets(nestSheets(d.rows, p.qty));
+  renderSheets(nestSheets(d.rows, p.qty, nestOpts()));
   $('#readout').innerHTML = statsFor(d)
     .map(([v, l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`)
     .join('');
@@ -463,7 +600,7 @@ function renderReadout() {
 function renderCutList(rows) {
   const q = params.qty;
   $('#cutlist').innerHTML = `
-    <thead><tr><th>Part</th><th title="per bookcase">Qty</th><th title="all ${q} bookcases">Total</th><th>L × W (mm)</th><th>T</th></tr></thead>
+    <thead><tr><th>Part</th><th title="per bookcase">Qty</th><th title="all ${q} bookcases">Total</th><th>L × W (mm)</th><th>T</th><th title="allow 90° rotation when nesting">Rot</th></tr></thead>
     <tbody>${rows.map((r) => `
       <tr>
         <td><div>${r.part}</div><div class="muted note">${r.note}</div></td>
@@ -471,6 +608,7 @@ function renderCutList(rows) {
         <td>${r.qty * q}</td>
         <td class="num">${r.len} × ${r.wid}</td>
         <td class="num">${r.t}</td>
+        <td><input type="checkbox" data-rot="${r.part}"${params.rot[r.part] ? ' checked' : ''}></td>
       </tr>`).join('')}</tbody>`;
 }
 
@@ -483,8 +621,8 @@ function cutListCsv(p) {
     `${p.shelves} shelves, back ${p.back ? 'yes (6 mm)' : 'no'}, quantity ${p.qty}`;
   const lines = [
     [spec], [],
-    ['Part', 'Qty per bookcase', 'Total qty', 'Length (mm)', 'Width (mm)', 'Thickness (mm)', 'Notes'],
-    ...cutList(p).map((r) => [r.part, r.qty, r.qty * p.qty, r.len, r.wid, r.t, r.note]),
+    ['Part', 'Qty per bookcase', 'Total qty', 'Length (mm)', 'Width (mm)', 'Thickness (mm)', 'Rotation allowed', 'Notes'],
+    ...cutList(p).map((r) => [r.part, r.qty, r.qty * p.qty, r.len, r.wid, r.t, p.rot[r.part] ? 'yes' : 'no', r.note]),
   ];
   // Excel guesses Windows-1252 for CSVs without a BOM, mangling × and — into
   // "Ã—"/"â€”". Emit plain ASCII and prepend a BOM (at the Blob) so every
@@ -573,7 +711,7 @@ $('#downloadPdf').addEventListener('click', async () => {
       stats: statsFor(d),
       totals: (q > 1 ? `${q} bookcases  ·  ` : '') +
         `${d.panels * q} panels  ·  ${(d.vol * q * 1000).toFixed(1)} L of ply  ·  ≈ ${(d.vol * q * DENSITY).toFixed(1)} kg`,
-      sheets: nestSheets(d.rows, q),
+      sheets: nestSheets(d.rows, q, nestOpts()),
       image: captureView(1296, 972),
       filename: `bookshelf-${nameCore()}-${stamp()}.pdf`,
     });
@@ -615,6 +753,23 @@ for (const ctl of document.querySelectorAll('.ctl[data-param]')) {
 }
 $('#thickness').addEventListener('input', (e) => { params.thickness = +e.target.value; clampShelves(); buildUnit(); });
 $('#back').addEventListener('input', (e) => { params.back = e.target.checked; buildUnit(); });
+
+// nesting options: none of these touch the 3D model, only the paperwork
+$('#nestmode').addEventListener('input', (e) => { params.nest = e.target.value; renderReadout(); });
+$('#trim').addEventListener('input', (e) => {
+  const v = Math.min(25, Math.max(0, Math.round(+e.target.value) || 0));
+  params.trim = v;
+  if (e.target.value !== '' && +e.target.value !== v) e.target.value = v;
+  renderReadout();
+});
+// per-part rotation permissions live in the cut-list rows (delegated: the
+// table is re-rendered wholesale, the listener survives on the table itself)
+$('#cutlist').addEventListener('input', (e) => {
+  const name = e.target.dataset?.rot;
+  if (name === undefined) return;
+  params.rot[name] = e.target.checked;
+  renderSheets(nestSheets(cutList(params), params.qty, nestOpts()));
+});
 
 // --- render loop -------------------------------------------------------------------
 function resize() {

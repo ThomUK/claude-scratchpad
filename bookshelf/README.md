@@ -34,11 +34,19 @@ The CSV is emitted as pure ASCII with a UTF-8 BOM, because Excel guesses
 Windows-1252 for BOM-less CSVs and mangles × / — into `Ã—` / `â€”`.
 
 Under the cut list, a **sheet nesting** summary estimates how many
-2440 × 1220 sheets to buy per thickness (first-fit-decreasing guillotine
-strip nesting, long edge along the sheet, 4 mm kerf), with part count and
-utilisation. When building more than one bookcase, **all parts nest
-together** in one pool per thickness, which packs sheets tighter than
-nesting each bookcase separately. The PDF dedicates page 3 (and beyond,
+2440 × 1220 sheets to buy per thickness, with part count and utilisation.
+Two nest styles are offered: **straight-cut** (guillotine strips — every
+edge a through-cut on a panel/track saw) and **CNC freeform** (MaxRects —
+tighter stepped layouts). Each nest is a deterministic search: five sorted
+part orderings plus up to 200 seeded shuffles, keeping the result with the
+fewest sheets and then the emptiest last sheet (biggest reusable offcut).
+Parts go long-edge-along-the-sheet (grain along the part) unless their
+**Rot** box is ticked in the cut list, which permits 90° rotation for that
+part during nesting. An **edge trim** parameter (0–25 mm) shrinks the
+usable sheet for damaged factory edges, and a 4 mm kerf separates every
+cut. When building more than one bookcase, **all parts nest together** in
+one pool per thickness, which packs sheets tighter than nesting each
+bookcase separately. The PDF dedicates page 3 (and beyond,
 as needed) to **drawn sheet layouts**: each sheet as a rectangle with
 every part at its nested position, labelled with name and size, plus
 per-sheet utilisation — and, for multiple bookcases, a circled number on

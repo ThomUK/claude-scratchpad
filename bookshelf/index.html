@@ -107,9 +107,19 @@
       <table id="cutlist" class="cutlist"></table>
 
       <h2>Sheets <span class="muted">(2440 × 1220 mm)</span></h2>
+      <div class="ctl">
+        <div class="row">
+          <select id="nestmode" title="cutting method the layout must suit">
+            <option value="strip" selected>Straight-cut nest</option>
+            <option value="maxrects">CNC nest (freeform)</option>
+          </select>
+          <label class="trim">Edge trim
+            <input id="trim" type="number" min="0" max="25" step="1" value="0" /> mm
+          </label>
+        </div>
+      </div>
       <div id="sheets" class="cards"></div>
-      <p class="muted small">Buying estimate: guillotine strip nesting, long edge along the sheet,
-        4&thinsp;mm kerf between cuts.</p>
+      <p class="muted small" id="nestnote"></p>
 
       <div class="btns">
         <button id="downloadCsv" class="btn" type="button">Download CSV</button>

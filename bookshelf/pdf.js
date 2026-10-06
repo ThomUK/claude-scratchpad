@@ -338,8 +338,13 @@ function sheetLayoutPages(doc, p, sheets) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(GREY);
+  const g0 = sheets[0];
+  const anyRotated = sheets.some((g) => g.sheets.some((sh) => sh.some((q) => q.rotated)));
   const noteLines = doc.splitTextToSize(
-    'Buying estimate: guillotine strip nesting, long edge along the sheet, 4 mm kerf between cuts. Blank areas are offcut.' +
+    `Buying estimate: ${g0?.mode === 'maxrects' ? 'CNC freeform nest (MaxRects)' : 'straight-cut strip nest (guillotine)'}, ` +
+    `best of ${g0?.runs ?? 0} part orderings, 4 mm kerf between cuts` +
+    `${g0?.trim ? `, ${g0.trim} mm trimmed off every sheet edge (dashed line)` : ''}. Blank areas are offcut.` +
+    (anyRotated ? ' (R) = part rotated 90° — grain runs across it.' : '') +
     (p.qty > 1 ? ' Circled numbers mark the bookcase each part belongs to.' : ''), 180);
   doc.text(noteLines, 15, hy3 + 11);
   let y = hy3 + 11 + noteLines.length * 3 + 4;
@@ -359,17 +364,33 @@ function sheetLayoutPages(doc, p, sheets) {
       doc.setDrawColor(INK);
       doc.setLineWidth(0.4);
       doc.rect(15, y, SHEET_L * sc, shH);
+      if (g.trim) {
+        doc.setDrawColor(170);
+        doc.setLineWidth(0.2);
+        doc.setLineDashPattern([1, 1], 0);
+        doc.rect(15 + g.trim * sc, y + g.trim * sc, (SHEET_L - 2 * g.trim) * sc, (SHEET_W - 2 * g.trim) * sc);
+        doc.setLineDashPattern([], 0);
+      }
       for (const q of placed) {
-        const rx = 15 + q.x * sc, ry = y + q.y * sc, rw = q.L * sc, rh = q.W * sc;
+        const rx = 15 + (g.trim + q.x) * sc, ry = y + (g.trim + q.y) * sc, rw = q.L * sc, rh = q.W * sc;
         doc.setFillColor(243, 239, 230);
         doc.setDrawColor(110);
         doc.setLineWidth(0.25);
         doc.rect(rx, ry, rw, rh, 'FD');
-        if (rh >= 8) {
+        const name = q.label + (q.rotated ? ' (R)' : '');
+        if (rh > rw && rw < 24) {
+          // tall rect (a rotated part): run the label up the part instead
+          if (rw >= 3.6 && rh >= 20) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(5.8);
+            doc.setTextColor(INK);
+            doc.text(`${name}  ${q.L} × ${q.W}`, rx + rw / 2 + 0.8, ry + rh / 2, { align: 'center', angle: 90 });
+          }
+        } else if (rh >= 8) {
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(7.5);
           doc.setTextColor(INK);
-          doc.text(q.label, rx + rw / 2, ry + rh / 2 - 0.6, { align: 'center' });
+          doc.text(name, rx + rw / 2, ry + rh / 2 - 0.6, { align: 'center' });
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(6.5);
           doc.setTextColor(GREY);
@@ -378,7 +399,7 @@ function sheetLayoutPages(doc, p, sheets) {
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(5.8);
           doc.setTextColor(INK);
-          doc.text(`${q.label}  ${q.L} × ${q.W}`, rx + rw / 2, ry + rh / 2 + 0.8, { align: 'center' });
+          doc.text(`${name}  ${q.L} × ${q.W}`, rx + rw / 2, ry + rh / 2 + 0.8, { align: 'center' });
         }
         // circled bookcase number (only when building more than one)
         if (q.unit && rh >= 5.4 && rw >= 8) {

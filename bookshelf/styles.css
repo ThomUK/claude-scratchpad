@@ -51,6 +51,9 @@ main {
 .cutlist td { padding: 6px 6px 6px 0; border-bottom: 1px solid var(--panel-border); vertical-align: top; }
 .cutlist td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .cutlist .note { font-size: 0.7rem; font-weight: 400; line-height: 1.35; margin-top: 1px; }
+.cutlist td input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; }
+.trim { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.trim input { width: 58px !important; }
 .btns { display: flex; gap: 8px; }
 .btns .btn { flex: 1; width: auto; }
 .btn {
