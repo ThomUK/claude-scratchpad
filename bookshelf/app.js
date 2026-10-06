@@ -295,7 +295,7 @@ function nestSheets(rows) {
   const byT = {};
   for (const r of rows) {
     for (let i = 0; i < r.qty; i++) {
-      (byT[r.t] ??= []).push({ L: Math.max(r.len, r.wid), W: Math.min(r.len, r.wid) });
+      (byT[r.t] ??= []).push({ L: Math.max(r.len, r.wid), W: Math.min(r.len, r.wid), label: r.part });
     }
   }
   return Object.keys(byT).map(Number).sort((a, b) => b - a).map((t) => {
@@ -303,31 +303,32 @@ function nestSheets(rows) {
     const oversize = all.filter((pt) => pt.L > SHEET_L || pt.W > SHEET_W).length;
     const parts = all.filter((pt) => pt.L <= SHEET_L && pt.W <= SHEET_W)
       .sort((a, b) => b.W - a.W || b.L - a.L);
-    const sheets = [];   // each: { freeW, strips: [{ W, free }] } — strips run the sheet length
+    // each sheet: usedW across the 1220 width; strips run the 2440 length;
+    // placed records every part's x/y so layouts can be drawn
+    const sheets = [];
     for (const pt of parts) {
-      let placed = false;
+      let home = null, strip = null;
       for (const sh of sheets) {
-        for (const strip of sh.strips) {
-          if (pt.W <= strip.W && pt.L + KERF <= strip.free) {
-            strip.free -= pt.L + KERF;
-            placed = true;
-            break;
-          }
-        }
-        if (!placed && pt.W + KERF <= sh.freeW) {
-          sh.strips.push({ W: pt.W, free: SHEET_L - pt.L - KERF });
-          sh.freeW -= pt.W + KERF;
-          placed = true;
-        }
-        if (placed) break;
+        const st = sh.strips.find((s2) => pt.W <= s2.W && pt.L + KERF <= SHEET_L - s2.usedL);
+        if (st) { home = sh; strip = st; break; }
+        if (pt.W + KERF <= SHEET_W - sh.usedW) { home = sh; break; }
       }
-      if (!placed) {
-        sheets.push({ freeW: SHEET_W - pt.W - KERF, strips: [{ W: pt.W, free: SHEET_L - pt.L - KERF }] });
+      if (!home) {
+        home = { usedW: 0, strips: [], placed: [] };
+        sheets.push(home);
       }
+      if (!strip) {
+        strip = { y: home.usedW, W: pt.W, usedL: 0 };
+        home.strips.push(strip);
+        home.usedW += pt.W + KERF;
+      }
+      home.placed.push({ x: strip.usedL, y: strip.y, L: pt.L, W: pt.W, label: pt.label });
+      strip.usedL += pt.L + KERF;
     }
     const area = parts.reduce((a, pt) => a + pt.L * pt.W, 0);
     const used = sheets.length ? Math.round(100 * area / (sheets.length * SHEET_L * SHEET_W)) : 0;
-    return { t, n: sheets.length, parts: all.length, used, oversize };
+    return { t, n: sheets.length, parts: all.length, used, oversize,
+             sheets: sheets.map((sh) => sh.placed) };
   });
 }
 

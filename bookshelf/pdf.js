@@ -32,7 +32,7 @@ const specLine = (p) =>
   `skirting cutout ${p.cutout} mm  ·  front setback ${p.setback} mm  ·  ` +
   `${p.shelves} ${p.shelves === 1 ? 'shelf' : 'shelves'}  ·  ${p.back ? `${p.backT} mm back` : 'no back'}`;
 
-function footer(doc, page) {
+function footer(doc, page, total) {
   doc.setDrawColor(FAINT);
   doc.setLineWidth(0.2);
   doc.line(15, 284, 195, 284);
@@ -41,7 +41,7 @@ function footer(doc, page) {
   doc.setTextColor(GREY);
   const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   doc.text(`Generated ${date}  ·  thomuk.github.io/claude-scratchpad/bookshelf`, 15, 289);
-  doc.text(`page ${page} of 2`, 195, 289, { align: 'right' });
+  doc.text(`page ${page} of ${total}`, 195, 289, { align: 'right' });
 }
 
 // --- dimension lines (grey, with extension lines and filled arrowheads) ----------
@@ -246,7 +246,6 @@ export async function downloadPdf({ p, rows, stats, totals, sheets, image, filen
   doc.text('TOP ELEVATION', fx + fw / 2, topY - 2.5, { align: 'center' });
   doc.text('FRONT ELEVATION', fx + fw / 2, baseY + 15, { align: 'center' });
   doc.text('SIDE ELEVATION', sx + sw / 2, baseY + 15, { align: 'center' });
-  footer(doc, 1);
 
   // ---------- page 2: cut list ----------
   doc.addPage();
@@ -298,17 +297,103 @@ export async function downloadPdf({ p, rows, stats, totals, sheets, image, filen
   doc.setFontSize(9.5);
   doc.setTextColor(INK);
   doc.text(wa(totals), 15, y + 2);
-  const sheetTxt = 'Sheets (2440 × 1220 mm): ' + sheets.map((sh) =>
-    `${sh.t} mm: ${sh.n} ${sh.n === 1 ? 'sheet' : 'sheets'} (${sh.parts} ${sh.parts === 1 ? 'part' : 'parts'}, ${sh.used}% used${sh.oversize
-      ? `; ${sh.oversize} too big for a sheet` : ''})`).join('  ·  ');
-  doc.text(wa(sheetTxt), 15, y + 8);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(GREY);
-  doc.text(doc.splitTextToSize(
-    'L × W are rectangular blanks; sides are cut as full blanks, then notched. Sheet count is a buying estimate: ' +
-    'guillotine strip nesting, long edge along the sheet, 4 mm kerf.', 180), 15, y + 14);
-  footer(doc, 2);
+  doc.text('L × W are rectangular blanks; the sides are cut as full blanks, then notched at the back-bottom corner. ' +
+    'Sheet layouts on the next page.', 15, y + 8);
 
+  // ---------- page 3+: sheet layouts ----------
+  sheetLayoutPages(doc, p, sheets);
+
+  const total = doc.getNumberOfPages();
+  for (let i = 1; i <= total; i++) {
+    doc.setPage(i);
+    footer(doc, i, total);
+  }
   doc.save(filename);
+}
+
+// --- sheet layout pages ------------------------------------------------------------
+// One drawn rectangle per 2440 × 1220 sheet, parts at their nested positions
+// (long edge along the sheet length), labelled with name and size. Flows onto
+// further pages as needed.
+const SHEET_L = 2440, SHEET_W = 1220;
+
+function sheetLayoutPages(doc, p, sheets) {
+  const sc = 180 / SHEET_L;           // 180 mm drawing width
+  const shH = SHEET_W * sc;           // ≈ 90 mm per sheet
+  doc.addPage();
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(INK);
+  doc.text('Sheet layouts', 15, 22);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(GREY);
+  doc.text(specLine(p), 15, 28.5);
+  doc.setDrawColor(FAINT);
+  doc.setLineWidth(0.3);
+  doc.line(15, 32, 195, 32);
+  const summary = 'Sheets (2440 × 1220 mm): ' + sheets.map((g) =>
+    `${g.t} mm: ${g.n} ${g.n === 1 ? 'sheet' : 'sheets'} (${g.parts} ${g.parts === 1 ? 'part' : 'parts'}, ${g.used}% used${g.oversize
+      ? `; ${g.oversize} too big for a sheet` : ''})`).join('  ·  ');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9.5);
+  doc.setTextColor(INK);
+  doc.text(wa(summary), 15, 38);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(GREY);
+  doc.text('Buying estimate: guillotine strip nesting, long edge along the sheet, 4 mm kerf between cuts. Blank areas are offcut.', 15, 43);
+
+  let y = 50;
+  for (const g of sheets) {
+    g.sheets.forEach((placed, i) => {
+      if (y + 3 + shH > 278) { doc.addPage(); y = 24; }
+      const used = Math.round(100 * placed.reduce((a, q) => a + q.L * q.W, 0) / (SHEET_L * SHEET_W));
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(INK);
+      doc.text(`${g.t} mm ply — sheet ${i + 1} of ${g.n}`, 15, y);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(GREY);
+      doc.text(`${used}% of this sheet`, 195, y, { align: 'right' });
+      y += 2;
+      doc.setDrawColor(INK);
+      doc.setLineWidth(0.4);
+      doc.rect(15, y, SHEET_L * sc, shH);
+      for (const q of placed) {
+        const rx = 15 + q.x * sc, ry = y + q.y * sc, rw = q.L * sc, rh = q.W * sc;
+        doc.setFillColor(243, 239, 230);
+        doc.setDrawColor(110);
+        doc.setLineWidth(0.25);
+        doc.rect(rx, ry, rw, rh, 'FD');
+        if (rh >= 8) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7.5);
+          doc.setTextColor(INK);
+          doc.text(q.label, rx + rw / 2, ry + rh / 2 - 0.6, { align: 'center' });
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(6.5);
+          doc.setTextColor(GREY);
+          doc.text(`${q.L} × ${q.W}`, rx + rw / 2, ry + rh / 2 + 2.6, { align: 'center' });
+        } else if (rh >= 3.6) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(5.8);
+          doc.setTextColor(INK);
+          doc.text(`${q.label}  ${q.L} × ${q.W}`, rx + rw / 2, ry + rh / 2 + 0.8, { align: 'center' });
+        }
+      }
+      y += shH + 9;
+    });
+    if (g.oversize) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(GREY);
+      doc.text(`${g.t} mm: ${g.oversize} ${g.oversize === 1 ? 'part exceeds' : 'parts exceed'} 2440 × 1220 mm and ${g.oversize === 1 ? 'is' : 'are'} not drawn.`, 15, y);
+      y += 7;
+    }
+  }
 }

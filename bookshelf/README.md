@@ -35,7 +35,9 @@ Windows-1252 for BOM-less CSVs and mangles × / — into `Ã—` / `â€”`.
 Under the cut list, a **sheet nesting** summary estimates how many
 2440 × 1220 sheets to buy per thickness (first-fit-decreasing guillotine
 strip nesting, long edge along the sheet, 4 mm kerf), with part count and
-utilisation; it also appears on page 2 of the PDF.
+utilisation. The PDF dedicates page 3 (and beyond, as needed) to **drawn
+sheet layouts**: each sheet as a rectangle with every part at its nested
+position, labelled with name and size, plus per-sheet utilisation.
 
 There is also a two-page **PDF download** (jsPDF, vendored): page 1 is a
 brochure-style summary — a 3D view captured from the live scene at a
