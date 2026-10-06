@@ -138,6 +138,27 @@ function sideElevation(doc, p, x0, baseY, s) {
   }
 }
 
+// Top (plan) view: the full W × D footprint seen from above. Solid seams
+// where the top panel meets the side tops; hidden detail (shelf fronts /
+// plinth rail at the setback, back panel) dashed. Front of the unit is the
+// bottom edge, third-angle, so it sits directly above the front elevation.
+function topElevation(doc, p, x0, yTop, s) {
+  const W = p.width * s, D = p.depth * s, T = p.thickness * s;
+  const yFront = yTop + D;                        // page y of the unit's front edge
+  doc.setDrawColor(150);
+  doc.setLineWidth(0.2);
+  doc.setLineDashPattern([1.1, 1.1], 0);
+  if (p.setback > 0) doc.line(x0 + T, yFront - p.setback * s, x0 + W - T, yFront - p.setback * s);
+  if (p.back) doc.line(x0 + T, yTop + p.backT * s, x0 + W - T, yTop + p.backT * s);
+  doc.setLineDashPattern([], 0);
+  doc.setDrawColor(70);
+  doc.line(x0 + T, yTop, x0 + T, yFront);
+  doc.line(x0 + W - T, yTop, x0 + W - T, yFront);
+  doc.setDrawColor(INK);
+  doc.setLineWidth(0.45);
+  doc.rect(x0, yTop, W, D);
+}
+
 // --- the document ------------------------------------------------------------------
 export async function downloadPdf({ p, rows, stats, totals, image }) {
   const jsPDF = await ensureJsPDF();
@@ -179,14 +200,19 @@ export async function downloadPdf({ p, rows, stats, totals, image }) {
   doc.setFontSize(8);
   doc.setTextColor(GREY);
   doc.text('DIMENSIONED ELEVATIONS — EXTERNAL DIMENSIONS, MM', 15, 128);
-  const gap = 24;
+  // third-angle layout: top (plan) view above the front elevation, side
+  // elevation to its right
+  const gapX = 24, gapY = 13;
   const availH = 118;                                  // drawing band y 136..254
-  const availW = 210 - 2 * 15 - gap - 16;              // minus view gap + dim margins
-  const s = Math.min(availW / (p.width + p.depth), availH / p.height);
-  const fw = p.width * s, sw = p.depth * s, H = p.height * s;
-  const fx = Math.max(29, (210 - (fw + gap + sw)) / 2); // keep room for the H dimension
-  const sx = fx + fw + gap;
-  const baseY = 136 + (availH - H) / 2 + H;
+  const availW = 210 - 2 * 15 - gapX - 16;             // minus view gap + dim margins
+  const s = Math.min(availW / (p.width + p.depth), (availH - gapY) / (p.height + p.depth));
+  const fw = p.width * s, sw = p.depth * s, H = p.height * s, td = p.depth * s;
+  const fx = Math.max(29, (210 - (fw + gapX + sw)) / 2); // keep room for the H dimension
+  const sx = fx + fw + gapX;
+  const group = td + gapY + H;
+  const topY = 136 + (availH - group) / 2;             // top of the plan view
+  const baseY = topY + group;                          // bottom of front/side views
+  topElevation(doc, p, fx, topY, s);
   frontElevation(doc, p, fx, baseY, s);
   sideElevation(doc, p, sx, baseY, s);
   dimH(doc, fx, fx + fw, baseY, String(p.width));
@@ -194,6 +220,7 @@ export async function downloadPdf({ p, rows, stats, totals, image }) {
   dimH(doc, sx, sx + sw, baseY, String(p.depth));
   doc.setFontSize(7.5);
   doc.setTextColor(GREY);
+  doc.text('TOP ELEVATION', fx + fw / 2, topY - 2.5, { align: 'center' });
   doc.text('FRONT ELEVATION', fx + fw / 2, baseY + 15, { align: 'center' });
   doc.text('SIDE ELEVATION', sx + sw / 2, baseY + 15, { align: 'center' });
   footer(doc, 1);

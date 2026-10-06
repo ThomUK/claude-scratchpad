@@ -34,9 +34,9 @@ Windows-1252 for BOM-less CSVs and mangles × / — into `Ã—` / `â€”`.
 
 There is also a two-page **PDF download** (jsPDF, vendored): page 1 is a
 brochure-style summary — a 3D view captured from the live scene at a
-canonical angle, dimensioned front/side elevations (external dimensions
-only, drawn as vectors), and the readout stats; page 2 is the cut list
-with the same totals.
+canonical angle, dimensioned top/front/side elevations in third-angle
+layout (external dimensions only, drawn as vectors), and the readout
+stats; page 2 is the cut list with the same totals.
 
 The 3D build, the readout figures, the CSV and the PDF all derive from the
 same `cutList()` rows and `derived()` figures, so they cannot disagree
