@@ -28,9 +28,29 @@ async function ensureJsPDF() {
 }
 
 const specLine = (p) =>
+  (p.qty > 1 ? `${p.qty} bookcases  ·  ` : '') +
   `${p.width} × ${p.depth} × ${p.height} mm  ·  ply ${p.thickness} mm  ·  plinth ${p.plinth} mm  ·  ` +
   `skirting cutout ${p.cutout} mm  ·  front setback ${p.setback} mm  ·  ` +
   `${p.shelves} ${p.shelves === 1 ? 'shelf' : 'shelves'}  ·  ${p.back ? `${p.backT} mm back` : 'no back'}`;
+
+// Title + wrapped spec line + divider; returns the divider's y so content
+// below shifts down when the spec wraps (it can, with a quantity prefix).
+function pageHeader(doc, title, titleSize, p) {
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(titleSize);
+  doc.setTextColor(INK);
+  doc.text(title, 15, 22);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(GREY);
+  const lines = doc.splitTextToSize(specLine(p), 180);
+  doc.text(lines, 15, 28.5);
+  const yDiv = 28.5 + (lines.length - 1) * 3.4 + 3.5;
+  doc.setDrawColor(FAINT);
+  doc.setLineWidth(0.3);
+  doc.line(15, yDiv, 195, yDiv);
+  return yDiv;
+}
 
 function footer(doc, page, total) {
   doc.setDrawColor(FAINT);
@@ -181,22 +201,12 @@ export async function downloadPdf({ p, rows, stats, totals, sheets, image, filen
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
   // ---------- page 1: brochure ----------
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
-  doc.setTextColor(INK);
-  doc.text('Bookshelf — birch ply', 15, 22);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(GREY);
-  doc.text(specLine(p), 15, 29);
-  doc.setDrawColor(FAINT);
-  doc.setLineWidth(0.3);
-  doc.line(15, 33, 195, 33);
+  const hy1 = pageHeader(doc, 'Bookshelf — birch ply', 20, p);
 
   // 3D view, left (fitted to the frame preserving the capture's aspect —
   // the mobile fallback captures at the viewport's aspect, not 4:3);
   // readout stats, right
-  const box = { x: 15, y: 37, w: 108, h: 81 };
+  const box = { x: 15, y: hy1 + 4, w: 108, h: 81 };
   const ar = image.w / image.h;
   let iw = box.w, ih = iw / ar;
   if (ih > box.h) { ih = box.h; iw = ih * ar; }
@@ -205,7 +215,7 @@ export async function downloadPdf({ p, rows, stats, totals, sheets, image, filen
   doc.setDrawColor(FAINT);
   doc.setLineWidth(0.25);
   doc.rect(ix, iy, iw, ih);
-  let sy = 47;
+  let sy = hy1 + 14;
   for (const [v, l] of stats) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
@@ -249,31 +259,21 @@ export async function downloadPdf({ p, rows, stats, totals, sheets, image, filen
 
   // ---------- page 2: cut list ----------
   doc.addPage();
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(INK);
-  doc.text('Cut list', 15, 22);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(GREY);
-  doc.text(specLine(p), 15, 28.5);
-  doc.setDrawColor(FAINT);
-  doc.setLineWidth(0.3);
-  doc.line(15, 32, 195, 32);
+  const hy2 = pageHeader(doc, 'Cut list', 16, p);
 
   const cols = [
-    ['Part', 15, 'left'], ['Qty', 58, 'right'], ['L (mm)', 76, 'right'],
-    ['W (mm)', 94, 'right'], ['T (mm)', 110, 'right'], ['Notes', 118, 'left'],
+    ['Part', 15, 'left'], ['Qty', 50, 'right'], ['Total', 66, 'right'], ['L (mm)', 82, 'right'],
+    ['W (mm)', 97, 'right'], ['T (mm)', 111, 'right'], ['Notes', 118, 'left'],
   ];
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
   doc.setTextColor(GREY);
-  for (const [h, x, align] of cols) doc.text(h, x, 40, { align });
+  for (const [h, x, align] of cols) doc.text(h, x, hy2 + 7, { align });
   doc.setDrawColor(FAINT);
   doc.setLineWidth(0.2);
-  doc.line(15, 42, 195, 42);
+  doc.line(15, hy2 + 9, 195, hy2 + 9);
 
-  let y = 48;
+  let y = hy2 + 15;
   for (const r of rows) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
@@ -281,10 +281,11 @@ export async function downloadPdf({ p, rows, stats, totals, sheets, image, filen
     doc.setFontSize(9.5);
     doc.setTextColor(INK);
     doc.text(r.part, 15, y);
-    doc.text(String(r.qty), 58, y, { align: 'right' });
-    doc.text(String(r.len), 76, y, { align: 'right' });
-    doc.text(String(r.wid), 94, y, { align: 'right' });
-    doc.text(String(r.t), 110, y, { align: 'right' });
+    doc.text(String(r.qty), 50, y, { align: 'right' });
+    doc.text(String(r.qty * p.qty), 66, y, { align: 'right' });
+    doc.text(String(r.len), 82, y, { align: 'right' });
+    doc.text(String(r.wid), 97, y, { align: 'right' });
+    doc.text(String(r.t), 111, y, { align: 'right' });
     doc.setFontSize(7.5);
     doc.setTextColor(GREY);
     doc.text(noteLines, 118, y);
@@ -300,8 +301,10 @@ export async function downloadPdf({ p, rows, stats, totals, sheets, image, filen
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(GREY);
-  doc.text('L × W are rectangular blanks; the sides are cut as full blanks, then notched at the back-bottom corner. ' +
-    'Sheet layouts on the next page.', 15, y + 8);
+  doc.text(doc.splitTextToSize(
+    `Qty is per bookcase${p.qty > 1 ? `; Total covers all ${p.qty}` : ''}. ` +
+    'L × W are rectangular blanks; the sides are cut as full blanks, then notched at the back-bottom corner. ' +
+    'Sheet layouts on the next page.', 180), 15, y + 8);
 
   // ---------- page 3+: sheet layouts ----------
   sheetLayoutPages(doc, p, sheets);
@@ -324,30 +327,22 @@ function sheetLayoutPages(doc, p, sheets) {
   const sc = 180 / SHEET_L;           // 180 mm drawing width
   const shH = SHEET_W * sc;           // ≈ 90 mm per sheet
   doc.addPage();
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(INK);
-  doc.text('Sheet layouts', 15, 22);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(GREY);
-  doc.text(specLine(p), 15, 28.5);
-  doc.setDrawColor(FAINT);
-  doc.setLineWidth(0.3);
-  doc.line(15, 32, 195, 32);
+  const hy3 = pageHeader(doc, 'Sheet layouts', 16, p);
   const summary = 'Sheets (2440 × 1220 mm): ' + sheets.map((g) =>
     `${g.t} mm: ${g.n} ${g.n === 1 ? 'sheet' : 'sheets'} (${g.parts} ${g.parts === 1 ? 'part' : 'parts'}, ${g.used}% used${g.oversize
       ? `; ${g.oversize} too big for a sheet` : ''})`).join('  ·  ');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(INK);
-  doc.text(wa(summary), 15, 38);
+  doc.text(wa(summary), 15, hy3 + 6);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(GREY);
-  doc.text('Buying estimate: guillotine strip nesting, long edge along the sheet, 4 mm kerf between cuts. Blank areas are offcut.', 15, 43);
-
-  let y = 50;
+  const noteLines = doc.splitTextToSize(
+    'Buying estimate: guillotine strip nesting, long edge along the sheet, 4 mm kerf between cuts. Blank areas are offcut.' +
+    (p.qty > 1 ? ' Circled numbers mark the bookcase each part belongs to.' : ''), 180);
+  doc.text(noteLines, 15, hy3 + 11);
+  let y = hy3 + 11 + noteLines.length * 3 + 4;
   for (const g of sheets) {
     g.sheets.forEach((placed, i) => {
       if (y + 3 + shH > 278) { doc.addPage(); y = 24; }
@@ -384,6 +379,18 @@ function sheetLayoutPages(doc, p, sheets) {
           doc.setFontSize(5.8);
           doc.setTextColor(INK);
           doc.text(`${q.label}  ${q.L} × ${q.W}`, rx + rw / 2, ry + rh / 2 + 0.8, { align: 'center' });
+        }
+        // circled bookcase number (only when building more than one)
+        if (q.unit && rh >= 5.4 && rw >= 8) {
+          const bx = rx + 3.1, by = ry + 3.1;
+          doc.setFillColor(255, 255, 255);
+          doc.setDrawColor(INK);
+          doc.setLineWidth(0.3);
+          doc.circle(bx, by, 2.1, 'FD');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(6.5);
+          doc.setTextColor(INK);
+          doc.text(String(q.unit), bx, by + 0.8, { align: 'center' });
         }
       }
       y += shH + 9;

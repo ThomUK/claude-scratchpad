@@ -16,6 +16,7 @@ const params = {
   cutout: 25,              // mm, skirting cutout depth (notch height = plinth)
   setback: 20,             // mm, shelf fronts + plinth rail behind the side fronts
   thickness: 18, back: false,
+  qty: 1,                  // bookcases to build: cut list totals + combined nesting
 };
 
 // --- procedural textures --------------------------------------------------------
@@ -291,11 +292,19 @@ function cutList(p) {
 // cuts. An estimate for buying, not an optimised layout.
 const SHEET_L = 2440, SHEET_W = 1220, KERF = 4;
 
-function nestSheets(rows) {
+// All bookcases' parts are nested together (one combined pool per thickness),
+// which packs sheets tighter than nesting each bookcase separately. Each part
+// remembers which bookcase it belongs to when more than one is being built.
+function nestSheets(rows, units = 1) {
   const byT = {};
-  for (const r of rows) {
-    for (let i = 0; i < r.qty; i++) {
-      (byT[r.t] ??= []).push({ L: Math.max(r.len, r.wid), W: Math.min(r.len, r.wid), label: r.part });
+  for (let u = 1; u <= units; u++) {
+    for (const r of rows) {
+      for (let i = 0; i < r.qty; i++) {
+        (byT[r.t] ??= []).push({
+          L: Math.max(r.len, r.wid), W: Math.min(r.len, r.wid), label: r.part,
+          unit: units > 1 ? u : undefined,
+        });
+      }
     }
   }
   return Object.keys(byT).map(Number).sort((a, b) => b - a).map((t) => {
@@ -322,7 +331,7 @@ function nestSheets(rows) {
         home.strips.push(strip);
         home.usedW += pt.W + KERF;
       }
-      home.placed.push({ x: strip.usedL, y: strip.y, L: pt.L, W: pt.W, label: pt.label });
+      home.placed.push({ x: strip.usedL, y: strip.y, L: pt.L, W: pt.W, label: pt.label, unit: pt.unit });
       strip.usedL += pt.L + KERF;
     }
     const area = parts.reduce((a, pt) => a + pt.L * pt.W, 0);
@@ -418,12 +427,14 @@ function derived(p) {
 }
 
 function statsFor({ bay, n, vol, panels }) {
-  const p = params;
+  const p = params, q = p.qty;
   return [
     [`${p.width} × ${p.depth} × ${p.height}`, 'External W × D × H (mm)'],
     [`${Math.round(bay)} mm`, `Clear height per bay (${n + 1} ${n ? 'bays' : 'bay'})`],
-    [`${(vol * 1000).toFixed(1)} L`, `Ply volume (${panels} panels)`],
-    [`≈ ${(vol * DENSITY).toFixed(1)} kg`, 'Weight at 680 kg/m³'],
+    [`${(vol * q * 1000).toFixed(1)} L`,
+      q > 1 ? `Ply volume (${panels * q} panels, ${q} bookcases)` : `Ply volume (${panels} panels)`],
+    [`≈ ${(vol * q * DENSITY).toFixed(1)} kg`,
+      q > 1 ? `Weight of all ${q} at 680 kg/m³` : 'Weight at 680 kg/m³'],
   ];
 }
 
@@ -440,7 +451,7 @@ function renderReadout() {
   const p = params;
   const d = derived(p);
   renderCutList(d.rows);
-  renderSheets(nestSheets(d.rows));
+  renderSheets(nestSheets(d.rows, p.qty));
   $('#readout').innerHTML = statsFor(d)
     .map(([v, l]) => `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`)
     .join('');
@@ -450,12 +461,14 @@ function renderReadout() {
 }
 
 function renderCutList(rows) {
+  const q = params.qty;
   $('#cutlist').innerHTML = `
-    <thead><tr><th>Part</th><th>Qty</th><th>L × W (mm)</th><th>T</th></tr></thead>
+    <thead><tr><th>Part</th><th title="per bookcase">Qty</th><th title="all ${q} bookcases">Total</th><th>L × W (mm)</th><th>T</th></tr></thead>
     <tbody>${rows.map((r) => `
       <tr>
         <td><div>${r.part}</div><div class="muted note">${r.note}</div></td>
         <td>${r.qty}</td>
+        <td>${r.qty * q}</td>
         <td class="num">${r.len} × ${r.wid}</td>
         <td class="num">${r.t}</td>
       </tr>`).join('')}</tbody>`;
@@ -467,11 +480,11 @@ const csvEscape = (s) => (/[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
 function cutListCsv(p) {
   const spec = `Bookshelf ${p.width} × ${p.depth} × ${p.height} mm — plinth ${p.plinth}, ` +
     `skirting cutout ${p.cutout}, front setback ${p.setback}, ply ${p.thickness} mm, ` +
-    `${p.shelves} shelves, back ${p.back ? 'yes (6 mm)' : 'no'}`;
+    `${p.shelves} shelves, back ${p.back ? 'yes (6 mm)' : 'no'}, quantity ${p.qty}`;
   const lines = [
     [spec], [],
-    ['Part', 'Qty', 'Length (mm)', 'Width (mm)', 'Thickness (mm)', 'Notes'],
-    ...cutList(p).map((r) => [r.part, r.qty, r.len, r.wid, r.t, r.note]),
+    ['Part', 'Qty per bookcase', 'Total qty', 'Length (mm)', 'Width (mm)', 'Thickness (mm)', 'Notes'],
+    ...cutList(p).map((r) => [r.part, r.qty, r.qty * p.qty, r.len, r.wid, r.t, r.note]),
   ];
   // Excel guesses Windows-1252 for CSVs without a BOM, mangling × and — into
   // "Ã—"/"â€”". Emit plain ASCII and prepend a BOM (at the Blob) so every
@@ -486,11 +499,14 @@ function stamp() {
   return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}`;
 }
 
+const nameCore = () =>
+  `${params.width}x${params.depth}x${params.height}${params.qty > 1 ? `-q${params.qty}` : ''}`;
+
 $('#downloadCsv').addEventListener('click', () => {
   const blob = new Blob(['﻿' + cutListCsv(params)], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `bookshelf-cutlist-${params.width}x${params.depth}x${params.height}-${stamp()}.csv`;
+  a.download = `bookshelf-cutlist-${nameCore()}-${stamp()}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 });
@@ -550,14 +566,16 @@ $('#downloadPdf').addEventListener('click', async () => {
   try {
     const { downloadPdf } = await import('./pdf.js?v=dev');
     const d = derived(params);
+    const q = params.qty;
     await downloadPdf({
       p: { ...params, backT: BACK_T },
       rows: d.rows,
       stats: statsFor(d),
-      totals: `${d.panels} panels  ·  ${(d.vol * 1000).toFixed(1)} L of ply  ·  ≈ ${(d.vol * DENSITY).toFixed(1)} kg`,
-      sheets: nestSheets(d.rows),
+      totals: (q > 1 ? `${q} bookcases  ·  ` : '') +
+        `${d.panels * q} panels  ·  ${(d.vol * q * 1000).toFixed(1)} L of ply  ·  ≈ ${(d.vol * q * DENSITY).toFixed(1)} kg`,
+      sheets: nestSheets(d.rows, q),
       image: captureView(1296, 972),
-      filename: `bookshelf-${params.width}x${params.depth}x${params.height}-${stamp()}.pdf`,
+      filename: `bookshelf-${nameCore()}-${stamp()}.pdf`,
     });
   } catch (err) {
     console.error(err);
