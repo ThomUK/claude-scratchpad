@@ -131,15 +131,15 @@ function concreteTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = S;
   const g = c.getContext('2d');
-  g.fillStyle = '#c5c9ce';
+  g.fillStyle = '#b3b7bd';
   g.fillRect(0, 0, S, S);
-  // broad tonal patches
-  for (let i = 0; i < 90; i++) {
+  // broad tonal patches, some distinctly darker for an industrial look
+  for (let i = 0; i < 110; i++) {
     const r = 140 + Math.random() * 560;
     const x = Math.random() * S, y = Math.random() * S;
     const grad = g.createRadialGradient(x, y, 0, x, y, r);
-    const tone = ['174,178,185', '204,208,214', '189,195,202'][Math.floor(Math.random() * 3)];
-    grad.addColorStop(0, `rgba(${tone},${0.07 + Math.random() * 0.10})`);
+    const tone = ['148,152,160', '186,190,197', '166,171,179', '128,132,140'][Math.floor(Math.random() * 4)];
+    grad.addColorStop(0, `rgba(${tone},${0.08 + Math.random() * 0.12})`);
     grad.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = grad;
     g.fillRect(x - r, y - r, 2 * r, 2 * r);
@@ -154,27 +154,27 @@ function concreteTexture() {
     g.stroke();
   }
   // watery stains
-  for (let i = 0; i < 7; i++) {
-    const r = 80 + Math.random() * 240;
+  for (let i = 0; i < 11; i++) {
+    const r = 80 + Math.random() * 260;
     const x = Math.random() * S, y = Math.random() * S;
     const grad = g.createRadialGradient(x, y, r * 0.55, x, y, r);
     grad.addColorStop(0, 'rgba(0,0,0,0)');
-    grad.addColorStop(0.85, `rgba(120,124,132,${0.05 + Math.random() * 0.06})`);
+    grad.addColorStop(0.85, `rgba(104,108,117,${0.07 + Math.random() * 0.09})`);
     grad.addColorStop(1, 'rgba(0,0,0,0)');
     g.fillStyle = grad;
     g.fillRect(x - r, y - r, 2 * r, 2 * r);
   }
-  // aggregate speckle
-  for (let i = 0; i < 42000; i++) {
-    const v = 148 + Math.floor(Math.random() * 84);
-    g.fillStyle = `rgba(${v},${v},${v + 4},${0.10 + Math.random() * 0.22})`;
-    g.fillRect(Math.random() * S, Math.random() * S, 1 + Math.random() * 1.6, 1 + Math.random() * 1.6);
+  // aggregate speckle, dense and wide-ranging
+  for (let i = 0; i < 64000; i++) {
+    const v = 118 + Math.floor(Math.random() * 118);
+    g.fillStyle = `rgba(${v},${v},${v + 4},${0.10 + Math.random() * 0.26})`;
+    g.fillRect(Math.random() * S, Math.random() * S, 1 + Math.random() * 1.8, 1 + Math.random() * 1.8);
   }
   // pinholes (dark air pockets)
-  for (let i = 0; i < 900; i++) {
-    g.fillStyle = `rgba(92,96,104,${0.10 + Math.random() * 0.18})`;
+  for (let i = 0; i < 1600; i++) {
+    g.fillStyle = `rgba(80,84,92,${0.12 + Math.random() * 0.20})`;
     g.beginPath();
-    g.arc(Math.random() * S, Math.random() * S, 0.6 + Math.random() * 1.8, 0, Math.PI * 2);
+    g.arc(Math.random() * S, Math.random() * S, 0.6 + Math.random() * 2.1, 0, Math.PI * 2);
     g.fill();
   }
   // a few hairline cracks
@@ -189,6 +189,47 @@ function concreteTexture() {
   }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;   // drawn once, never tiled: no seams
+  return t;
+}
+
+// Cast edge of the slab: darker, with horizontal pour striations, dense
+// aggregate and honeycomb voids toward the bottom. Tiles around the six
+// faces, so speckle and voids are stamped across the horizontal wrap.
+function concreteSideTexture() {
+  const W = 1024, H = 128;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.fillStyle = '#a7abb2';
+  g.fillRect(0, 0, W, H);
+  // pour striations
+  for (let i = 0; i < 16; i++) {
+    g.fillStyle = `rgba(${Math.random() < 0.55 ? '134,138,146' : '184,188,195'},${0.07 + Math.random() * 0.11})`;
+    g.fillRect(0, Math.random() * H, W, 2 + Math.random() * 7);
+  }
+  const XOFF = [-W, 0, W];
+  // aggregate
+  for (let i = 0; i < 5200; i++) {
+    const x = Math.random() * W, y = Math.random() * H;
+    const v = 108 + Math.floor(Math.random() * 120);
+    g.fillStyle = `rgba(${v},${v},${v + 4},${0.12 + Math.random() * 0.26})`;
+    for (const dx of XOFF) g.fillRect(x + dx, y, 1 + Math.random() * 1.7, 1 + Math.random() * 1.7);
+  }
+  // honeycomb voids, concentrated low down
+  for (let i = 0; i < 120; i++) {
+    const x = Math.random() * W;
+    const y = H * (0.5 + Math.random() * 0.5);
+    const r = 0.8 + Math.random() * 3.2;
+    g.fillStyle = `rgba(72,76,84,${0.14 + Math.random() * 0.22})`;
+    for (const dx of XOFF) {
+      g.beginPath();
+      g.arc(x + dx, y, r, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = THREE.RepeatWrapping;
   return t;
 }
 
@@ -274,15 +315,27 @@ for (const t of [faceTex, faceTexV]) {
 }
 
 // rough concrete hexagon slab
+// 200 mm-thick hexagonal slab: a 6-segment prism, top face in cast concrete,
+// sides in the darker board-cast edge texture (flat-shaded so each of the
+// six faces reads as a plane, not a smoothed cylinder)
 const concrete = concreteTexture();
 concrete.anisotropy = maxAniso;
+const concreteSide = concreteSideTexture();
+concreteSide.anisotropy = maxAniso;
+// match the side texture's texel density to the top (one 2048px tile over
+// ~5.2 m): six 2.6 m edges ≈ 15.6 m around → 3 tiles; 0.2 m tall → ~4% of one
+concreteSide.repeat.set(3, 1);
+const SLAB_T = 0.2;
+const slabTop = new THREE.MeshStandardMaterial({ map: concrete, bumpMap: concrete, bumpScale: 3, roughness: 0.95, metalness: 0 });
+const slabSide = new THREE.MeshStandardMaterial({ map: concreteSide, bumpMap: concreteSide, bumpScale: 3.5, roughness: 0.97, metalness: 0, flatShading: true });
 const floor = new THREE.Mesh(
-  new THREE.CircleGeometry(2.6, 6),
-  new THREE.MeshStandardMaterial({ map: concrete, bumpMap: concrete, bumpScale: 2.5, roughness: 0.95, metalness: 0 })
+  new THREE.CylinderGeometry(2.6, 2.6, SLAB_T, 6, 1),
+  [slabSide, slabTop, slabSide]   // [sides, top cap, bottom cap]
 );
-floor.rotation.x = -Math.PI / 2;
-floor.rotation.z = Math.PI / 6;   // flat edge facing the camera
+floor.rotation.y = Math.PI / 6;   // flat edge facing the camera
+floor.position.y = -SLAB_T / 2;   // top surface at floor level
 floor.receiveShadow = true;
+floor.castShadow = true;
 scene.add(floor);
 
 // --- parametric build -------------------------------------------------------------
