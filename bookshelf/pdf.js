@@ -182,11 +182,18 @@ export async function downloadPdf({ p, rows, stats, totals, image }) {
   doc.setLineWidth(0.3);
   doc.line(15, 33, 195, 33);
 
-  // 3D view, left; readout stats, right
-  doc.addImage(image, 'JPEG', 15, 37, 108, 81);
+  // 3D view, left (fitted to the frame preserving the capture's aspect —
+  // the mobile fallback captures at the viewport's aspect, not 4:3);
+  // readout stats, right
+  const box = { x: 15, y: 37, w: 108, h: 81 };
+  const ar = image.w / image.h;
+  let iw = box.w, ih = iw / ar;
+  if (ih > box.h) { ih = box.h; iw = ih * ar; }
+  const ix = box.x + (box.w - iw) / 2, iy = box.y + (box.h - ih) / 2;
+  doc.addImage(image.data, 'JPEG', ix, iy, iw, ih);
   doc.setDrawColor(FAINT);
   doc.setLineWidth(0.25);
-  doc.rect(15, 37, 108, 81);
+  doc.rect(ix, iy, iw, ih);
   let sy = 47;
   for (const [v, l] of stats) {
     doc.setFont('helvetica', 'bold');

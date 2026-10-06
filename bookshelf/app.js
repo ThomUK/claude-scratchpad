@@ -412,36 +412,57 @@ $('#downloadCsv').addEventListener('click', () => {
 });
 
 // --- PDF download ------------------------------------------------------------------
-// Renders the live scene once through a throwaway offscreen renderer at a
-// canonical three-quarter view (white sky, print-friendly), independent of
-// wherever the user has orbited the interactive camera.
-function captureView(w, h) {
-  const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-  r.setSize(w, h);
-  r.setPixelRatio(1);
-  r.shadowMap.enabled = true;
-  r.shadowMap.type = THREE.PCFSoftShadowMap;
-  r.toneMapping = THREE.ACESFilmicToneMapping;
-  const cam = new THREE.PerspectiveCamera(42, w / h, 0.05, 50);
+// Renders the live scene once at a canonical three-quarter view (white sky,
+// print-friendly), independent of wherever the user has orbited.
+function captureCamera(aspect) {
+  const cam = new THREE.PerspectiveCamera(42, aspect, 0.05, 50);
   const p = params;
   const target = new THREE.Vector3(0, p.height / 2 * MM, 0);
   const dir = new THREE.Vector3(0.72, 0.5, 1).normalize();
   cam.position.copy(target).addScaledVector(dir, Math.hypot(p.width, p.height, p.depth) * MM * 1.45);
   cam.lookAt(target);
+  return cam;
+}
+
+// JPEG: the white-sky capture has no alpha, and PNG would be ~10× larger.
+function captureView(w, h) {
   const prevBg = scene.background;
   scene.background = new THREE.Color('#ffffff');
-  r.render(scene, cam);
-  // JPEG: the white-sky capture has no alpha, and PNG would be ~10× larger
-  const jpg = r.domElement.toDataURL('image/jpeg', 0.88);
-  scene.background = prevBg;
-  r.dispose();
-  r.forceContextLoss?.();
-  return jpg;
+  try {
+    // preferred: a throwaway offscreen renderer at a fixed 4:3 size
+    const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    try {
+      r.setSize(w, h);
+      r.setPixelRatio(1);
+      r.shadowMap.enabled = true;
+      r.shadowMap.type = THREE.PCFSoftShadowMap;
+      r.toneMapping = THREE.ACESFilmicToneMapping;
+      r.render(scene, captureCamera(w / h));
+      return { data: r.domElement.toDataURL('image/jpeg', 0.88), w, h };
+    } finally {
+      r.dispose();
+      r.forceContextLoss?.();
+    }
+  } catch (err) {
+    // Many phones refuse a second WebGL context. Reuse the live canvas
+    // instead: draw one frame with the brochure camera, read it back
+    // synchronously (valid before the browser composites, even without
+    // preserveDrawingBuffer), then put the interactive view straight back.
+    console.warn('offscreen capture failed, reusing the main canvas', err);
+    const el = renderer.domElement;
+    renderer.render(scene, captureCamera(el.width / el.height));
+    const data = el.toDataURL('image/jpeg', 0.88);
+    renderer.render(scene, camera);
+    return { data, w: el.width, h: el.height };
+  } finally {
+    scene.background = prevBg;
+  }
 }
 
 $('#downloadPdf').addEventListener('click', async () => {
   const btn = $('#downloadPdf');
   btn.disabled = true;
+  btn.textContent = 'Building PDF…';
   try {
     const { downloadPdf } = await import('./pdf.js?v=dev');
     const d = derived(params);
@@ -454,8 +475,10 @@ $('#downloadPdf').addEventListener('click', async () => {
     });
   } catch (err) {
     console.error(err);
-    btn.textContent = 'PDF failed — see console';
+    // phones have no reachable console: put the actual error on the page
+    $('#note').textContent = `PDF failed: ${err?.message || err}`;
   } finally {
+    btn.textContent = 'Download PDF';
     btn.disabled = false;
   }
 });
