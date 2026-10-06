@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bookshelf Designer — birch ply</title>
+  <link rel="stylesheet" href="styles.css?v=dev" />
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/three.module.js?v=dev" } }
+  </script>
+</head>
+<body>
+  <header>
+    <h1>Bookshelf Designer <span class="muted">— birch ply</span></h1>
+    <nav class="crumbs"><a href="../">← All toy models</a> ·
+      <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/bookshelf" target="_blank" rel="noopener">source</a></nav>
+    <p class="subtitle">A parametric birch-plywood bookshelf, rendered live in 3D. Drag the sliders
+      (or type exact numbers) and the model rebuilds instantly. Drag the scene to orbit, scroll to
+      zoom, right-drag to pan.</p>
+  </header>
+
+  <main>
+    <aside class="panel" id="controls">
+      <h2>Parameters</h2>
+
+      <div class="ctl" data-param="width">
+        <label>Width <span class="muted">(side to side, mm)</span></label>
+        <div class="row">
+          <input type="range"  min="300" max="2400" step="10" value="900" />
+          <input type="number" min="300" max="2400" step="10" value="900" />
+        </div>
+      </div>
+
+      <div class="ctl" data-param="depth">
+        <label>Depth <span class="muted">(front to back, mm)</span></label>
+        <div class="row">
+          <input type="range"  min="150" max="600" step="5" value="300" />
+          <input type="number" min="150" max="600" step="5" value="300" />
+        </div>
+      </div>
+
+      <div class="ctl" data-param="height">
+        <label>Height <span class="muted">(mm)</span></label>
+        <div class="row">
+          <input type="range"  min="300" max="2400" step="10" value="1800" />
+          <input type="number" min="300" max="2400" step="10" value="1800" />
+        </div>
+      </div>
+
+      <div class="ctl" data-param="shelves">
+        <label>Shelves <span class="muted">(internal, evenly spaced)</span></label>
+        <div class="row">
+          <input type="range"  min="0" max="12" step="1" value="4" />
+          <input type="number" min="0" max="12" step="1" value="4" />
+        </div>
+      </div>
+
+      <div class="ctl">
+        <label>Ply thickness</label>
+        <div class="row">
+          <select id="thickness">
+            <option value="12">12 mm</option>
+            <option value="18" selected>18 mm</option>
+            <option value="24">24 mm</option>
+          </select>
+          <label class="check"><input type="checkbox" id="back" /> 6&thinsp;mm back panel</label>
+        </div>
+      </div>
+
+      <h2>Readout</h2>
+      <div id="readout" class="cards"></div>
+      <p class="muted small" id="note"></p>
+    </aside>
+
+    <section class="panel viewport">
+      <canvas id="scene"></canvas>
+    </section>
+  </main>
+
+  <footer>
+    <p>Rendered with <a href="https://threejs.org/" target="_blank" rel="noopener">three.js</a>
+      (pinned r186, vendored in <code>vendor/three/</code> — no CDN dependency). Carcass: sides full
+      height; top, bottom and shelves housed between them; optional 6&thinsp;mm back inset within
+      the frame. Weight estimate uses 680&thinsp;kg/m³ for birch ply.</p>
+  </footer>
+
+  <script type="module" src="app.js?v=dev"></script>
+</body>
+</html>
