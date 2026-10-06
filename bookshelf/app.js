@@ -10,6 +10,29 @@ const BACK_T = 6;          // mm, fixed thin-ply back
 const MIN_BAY = 30;        // mm, smallest sensible clear bay height
 const DENSITY = 680;       // kg/m3, birch ply
 
+// --- slab plan geometry (shared by the 3D slab and its top texture) --------------
+// Perfect hexagon corners, and a jagged "chip" polyline replacing one corner
+// so the slab reads as broken concrete. Fixed numbers, not random: the break
+// looks the same on every load.
+const SLAB_R = 2.6, SLAB_T = 0.2;
+const HEX = Array.from({ length: 6 }, (_, k) => {
+  const a = (30 + 60 * k) * Math.PI / 180;
+  return { x: SLAB_R * Math.cos(a), y: SLAB_R * Math.sin(a) };
+});
+const CHIP = (() => {
+  const C = HEX[5], lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+  const P1 = lerp(C, HEX[4], 0.22), P2 = lerp(C, HEX[0], 0.17);
+  const insets = [0.11, 0.27, 0.09, 0.31, 0.16, 0.24];   // metres pulled toward centre
+  const pts = [P1];
+  insets.forEach((inset, i) => {
+    const base = lerp(P1, P2, (i + 1) / (insets.length + 1));
+    const len = Math.hypot(base.x, base.y);
+    pts.push({ x: base.x * (1 - inset / len), y: base.y * (1 - inset / len) });
+  });
+  pts.push(P2);
+  return pts;
+})();
+
 const params = {
   width: 900, depth: 300, height: 1800, shelves: 4,
   plinth: 120,             // mm, floor to UNDERSIDE of the bottom shelf
@@ -35,7 +58,7 @@ function faceTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = S;
   const g = c.getContext('2d');
-  g.fillStyle = '#ecdcb6';
+  g.fillStyle = '#f0e7d6';
   g.fillRect(0, 0, S, S);
   // The side caps TILE this texture (metre-scaled UVs), so everything here
   // must wrap seamlessly: blobs and flecks are stamped at 3×3 offsets, and
@@ -46,8 +69,8 @@ function faceTexture() {
     const r = 120 + Math.random() * 420;
     const x = Math.random() * S, y = Math.random() * S;
     const col = Math.random() < 0.5
-      ? `rgba(213,185,134,${0.04 + Math.random() * 0.07})`
-      : `rgba(250,243,224,${0.05 + Math.random() * 0.08})`;
+      ? `rgba(219,201,170,${0.04 + Math.random() * 0.07})`
+      : `rgba(253,249,240,${0.05 + Math.random() * 0.08})`;
     for (const dx of OFF) for (const dy of OFF) {
       const grad = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r);
       grad.addColorStop(0, col);
@@ -69,7 +92,7 @@ function faceTexture() {
       const strong = Math.random() < 0.18;
       const a = strong ? 0.26 + Math.random() * 0.12 : 0.12 + Math.random() * 0.14;
       g.strokeStyle = Math.random() < 0.75
-        ? `rgba(172,134,80,${a})` : `rgba(252,244,222,${a + 0.04})`;
+        ? `rgba(173,146,110,${a})` : `rgba(253,248,236,${a + 0.04})`;
       g.lineWidth = strong ? 1.4 + Math.random() * 1.4 : 0.7 + Math.random() * 1.6;
       for (const dy of OFF) {
         g.beginPath();
@@ -88,7 +111,7 @@ function faceTexture() {
     const x = Math.random() * S, y = Math.random() * S;
     const w = 4 + Math.random() * 14, h = 0.8 + Math.random() * 1.2;
     const rot = (Math.random() - 0.5) * 0.06;
-    g.fillStyle = `rgba(140,102,58,${0.12 + Math.random() * 0.14})`;
+    g.fillStyle = `rgba(138,110,74,${0.12 + Math.random() * 0.14})`;
     for (const dx of OFF) for (const dy of OFF) {
       g.beginPath();
       g.ellipse(x + dx, y + dy, w, h, rot, 0, Math.PI * 2);
@@ -97,7 +120,7 @@ function faceTexture() {
   }
   // fine pore speckle
   for (let i = 0; i < 1600; i++) {
-    g.fillStyle = `rgba(160,130,80,${0.015 + Math.random() * 0.035})`;
+    g.fillStyle = `rgba(158,136,104,${0.015 + Math.random() * 0.035})`;
     g.fillRect(Math.random() * S, Math.random() * S, 1.3, 1.3);
   }
   const t = new THREE.CanvasTexture(c);
@@ -112,9 +135,9 @@ function edgeTexture(plies) {
   const g = c.getContext('2d');
   const band = 256 / plies;
   for (let i = 0; i < plies; i++) {
-    g.fillStyle = i % 2 === 0 ? '#e3cfa2' : '#c6a26c';
+    g.fillStyle = i % 2 === 0 ? '#e9ddc2' : '#cdb492';
     g.fillRect(0, i * band, 64, band);
-    g.fillStyle = 'rgba(110,84,50,0.55)';   // glue line
+    g.fillStyle = 'rgba(112,94,66,0.55)';   // glue line
     g.fillRect(0, i * band, 64, 1);
   }
   const t = new THREE.CanvasTexture(c);
@@ -131,7 +154,7 @@ function concreteTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = S;
   const g = c.getContext('2d');
-  g.fillStyle = '#b3b7bd';
+  g.fillStyle = '#babec5';
   g.fillRect(0, 0, S, S);
   // broad tonal patches, some distinctly darker for an industrial look
   for (let i = 0; i < 110; i++) {
@@ -187,8 +210,84 @@ function concreteTexture() {
     for (let s = 0; s < 10; s++) { x += (Math.random() - 0.5) * 260; y += (Math.random() - 0.5) * 260; g.lineTo(x, y); }
     g.stroke();
   }
+  // roughen the top along the broken corner: dark pits and pale spall marks
+  // hugging the chip polyline (same plan coordinates as the geometry).
+  // CanvasTexture flips Y (v=0 samples the canvas bottom), so canvas y runs
+  // opposite to plan y.
+  const px = (p) => [(p.x + SLAB_R) / (2 * SLAB_R) * S, (SLAB_R - p.y) / (2 * SLAB_R) * S];
+  for (let i = 0; i < CHIP.length - 1; i++) {
+    const [ax, ay] = px(CHIP[i]), [bx, by] = px(CHIP[i + 1]);
+    for (let tt = 0; tt <= 1; tt += 0.09) {
+      const cx2 = ax + (bx - ax) * tt, cy2 = ay + (by - ay) * tt;
+      // pull stamps slightly toward the slab centre (canvas centre)
+      const inX = cx2 + (S / 2 - cx2) * (Math.random() * 0.03);
+      const inY = cy2 + (S / 2 - cy2) * (Math.random() * 0.03);
+      for (let j = 0; j < 4; j++) {
+        const dark = Math.random() < 0.6;
+        g.fillStyle = dark
+          ? `rgba(86,90,98,${0.10 + Math.random() * 0.22})`
+          : `rgba(222,226,232,${0.10 + Math.random() * 0.16})`;
+        g.beginPath();
+        g.arc(inX + (Math.random() - 0.5) * 26, inY + (Math.random() - 0.5) * 26,
+          1.5 + Math.random() * 6.5, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+  }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;   // drawn once, never tiled: no seams
+  return t;
+}
+
+// Fracture faces of the broken corner: darker, heavily mottled, with exposed
+// aggregate stones and pits — no formwork striations here.
+function fractureTexture() {
+  const W = 512, H = 256;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.fillStyle = '#9da1a8';
+  g.fillRect(0, 0, W, H);
+  const XOFF = [-W, 0, W];
+  for (let i = 0; i < 60; i++) {
+    const x = Math.random() * W, y = Math.random() * H, r = 18 + Math.random() * 70;
+    const col = Math.random() < 0.5 ? '120,124,132' : '172,176,183';
+    for (const dx of XOFF) {
+      const grad = g.createRadialGradient(x + dx, y, 0, x + dx, y, r);
+      grad.addColorStop(0, `rgba(${col},${0.10 + Math.random() * 0.14})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = grad;
+      g.fillRect(x + dx - r, y - r, 2 * r, 2 * r);
+    }
+  }
+  // exposed aggregate stones
+  for (let i = 0; i < 170; i++) {
+    const x = Math.random() * W, y = Math.random() * H;
+    const rw = 2.5 + Math.random() * 8, rh = rw * (0.6 + Math.random() * 0.6);
+    const rot = Math.random() * Math.PI;
+    const v = 118 + Math.floor(Math.random() * 80);
+    g.fillStyle = Math.random() < 0.72
+      ? `rgba(${v},${v},${v + 4},${0.5 + Math.random() * 0.4})`
+      : `rgba(${v + 22},${v + 10},${v - 12},${0.5 + Math.random() * 0.35})`;   // sandy stones
+    for (const dx of XOFF) {
+      g.beginPath();
+      g.ellipse(x + dx, y, rw, rh, rot, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  // pits and voids
+  for (let i = 0; i < 420; i++) {
+    const x = Math.random() * W, y = Math.random() * H;
+    g.fillStyle = `rgba(66,70,78,${0.14 + Math.random() * 0.26})`;
+    for (const dx of XOFF) {
+      g.beginPath();
+      g.arc(x + dx, y, 0.6 + Math.random() * 2.4, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = THREE.RepeatWrapping;
   return t;
 }
 
@@ -200,7 +299,7 @@ function concreteSideTexture() {
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d');
-  g.fillStyle = '#a7abb2';
+  g.fillStyle = '#afb3ba';
   g.fillRect(0, 0, W, H);
   // pour striations
   for (let i = 0; i < 16; i++) {
@@ -315,25 +414,77 @@ for (const t of [faceTex, faceTexV]) {
 }
 
 // rough concrete hexagon slab
-// 200 mm-thick hexagonal slab: a 6-segment prism, top face in cast concrete,
-// sides in the darker board-cast edge texture (flat-shaded so each of the
-// six faces reads as a plane, not a smoothed cylinder)
+// 200 mm-thick hexagonal slab with one broken corner: an extruded hex whose
+// chipped-corner walls take a dedicated fracture material. Caps map the big
+// concrete texture in plan coordinates; cast sides keep their striations.
 const concrete = concreteTexture();
 concrete.anisotropy = maxAniso;
 const concreteSide = concreteSideTexture();
 concreteSide.anisotropy = maxAniso;
-// match the side texture's texel density to the top (one 2048px tile over
-// ~5.2 m): six 2.6 m edges ≈ 15.6 m around → 3 tiles; 0.2 m tall → ~4% of one
-concreteSide.repeat.set(3, 1);
-const SLAB_T = 0.2;
+const fracture = fractureTexture();
+fracture.anisotropy = maxAniso;
 const slabTop = new THREE.MeshStandardMaterial({ map: concrete, bumpMap: concrete, bumpScale: 3, roughness: 0.95, metalness: 0 });
-const slabSide = new THREE.MeshStandardMaterial({ map: concreteSide, bumpMap: concreteSide, bumpScale: 3.5, roughness: 0.97, metalness: 0, flatShading: true });
-const floor = new THREE.Mesh(
-  new THREE.CylinderGeometry(2.6, 2.6, SLAB_T, 6, 1),
-  [slabSide, slabTop, slabSide]   // [sides, top cap, bottom cap]
-);
-floor.rotation.y = Math.PI / 6;   // flat edge facing the camera
-floor.position.y = -SLAB_T / 2;   // top surface at floor level
+const slabSide = new THREE.MeshStandardMaterial({ map: concreteSide, bumpMap: concreteSide, bumpScale: 3.5, roughness: 0.97, metalness: 0 });
+const slabFracture = new THREE.MeshStandardMaterial({ map: fracture, bumpMap: fracture, bumpScale: 5, roughness: 1, metalness: 0 });
+
+const slabUV = {
+  generateTopUV(geo, v, a, b, c) {
+    const p = (i) => new THREE.Vector2((v[i * 3] + SLAB_R) / (2 * SLAB_R), (v[i * 3 + 1] + SLAB_R) / (2 * SLAB_R));
+    return [p(a), p(b), p(c)];
+  },
+  generateSideWallUV(geo, v, a, b, c, d) {
+    // u roughly along the contour (striations are uniform in u, so the exact
+    // parametrisation barely matters); v spans the slab thickness
+    const uv = (i) => new THREE.Vector2((v[i * 3] - v[i * 3 + 1]) * 0.19, v[i * 3 + 2] / SLAB_T);
+    return [uv(a), uv(b), uv(c), uv(d)];
+  },
+};
+
+function slabGeometry() {
+  const sh = new THREE.Shape();
+  sh.moveTo(HEX[0].x, HEX[0].y);
+  for (let k = 1; k <= 4; k++) sh.lineTo(HEX[k].x, HEX[k].y);
+  for (const p of CHIP) sh.lineTo(p.x, p.y);   // the jag replaces corner 5
+  sh.closePath();
+  const geo = new THREE.ExtrudeGeometry(sh, { depth: SLAB_T, bevelEnabled: false, UVGenerator: slabUV });
+  // Re-group the side walls: triangles whose plan centroid sits inside the
+  // perfect hexagon belong to the chip, and take the fracture material.
+  const pos = geo.attributes.position;
+  const apothem = SLAB_R * Math.cos(Math.PI / 6);
+  const isFracture = (cx, cy) => {
+    let m = -Infinity;
+    for (let k = 0; k < 6; k++) {
+      const ang = (60 + 60 * k) * Math.PI / 180;   // outward normals of the hex edges
+      m = Math.max(m, cx * Math.cos(ang) + cy * Math.sin(ang));
+    }
+    return m < apothem - 0.02;
+  };
+  const groups = geo.groups.map((g) => ({ ...g }));
+  geo.clearGroups();
+  for (const g of groups) {
+    if (g.materialIndex === 0) {   // caps stay as one group
+      geo.addGroup(g.start, g.count, 0);
+      continue;
+    }
+    let runStart = g.start, runMat = -1;
+    for (let i = g.start; i < g.start + g.count; i += 3) {
+      const cx = (pos.getX(i) + pos.getX(i + 1) + pos.getX(i + 2)) / 3;
+      const cy = (pos.getY(i) + pos.getY(i + 1) + pos.getY(i + 2)) / 3;
+      const mat = isFracture(cx, cy) ? 2 : 1;
+      if (mat !== runMat) {
+        if (runMat !== -1) geo.addGroup(runStart, i - runStart, runMat);
+        runStart = i;
+        runMat = mat;
+      }
+    }
+    geo.addGroup(runStart, g.start + g.count - runStart, runMat);
+  }
+  return geo;
+}
+
+const floor = new THREE.Mesh(slabGeometry(), [slabTop, slabSide, slabFracture]);
+floor.rotation.x = -Math.PI / 2;   // shape plane -> horizontal; extrude -> up
+floor.position.y = -SLAB_T;        // top surface at floor level
 floor.receiveShadow = true;
 floor.castShadow = true;
 scene.add(floor);
