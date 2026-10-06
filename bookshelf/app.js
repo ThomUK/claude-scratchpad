@@ -805,7 +805,7 @@ function renderCutList(rows) {
     const opt = (v, label, title) => `
       <label title="${title}"><input type="radio" name="grain-${part}" value="${v}"
         data-grain="${part}"${g === v ? ' checked' : ''}>${label}</label>`;
-    return `<div class="grain"><span class="muted">grain:</span>
+    return `<div class="grain"><span class="muted">grain direction:</span>
       ${opt('long', 'long edge', 'grain along the long edge — long edge along the sheet')}
       ${opt('short', 'short edge', 'grain along the short edge — part always rotated 90°')}
       ${opt('any', 'max nest', 'either direction — the nest may orient each piece differently')}
