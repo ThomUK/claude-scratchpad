@@ -36,9 +36,13 @@ jobs:
         # Rewrite every ?v=<token> in HTML/JS asset and data URLs to the short
         # commit SHA, so each deploy gets a fresh cache key (no manual bumping).
         # Operates on the checked-out copy only; the repo keeps the ?v=dev source.
+        # vendor/ is excluded: minified third-party code can contain "?v=" as
+        # real code (jsPDF has "...?v=v.concat(...)"), and a SHA starting with
+        # a digit turned that rewrite into a syntax error that broke the
+        # deployed library. Vendored files are pinned - never rewrite them.
         run: |
           SHA="${GITHUB_SHA::8}"
-          grep -rlZ --include='*.html' --include='*.js' -F '?v=' . \
+          grep -rlZ --include='*.html' --include='*.js' --exclude-dir=vendor -F '?v=' . \
             | xargs -0 -r sed -i -E "s/\?v=[A-Za-z0-9._-]+/?v=${SHA}/g"
           echo "Cache-busted assets with v=${SHA}"
 
