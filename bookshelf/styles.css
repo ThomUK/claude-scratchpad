@@ -26,6 +26,18 @@ main {
 .viewport { padding: 0; overflow: hidden; height: min(76vh, 820px); position: sticky; top: 12px; }
 .viewport canvas { width: 100%; height: 100%; display: block; }
 
+.loading {
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center;
+  background: var(--panel); color: var(--muted); font-size: 0.92rem; text-align: center; padding: 20px;
+}
+.loading .spin {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 3px solid var(--panel-border); border-top-color: var(--accent);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 .ctl { margin-bottom: 14px; }
 .ctl label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
 .ctl .row { display: flex; gap: 10px; align-items: center; }
@@ -76,5 +88,6 @@ footer a, footer code { color: var(--accent); }
 
 @media (max-width: 900px) {
   main { grid-template-columns: 1fr; }
-  .viewport { position: static; height: 60vh; order: -1; }
+  /* relative (not static) so the loading overlay stays anchored to the viewport */
+  .viewport { position: relative; top: 0; height: 60vh; order: -1; }
 }

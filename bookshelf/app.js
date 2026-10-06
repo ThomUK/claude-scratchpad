@@ -820,8 +820,31 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 
+// The module (plus three.js) takes a moment to fetch and parse, and the
+// controls are live before any listener exists. Anything the user touched in
+// that window — a ticked back box, a dragged slider, a typed number — sits in
+// the DOM but not in params. So boot by reading the real control state back
+// out of the DOM, never by trusting the defaults above.
+function syncFromDom() {
+  for (const ctl of document.querySelectorAll('.ctl[data-param]')) {
+    const [slider, num] = ctl.querySelectorAll('input');
+    // early typing changes only the number box, early dragging only the
+    // slider: trust whichever one moved away from its markup default
+    const raw = num.value !== num.defaultValue ? +num.value : +slider.value;
+    params[ctl.dataset.param] = Math.min(+slider.max, Math.max(+slider.min, Math.round(raw) || +slider.min));
+  }
+  params.thickness = +$('#thickness').value;
+  params.back = $('#back').checked;
+  params.nest = $('#nestmode').value;
+  params.trim = Math.min(25, Math.max(0, Math.round(+$('#trim').value) || 0));
+  params.kerf = Math.min(25, Math.max(0, Math.round(+$('#kerf').value) || 0));
+  clampShelves();
+}
+
+syncFromDom();
 buildUnit();
 resize();
+$('#loading')?.remove();
 renderer.setAnimationLoop(() => {
   controls.update();
   renderer.render(scene, camera);
