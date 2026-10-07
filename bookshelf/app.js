@@ -266,7 +266,52 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#e9eef6');   // slightly blue white
+scene.background = new THREE.Color('#99ccff');   // fallback behind the sky dome
+
+// procedural sky: blue gradient around #99ccff with subtle cloud hints, on
+// an inward-facing dome so the clouds parallax as the camera orbits
+function skyTexture() {
+  const W = 1024, H = 512;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#5ea7ec');
+  grad.addColorStop(0.45, '#99ccff');
+  grad.addColorStop(0.72, '#c9e2fb');
+  grad.addColorStop(1, '#e9f3fd');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, W, H);
+  // clouds: loose groups of soft puffs in a band above the horizon,
+  // stamped across the horizontal wrap so the dome seam is invisible
+  for (let i = 0; i < 22; i++) {
+    const cx = Math.random() * W;
+    const cy = H * (0.22 + Math.random() * 0.26);
+    const rx = 50 + Math.random() * 120;
+    const a = 0.06 + Math.random() * 0.12;
+    for (const dx of [-W, 0, W]) {
+      for (let p = 0; p < 5; p++) {
+        const px2 = cx + dx + (Math.random() - 0.5) * rx * 1.6;
+        const py2 = cy + (Math.random() - 0.5) * rx * 0.3;
+        const pr = rx * (0.3 + Math.random() * 0.4);
+        const rg = g.createRadialGradient(px2, py2, 0, px2, py2, pr);
+        rg.addColorStop(0, `rgba(255,255,255,${a})`);
+        rg.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = rg;
+        g.fillRect(px2 - pr, py2 - pr, 2 * pr, 2 * pr);
+      }
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+const sky = new THREE.Mesh(
+  new THREE.SphereGeometry(20, 32, 16),
+  // toneMapped false keeps the authored blue instead of ACES muting it
+  new THREE.MeshBasicMaterial({ map: skyTexture(), side: THREE.BackSide, depthWrite: false, toneMapped: false })
+);
+scene.add(sky);
 
 const camera = new THREE.PerspectiveCamera(42, 1, 0.05, 50);
 camera.position.set(1.9, 1.6, 2.7);
@@ -878,6 +923,7 @@ function captureCamera(aspect) {
 function captureView(w, h) {
   const prevBg = scene.background;
   scene.background = new THREE.Color('#ffffff');
+  sky.visible = false;   // print pages keep the clean white backdrop
   // aim the camera-locked key light for the brochure viewpoint; the
   // animation loop re-aims it for the interactive camera on the next frame
   const capTarget = new THREE.Vector3(0, params.height / 2 * MM, 0);
@@ -914,6 +960,7 @@ function captureView(w, h) {
     return { data, w: el.width, h: el.height };
   } finally {
     scene.background = prevBg;
+    sky.visible = true;
   }
 }
 
