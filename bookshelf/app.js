@@ -304,6 +304,12 @@ function skyTexture() {
   }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
+  // the dome wraps this texture horizontally: repeat sampling blends the
+  // first and last columns (clamp leaves a visible vertical seam), and
+  // skipping mipmaps avoids the residual mip-edge artifact at the wrap
+  t.wrapS = THREE.RepeatWrapping;
+  t.generateMipmaps = false;
+  t.minFilter = THREE.LinearFilter;
   return t;
 }
 const sky = new THREE.Mesh(
