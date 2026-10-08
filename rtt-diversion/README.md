@@ -23,8 +23,8 @@ Live: https://thomuk.github.io/claude-scratchpad/rtt-diversion/
 |---|---|---|
 | Referrals / week | 3,000 | constant clock starts per week |
 | % under 18 weeks at start | 60 | fixes the starting mean wait `W = −18/ln(1−p)` and size `λ·W` (Little's law) |
-| Load: surplus / balance / deficit | 0.95 / 1.00 / 1.05 | capacity per week is `referrals ÷ load` |
-| Removal order | 30% random | share of removals taken in proportion to each bin (random order); the rest is longest-waiting-first |
+| Load: surplus / balance / deficit | 0.90 / 1.00 / 1.10 | capacity per week is `referrals ÷ load` |
+| Removal order | 100% random | share of removals taken in proportion to each bin (random order); the rest is longest-waiting-first |
 
 ## Model
 
@@ -37,16 +37,20 @@ Live: https://thomuk.github.io/claude-scratchpad/rtt-diversion/
   switched off after the target date. It applies to **all** capacity, so
   clinical urgency is not modelled as an exemption (set the random share to
   taste; it is a shape mechanic, not a clinical one).
-- The starting shape is exponential whatever the removal order, so every run
-  first reshapes towards the steady state of its policy. That is why the
-  balance run's % under 18 moves while its size does not.
+- After the target date the ordinary rule resumes, so the previously
+  protected block is drawn from again and the diverted runs converge back onto
+  the ordinary ones.
+- Under random removal the exponential start is stationary at load 1, so the
+  balance run barely moves; deficit thickens the tail, surplus thins it. Mixing
+  in longest-waiting-first makes every run first reshape towards that policy's
+  steady state, which moves % under 18 even at constant size.
 
 ## Files
 
 - `engine.js` — pure simulation (no DOM), importable from browser and Node.
 - `app.js` — inputs, the six animated census panels, two trajectory charts, the
   1 April snapshot table.
-- `tests/engine.test.mjs` — 16 checks (conservation, load behaviour, eligibility
+- `tests/engine.test.mjs` — 18 checks (conservation, load behaviour, eligibility
   window, spill-over, hangover, shape). Run with `node tests/engine.test.mjs`.
 
 Based on the queueing framing in Fong, House, Walton et al. (2022),

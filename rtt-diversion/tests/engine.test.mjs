@@ -129,6 +129,32 @@ check('simulate: pure random removal at load 1 keeps a geometric (exponential) s
   assert.ok(mx - mn < 0.01, `ratios spread ${mx - mn}`);
 });
 
+check('simulate: after the target date removal reverts to the ordinary rule, including the protected block', () => {
+  const T = base.weeksToTarget;
+  const d = simulate({ ...base, randomShare: 1, load: 1.1, divert: true });
+  assert.equal(d.frames[T + 1].eligibleFrom, 0);
+  // Under pure random removal every bin loses the same fraction, so the
+  // previously protected bins (now 1..18) must shrink by the same ratio as the rest.
+  const before = age(d.frames[T].bins); before[0] += 3000;
+  const after = d.frames[T + 1].bins;
+  const ratios = [];
+  for (let i = 1; i < 60; i++) ratios.push(after[i] / before[i]);
+  close(Math.max(...ratios), Math.min(...ratios), 1e-9, 'uniform removal across protected and unprotected bins');
+  assert.ok(ratios[0] < 1, 'protected block is being drawn from');
+});
+
+check('simulate: with random removal the diverted runs converge back onto the ordinary runs after the target', () => {
+  const T = base.weeksToTarget;
+  for (const load of [0.9, 1, 1.1]) {
+    const o = simulate({ ...base, randomShare: 1, load, divert: false });
+    const d = simulate({ ...base, randomShare: 1, load, divert: true });
+    const gapAt = d.frames[T].metrics.pctUnder18 - o.frames[T].metrics.pctUnder18;
+    const gapLater = Math.abs(d.frames[T + 30].metrics.pctUnder18 - o.frames[T + 30].metrics.pctUnder18);
+    assert.ok(gapAt > 5, `load ${load}: diversion flatters the day (${gapAt.toFixed(1)} pts)`);
+    assert.ok(gapLater < 0.5, `load ${load}: gap 30 weeks later ${gapLater.toFixed(2)} pts`);
+  }
+});
+
 check('simulateAll: six scenarios in the documented order', () => {
   const all = simulateAll({ ...base, loads: { surplus: 0.9, balance: 1, deficit: 1.1 } });
   assert.deepEqual(all.map((s) => s.key + (s.divert ? '/div' : '')),

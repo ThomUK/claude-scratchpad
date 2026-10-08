@@ -40,15 +40,15 @@
       <p class="muted small">The list starts as an exponential (random-order steady state) sized by
         Little's law for the referral rate and the chosen % under 18 weeks. Each week: everyone ages a
         week, referrals arrive, then capacity removes patients. <strong>Load</strong> is referrals ÷
-        capacity, so 1.05 means 5% more referrals than clock stops each week.</p>
+        capacity, so 1.10 means 10% more referrals than clock stops each week.</p>
       <div class="controls">
         <div class="field"><label for="in-ref">Referrals (per week)</label><input type="number" id="in-ref" min="100" max="100000" step="100" value="3000" /></div>
         <div class="field"><label for="in-p18">% under 18 weeks at start</label><input type="number" id="in-p18" min="5" max="99" step="1" value="60" /></div>
-        <div class="field"><label for="in-sur">Load: surplus</label><input type="number" id="in-sur" min="0.5" max="1.5" step="0.01" value="0.95" /></div>
+        <div class="field"><label for="in-sur">Load: surplus</label><input type="number" id="in-sur" min="0.5" max="1.5" step="0.01" value="0.90" /></div>
         <div class="field"><label for="in-bal">Load: balance</label><input type="number" id="in-bal" min="0.5" max="1.5" step="0.01" value="1.00" /></div>
-        <div class="field"><label for="in-def">Load: deficit</label><input type="number" id="in-def" min="0.5" max="1.5" step="0.01" value="1.05" /></div>
-        <div class="field grow"><label for="in-rnd">Removal order: <output id="in-rnd-out">30% random · 70% longest-waiting-first</output></label>
-          <input type="range" id="in-rnd" min="0" max="100" step="5" value="30" /></div>
+        <div class="field"><label for="in-def">Load: deficit</label><input type="number" id="in-def" min="0.5" max="1.5" step="0.01" value="1.10" /></div>
+        <div class="field grow"><label for="in-rnd">Removal order: <output id="in-rnd-out">100% random</output></label>
+          <input type="range" id="in-rnd" min="0" max="100" step="5" value="100" /></div>
       </div>
       <div class="cards" id="derived"></div>
     </section>
@@ -59,7 +59,8 @@
       <p class="muted small">Each chart is the census by weeks waited (0 to 104+). The dashed rule marks 18
         weeks. In the bottom row, during the final 18 weeks the hatched block is the cohort that capacity
         is forbidden to touch: patients who will still be under 18 weeks on 1 April. Capacity spills
-        over to them only if the eligible cohort runs out.</p>
+        over to them only if the eligible cohort runs out. After 1 April the ordinary rule resumes, so the
+        protected block is drawn from again and the two rows converge.</p>
       <div class="anim-bar">
         <button id="btn-play" class="btn" type="button" aria-label="Play">▶ Play</button>
         <button id="btn-april" class="btn btn--ghost" type="button">Jump to 1 Apr 2028</button>
@@ -101,18 +102,20 @@
         <li>Weekly steps, continuous (fractional) patient counts, no randomness: the same inputs always give
           the same picture. Referrals arrive at a constant rate; capacity is a constant number of removals per
           week, <code>referrals ÷ load</code>.</li>
-        <li>Removal order mixes two rules. The <em>random</em> share is removed in proportion to each weeks-waited
-          bin (the M/M/1 "random order" case that gives the exponential shape). The remainder is removed
-          longest-waiting-first. At 100% random the list keeps its exponential shape; at 0% it becomes a flat
-          block with a hard edge. The slider sets the mix for all six runs.</li>
+        <li>Removal order defaults to <em>random</em>: each week's removals are taken in proportion to each
+          weeks-waited bin, the M/M/1 "random order" case that gives the exponential shape and keeps it. The slider
+          mixes in longest-waiting-first removal for the remainder; at 0% random the list becomes a flat block
+          with a hard edge and the tail is cleared entirely. The slider sets the mix for all six runs.</li>
         <li>Diversion rule: in a step with <em>r</em> weeks still to go before 1 April, a patient who has
           waited <em>i</em> weeks will have waited <em>i + r</em> on the day, and may be treated only if
           <em>i + r ≥ 18</em>. The rule bites only in the last 18 weeks and is switched off after 1 April.
           It applies to all capacity, including the random share, so clinical urgency is not modelled
           as an exemption.</li>
-        <li>The starting shape is exponential whatever the removal order, so the first weeks of every run show
-          the list reshaping towards the steady state of the chosen policy. That transient is real behaviour
-          of the model, not a bug, but it is why the balance run's % under 18 moves even though its size does not.</li>
+        <li>The starting shape is exponential. Under random removal at load 1 that shape is (almost exactly)
+          stationary, so the balance run barely moves; the deficit run thickens its tail and piles up in the 104+
+          bucket, the surplus run thins it. If you mix in longest-waiting-first removal, every run first reshapes
+          towards the steady state of that policy, which is why the balance run's % under 18 then moves even
+          though its size does not.</li>
         <li>Based on the queueing framing in Fong, House, Walton et al. (2022),
           <a href="https://doi.org/10.1101/2022.08.23.22279117" target="_blank" rel="noopener"><em>Understanding Waiting List Pressures</em></a>,
           and the sibling <a href="../waiting-list/">Waiting Lists</a> app. Engine tests:

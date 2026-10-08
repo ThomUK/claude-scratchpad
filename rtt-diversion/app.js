@@ -61,12 +61,12 @@ function hideTip() { tip.hidden = true; }
 // ---------- inputs ----------
 function readParams() {
   const rnd = +$('in-rnd').value;
-  $('in-rnd-out').textContent = `${rnd}% random · ${100 - rnd}% longest-waiting-first`;
+  $('in-rnd-out').textContent = rnd === 100 ? '100% random' : `${rnd}% random · ${100 - rnd}% longest-waiting-first`;
   return {
     referrals: Math.max(1, +$('in-ref').value || 3000),
     pctUnder18: Math.min(99, Math.max(1, +$('in-p18').value || 60)),
     randomShare: rnd / 100,
-    loads: { surplus: +$('in-sur').value || 0.95, balance: +$('in-bal').value || 1, deficit: +$('in-def').value || 1.05 },
+    loads: { surplus: +$('in-sur').value || 0.9, balance: +$('in-bal').value || 1, deficit: +$('in-def').value || 1.1 },
     weeksToTarget, weeksAfter: WEEKS_AFTER,
   };
 }
