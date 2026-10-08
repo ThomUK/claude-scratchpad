@@ -21,7 +21,7 @@ Live: https://thomuk.github.io/claude-scratchpad/rtt-diversion/
 
 | Input | Default | Meaning |
 |---|---|---|
-| Referrals / week | 3,000 | constant clock starts per week |
+| Referrals / week | 3,500 | constant clock starts per week |
 | % under 18 weeks at start | 60 | fixes the starting mean wait `W = −18/ln(1−p)` and size `λ·W` (Little's law) |
 | Load: surplus / balance / deficit | 0.90 / 1.00 / 1.10 | capacity per week is `referrals ÷ load` |
 | Removal order | 100% random | share of removals taken in proportion to each bin (random order); the rest is longest-waiting-first |

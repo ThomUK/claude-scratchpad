@@ -63,7 +63,7 @@ function readParams() {
   const rnd = +$('in-rnd').value;
   $('in-rnd-out').textContent = rnd === 100 ? '100% random' : `${rnd}% random · ${100 - rnd}% longest-waiting-first`;
   return {
-    referrals: Math.max(1, +$('in-ref').value || 3000),
+    referrals: Math.max(1, +$('in-ref').value || 3500),
     pctUnder18: Math.min(99, Math.max(1, +$('in-p18').value || 60)),
     randomShare: rnd / 100,
     loads: { surplus: +$('in-sur').value || 0.9, balance: +$('in-bal').value || 1, deficit: +$('in-def').value || 1.1 },
@@ -297,7 +297,13 @@ function setT(t) {
     : rel === 0 ? '<span class="badge badge--day">1 April 2028</span>' : `${-rel} wk after 1 Apr 2028`;
   drawAll();
 }
-function drawAll() { for (const c of state.cells) drawCell(c); drawLines(); }
+// Coalesce redraws: a fast scrub fires many input events per frame; draw once per frame.
+let drawQueued = false;
+function drawAll() {
+  if (drawQueued) return;
+  drawQueued = true;
+  requestAnimationFrame(() => { drawQueued = false; for (const c of state.cells) drawCell(c); drawLines(); });
+}
 
 let last = null, acc = 0;
 function tick(now) {

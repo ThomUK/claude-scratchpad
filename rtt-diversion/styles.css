@@ -76,6 +76,7 @@ output { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 
 
 /* animation bar */
 .anim-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 14px 0 8px; }
+.anim-bar > * { flex: none; }
 .btn {
   font: inherit; font-weight: 600; padding: 8px 16px; border-radius: 8px; cursor: pointer;
   background: var(--accent); color: #04121c; border: 1px solid var(--accent);
@@ -84,8 +85,11 @@ output { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 
 .btn--ghost:hover { border-color: var(--accent); }
 .speed { font-size: 0.85rem; color: var(--muted); }
 .speed select { width: auto; margin-left: 6px; }
-.scrub { flex: 1; min-width: 220px; }
-.when { min-width: 210px; text-align: right; font-variant-numeric: tabular-nums; }
+.scrub { flex: 1 1 220px; min-width: 220px; }
+/* Fixed box: its text changes every week and must never resize or re-wrap the
+   slider while the user is dragging it. */
+.when { width: 290px; height: 46px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
+@media (max-width: 700px) { .when { width: 100%; text-align: left; } }
 .when #when-date { display: block; font-weight: 700; font-size: 1.05rem; }
 .when .badge { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
 .badge--div { background: #3a2f12; color: var(--warn); }
@@ -105,11 +109,11 @@ output { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 
 .cell { background: var(--surface); border: 1px solid var(--panel-border); border-radius: 10px; padding: 10px 10px 6px; }
 .cell h3 { margin: 0; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
 .cell h3 .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-.cell .sub { font-size: 0.76rem; color: var(--muted); margin: 2px 0 6px; min-height: 1.2em; }
+.cell .sub { font-size: 0.76rem; color: var(--muted); margin: 2px 0 6px; height: 1.2em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cell canvas { width: 100%; height: auto; display: block; border-radius: 6px; }
-.cell .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 6px; font-size: 0.74rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cell .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 6px; font-size: 0.74rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
 .cell .stats b { display: block; color: var(--text); font-size: 0.95rem; }
-.cell .snapline { font-size: 0.78rem; margin-top: 6px; color: var(--muted); min-height: 1.3em; }
+.cell .snapline { font-size: 0.78rem; margin-top: 6px; color: var(--muted); height: 1.3em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cell .snapline b { color: var(--text); }
 
 .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
