@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RTT 18-week Diversion — a study in metric gaming</title>
+  <link rel="stylesheet" href="styles.css?v=dev" />
+</head>
+<body>
+  <header>
+    <h1>RTT 18-week Diversion: a study in metric gaming</h1>
+    <p class="repo-link">
+      <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/rtt-diversion" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.76-3.65 3.95.29.25.54.74.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        View source on GitHub
+      </a>
+    </p>
+    <p class="subtitle">
+      An animated, fictional waiting list from today to <strong>1 April 2028</strong>, under three
+      capacity positions (surplus, balance, deficit), each run twice: once treating patients in the
+      ordinary way throughout, and once where, for the final 18 weeks, capacity is spent
+      <em>only</em> on patients who will have waited 18+ weeks on the measurement date. Pure JavaScript,
+      deterministic, unit-tested.
+    </p>
+    <aside class="note" role="note">
+      <strong>A gentle note on why this exists.</strong> The second row of charts models a tactic the
+      author does not think is right: deliberately withholding treatment from patients who would
+      still count as "under 18 weeks" on 1 April, so that the headline RTT figure on that one day
+      looks better. No extra patient is treated. The same capacity is simply pointed at the metric
+      rather than at patients in a sensible clinical and chronological order, and the list the
+      morning after is exactly as long. The point of showing it is to make the mechanism, and its
+      hangover, visible.
+    </aside>
+  </header>
+
+  <main>
+    <!-- ============ 1 · Inputs ============ -->
+    <section class="panel">
+      <h2>1 · Inputs</h2>
+      <p class="muted small">The list starts as an exponential (random-order steady state) sized by
+        Little's law for the referral rate and the chosen % under 18 weeks. Each week: everyone ages a
+        week, referrals arrive, then capacity removes patients. <strong>Load</strong> is referrals ÷
+        capacity, so 1.05 means 5% more referrals than clock stops each week.</p>
+      <div class="controls">
+        <div class="field"><label for="in-ref">Referrals (per week)</label><input type="number" id="in-ref" min="100" max="100000" step="100" value="3000" /></div>
+        <div class="field"><label for="in-p18">% under 18 weeks at start</label><input type="number" id="in-p18" min="5" max="99" step="1" value="60" /></div>
+        <div class="field"><label for="in-sur">Load: surplus</label><input type="number" id="in-sur" min="0.5" max="1.5" step="0.01" value="0.95" /></div>
+        <div class="field"><label for="in-bal">Load: balance</label><input type="number" id="in-bal" min="0.5" max="1.5" step="0.01" value="1.00" /></div>
+        <div class="field"><label for="in-def">Load: deficit</label><input type="number" id="in-def" min="0.5" max="1.5" step="0.01" value="1.05" /></div>
+        <div class="field grow"><label for="in-rnd">Removal order: <output id="in-rnd-out">30% random · 70% longest-waiting-first</output></label>
+          <input type="range" id="in-rnd" min="0" max="100" step="5" value="30" /></div>
+      </div>
+      <div class="cards" id="derived"></div>
+    </section>
+
+    <!-- ============ 2 · Animation ============ -->
+    <section class="panel">
+      <h2>2 · The list, week by week</h2>
+      <p class="muted small">Each chart is the census by weeks waited (0 to 104+). The dashed rule marks 18
+        weeks. In the bottom row, during the final 18 weeks the hatched block is the cohort that capacity
+        is forbidden to touch: patients who will still be under 18 weeks on 1 April. Capacity spills
+        over to them only if the eligible cohort runs out.</p>
+      <div class="anim-bar">
+        <button id="btn-play" class="btn" type="button" aria-label="Play">▶ Play</button>
+        <button id="btn-april" class="btn btn--ghost" type="button">Jump to 1 Apr 2028</button>
+        <label class="speed">Speed <select id="in-speed">
+          <option value="2">2 wk/s</option><option value="4">4 wk/s</option><option value="8" selected>8 wk/s</option><option value="16">16 wk/s</option>
+        </select></label>
+        <div class="scrub"><input type="range" id="in-t" min="0" max="1" step="1" value="0" aria-label="Week" /></div>
+        <div class="when"><span id="when-date">—</span><span id="when-rel" class="muted small"></span></div>
+      </div>
+      <div class="legend" id="legend-hist"></div>
+      <div class="grid6" id="grid6"></div>
+    </section>
+
+    <!-- ============ 3 · Trajectories ============ -->
+    <section class="panel">
+      <h2>3 · The metric over time</h2>
+      <p class="muted small">Solid lines are the ordinary runs, dashed lines the diverted runs. The
+        vertical rule is 1 April 2028; the moving cursor is the animation's current week. Hover for
+        values.</p>
+      <div class="legend" id="legend-lines"></div>
+      <div class="two">
+        <div class="chart-wrap"><canvas id="c-pct" width="560" height="300"></canvas></div>
+        <div class="chart-wrap"><canvas id="c-size" width="560" height="300"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ============ 4 · Snapshot ============ -->
+    <section class="panel">
+      <h2>4 · On the day, and ten weeks later</h2>
+      <p class="muted small">The headline on 1 April 2028 and the same figure ten weeks later. "Spilled"
+        is capacity that found no eligible patient and fell back to the protected cohort.</p>
+      <div class="table-wrap"><table id="snap"></table></div>
+    </section>
+
+    <!-- ============ 5 · Method ============ -->
+    <section class="panel">
+      <h2>5 · Method &amp; caveats</h2>
+      <ul class="small muted method">
+        <li>Weekly steps, continuous (fractional) patient counts, no randomness: the same inputs always give
+          the same picture. Referrals arrive at a constant rate; capacity is a constant number of removals per
+          week, <code>referrals ÷ load</code>.</li>
+        <li>Removal order mixes two rules. The <em>random</em> share is removed in proportion to each weeks-waited
+          bin (the M/M/1 "random order" case that gives the exponential shape). The remainder is removed
+          longest-waiting-first. At 100% random the list keeps its exponential shape; at 0% it becomes a flat
+          block with a hard edge. The slider sets the mix for all six runs.</li>
+        <li>Diversion rule: in a step with <em>r</em> weeks still to go before 1 April, a patient who has
+          waited <em>i</em> weeks will have waited <em>i + r</em> on the day, and may be treated only if
+          <em>i + r ≥ 18</em>. The rule bites only in the last 18 weeks and is switched off after 1 April.
+          It applies to all capacity, including the random share, so clinical urgency is not modelled
+          as an exemption.</li>
+        <li>The starting shape is exponential whatever the removal order, so the first weeks of every run show
+          the list reshaping towards the steady state of the chosen policy. That transient is real behaviour
+          of the model, not a bug, but it is why the balance run's % under 18 moves even though its size does not.</li>
+        <li>Based on the queueing framing in Fong, House, Walton et al. (2022),
+          <a href="https://doi.org/10.1101/2022.08.23.22279117" target="_blank" rel="noopener"><em>Understanding Waiting List Pressures</em></a>,
+          and the sibling <a href="../waiting-list/">Waiting Lists</a> app. Engine tests:
+          <code>node tests/engine.test.mjs</code>.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    Source on <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/rtt-diversion" target="_blank" rel="noopener">GitHub</a>.
+  </footer>
+
+  <div id="tip" class="tip" role="tooltip" hidden></div>
+  <script type="module" src="app.js?v=dev"></script>
+</body>
+</html>
