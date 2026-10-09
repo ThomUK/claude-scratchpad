@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import {
   haversineKm, initialBearing, compassPoint, formatKm, decodeTopology,
   createGame, makeGuess, giveUp, referenceDistance, guessCount, cameraDistanceForSpan,
+  rhumbBearing, directionClue, useClue,
 } from '../engine.js';
 
 let n = 0;
@@ -25,6 +26,27 @@ check('bearing and compass: due east along the equator, due north up a meridian'
   close(initialBearing([0, 0], [10, 0]), 0, 1e-9, 'north');
   assert.equal(compassPoint(90), 'E'); assert.equal(compassPoint(359), 'N');
   assert.equal(compassPoint(210), 'SW'); assert.equal(compassPoint(-45), 'NW');
+});
+
+check('rhumbBearing: map-intuitive directions, wraps the antimeridian', () => {
+  close(rhumbBearing([0, 0], [0, 10]), 90, 1e-9, 'east');
+  close(rhumbBearing([0, 0], [10, 0]), 0, 1e-9, 'north');
+  assert.equal(compassPoint(rhumbBearing(C('GBR').latlng, C('AUS').latlng)), 'SE');   // great-circle would say E/NE
+  assert.equal(compassPoint(rhumbBearing(C('GBR').latlng, C('IND').latlng)), 'SE');
+  assert.equal(compassPoint(rhumbBearing(C('JPN').latlng, C('USA').latlng)), 'E');    // crosses the antimeridian
+  assert.equal(compassPoint(rhumbBearing(C('USA').latlng, C('JPN').latlng)), 'W');
+});
+
+check('directionClue / useClue: from start and latest guess; clue count is recorded', () => {
+  let g = createGame(countries, 'GBR', { rng: () => 0, pool: ['AUS'] });
+  let c = directionClue(g, countries);
+  assert.equal(c.fromStart.code, 'GBR'); assert.equal(c.fromStart.compass, 'SE'); assert.equal(c.fromLast, null);
+  g = makeGuess(g, countries, 'JPN').game;
+  c = directionClue(g, countries);
+  assert.equal(c.fromLast.code, 'JPN'); assert.equal(c.fromLast.compass, 'S');
+  assert.equal(g.cluesUsed, 0);
+  g = useClue(useClue(g));
+  assert.equal(g.cluesUsed, 2);
 });
 
 check('formatKm rounds and groups thousands', () => {

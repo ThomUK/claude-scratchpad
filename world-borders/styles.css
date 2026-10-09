@@ -57,6 +57,7 @@ main {
 .status .right { text-align: right; }
 .status strong { font-size: 1.05rem; }
 .clue { margin: 0 0 8px; font-size: 1.02rem; font-weight: 600; }
+.cluebox { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; background: #16221a; border: 1px solid #2f5a3a; font-size: 0.9rem; }
 .flash { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; background: #0f1620; border: 1px solid var(--panel-border); font-size: 0.9rem; }
 .flash.warmer { border-color: var(--warm); color: #ffc08a; }
 .flash.cooler { border-color: var(--cool); color: #a9ccf5; }

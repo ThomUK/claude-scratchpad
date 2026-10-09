@@ -1,5 +1,5 @@
 // World Borders: UI glue. Game rules live in engine.js, rendering in globe.js.
-import { decodeTopology, createGame, makeGuess, giveUp, formatKm, guessCount, haversineKm, initialBearing, compassPoint } from './engine.js?v=dev';
+import { decodeTopology, createGame, makeGuess, giveUp, formatKm, guessCount, haversineKm, initialBearing, compassPoint, directionClue, useClue } from './engine.js?v=dev';
 import { Globe, COLORS } from './globe.js?v=dev';
 
 const $ = (id) => document.getElementById(id);
@@ -25,6 +25,7 @@ async function main() {
   $('data-note').textContent = `Data: ${cJson.sources.countries}; ${cJson.sources.geometry}. Built ${cJson.generated}.`;
   wirePicker();
   $('btn-giveup').addEventListener('click', onGiveUp);
+  $('btn-clue').addEventListener('click', onClue);
   $('btn-newstart').addEventListener('click', () => resetToPickStart());
   render();
 }
@@ -83,6 +84,7 @@ function choose(code) {
 // -------------------------------------------------------------------- game --
 function startRound(startCode) {
   state.startCode = startCode;
+  state.clue = null;
   state.game = createGame(state.countries, startCode);
   state.phase = 'guessing';
   state.globe.flyTo(startCode);
@@ -98,6 +100,16 @@ function onGuess(code) {
   if (game.status === 'won') state.phase = 'over';
   paintGlobe();
   render(result);
+}
+
+function onClue() {
+  const g = state.game, name = (c) => state.byCode.get(c).name;
+  const c = directionClue(g, state.countries);
+  state.game = useClue(g);
+  const parts = [`From ${name(c.fromStart.code)} (your start) the mystery country lies to the ${DIR[c.fromStart.compass]}.`];
+  if (c.fromLast && c.fromLast.code !== c.fromStart.code) parts.push(`From ${name(c.fromLast.code)} (your latest guess) it lies to the ${DIR[c.fromLast.compass]}.`);
+  state.clue = parts.join(' ');
+  render();
 }
 
 function onGiveUp() {
@@ -169,6 +181,10 @@ function render(lastResult) {
   });
   $('log-empty').hidden = g.guesses.length > 0;
   $('btn-giveup').hidden = state.phase !== 'guessing';
+  $('btn-clue').hidden = state.phase !== 'guessing';
+  $('clue-text').textContent = state.clue || '';
+  $('clue-box').hidden = !state.clue;
+  $('clues-used').textContent = g.cluesUsed ? `${g.cluesUsed} ${g.cluesUsed === 1 ? 'clue' : 'clues'}` : '';
 
   if (lastResult && state.phase === 'guessing') {
     const v = lastResult.verdict, i = g.guesses.length - 1;
@@ -211,8 +227,9 @@ function renderReveal() {
   const r = $('reveal');
   r.replaceChildren();
   const n = guessCount(g);
+  const clues = g.cluesUsed ? ` with ${g.cluesUsed} ${g.cluesUsed === 1 ? 'clue' : 'clues'}` : '';
   r.append(el('p', 'outcome', g.status === 'won'
-    ? `You found it in ${n} ${n === 1 ? 'guess' : 'guesses'}.`
+    ? `You found it in ${n} ${n === 1 ? 'guess' : 'guesses'}${clues}.`
     : `The mystery country was ${c.name}.`));
   const head = el('div', 'rhead');
   head.append(el('span', 'bigflag', c.flag));

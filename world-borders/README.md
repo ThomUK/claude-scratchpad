@@ -9,7 +9,10 @@ An educational guessing game on a 3D globe.
    it: **orange** if that hop took you closer to the mystery country (warmer),
    **blue** if further away (cooler). Points are numbered so the path reads in
    order, and each guess shows its own distance.
-4. Find it (green) and you get an info card: capital, population, area, region,
+4. Stuck? **Give me a clue** tells you the compass direction to the mystery
+   country from your start and from your latest guess (rhumb-line bearing, i.e.
+   the direction as it looks on a map). Clues used are counted.
+5. Find it (green) and you get an info card: capital, population, area, region,
    languages, currency, bordering countries and a few facts. Dependent territories
    say who administers them. Then chain on: the next round can start from the
    country you just found.

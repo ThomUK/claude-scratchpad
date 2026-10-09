@@ -42,9 +42,10 @@
       <div id="panel-game" hidden>
         <div class="status">
           <div><span class="muted small">Starting from</span><br /><strong id="start-name"></strong></div>
-          <div class="right"><span class="muted small">Guesses</span><br /><strong id="guess-count">0</strong></div>
+          <div class="right"><span class="muted small">Guesses</span><br /><strong id="guess-count">0</strong> <span class="muted small" id="clues-used"></span></div>
         </div>
         <p class="clue" id="clue" aria-live="polite"></p>
+        <p class="cluebox" id="clue-box" aria-live="polite" hidden>🧭 <span id="clue-text"></span></p>
         <p class="flash" id="flash" aria-live="polite" hidden></p>
       </div>
 
@@ -58,6 +59,7 @@
         <ol class="log" id="log"></ol>
         <p class="muted small" id="log-empty" hidden>No guesses yet. Each guess is compared with the one before it: warmer means this hop took you closer to the mystery country.</p>
         <div class="btnrow">
+          <button id="btn-clue" type="button" hidden>Give me a clue</button>
           <button id="btn-giveup" type="button" hidden>Give up and reveal</button>
           <button id="btn-newstart" type="button" class="ghost">Start over</button>
         </div>

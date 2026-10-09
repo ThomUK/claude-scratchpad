@@ -22,6 +22,19 @@ export function initialBearing(a, b) {
   return (deg(Math.atan2(y, x)) + 360) % 360;
 }
 
+/**
+ * Rhumb-line bearing in degrees from a to b: the constant compass heading, which
+ * matches what "north-east of" means on an ordinary map, unlike the great-circle
+ * heading that can point over a pole for distant places.
+ */
+export function rhumbBearing(a, b) {
+  const [lat1, lon1] = a.map(rad), [lat2, lon2] = b.map(rad);
+  let dLon = lon2 - lon1;
+  if (Math.abs(dLon) > Math.PI) dLon -= Math.sign(dLon) * 2 * Math.PI;
+  const dPsi = Math.log(Math.tan(Math.PI / 4 + lat2 / 2) / Math.tan(Math.PI / 4 + lat1 / 2));
+  return (deg(Math.atan2(dLon, dPsi)) + 360) % 360;
+}
+
 const POINTS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 /** Eight-point compass name for a bearing in degrees. */
 export function compassPoint(bearing) {
@@ -89,7 +102,7 @@ export function createGame(countries, startCode, { rng = Math.random, pool = nul
   return {
     startCode, targetCode: target.code,
     startDistanceKm: haversineKm(start.latlng, target.latlng),
-    guesses: [], status: 'playing',
+    guesses: [], status: 'playing', cluesUsed: 0,
   };
 }
 
@@ -119,6 +132,23 @@ export function makeGuess(game, countries, code) {
   const result = { code, distanceKm, referenceKm: ref, verdict, bearing: initialBearing(guessed.latlng, target.latlng) };
   const guesses = verdict === 'repeat' ? game.guesses : [...game.guesses, result];
   return { game: { ...game, guesses, status: verdict === 'correct' ? 'won' : 'playing' }, result };
+}
+
+/**
+ * A clue: compass direction to the target from the start and from the latest
+ * guess (null when there is none yet). Does not change the game; call useClue
+ * to record that one was taken.
+ */
+export function directionClue(game, countries) {
+  const byCode = new Map(countries.map((c) => [c.code, c]));
+  const target = byCode.get(game.targetCode);
+  const from = (code) => ({ code, bearing: rhumbBearing(byCode.get(code).latlng, target.latlng), compass: compassPoint(rhumbBearing(byCode.get(code).latlng, target.latlng)) });
+  const last = game.guesses.length ? game.guesses[game.guesses.length - 1].code : null;
+  return { fromStart: from(game.startCode), fromLast: last ? from(last) : null };
+}
+
+export function useClue(game) {
+  return { ...game, cluesUsed: (game.cluesUsed || 0) + 1 };
 }
 
 export function giveUp(game) {
