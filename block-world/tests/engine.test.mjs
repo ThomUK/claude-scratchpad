@@ -1,6 +1,6 @@
 // Engine validation — run with: node tests/engine.test.mjs
 import {
-  W, H, D, SEA, SPRING_DEPTH, B, BLOCKS, ITEMS, World, raycast, rayBox, stepEntity, updateVillager,
+  W, H, D, SEA, SPRING_DEPTH, B, BLOCKS, ITEMS, World, raycast, rayBox, stepEntity, updateVillager, JUMP, callVillager, nearestVillager, topView,
   moveItem, rle, unrle, serialize, deserialize, makeRng, key, CHEST_SLOTS,
 } from '../engine.js';
 
@@ -153,6 +153,22 @@ console.log('— physics —');
   const before = s.y;
   for (let i = 0; i < 30; i++) stepEntity(w, s, { mx: 0, mz: 0, yaw: 0, jump: true }, 1 / 60);
   ok(s.y > before, 'holding jump swims upwards');
+  // flying: hold jump on land and keep rising, steer sideways while up there
+  const f = { x: x + 0.5, y: 21.01, z: z + 0.5, vx: 0, vy: 0, vz: 0, w: 0.6, h: 1.8, onGround: true };
+  for (let i = 0; i < 90; i++) stepEntity(w, f, { mx: 0, mz: 0, yaw: 0, jump: true }, 1 / 60);
+  ok(f.y > 25, `holding jump flies up (y=${f.y.toFixed(1)} after 1.5 s)`);
+  const fy = f.y;
+  for (let i = 0; i < 30; i++) stepEntity(w, f, { mx: 1, mz: 0, yaw: 0, jump: true }, 1 / 60);
+  ok(f.y > fy && f.x > x + 1, `keeps climbing and steers sideways (x=${f.x.toFixed(1)})`);
+  for (let i = 0; i < 30; i++) stepEntity(w, f, { mx: 0, mz: 0, yaw: 0, jump: true }, 1 / 60);
+  ok(f.y + f.h <= H + 4.01, 'cannot fly above the sky ceiling');
+  const top = f.y;
+  for (let i = 0; i < 30; i++) stepEntity(w, f, { mx: 0, mz: 0, yaw: 0, jump: false }, 1 / 60);
+  ok(f.y < top, 'letting go of jump falls again');
+  const q = { x: x + 0.5, y: 21.01, z: z + 0.5, vx: 0, vy: 0, vz: 0, w: 0.6, h: 1.8, onGround: true };
+  stepEntity(w, q, { mx: 0, mz: 0, yaw: 0, jump: true }, 1 / 60);
+  for (let i = 0; i < 10; i++) stepEntity(w, q, { mx: 0, mz: 0, yaw: 0, jump: true }, 1 / 60);
+  ok(q.vy < JUMP + 0.01, 'a short press is still an ordinary jump, not a rocket');
 }
 
 console.log('— villagers —');
@@ -169,6 +185,19 @@ console.log('— villagers —');
   const r = { x: v.x, z: v.z };
   for (let i = 0; i < 60; i++) updateVillager(w, v, 1 / 60, rng, { mx: 0, mz: 1, yaw: 0, jump: false });
   ok(v.z < r.z - 1, `ridden villager goes where it is steered (dz=${(v.z - r.z).toFixed(2)})`);
+  // calling: the nearest villager walks over
+  const px = vs[1].x + 14, pz = vs[1].z;
+  vs.forEach((u, i) => { if (i !== 1) { u.x = 5 + i * 3; u.z = 120; } });
+  const n = nearestVillager(vs, px, pz);
+  ok(n.index === 1 && Math.abs(n.dist - 14) < 0.01, 'nearestVillager finds the closest one');
+  ok(callVillager(vs, px, pz) === 1 && vs[1].call, 'callVillager marks it as coming');
+  let arrived = false, t = 0;
+  for (let i = 0; i < 60 * 40 && !arrived; i++) { updateVillager(w, vs[1], 1 / 60, rng); t += 1 / 60; if (vs[1].arrived) arrived = true; }
+  ok(arrived && Math.hypot(vs[1].x - px, vs[1].z - pz) < 3, `called villager arrives (${t.toFixed(1)} s, ${Math.hypot(vs[1].x - px, vs[1].z - pz).toFixed(1)} m away)`);
+  ok(!vs[1].call, 'call is cleared on arrival');
+  const tv = topView(w, 64, 64, 10);
+  ok(tv.size === 21 && tv.ids.length === 441 && tv.ids[220] === w.get(64, tv.hs[220], 64) && tv.ids[220] !== B.AIR && w.get(64, tv.hs[220] + 1, 64) === B.AIR, 'topView reports the block seen from above (water counts)');
+  ok(topView(w, 0, 0, 3).ids[0] === 0, 'topView leaves outside-the-world blank');
 }
 
 console.log('— save / load —');

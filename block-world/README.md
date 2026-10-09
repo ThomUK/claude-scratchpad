@@ -18,7 +18,10 @@ co-designed with Elliott.
   and hunt for the treasure chests buried underground.
 - **Security cameras** watch where they point. Tap a **computer** to flick through
   every camera's live view.
-- **Villagers** wander about. Tap one to climb on and ride it; you steer.
+- **Villagers** wander about. Tap one to climb on and ride it; you steer. The round
+  mini-map shows where they are, and 📣 **Call** brings the nearest one to you.
+- **Fly** by holding jump: you rise straight up and can steer. No more getting stuck
+  in holes.
 - 🌙 switches between day and night. The world saves itself in the browser, and the
   ☰ menu can export it as a file, import one, or start a fresh world.
 
@@ -29,6 +32,8 @@ co-designed with Elliott.
 | Move | left joystick | `WASD` / arrows |
 | Look | drag on the right | mouse (click to capture) |
 | Jump / swim up | ⬆ button | `Space` |
+| Fly | hold ⬆ | hold `Space` |
+| Call a villager | 📣 Call | `C` |
 | Dig | hold ⛏, or press and hold a block | left click |
 | Place / use | tap ✋, or tap a block | right click / `F` |
 | Choose block | bar at the bottom | `1`–`9`, `Q`/`R`, scroll wheel |

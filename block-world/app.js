@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import {
   W, H, D, B, BLOCKS, ITEMS, CHEST_SLOTS, POCKET_SLOTS, World, raycast, rayBox, stepEntity, updateVillager,
-  headInWater, moveItem, serialize, deserialize, makeRng, key,
+  headInWater, moveItem, serialize, deserialize, makeRng, key, callVillager, nearestVillager, topView,
 } from './engine.js?v=dev';
 import { makeAtlas, tileIcon, WorldRenderer, makeVillagerMesh, animateVillager, propDescription } from './render.js?v=dev';
 
@@ -225,6 +225,8 @@ function openHelp() {
     <ul>
       <li><b>Move:</b> ${isTouch ? 'left joystick. <b>Look:</b> drag on the right side of the screen.' : '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows. <b>Look:</b> click the game, then move the mouse.'}</li>
       <li><b>Jump / swim up:</b> ${isTouch ? 'the ⬆ button.' : '<kbd>Space</kbd>.'} You hop up single steps automatically.</li>
+      <li><b>Fly:</b> keep holding ${isTouch ? '⬆' : '<kbd>Space</kbd>'} and you rise straight up. Steer with ${isTouch ? 'the joystick' : '<kbd>WASD</kbd>'}; let go to float down. Handy when you are stuck in a hole!</li>
+      <li><b>Map:</b> the round map shows the land around you, you as the white arrow, and villagers as coloured dots. Tap <b>📣 Call</b> and the nearest villager walks over to you.</li>
       <li><b>Dig:</b> ${isTouch ? 'hold ⛏, or press and hold on a block.' : 'left click (hold to keep digging).'}</li>
       <li><b>Place / use:</b> ${isTouch ? 'tap ✋, or tap a block.' : 'right click or <kbd>F</kbd>.'} Pick what to place from the bar at the bottom.</li>
       <li><b>Water</b> is hiding under the ground. Dig down four blocks and it bubbles up and spreads along tunnels. You can swim in it.</li>
@@ -347,6 +349,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyF') doUse();
   if (e.code === 'KeyE') openPocket();
   if (e.code === 'KeyX' && riding >= 0) dismount();
+  if (e.code === 'KeyC') callNearest();
   if (/^Digit[1-9]$/.test(e.code)) { sel = Math.min(HOTBAR.length - 1, +e.code.slice(5) - 1); renderHotbar(); }
   if (e.code === 'KeyQ') { sel = (sel + HOTBAR.length - 1) % HOTBAR.length; renderHotbar(); }
   if (e.code === 'KeyR') { sel = (sel + 1) % HOTBAR.length; renderHotbar(); }
@@ -467,6 +470,56 @@ function dismount() {
   riding = -1; $('btnDismount').hidden = true;
 }
 
+// ---------- mini-map & calling villagers ----------
+const MAP_COLORS = { [B.GRASS]: '#5aa83e', [B.EARTH]: '#86603c', [B.STONE]: '#808084', [B.SAND]: '#decf96', [B.WOOD]: '#ba8c54', [B.LOG]: '#684c2e',
+  [B.LEAVES]: '#2f7a28', [B.METAL]: '#b0b6be', [B.GLASS]: '#cfe8ff', [B.WATER]: '#2a6ed2', [B.BEDROCK]: '#3c3c40', [B.BRICK]: '#b24c3c' };
+const mapCanvas = $('minimap'), mapCtx = mapCanvas.getContext('2d');
+const MAP_R = 24;   // blocks shown either side of you
+let mapTimer = 0;
+function drawMap() {
+  const e = eye(), cx = Math.floor(e.x), cz = Math.floor(e.z);
+  const { size, ids, hs } = topView(world, cx, cz, MAP_R);
+  const S = mapCanvas.width, px = S / size;
+  mapCtx.clearRect(0, 0, S, S);
+  for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) {
+    const id = ids[j * size + i];
+    if (!id) continue;
+    mapCtx.fillStyle = MAP_COLORS[id] || '#888';
+    mapCtx.globalAlpha = 0.55 + 0.45 * Math.min(1, hs[j * size + i] / 34);   // higher ground is brighter
+    mapCtx.fillRect(i * px, j * px, px + 0.5, px + 0.5);
+  }
+  mapCtx.globalAlpha = 1;
+  const toMap = (x, z) => [(x - cx - 0.5 + MAP_R + 0.5) * px, (z - cz - 0.5 + MAP_R + 0.5) * px];
+  const near = nearestVillager(villagers, e.x, e.z, riding);
+  villagers.forEach((v, i) => {
+    if (i === riding) return;
+    let [mx, mz] = toMap(v.x, v.z);
+    const dx = mx - S / 2, dz = mz - S / 2, d = Math.hypot(dx, dz), lim = S / 2 - 8;
+    if (d > lim) { mx = S / 2 + dx / d * lim; mz = S / 2 + dz / d * lim; }   // off the map: pin to the edge
+    mapCtx.beginPath(); mapCtx.arc(mx, mz, i === near.index ? 7 : 5, 0, Math.PI * 2);
+    mapCtx.fillStyle = v.shirt; mapCtx.fill();
+    mapCtx.lineWidth = 2; mapCtx.strokeStyle = v.call ? '#ffd166' : '#fff'; mapCtx.stroke();
+  });
+  // you: a white arrow pointing the way you look (north is up)
+  mapCtx.save(); mapCtx.translate(S / 2, S / 2); mapCtx.rotate(-yaw);
+  mapCtx.beginPath(); mapCtx.moveTo(0, -12); mapCtx.lineTo(8, 8); mapCtx.lineTo(0, 4); mapCtx.lineTo(-8, 8); mapCtx.closePath();
+  mapCtx.fillStyle = '#fff'; mapCtx.fill(); mapCtx.strokeStyle = '#000'; mapCtx.lineWidth = 1.5; mapCtx.stroke();
+  mapCtx.restore();
+  if (near.index >= 0) {
+    const v = villagers[near.index];
+    $('mapLabel').textContent = `${v.name} ${Math.round(near.dist)} m${v.call ? ' – coming!' : ''}`;
+  } else $('mapLabel').textContent = riding >= 0 ? `Riding ${villagers[riding].name}` : '—';
+}
+function callNearest() {
+  const e = eye();
+  const i = callVillager(villagers, e.x, e.z, riding);
+  if (i < 0) { toast('Nobody can hear you'); return; }
+  const v = villagers[i];
+  toast(`📣 ${v.name} is coming! (${Math.round(Math.hypot(v.x - e.x, v.z - e.z))} m away)`);
+}
+$('btnCall').addEventListener('click', callNearest);
+$('btnCall').addEventListener('pointerdown', (e) => e.stopPropagation());
+
 // ---------- water tint overlay ----------
 const tint = document.createElement('div');
 tint.style.cssText = 'position:absolute;inset:0;background:rgba(30,90,200,0.35);pointer-events:none;display:none;';
@@ -481,9 +534,12 @@ function frame(now) {
   const { mx, mz } = active ? moveInput() : { mx: 0, mz: 0 };
   const jump = active && jumpHeld;
 
+  const here = eye();
   villagers.forEach((v, i) => {
     const ride = i === riding ? { mx, mz, yaw, jump } : null;
+    if (v.call) { v.call.x = here.x; v.call.z = here.z; }   // follow the caller as they move
     updateVillager(world, v, dt, rng, ride);
+    if (v.arrived) { v.arrived = false; toast(`${v.name} is here! 👋`); }
     animateVillager(vMeshes[i], v, i === riding);
   });
   let head = false;
@@ -520,6 +576,8 @@ function frame(now) {
     else renderer.render(scene, camera);
   } else renderer.render(scene, camera);
 
+  mapTimer += dt;
+  if (mapTimer > 0.2) { mapTimer = 0; drawMap(); }
   saveTimer += dt;
   if (saveTimer > 15) { saveTimer = 0; save(); }
 }
@@ -535,5 +593,5 @@ if (!localStorage.getItem('block-world/seen-help')) { openHelp(); localStorage.s
 // Small hook for scripted smoke tests (not used by the game itself).
 window.blockWorld = {
   get world() { return world; }, get player() { return player; }, get villagers() { return villagers; }, get pocket() { return pocket; },
-  look(y, p) { yaw = y; pitch = p; }, select(i) { sel = i; renderHotbar(); }, dig: doDig, use: doUse, mount, dismount, findTarget, save,
+  look(y, p) { yaw = y; pitch = p; }, select(i) { sel = i; renderHotbar(); }, dig: doDig, use: doUse, mount, dismount, findTarget, save, callNearest,
 };

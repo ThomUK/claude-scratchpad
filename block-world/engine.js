@@ -407,7 +407,7 @@ export function rayBox(ox, oy, oz, dx, dy, dz, minx, miny, minz, maxx, maxy, max
 }
 
 // ---------- physics ----------
-export const GRAVITY = 28, JUMP = 9, SWIM = 4.5;
+export const GRAVITY = 28, JUMP = 9, SWIM = 4.5, FLY_SPEED = 7, FLY_HOLD = 0.3;
 
 function boxSolid(world, x, y, z, w, h) {
   const x0 = Math.floor(x - w / 2), x1 = Math.floor(x + w / 2 - 1e-6);
@@ -448,12 +448,17 @@ export function stepEntity(world, e, ctrl, dt) {
   let mx = ctrl.mx || 0, mz = ctrl.mz || 0;
   const len = Math.hypot(mx, mz); if (len > 1) { mx /= len; mz /= len; }
   const tx = (fx * mz + rx * mx) * speed, tz = (fz * mz + rz * mx) * speed;
-  const k = Math.min(1, dt * (e.onGround || water ? 12 : 4));
+  // holding jump for a moment switches to flying straight up (steer with the pad)
+  e.holdT = ctrl.jump ? (e.holdT || 0) + dt : 0;
+  const flying = !water && ctrl.jump && e.holdT > FLY_HOLD;
+  const k = Math.min(1, dt * (e.onGround || water || flying ? 12 : 4));
   e.vx += (tx - e.vx) * k; e.vz += (tz - e.vz) * k;
 
   if (water) {
     e.vy += (-1.5 - e.vy) * Math.min(1, dt * 3);
     if (ctrl.jump) e.vy = SWIM;
+  } else if (flying) {
+    e.vy = Math.min(FLY_SPEED, Math.max(e.vy, 0) + GRAVITY * dt);
   } else {
     e.vy -= GRAVITY * dt;
     if (ctrl.jump && e.onGround) e.vy = JUMP;
@@ -467,6 +472,7 @@ export function stepEntity(world, e, ctrl, dt) {
   const wasGround = e.onGround;
   e.onGround = hitY && e.vy < 0;
   if (hitY) e.vy = 0;
+  if (e.y + e.h > H + 4) { e.y = H + 4 - e.h; e.vy = Math.min(e.vy, 0); }   // the sky has a ceiling
   // auto-jump: walked into a one-block step
   if ((hitX || hitZ) && wantMove && (wasGround || e.onGround || water)) {
     const aheadX = e.x + Math.sign(tx) * (e.w / 2 + 0.05), aheadZ = e.z + Math.sign(tz) * (e.w / 2 + 0.05);
@@ -477,18 +483,45 @@ export function stepEntity(world, e, ctrl, dt) {
   }
   if (hitX) e.vx = 0; if (hitZ) e.vz = 0;
   if (e.y < 1) { e.y = 1; e.vy = 0; e.onGround = true; }
-  return { water, head: headInWater(world, e) };
+  return { water, head: headInWater(world, e), flying };
 }
+
+export function nearestVillager(villagers, x, z, exclude = -1) {
+  let best = -1, bestD = Infinity;
+  villagers.forEach((v, i) => { if (i === exclude) return; const d = Math.hypot(v.x - x, v.z - z); if (d < bestD) { bestD = d; best = i; } });
+  return { index: best, dist: bestD };
+}
+// Ask the nearest villager to walk over to (x, z). Returns its index or -1.
+export function callVillager(villagers, x, z, exclude = -1) {
+  const { index } = nearestVillager(villagers, x, z, exclude);
+  if (index >= 0) { const v = villagers[index]; v.call = { x, z, t: 0, stuck: 0, detour: 0 }; v.arrived = false; }
+  return index;
+}
+export const CALL_RADIUS = 2.2, CALL_TIMEOUT = 45;
 
 // Villager AI. ride = { mx, mz, yaw, jump } when a player is steering, else null.
 export function updateVillager(world, v, dt, rng, ride = null) {
   let ctrl;
   if (ride) {
+    v.call = null;
     ctrl = { mx: ride.mx, mz: ride.mz, yaw: ride.yaw, jump: ride.jump, speed: 5.5 };
     if (Math.hypot(ride.mx, ride.mz) > 0.1) {
       const fx = -Math.sin(ride.yaw), fz = -Math.cos(ride.yaw), rx = Math.cos(ride.yaw), rz = -Math.sin(ride.yaw);
       v.yaw = Math.atan2(-(fx * ride.mz + rx * ride.mx), -(fz * ride.mz + rz * ride.mx));
     }
+  } else if (v.call) {
+    // walking to whoever called: head straight there, sidestep for a moment when stuck
+    const c = v.call; c.t += dt;
+    const dx = c.x - v.x, dz = c.z - v.z, dist = Math.hypot(dx, dz);
+    if (dist < CALL_RADIUS) { v.call = null; v.arrived = true; v.moving = false; v.timer = 2; }
+    else if (c.t > CALL_TIMEOUT) { v.call = null; v.timer = 0; }
+    else {
+      if (c.detour > 0) c.detour -= dt;
+      else v.yaw = Math.atan2(-dx, -dz);
+      v.moving = true;
+    }
+    ctrl = { mx: 0, mz: v.call ? 1 : 0, yaw: v.yaw, jump: false, speed: 4 };
+    if (inWater(world, v)) ctrl.jump = true;
   } else {
     v.timer -= dt;
     if (v.timer <= 0) {
@@ -504,10 +537,29 @@ export function updateVillager(world, v, dt, rng, ride = null) {
   const before = { x: v.x, z: v.z };
   const r = stepEntity(world, v, ctrl, dt);
   const moved = Math.hypot(v.x - before.x, v.z - before.z);
-  if (!ride && v.moving && moved < 0.002 * (dt / 0.016)) { v.heading += Math.PI / 2 + rng() * Math.PI; v.timer = 1 + rng() * 2; }
+  const slow = moved < 0.002 * (dt / 0.016);
+  if (!ride && v.call && v.moving) {
+    v.call.stuck = slow ? v.call.stuck + dt : 0;
+    if (v.call.stuck > 0.6) { v.call.stuck = 0; v.call.detour = 0.8; v.yaw += (rng() < 0.5 ? 1 : -1) * Math.PI / 2; }
+  } else if (!ride && v.moving && slow) { v.heading += Math.PI / 2 + rng() * Math.PI; v.timer = 1 + rng() * 2; }
   v.phase += moved * 6;
   v.walking = moved > 0.001;
   return r;
+}
+
+// Top-down view for a mini-map: for each column in the window, the block you
+// would see from above (ignoring special props) and its height.
+export function topView(world, cx, cz, r) {
+  const size = 2 * r + 1, ids = new Uint8Array(size * size), hs = new Uint8Array(size * size);
+  for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+    const x = cx + dx, z = cz + dz, i = (dz + r) * size + (dx + r);
+    if (x < 0 || x >= W || z < 0 || z >= D) continue;
+    for (let y = H - 1; y >= 0; y--) {
+      const id = world.get(x, y, z);
+      if (id !== B.AIR && !BLOCKS[id].special) { ids[i] = id; hs[i] = y; break; }
+    }
+  }
+  return { size, ids, hs };
 }
 
 // ---------- save / load ----------
