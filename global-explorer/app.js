@@ -343,7 +343,6 @@ function render(lastResult) {
     $('start-map-hint').hidden = m !== 'map';
     $('btn-begin').hidden = !!m;
     $('btn-start-cancel').hidden = !m;
-    renderStats($('stats-strip'), true);
     return;
   }
 
@@ -529,7 +528,7 @@ function renderStats(container, compact) {
   const s = state.stats || normalizeStats(null);
   const stamps = totalStamps();
   const tiles = compact
-    ? [[s.rounds, 'rounds'], [stamps, `stamps of ${allStamps()}`], [s.streak, 'streak']]
+    ? [[s.rounds, 'rounds'], [stamps, `stamps of ${allStamps()}`], [s.streak, 'streak']] // (unused since the game screen dropped its strip)
     : [[s.rounds, 'rounds played'], [s.wins, 'countries found'], [stamps, `stamps of ${allStamps()}`], [s.streak, 'current streak'], [s.bestStreak, 'best streak'],
       ...Object.entries(s.best || {}).map(([k, v]) => [v, `best score · ${LEVEL_LABEL(k)}`])];
   container.replaceChildren();
