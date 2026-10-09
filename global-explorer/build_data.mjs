@@ -324,12 +324,12 @@ writeFileSync('data/countries.json', JSON.stringify({
   },
   pools: {
     easy: {
-      label: 'the 80 countries UK residents visit most',
+      label: '80 commonly visited countries',
       source: "ONS Travel trends 2024, UK residents' visits abroad by main country visited (top 10 as published; 11-80 reconstructed)",
       codes: EASY_POOL,
     },
     un: {
-      label: 'the 193 UN member states',
+      label: '193 United Nations countries',
       source: 'UN membership from the country dataset (Vatican City corrected to observer)',
       codes: countries.filter((c) => c.unMember).map((c) => c.code),
     },

@@ -459,7 +459,13 @@ function countryCard(c, startCode) {
   frag.append(el('h3', null, 'Bordering countries'));
   if (c.borders.length) {
     const ul = el('ul', 'chips');
-    for (const b of c.borders) ul.append(el('li', 'chip-item', `${state.byCode.get(b).flag} ${name(b)}`));
+    for (const b of c.borders) {
+      const li = el('li');
+      const btn = el('button', 'chip-item', `${state.byCode.get(b).flag} ${name(b)}`);
+      btn.type = 'button'; btn.title = `About ${name(b)}`;
+      btn.addEventListener('click', () => showCountry(b));
+      li.append(btn); ul.append(li);
+    }
     frag.append(ul);
   } else frag.append(el('p', 'muted', c.landlocked ? 'None.' : 'None: no land borders.'));
 
