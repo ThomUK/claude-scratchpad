@@ -1,0 +1,103 @@
+:root {
+  --bg: #0d1117; --panel: rgba(20, 24, 32, 0.92); --border: rgba(255,255,255,0.18);
+  --text: #f3f4f6; --muted: #aab2c0; --accent: #ffd166; --ok: #4ade80; --bad: #f87171;
+  --btn: rgba(0, 0, 0, 0.38); --btnActive: rgba(255, 209, 102, 0.85);
+  --safe-b: env(safe-area-inset-bottom, 0px); --safe-l: env(safe-area-inset-left, 0px); --safe-r: env(safe-area-inset-right, 0px);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; touch-action: none; overscroll-behavior: none; }
+#game { position: fixed; inset: 0; }
+#c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+#crosshair { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; pointer-events: none;
+  background:
+    linear-gradient(#fff, #fff) center/2px 100% no-repeat,
+    linear-gradient(#fff, #fff) center/100% 2px no-repeat;
+  opacity: 0.85; mix-blend-mode: difference; }
+
+#hud { position: absolute; inset: 0; pointer-events: none; }
+#hud button { pointer-events: auto; }
+
+#topbar { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 6px;
+  padding: calc(6px + env(safe-area-inset-top, 0px)) calc(8px + var(--safe-r)) 6px calc(8px + var(--safe-l));
+  background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0)); }
+#topbar .title { font-weight: 700; letter-spacing: 0.02em; text-shadow: 0 1px 2px #000; }
+#topbar .home { pointer-events: auto; color: var(--text); text-decoration: none; font-size: 1.2rem; text-shadow: 0 1px 2px #000; padding: 0 6px; }
+#topbar .spacer { flex: 1; }
+#topbar button { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--btn);
+  color: var(--text); font-size: 1.15rem; cursor: pointer; }
+#topbar button.on { background: var(--btnActive); color: #111; }
+#targetName { margin-left: 10px; font-size: 0.85rem; color: var(--accent); text-shadow: 0 1px 2px #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+#toast { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--border);
+  padding: 8px 14px; border-radius: 10px; font-size: 0.95rem; opacity: 0; transition: opacity 0.25s; max-width: 80vw; text-align: center; }
+#toast.show { opacity: 1; }
+
+#joystick { position: absolute; left: 0; bottom: 0; width: 45%; height: 60%; pointer-events: none; }
+#joystick .base { position: absolute; left: calc(28px + var(--safe-l)); bottom: calc(110px + var(--safe-b)); width: 120px; height: 120px; border-radius: 50%;
+  background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.35); }
+#joystick .knob { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%;
+  background: rgba(255,255,255,0.55); box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+body.no-touch #joystick { display: none; }
+
+#actions { position: absolute; right: calc(16px + var(--safe-r)); bottom: calc(104px + var(--safe-b)); display: grid;
+  grid-template-columns: 64px 64px; grid-template-rows: 64px 64px; gap: 10px; }
+#actions .act { width: 64px; height: 64px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); background: var(--btn);
+  color: var(--text); font-size: 1.5rem; line-height: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; user-select: none; }
+#actions .act small { font-size: 0.6rem; margin-top: 2px; }
+#actions .act:active, #actions .act.held { background: var(--btnActive); color: #111; }
+#actions .big { grid-column: 2; grid-row: 2; }
+#btnDig { grid-column: 1; grid-row: 2; }
+#btnUse { grid-column: 2; grid-row: 1; }
+body.no-touch #actions { display: none; }
+#btnDismount { position: absolute; right: calc(16px + var(--safe-r)); bottom: calc(250px + var(--safe-b)); border-radius: 12px; border: 2px solid var(--bad);
+  background: var(--panel); color: var(--text); font-size: 1rem; padding: 10px 14px; cursor: pointer; }
+
+#hotbar { position: absolute; left: 50%; bottom: calc(10px + var(--safe-b)); transform: translateX(-50%); display: flex; gap: 6px;
+  padding: 6px; border-radius: 14px; background: rgba(0,0,0,0.45); max-width: calc(100vw - 20px); overflow-x: auto; pointer-events: auto; scrollbar-width: none; }
+#hotbar::-webkit-scrollbar { display: none; }
+#hotbar button { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 10px; border: 2px solid transparent; background: rgba(255,255,255,0.08);
+  color: var(--text); font-size: 1.5rem; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+#hotbar button img { width: 32px; height: 32px; image-rendering: pixelated; border-radius: 4px; }
+#hotbar button small { font-size: 0.55rem; line-height: 1; margin-top: 2px; color: var(--muted); max-width: 48px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#hotbar button.sel { border-color: var(--accent); background: rgba(255, 209, 102, 0.25); }
+#hotbar button.sel small { color: var(--text); }
+
+/* computer screen (security camera view) */
+body.camview #hud, body.camview #crosshair { display: none; }
+#camView { position: absolute; inset: 0; pointer-events: none; z-index: 4; box-shadow: inset 0 0 0 10px #222, inset 0 0 0 14px #555, inset 0 0 120px rgba(0,0,0,0.6);
+  background: repeating-linear-gradient(rgba(0,0,0,0) 0 3px, rgba(0,0,0,0.12) 3px 4px); font-family: ui-monospace, Menlo, Consolas, monospace; }
+#camView .camTop { position: absolute; top: 18px; left: 22px; right: 22px; display: flex; justify-content: space-between; color: #9ef01a; text-shadow: 0 0 6px #9ef01a; font-size: 0.95rem; }
+#camView .rec { color: #ff4d4d; text-shadow: 0 0 6px #ff4d4d; animation: blink 1s steps(2) infinite; }
+@keyframes blink { to { opacity: 0.2; } }
+#camView .camBottom { position: absolute; bottom: calc(22px + var(--safe-b)); left: 22px; right: 22px; display: flex; justify-content: center; gap: 12px; pointer-events: auto; }
+#camView button { border-radius: 10px; border: 1px solid #9ef01a; background: rgba(0,0,0,0.6); color: #9ef01a; font: inherit; padding: 10px 16px; cursor: pointer; }
+#camEmpty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #9ef01a; padding: 20px; background: rgba(0,0,0,0.8); }
+
+/* modals */
+#modal { position: absolute; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 5; }
+#modal .box { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px; width: min(420px, 100%); max-height: 90vh; overflow: auto; }
+#modal h2 { margin: 0 0 10px; font-size: 1.1rem; }
+#modal p { color: var(--muted); font-size: 0.9rem; margin: 6px 0; }
+#modal .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+#modal button { border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.08); color: var(--text); font-size: 1rem; padding: 10px 14px; cursor: pointer; }
+#modal button.primary { background: var(--accent); color: #111; font-weight: 600; }
+#modal button.danger { border-color: var(--bad); color: var(--bad); }
+#modal .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
+#modal .keypad button { font-size: 1.4rem; padding: 14px 0; }
+#modal .code { font-family: ui-monospace, monospace; font-size: 2rem; letter-spacing: 0.4em; text-align: center; min-height: 2.6rem; }
+#modal .code.bad { color: var(--bad); animation: shake 0.3s; }
+@keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+#modal .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 6px 0 12px; }
+#modal .grid button { aspect-ratio: 1; font-size: 1.6rem; padding: 0; display: flex; align-items: center; justify-content: center; position: relative; }
+#modal .grid button.empty { background: rgba(255,255,255,0.03); border-style: dashed; }
+#modal .grid button .x { position: absolute; top: 2px; right: 5px; font-size: 0.65rem; color: var(--muted); }
+#modal .make button { font-size: 1.3rem; padding: 6px 10px; }
+#modal label.file { display: inline-block; }
+#modal input[type=file] { display: none; }
+#modal kbd { background: rgba(255,255,255,0.12); border-radius: 4px; padding: 1px 6px; font-family: inherit; }
+#modal ul { padding-left: 18px; color: var(--muted); font-size: 0.9rem; }
+#modal li { margin: 4px 0; }
+
+#loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); font-size: 1.2rem; z-index: 10; }
+[hidden] { display: none !important; }

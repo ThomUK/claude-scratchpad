@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Block World</title>
+  <link rel="stylesheet" href="styles.css?v=dev" />
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/three.module.js?v=dev" } }
+  </script>
+</head>
+<body>
+  <div id="game">
+    <canvas id="c"></canvas>
+    <div id="crosshair"></div>
+
+    <div id="hud">
+      <div id="topbar">
+        <a class="home" href="../" title="All toy models">⌂</a>
+        <span class="title">Block World</span>
+        <span id="targetName"></span>
+        <span class="spacer"></span>
+        <button id="btnPocket" title="Pocket">🎒</button>
+        <button id="btnNight" title="Day / night">🌙</button>
+        <button id="btnMenu" title="Menu">☰</button>
+        <button id="btnHelp" title="Help">?</button>
+      </div>
+
+      <div id="toast"></div>
+
+      <div id="joystick"><div class="base"><div class="knob"></div></div></div>
+
+      <div id="actions">
+        <button id="btnDig" class="act" title="Dig (hold)">⛏<small>Dig</small></button>
+        <button id="btnUse" class="act" title="Place / use">✋<small>Place</small></button>
+        <button id="btnJump" class="act big" title="Jump">⬆<small>Jump</small></button>
+      </div>
+      <button id="btnDismount" hidden>🛑 Get off</button>
+
+      <div id="hotbar"></div>
+    </div>
+
+    <div id="camView" hidden>
+      <div class="camTop">
+        <span>💻 SECURITY CAMERAS</span>
+        <span id="camLabel">Camera 1 of 1</span>
+        <span class="rec">● REC</span>
+      </div>
+      <div class="camBottom">
+        <button id="camPrev">◀ Previous</button>
+        <button id="camClose">✕ Close</button>
+        <button id="camNext">Next ▶</button>
+      </div>
+      <div id="camEmpty" hidden>
+        <p>No cameras yet.</p>
+        <p>Place a 📷 security camera somewhere, then come back to this computer to watch it.</p>
+      </div>
+    </div>
+
+    <div id="modal" hidden>
+      <div class="box" id="modalBox"></div>
+    </div>
+
+    <div id="loading"><div>Building the world…</div></div>
+  </div>
+
+  <script type="module" src="app.js?v=dev"></script>
+</body>
+</html>
