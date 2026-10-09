@@ -35,9 +35,11 @@ Live: https://thomuk.github.io/claude-scratchpad/world-borders/
 
 - `engine.js` — DOM-free rules: haversine distance, warmer/cooler, round state,
   and a small TopoJSON decoder. Tested with `node tests/engine.test.mjs`.
-- `globe.js` — three.js globe. Country fills are painted on a 4096×2048 canvas
-  texture (cheap to recolour); borders are 3D line segments so they stay crisp
-  when zoomed; tiny or shapeless territories get a ring marker.
+- `globe.js` — three.js globe. Country fills are vector meshes (each polygon
+  triangulated in lon/lat, long edges bisected so triangles hug the sphere),
+  borders are 3D line segments, and tiny or shapeless territories get a ring
+  marker, so everything stays crisp at any zoom. Map clicks snap to the nearest
+  small country within a few pixels.
 - `app.js` — UI: picker, guess log, reveal card.
 - `build_data.mjs` — regenerates `data/` from the sources below (see its header
   for the download URLs and the run command).

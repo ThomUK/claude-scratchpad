@@ -40,7 +40,8 @@ async function main() {
   state.pools = cJson.pools || {};
   state.byCode = new Map(state.countries.map((c) => [c.code, c]));
   state.globe = new Globe($('globe'), decodeTopology(topo), state.countries);
-  state.globe.onPick = (code) => choose(code);
+  state.globe.onPick = (code) => (code ? choose(code) : flash('No country there. Zoom in closer, or type its name.', 'warn'));
+  window.worldBorders = { state }; // debug handle (used by the browser tests)
   $('loading').remove();
   loadDifficulty();
   wireDifficulty();
@@ -121,6 +122,7 @@ function choose(code) {
 function startRound(startCode) {
   state.startCode = startCode;
   state.clue = null;
+  flash('');
   state.game = createGame(state.countries, startCode, { difficulty: state.difficulty, pools: state.pools });
   state.phase = 'guessing';
   applyDifficultyToGlobe();
@@ -162,6 +164,7 @@ function onGiveUp() {
 
 function resetToPickStart() {
   state.phase = 'pick-start'; state.game = null; state.startCode = null; state.clue = null;
+  flash('');
   state.globe.setHighlights(new Map());
   state.globe.setPath([], []);
   state.globe.setNameExclusions([]);

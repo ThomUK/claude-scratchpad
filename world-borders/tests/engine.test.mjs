@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import {
   haversineKm, initialBearing, compassPoint, formatKm, decodeTopology,
   createGame, makeGuess, giveUp, referenceDistance, guessCount, cameraDistanceForSpan,
-  rhumbBearing, directionClue, useClue, countryAt, DIFFICULTY, targetPool,
+  rhumbBearing, directionClue, useClue, countryAt, pickCountry, DIFFICULTY, targetPool,
 } from '../engine.js';
 
 let n = 0;
@@ -120,6 +120,28 @@ check('countryAt: finds countries by point, respects holes, falls back to shapel
   assert.equal(countryAt(f, [], 5, 5), 'IN');
 });
 
+check('pickCountry: tolerant clicks snap to small countries and nearby coasts', () => {
+  const topo = JSON.parse(readFileSync(new URL('../data/world.json', import.meta.url), 'utf8'));
+  const feats = decodeTopology(topo);
+  const lca = C('LCA'), mtq = C('MTQ');
+  assert.ok(lca.span < 1.5 && mtq.span < 1.5, 'both are small');
+  // Inside Saint Lucia: exact wins even with a generous tolerance and Martinique nearby.
+  assert.equal(pickCountry(feats, countries, lca.latlng[0], lca.latlng[1], 1.0), 'LCA');
+  // Just offshore of Saint Lucia (sea): snaps to it within tolerance, null without.
+  assert.equal(pickCountry(feats, countries, lca.latlng[0], lca.latlng[1] - 0.6, 0), null);
+  assert.equal(pickCountry(feats, countries, lca.latlng[0], lca.latlng[1] - 0.6, 0.6), 'LCA');
+  // Near Vatican City but on Italian soil: the small country steals the click.
+  const vat = C('VAT');
+  assert.equal(countryAt(feats, countries, vat.latlng[0] + 0.05, vat.latlng[1] + 0.05), 'ITA');
+  assert.equal(pickCountry(feats, countries, vat.latlng[0] + 0.05, vat.latlng[1] + 0.05, 0.15), 'VAT');
+  // Deep inside France, far from any small country: France.
+  assert.equal(pickCountry(feats, countries, 47.0, 2.5, 0.5), 'FRA');
+  // Mid-Atlantic stays null even with tolerance.
+  assert.equal(pickCountry(feats, countries, 40, -40, 1.0), null);
+  // Shapeless speck by proximity.
+  assert.equal(pickCountry(feats, countries, 36.3, -5.5, 0.4), 'GIB');
+});
+
 check('DIFFICULTY: three levels; createGame records it and rejects unknown ones', () => {
   assert.deepEqual(Object.keys(DIFFICULTY), ['easy', 'intermediate', 'hard']);
   assert.equal(DIFFICULTY.easy.names && DIFFICULTY.easy.click && DIFFICULTY.easy.distances && DIFFICULTY.easy.bearings, true);
@@ -201,7 +223,7 @@ check('giveUp ends the round without a win', () => {
 });
 
 check('cameraDistanceForSpan: monotone, clamped, and tolerant of antimeridian spans', () => {
-  assert.equal(cameraDistanceForSpan(0.01), 1.55);
+  assert.equal(cameraDistanceForSpan(0.01), 1.12);
   assert.ok(cameraDistanceForSpan(10) < cameraDistanceForSpan(40));
   assert.equal(cameraDistanceForSpan(360), cameraDistanceForSpan(90));
   assert.equal(cameraDistanceForSpan(1000), 3.4);

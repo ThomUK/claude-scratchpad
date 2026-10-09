@@ -71,6 +71,7 @@ main {
 .flash { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; background: #0f1620; border: 1px solid var(--panel-border); font-size: 0.9rem; }
 .flash.warmer { border-color: var(--warm); color: #ffc08a; }
 .flash.cooler { border-color: var(--cool); color: #a9ccf5; }
+.flash.warn { border-color: var(--start); color: #ffe6a8; }
 
 .picker { position: relative; margin: 6px 0 12px; }
 .picker input {

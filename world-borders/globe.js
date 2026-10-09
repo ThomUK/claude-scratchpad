@@ -1,16 +1,22 @@
-// World Borders: the three.js globe. Country fills are painted onto an
-// equirectangular canvas texture (cheap to recolour); borders are crisp 3D
-// line segments; tiny or shapeless territories get a screen-space ring marker.
+// World Borders: the three.js globe. Country fills are vector meshes on the
+// sphere (triangulated in lon/lat, long edges bisected so they hug the
+// surface), borders are crisp 3D line segments, and tiny or shapeless
+// territories get a screen-space ring marker. Recolouring a country is just a
+// material colour change.
 import * as THREE from 'three';
 import { OrbitControls } from './vendor/three/OrbitControls.js?v=dev';
-import { cameraDistanceForSpan, countryAt } from './engine.js?v=dev';
+import { cameraDistanceForSpan, pickCountry } from './engine.js?v=dev';
 
 export const COLORS = {
   ocean: '#0c1a2b', land: '#34485d', border: '#0a1017', guessed: '#4b6482',
   start: '#ffd166', warmer: '#ff7a1a', cooler: '#4a90e2', same: '#9aa7b4', correct: '#2ecc71', target: '#e05aa0',
 };
 
-const TEX_W = 4096, TEX_H = 2048;
+const SURFACE = 1.0;        // sphere radius
+const FILL_R = 1.0008;      // fills sit just above the ocean sphere
+const BORDER_R = 1.0016;    // borders above fills
+const MARK_R = 1.004;       // sprites close to the surface so they do not drift when zoomed in
+const SUBDIV_DEG = 3;       // bisect fill triangles with an edge longer than this
 
 /** [lat, lon] in degrees -> unit-sphere Vector3 matching SphereGeometry's UV layout. */
 export function latLonToVec3(lat, lon, r = 1) {
@@ -49,24 +55,22 @@ export class Globe {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
     this.controls.enablePan = false;
-    this.controls.minDistance = 1.25;
+    this.controls.minDistance = 1.04; // close enough to click the smallest islands
     this.controls.maxDistance = 4.5;
     this.controls.rotateSpeed = 0.6;
     this.controls.zoomSpeed = 0.8;
+    this.controls.zoomToCursor = true; // zoom towards the pointer, so small islands can be homed in on
     this.controls.autoRotate = true;
     this.controls.autoRotateSpeed = 0.5;
     this.controls.addEventListener('start', () => { this.flight = null; this.controls.autoRotate = false; });
 
-    // Texture + sphere.
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = TEX_W; this.canvas.height = TEX_H;
-    this.ctx = this.canvas.getContext('2d');
-    this.texture = new THREE.CanvasTexture(this.canvas);
-    this.texture.colorSpace = THREE.SRGBColorSpace;
-    this.texture.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
-    this.paint();
-    this.sphere = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64), new THREE.MeshBasicMaterial({ map: this.texture }));
+    // Ocean sphere (also the raycast target for clicks) and vector country fills.
+    this.sphere = new THREE.Mesh(new THREE.SphereGeometry(SURFACE, 128, 96), new THREE.MeshBasicMaterial({ color: COLORS.ocean }));
     this.scene.add(this.sphere);
+    this.fillGroup = new THREE.Group();
+    this.fillsByCode = new Map();
+    this.buildFills();
+    this.scene.add(this.fillGroup);
 
     // Soft atmosphere rim.
     const glow = new THREE.Mesh(
@@ -101,8 +105,7 @@ export class Globe {
       const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), dt = performance.now() - down.t;
       down = null;
       if (moved > 6 || dt > 500) return;
-      const code = this.pick(e.clientX, e.clientY);
-      if (code) this.onPick(code);
+      this.onPick(this.pick(e.clientX, e.clientY));
     });
 
     this.resize();
@@ -120,6 +123,38 @@ export class Globe {
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
   }
 
+  /** Triangulate every polygon into a mesh per feature; fills hug the sphere. */
+  buildFills() {
+    const edge = (a, b) => Math.hypot((a[0] - b[0]) * Math.cos(((a[1] + b[1]) / 2) * (Math.PI / 180)), a[1] - b[1]);
+    for (const f of this.features) {
+      const pos = [];
+      const push = (p) => { const v = latLonToVec3(p[1], p[0], FILL_R); pos.push(v.x, v.y, v.z); };
+      const emit = (a, b, c, depth) => {
+        const e = [edge(a, b), edge(b, c), edge(c, a)];
+        const i = e.indexOf(Math.max(e[0], e[1], e[2]));
+        if (e[i] > SUBDIV_DEG && depth < 40) {
+          const [p, q, r] = i === 0 ? [a, b, c] : i === 1 ? [b, c, a] : [c, a, b];
+          const m = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+          emit(p, m, r, depth + 1); emit(m, q, r, depth + 1);
+        } else { push(a); push(b); push(c); }
+      };
+      for (const poly of f.polygons) {
+        const contour = poly[0].slice(0, -1).map(([x, y]) => new THREE.Vector2(x, y));
+        const holes = poly.slice(1).map((r) => r.slice(0, -1).map(([x, y]) => new THREE.Vector2(x, y)));
+        const tris = THREE.ShapeUtils.triangulateShape(contour, holes);
+        const all = [...contour, ...holes.flat()];
+        for (const [a, b, c] of tris) emit([all[a].x, all[a].y], [all[b].x, all[b].y], [all[c].x, all[c].y], 0);
+      }
+      if (!pos.length) continue;
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: COLORS.land, side: THREE.DoubleSide }));
+      mesh.userData.code = f.code;
+      this.fillGroup.add(mesh);
+      if (f.code) { if (!this.fillsByCode.has(f.code)) this.fillsByCode.set(f.code, []); this.fillsByCode.get(f.code).push(mesh); }
+    }
+  }
+
   buildBorders() {
     const pos = [];
     for (const f of this.features) for (const poly of f.polygons) for (const ring of poly) {
@@ -128,7 +163,7 @@ export class Globe {
         // Skip Natural Earth's seams along the antimeridian and the south pole.
         if (Math.abs(lon1) > 179.99 && Math.abs(lon2) > 179.99) continue;
         if (lat1 < -89.99 && lat2 < -89.99) continue;
-        const a = latLonToVec3(lat1, lon1, 1.0015), b = latLonToVec3(lat2, lon2, 1.0015);
+        const a = latLonToVec3(lat1, lon1, BORDER_R), b = latLonToVec3(lat2, lon2, BORDER_R);
         pos.push(a.x, a.y, a.z, b.x, b.y, b.z);
       }
     }
@@ -150,30 +185,11 @@ export class Globe {
     return new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x9aa7b4, size: 0.25, sizeAttenuation: true, transparent: true, opacity: 0.7 }));
   }
 
-  /** Repaint the equirectangular texture with the current highlight colours. */
+  /** Apply the current highlight colours to the fill meshes. */
   paint() {
-    const g = this.ctx;
-    g.fillStyle = COLORS.ocean; g.fillRect(0, 0, TEX_W, TEX_H);
-    const X = (lon) => ((lon + 180) / 360) * TEX_W, Y = (lat) => ((90 - lat) / 180) * TEX_H;
-    for (const f of this.features) {
-      g.fillStyle = (f.code && this.highlights.get(f.code)) || COLORS.land;
-      for (const poly of f.polygons) {
-        g.beginPath();
-        for (const ring of poly) {
-          g.moveTo(X(ring[0][0]), Y(ring[0][1]));
-          for (let i = 1; i < ring.length; i++) g.lineTo(X(ring[i][0]), Y(ring[i][1]));
-          g.closePath();
-        }
-        g.fill('evenodd');
-      }
+    for (const mesh of this.fillGroup.children) {
+      mesh.material.color.set((mesh.userData.code && this.highlights.get(mesh.userData.code)) || COLORS.land);
     }
-    // Specks: make sure 1-pixel territories still show as a dot in their colour.
-    for (const [code, color] of this.highlights) {
-      const c = this.countries.get(code);
-      if (!c || (c.hasShape && c.span > 0.4)) continue;
-      g.fillStyle = color; g.beginPath(); g.arc(X(c.latlng[1]), Y(c.latlng[0]), 3, 0, Math.PI * 2); g.fill();
-    }
-    this.texture.needsUpdate = true;
   }
 
   /** Replace the highlight set: Map<code, cssColor>. */
@@ -189,7 +205,7 @@ export class Globe {
       if (!s) {
         s = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.markerTexture, sizeAttenuation: false, transparent: true, depthWrite: false }));
         s.scale.setScalar(0.03);
-        s.position.copy(latLonToVec3(c.latlng[0], c.latlng[1], 1.02));
+        s.position.copy(latLonToVec3(c.latlng[0], c.latlng[1], MARK_R));
         this.markerGroup.add(s); this.markers.set(code, s);
       }
       s.material.color.set(color);
@@ -205,15 +221,20 @@ export class Globe {
     const hit = ray.intersectObject(this.sphere, false)[0];
     if (!hit) return null;
     const [lat, lon] = vec3ToLatLon(hit.point);
-    return countryAt(this.features, this.countryList, lat, lon);
+    // Snap tolerance of ~12 screen pixels, converted to degrees at this zoom.
+    const degPerPx = ((2 * (this.camera.position.length() - 1) * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2))) / r.height) * (180 / Math.PI);
+    const tol = Math.min(2, 18 * degPerPx);
+    return pickCountry(this.features, this.countryList, lat, lon, tol);
   }
 
   /** Text sprite for a country name. Returns { texture, wfrac: text width as a fraction of the canvas }. */
   static nameTexture(text) {
     const W = 512, H = 96, c = document.createElement('canvas'); c.width = W; c.height = H;
     const g = c.getContext('2d');
-    const size = text.length > 22 ? 36 : text.length > 14 ? 46 : 58;
-    g.font = `700 ${size}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+    let size = text.length > 22 ? 36 : text.length > 14 ? 46 : 58;
+    const font = (px) => `700 ${px}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+    g.font = font(size);
+    while (size > 22 && g.measureText(text).width > W - 20) { size -= 2; g.font = font(size); } // long names shrink to fit
     g.textAlign = 'center'; g.textBaseline = 'middle';
     g.lineJoin = 'round'; g.lineWidth = 10; g.strokeStyle = 'rgba(8, 12, 18, 0.95)';
     g.strokeText(text, W / 2, H / 2 + 2);
@@ -230,7 +251,7 @@ export class Globe {
       const { texture, wfrac } = Globe.nameTexture(c.name);
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, sizeAttenuation: false, transparent: true, depthWrite: false, depthTest: false }));
       const pos = c.label || c.latlng;
-      sp.position.copy(latLonToVec3(pos[0], pos[1], 1.015));
+      sp.position.copy(latLonToVec3(pos[0], pos[1], MARK_R));
       sp.userData = { code: c.code, span: c.hasShape ? Math.min(c.span > 180 ? 60 : c.span, 60) : 0.3, dir: sp.position.clone().normalize(), wfrac };
       this.nameGroup.add(sp);
     }
@@ -272,7 +293,7 @@ export class Globe {
     for (const sp of this.nameGroup.children) {
       const { span, dir, wfrac, code } = sp.userData;
       sp.visible = false;
-      if (span < d * 7 || dir.dot(camDir) <= 0.25) continue;
+      if ((span < d * 7 && d > 0.12) || dir.dot(camDir) <= 0.25) continue; // zoomed right in, show everything
       if (this.nameExclude && this.nameExclude.has(code)) continue;
       v.copy(sp.position).project(this.camera);
       const cx = (v.x + 1) / 2 * w, cy = (1 - v.y) / 2 * h;
@@ -301,6 +322,10 @@ export class Globe {
    * `labels` is [{ latlng, text, color }] for numbered points.
    */
   setPath(segments, labels) {
+    this.pathSegments = segments; this.pathLabels = labels;
+    this.pathBuiltAt = this.camera.position.length();
+    // Tube radius follows the zoom so the path never buries small islands.
+    const radius = THREE.MathUtils.clamp(0.0045 * ((this.pathBuiltAt - 1) / 1.5), 0.00025, 0.0045);
     for (const g of [this.pathGroup, this.labelGroup]) {
       for (const child of [...g.children]) { child.geometry?.dispose(); child.material?.map?.dispose?.(); child.material?.dispose(); g.remove(child); }
     }
@@ -312,16 +337,16 @@ export class Globe {
       const pts = [];
       for (let i = 0; i <= n; i++) {
         const t = i / n;
-        pts.push(Globe.slerp(a, b, t).multiplyScalar(1.012 + lift * Math.sin(Math.PI * t)));
+        pts.push(Globe.slerp(a, b, t).multiplyScalar(MARK_R + lift * Math.sin(Math.PI * t)));
       }
       const curve = new THREE.CatmullRomCurve3(pts);
-      const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, n * 2, 0.0045, 8, false), new THREE.MeshBasicMaterial({ color: seg.color }));
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, n * 2, radius, 8, false), new THREE.MeshBasicMaterial({ color: seg.color }));
       this.pathGroup.add(tube);
     }
     for (const l of labels) {
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: Globe.labelTexture(l.text, l.color), sizeAttenuation: false, transparent: true, depthWrite: false }));
       sp.scale.setScalar(0.042);
-      sp.position.copy(latLonToVec3(l.latlng[0], l.latlng[1], 1.03));
+      sp.position.copy(latLonToVec3(l.latlng[0], l.latlng[1], MARK_R + radius * 2.5)); // above the tube ends
       this.labelGroup.add(sp);
     }
   }
@@ -349,6 +374,11 @@ export class Globe {
       if (t >= 1) this.flight = null;
     }
     this.controls.update();
+    // Rebuild the path when the zoom has changed enough for its thickness to look wrong.
+    if (this.pathSegments && this.pathSegments.length) {
+      const d = this.camera.position.length();
+      if (Math.abs(Math.log((d - 1) / (this.pathBuiltAt - 1))) > 0.2) this.setPath(this.pathSegments, this.pathLabels);
+    }
     this.updateNames();
     this.renderer.render(this.scene, this.camera);
   }

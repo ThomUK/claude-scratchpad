@@ -120,6 +120,37 @@ export function countryAt(features, countries, lat, lon) {
   return best;
 }
 
+/**
+ * Forgiving pick for map clicks. Exact containment wins for small countries;
+ * otherwise a small country (span < 1.5°) whose outline lies within `tolDeg`
+ * of the click beats the big country underneath (Vatican inside Rome, Monaco,
+ * Gibraltar), and a click in the sea snaps to the nearest outline within
+ * `tolDeg`. Returns a code or null.
+ */
+export function pickCountry(features, countries, lat, lon, tolDeg = 0) {
+  const exact = countryAt(features, countries, lat, lon);
+  if (tolDeg <= 0) return exact;
+  const spanOf = new Map(countries.map((c) => [c.code, c.hasShape ? c.span : 0]));
+  const isSmall = (code) => (spanOf.get(code) ?? 0) < 1.5;
+  if (exact && isSmall(exact)) return exact;
+  const cosLat = Math.cos(rad(lat));
+  let best = null, bestD = tolDeg;
+  for (const f of features) {
+    if (!f.code || f.code === exact) continue;
+    if (exact && !isSmall(f.code)) continue; // over land, only a small neighbour can steal the click
+    for (const poly of f.polygons) for (const ring of poly) for (const [x, y] of ring) {
+      const d = Math.hypot((x - lon) * cosLat, y - lat);
+      if (d < bestD) { bestD = d; best = f.code; }
+    }
+  }
+  for (const c of countries) {
+    if (c.hasShape) continue;
+    const d = Math.hypot((c.latlng[1] - lon) * cosLat, c.latlng[0] - lat);
+    if (d < bestD) { bestD = d; best = c.code; }
+  }
+  return best ?? exact;
+}
+
 // -------------------------------------------------------------------- game --
 /** What each difficulty reveals. */
 export const DIFFICULTY = {
@@ -235,5 +266,5 @@ export function guessCount(game) {
  */
 export function cameraDistanceForSpan(spanDeg) {
   const s = Math.min(spanDeg > 180 ? 90 : spanDeg, 120);
-  return Math.min(3.4, Math.max(1.55, 1 + s * 0.06));
+  return Math.min(3.4, Math.max(1.12, 1 + s * 0.06));
 }
