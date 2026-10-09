@@ -67,7 +67,7 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .sheet[data-state="collapsed"] .sheet-body { overflow: hidden; }
 .grip { flex: none; height: 26px; min-height: 0; padding: 0; border: 0; border-radius: 18px 18px 0 0; background: none; display: flex; align-items: center; justify-content: center; touch-action: none; }
 .grip span { width: 44px; height: 5px; border-radius: 3px; background: var(--border); }
-.sheet-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 16px calc(16px + var(--safe-b)); -webkit-overflow-scrolling: touch; }
+.sheet-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 16px 16px; -webkit-overflow-scrolling: touch; }
 .titlerow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 0 4px; }
 .chip { min-height: 32px; padding: 4px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; background: var(--accent-soft); color: var(--accent); border-color: transparent; }
 .picker { position: relative; margin: 10px 0 10px; }
@@ -115,7 +115,7 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .chip-item { background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; font-size: 0.85rem; }
 .factlist { margin: 0; padding-left: 18px; font-size: 0.9rem; }
 .factlist li { margin-bottom: 4px; }
-.sheet-footer { flex: none; padding: 10px 16px calc(12px + var(--safe-b)); background: var(--surface); border-top: 1px solid var(--border); }
+.sheet-footer { flex: none; padding: 10px 16px 12px; background: var(--surface); border-top: 1px solid var(--border); } /* the tab bar below already reserves the safe-area inset */
 .sheet-footer .btnrow { margin-top: 0; }
 .sheet-footer .btnrow .primary { flex-basis: 100%; }
 
