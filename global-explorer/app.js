@@ -594,7 +594,7 @@ function valueFor(c, key) {
   switch (key) {
     case 'population': return [fmtN(c.population), 'people'];
     case 'area': return [fmtN(c.area), 'km²'];
-    case 'density': return [fmtDensity(c.density), 'per km²'];
+    case 'density': return [fmtDensity(c.density), 'people per km²'];
     case 'neighbours': return [String(c.borders.length), c.borders.length === 1 ? 'neighbour' : 'neighbours'];
     case 'continent': return [c.continent, ''];
     case 'designation': return [c.designation, ''];
