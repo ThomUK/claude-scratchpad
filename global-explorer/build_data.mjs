@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds data/countries.json and data/world.json for the World Borders game.
+// Builds data/countries.json and data/world.json for the Global Explorer game.
 //
 // Inputs (downloaded separately, not committed):
 //   countries.json     https://raw.githubusercontent.com/mledoze/countries/master/countries.json
@@ -11,7 +11,7 @@
 //   tools dir          a directory with node_modules containing topojson-server and polygon-clipping
 //                      (npm install topojson-server polygon-clipping)
 //
-// Run from world-borders/:
+// Run from global-explorer/:
 //   node build_data.mjs <countries.json> <map_units.geojson> <breakaway.geojson> <tools dir>
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

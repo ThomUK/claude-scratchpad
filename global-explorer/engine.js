@@ -1,4 +1,4 @@
-// World Borders: DOM-free game engine + TopoJSON decoding. Unit-tested with
+// Global Explorer: DOM-free game engine + TopoJSON decoding. Unit-tested with
 // `node tests/engine.test.mjs`; the browser app (app.js, globe.js) only renders.
 
 // ---------------------------------------------------------------- geometry --

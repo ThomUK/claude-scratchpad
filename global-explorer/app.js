@@ -15,8 +15,14 @@ const fold = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const DIR = { N: 'north', NE: 'north-east', E: 'east', SE: 'south-east', S: 'south', SW: 'south-west', W: 'west', NW: 'north-west' };
 
 // --------------------------------------------------------------- storage --
-const KEYS = { settings: 'world-borders.settings', stats: 'world-borders.stats' };
-const load = (k, fallback) => { try { const v = JSON.parse(localStorage.getItem(k)); return v && typeof v === 'object' ? v : fallback; } catch { return fallback; } };
+const KEYS = { settings: 'global-explorer.settings', stats: 'global-explorer.stats' };
+// Earlier builds stored under the old app name; read those if the new keys are empty.
+const load = (k, fallback) => {
+  try {
+    const v = JSON.parse(localStorage.getItem(k) ?? localStorage.getItem(k.replace('global-explorer.', 'world-borders.')));
+    return v && typeof v === 'object' ? v : fallback;
+  } catch { return fallback; }
+};
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage unavailable */ } };
 
 const DEFAULT_SETTINGS = { preset: 'hard', names: false, click: false, distances: true, bearings: false, pool: 'all', units: 'km' };
@@ -51,14 +57,14 @@ async function main() {
   // Old settings stored only a difficulty string; migrate it.
   const legacy = (() => { try { return localStorage.getItem('world-borders.difficulty'); } catch { return null; } })();
   state.settings = { ...DEFAULT_SETTINGS, ...load(KEYS.settings, {}) };
-  if (legacy && DIFFICULTY[legacy] && !localStorage.getItem(KEYS.settings)) state.settings.preset = legacy;
+  if (legacy && DIFFICULTY[legacy] && !localStorage.getItem(KEYS.settings) && !localStorage.getItem('world-borders.settings')) state.settings.preset = legacy;
   state.stats = normalizeStats(load(KEYS.stats, null));
 
   state.globe = new Globe($('globe'), state.features, state.countries);
   state.globe.onPick = (code) => (code ? choose(code) : toast('No country there. Zoom in closer, or type its name.', 'warn'));
   $('loading').remove();
   $('data-note').textContent = `Data: ${cJson.sources.countries}; ${cJson.sources.geometry}. Built ${cJson.generated}.`;
-  window.worldBorders = { state }; // debug handle (used by the browser tests)
+  window.globalExplorer = { state }; // debug handle (used by the browser tests)
 
   wireTabs();
   wireSheet();

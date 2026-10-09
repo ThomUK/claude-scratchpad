@@ -1,4 +1,4 @@
-// World Borders: the three.js globe. Country fills are vector meshes on the
+// Global Explorer: the three.js globe. Country fills are vector meshes on the
 // sphere (triangulated in lon/lat, long edges bisected so they hug the
 // surface), borders are crisp 3D line segments, and tiny or shapeless
 // territories get a screen-space ring marker. Recolouring a country is just a

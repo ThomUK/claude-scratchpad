@@ -1,7 +1,7 @@
-// World Borders service worker: precache the app shell and data so the game
+// Global Explorer service worker: precache the app shell and data so the game
 // works offline and installs as an app. The Pages workflow rewrites every
 // "?v=dev" to the commit SHA, which versions both the cache and the assets.
-const VERSION = 'world-borders?v=dev';
+const VERSION = 'global-explorer?v=dev';
 const ASSETS = [
   './', './index.html', './styles.css?v=dev', './app.js?v=dev', './engine.js?v=dev', './globe.js?v=dev',
   './manifest.webmanifest?v=dev', './icons/icon.svg?v=dev', './icons/icon-192.png?v=dev', './icons/icon-512.png?v=dev',

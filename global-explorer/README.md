@@ -1,6 +1,6 @@
 # Global Explorer — find the mystery country
 
-An educational guessing game on a 3D globe (the directory is still `world-borders/`), laid out as a phone app (bottom
+An educational guessing game on a 3D globe, laid out as a phone app (bottom
 tab bar, full-screen globe with a sliding panel) that also works on the desktop
 web, where the tab bar becomes a side rail. Installable as a web app and works
 offline; the shell is ready for a Capacitor wrap.
@@ -43,7 +43,7 @@ visited). The top 10 are the published 2024 figures; ranks 11–80 are a
 reconstruction of the ONS country table and live in `build_data.mjs`
 (`EASY_POOL`) for correction. The start country can still be anywhere.
 
-Live: https://thomuk.github.io/claude-scratchpad/world-borders/
+Live: https://thomuk.github.io/claude-scratchpad/global-explorer/
 
 ## How it works
 

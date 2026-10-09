@@ -1,4 +1,4 @@
-// Run: node tests/engine.test.mjs   (from world-borders/)
+// Run: node tests/engine.test.mjs   (from global-explorer/)
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
