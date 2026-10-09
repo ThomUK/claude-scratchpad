@@ -53,16 +53,24 @@ export class Globe {
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.08;
+    this.controls.dampingFactor = 0.2; // responsive: the globe follows the finger, with a short glide
     this.controls.enablePan = false;
     this.controls.minDistance = 1.04; // close enough to click the smallest islands
     this.controls.maxDistance = 4.5;
-    this.controls.rotateSpeed = 0.6;
+    this.controls.rotateSpeed = 0.3; // overridden every frame by updateRotateSpeed()
     this.controls.zoomSpeed = 0.8;
     this.controls.zoomToCursor = true; // zoom towards the pointer, so small islands can be homed in on
     this.controls.autoRotate = true;
     this.controls.autoRotateSpeed = 0.5;
     this.controls.addEventListener('start', () => { this.flight = null; this.controls.autoRotate = false; });
+    // OrbitControls spins about the pole, so a sideways drag moves mid-latitude
+    // ground by only cos(latitude). Scale the azimuth so the ground under the
+    // pointer keeps up with it wherever the view is centred (capped near the poles).
+    const rotateLeft = this.controls._rotateLeft.bind(this.controls);
+    this.controls._rotateLeft = (angle) => {
+      const lat = Math.PI / 2 - this.controls.getPolarAngle();
+      rotateLeft(angle / Math.max(0.25, Math.cos(lat)));
+    };
 
     // Ocean sphere (also the raycast target for clicks) and vector country fills.
     this.sphere = new THREE.Mesh(new THREE.SphereGeometry(SURFACE, 128, 96), new THREE.MeshBasicMaterial({ color: COLORS.ocean }));
@@ -362,7 +370,20 @@ export class Globe {
     this.flight = { from, to, start: performance.now(), duration, fromDir: from.clone().normalize(), toDir: to.clone().normalize() };
   }
 
+  /**
+   * Make a drag feel like a finger on the ground: the surface point under the
+   * pointer should move with it. OrbitControls rotates 2π·rotateSpeed per
+   * viewport height of drag; the ground under the pointer spans about
+   * 2(d−1)·tan(fov/2) radians per viewport height, so match the two.
+   */
+  updateRotateSpeed() {
+    const d = this.camera.position.length() - 1;
+    const want = (d * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2))) / Math.PI;
+    this.controls.rotateSpeed = THREE.MathUtils.clamp(want, 0.003, 0.45);
+  }
+
   frame() {
+    this.updateRotateSpeed();
     if (this.flight) {
       const f = this.flight;
       const t = Math.min(1, (performance.now() - f.start) / f.duration);
