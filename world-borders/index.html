@@ -73,6 +73,22 @@
     </aside>
   </main>
 
+  <section class="wrap">
+    <details class="panel accordion" id="ref">
+      <summary><span>Country reference</span> <span class="muted small">all 250 countries and territories · click a heading to sort, a row to show it on the globe</span></summary>
+      <div class="ref-tools">
+        <input id="ref-filter" type="search" placeholder="Filter by name, continent or designation…" autocomplete="off" />
+        <span class="muted small" id="ref-count"></span>
+      </div>
+      <div class="ref-scroll">
+        <table class="ref">
+          <thead><tr id="ref-head"></tr></thead>
+          <tbody id="ref-body"></tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+
   <script type="module" src="app.js?v=dev"></script>
 </body>
 </html>

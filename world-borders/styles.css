@@ -129,3 +129,29 @@ button.ghost { color: var(--muted); }
 .factlist { margin: 0; padding-left: 18px; font-size: 0.9rem; }
 .factlist li { margin-bottom: 4px; }
 .footnote { margin: 18px 0 0; font-size: 0.72rem; }
+
+.wrap { max-width: 1280px; margin: 0 auto; padding: 0 16px 48px; }
+.accordion summary { cursor: pointer; list-style: none; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; font-weight: 600; font-size: 1.05rem; }
+.accordion summary::-webkit-details-marker { display: none; }
+.accordion summary::before { content: '▸'; color: var(--accent); margin-right: 2px; }
+.accordion[open] summary::before { content: '▾'; }
+.ref-tools { display: flex; align-items: center; gap: 12px; margin: 14px 0 10px; }
+.ref-tools input { flex: 1; max-width: 420px; font: inherit; padding: 8px 10px; border-radius: 8px; background: #0f1620; color: var(--text); border: 1px solid var(--panel-border); }
+.ref-tools input:focus { outline: none; border-color: var(--accent); }
+.ref-scroll { max-height: 70vh; overflow: auto; border: 1px solid var(--panel-border); border-radius: 10px; }
+.ref { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.ref th { position: sticky; top: 0; background: #141b25; text-align: left; padding: 0; border-bottom: 1px solid var(--panel-border); z-index: 1; }
+.ref th.num, .ref td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.ref th .sort { width: 100%; text-align: inherit; font: inherit; font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); background: none; border: 0; border-radius: 0; padding: 10px 10px; cursor: pointer; white-space: nowrap; }
+.ref th .sort:hover, .ref th .sort.on { color: var(--accent); }
+.ref td { padding: 7px 10px; border-bottom: 1px solid var(--panel-border); }
+.ref td.flagcell { font-size: 1.15rem; width: 1.6em; padding-right: 0; }
+.ref tbody tr { cursor: pointer; }
+.ref tbody tr:hover, .ref tbody tr:focus-visible { background: #18222f; outline: none; }
+/* Flag and name stay pinned while the rest scrolls sideways on narrow screens. */
+.ref th:nth-child(1), .ref td:nth-child(1) { position: sticky; left: 0; z-index: 2; background: var(--panel); }
+.ref th:nth-child(2), .ref td:nth-child(2) { position: sticky; left: 2.3em; z-index: 2; background: var(--panel); box-shadow: 4px 0 6px -4px rgba(0, 0, 0, 0.6); }
+.ref th:nth-child(1), .ref th:nth-child(2) { background: #141b25; z-index: 3; }
+.ref tbody tr:hover td:nth-child(1), .ref tbody tr:hover td:nth-child(2) { background: #18222f; }
+.ref-tools .small { white-space: nowrap; }
+@media (max-width: 640px) { .ref { font-size: 0.8rem; } .ref td, .ref th .sort { padding-left: 6px; padding-right: 6px; } .ref td:nth-child(2) { max-width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }

@@ -151,6 +151,28 @@ export function pickCountry(features, countries, lat, lon, tolDeg = 0) {
   return best ?? exact;
 }
 
+/**
+ * Sort countries for the reference table. Numeric keys sort numbers with
+ * nulls last; other keys sort as text. `dir` is 'asc' or 'desc'. Ties and
+ * equal values fall back to name order so the result is stable.
+ */
+export const NUMERIC_KEYS = new Set(['population', 'area', 'neighbours']);
+export function sortCountries(countries, key, dir = 'asc') {
+  const sign = dir === 'desc' ? -1 : 1;
+  const val = (c) => (key === 'neighbours' ? c.borders.length : c[key]);
+  return [...countries].sort((a, b) => {
+    const x = val(a), y = val(b);
+    let r;
+    if (NUMERIC_KEYS.has(key)) {
+      if (x == null && y == null) r = 0;
+      else if (x == null) return 1;
+      else if (y == null) return -1;
+      else r = x - y;
+    } else r = String(x).localeCompare(String(y), 'en');
+    return r !== 0 ? r * sign : a.name.localeCompare(b.name, 'en');
+  });
+}
+
 // -------------------------------------------------------------------- game --
 /** What each difficulty reveals. */
 export const DIFFICULTY = {

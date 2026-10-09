@@ -31,6 +31,12 @@ An educational guessing game on a 3D globe.
 
 Live: https://thomuk.github.io/claude-scratchpad/world-borders/
 
+Below the game, a collapsible **Country reference** lists all 250 countries and
+territories with flag, continent, designation (UN member, UN observer, territory
+of …, partially recognised, disputed, Antarctic Treaty), population, land area
+and number of land neighbours. Click a heading to sort, type to filter, click a
+row to fly the globe there.
+
 ## How it works
 
 - `engine.js` — DOM-free rules: haversine distance, warmer/cooler, round state,

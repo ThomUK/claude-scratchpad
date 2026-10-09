@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import {
   haversineKm, initialBearing, compassPoint, formatKm, decodeTopology,
   createGame, makeGuess, giveUp, referenceDistance, guessCount, cameraDistanceForSpan,
-  rhumbBearing, directionClue, useClue, countryAt, pickCountry, DIFFICULTY, targetPool,
+  rhumbBearing, directionClue, useClue, countryAt, pickCountry, DIFFICULTY, targetPool, sortCountries,
 } from '../engine.js';
 
 let n = 0;
@@ -178,6 +178,36 @@ check('easy pool: 50 distinct, valid codes; Easy targets come only from it, othe
   const hardSeen = new Set();
   for (let i = 0; i < 250; i++) hardSeen.add(createGame(countries, 'GBR', { rng: () => i / 250, difficulty: 'hard', pools: data.pools }).targetCode);
   assert.ok([...hardSeen].some((c) => !poolSet.has(c)));
+});
+
+check('data: every country has a continent and a designation', () => {
+  const continents = new Set(countries.map((c) => c.continent));
+  assert.deepEqual([...continents].sort(), ['Africa', 'Antarctica', 'Asia', 'Europe', 'North America', 'Oceania', 'South America']);
+  assert.equal(C('BRA').continent, 'South America'); assert.equal(C('JAM').continent, 'North America');
+  assert.equal(C('GBR').designation, 'UN member'); assert.equal(C('BMU').designation, 'Territory of United Kingdom');
+  assert.equal(C('VAT').designation, 'UN observer'); assert.equal(C('UNK').designation, 'Partially recognised');
+  assert.equal(C('ATA').designation, 'Antarctic Treaty'); assert.equal(C('ESH').designation, 'Disputed');
+  for (const c of countries) assert.ok(c.designation && c.continent, `${c.code} designation/continent`);
+});
+
+check('sortCountries: numeric keys with nulls last, text keys by locale, stable by name', () => {
+  const byPop = sortCountries(countries, 'population', 'desc');
+  assert.equal(byPop[0].code, 'CHN'); assert.equal(byPop[1].code, 'IND');
+  assert.equal(byPop[byPop.length - 1].population == null || byPop[byPop.length - 1].population === 0, true);
+  const byPopAsc = sortCountries(countries, 'population', 'asc');
+  assert.ok(byPopAsc.every((c, i) => i === 0 || c.population == null || byPopAsc[i - 1].population == null || byPopAsc[i - 1].population <= c.population));
+  const firstNull = byPopAsc.findIndex((c) => c.population == null);
+  assert.ok(firstNull === -1 || byPopAsc.slice(firstNull).every((c) => c.population == null), 'nulls at the end even ascending');
+  assert.ok(sortCountries([{ name: 'a', population: null, borders: [] }, { name: 'b', population: 5, borders: [] }], 'population', 'asc')[0].name === 'b');
+  assert.equal(sortCountries(countries, 'area', 'desc')[0].code, 'RUS');
+  const byN = sortCountries(countries, 'neighbours', 'desc');
+  assert.equal(byN[0].code, 'CHN'); assert.equal(byN[1].code, 'RUS');
+  const byName = sortCountries(countries, 'name', 'asc');
+  assert.equal(byName[0].code, 'AFG');
+  const byCont = sortCountries(countries, 'continent', 'asc');
+  assert.equal(byCont[0].continent, 'Africa'); assert.equal(byCont[0].code, 'DZA'); // ties broken by name
+  assert.equal(sortCountries(countries, 'name', 'desc')[0].code, 'ZWE');
+  assert.equal(countries.length, 250, 'input not mutated');
 });
 
 check('createGame: never picks the start as the target; honours the pool and rng', () => {

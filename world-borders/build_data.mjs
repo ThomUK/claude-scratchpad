@@ -188,6 +188,18 @@ const countries = rc.map((c) => {
   const b = bbox.get(code) || null;
   const span = b ? Math.max(b[2] - b[0], b[3] - b[1]) : 0;
   const langs = Object.values(c.languages || {});
+  // Continent: split the Americas by subregion; otherwise the UN region.
+  const continent = c.region === 'Americas'
+    ? (c.subregion === 'South America' ? 'South America' : 'North America')
+    : c.region === 'Antarctic' ? 'Antarctica' : c.region;
+  // Designation: how the place stands politically, in a few words.
+  const designation = dep && dep[0] ? `Territory of ${byCode.get(dep[0]).name.common}`
+    : (UN_FIX[code] ?? c.unMember) ? 'UN member'
+    : code === 'VAT' || code === 'PSE' ? 'UN observer'
+    : code === 'ATA' ? 'Antarctic Treaty'
+    : code === 'ESH' ? 'Disputed'
+    : dep ? 'Partially recognised'
+    : 'Sovereign';
   const currs = Object.values(c.currencies || {}).map((x) => x.name);
   const facts = [];
 
@@ -225,7 +237,7 @@ const countries = rc.map((c) => {
 
   return {
     code, name, official: c.name.official, flag: c.flag, cca2: c.cca2,
-    capital: c.capital, region: c.region, subregion: c.subregion,
+    capital: c.capital, region: c.region, subregion: c.subregion, continent, designation,
     population, area: c.area, latlng: c.latlng, borders: c.borders,
     landlocked: c.landlocked, independent: !!c.independent, unMember: UN_FIX[code] ?? c.unMember,
     languages: langs, currencies: currs,

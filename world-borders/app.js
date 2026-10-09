@@ -1,5 +1,5 @@
 // World Borders: UI glue. Game rules live in engine.js, rendering in globe.js.
-import { decodeTopology, createGame, makeGuess, giveUp, formatKm, guessCount, haversineKm, initialBearing, compassPoint, directionClue, useClue, DIFFICULTY } from './engine.js?v=dev';
+import { decodeTopology, createGame, makeGuess, giveUp, formatKm, guessCount, haversineKm, initialBearing, compassPoint, directionClue, useClue, DIFFICULTY, sortCountries, NUMERIC_KEYS } from './engine.js?v=dev';
 import { Globe, COLORS } from './globe.js?v=dev';
 
 const $ = (id) => document.getElementById(id);
@@ -48,10 +48,64 @@ async function main() {
   applyDifficultyToGlobe();
   $('data-note').textContent = `Data: ${cJson.sources.countries}; ${cJson.sources.geometry}. Built ${cJson.generated}.`;
   wirePicker();
+  wireTable();
   $('btn-giveup').addEventListener('click', onGiveUp);
   $('btn-clue').addEventListener('click', onClue);
   $('btn-newstart').addEventListener('click', () => resetToPickStart());
   render();
+}
+
+// ------------------------------------------------------- reference table --
+const TABLE_COLS = [
+  { key: 'flag', label: '', sortable: false },
+  { key: 'name', label: 'Country' },
+  { key: 'continent', label: 'Continent' },
+  { key: 'designation', label: 'Designation' },
+  { key: 'population', label: 'Population', numeric: true },
+  { key: 'area', label: 'Land area (km²)', numeric: true },
+  { key: 'neighbours', label: 'Neighbours', numeric: true },
+];
+const table = { key: 'name', dir: 'asc' };
+
+function wireTable() {
+  const head = $('ref-head');
+  for (const col of TABLE_COLS) {
+    const th = el('th', col.numeric ? 'num' : '', '');
+    if (col.sortable === false) { head.append(th); continue; }
+    const b = el('button', 'sort', col.label); b.type = 'button'; b.dataset.key = col.key;
+    b.addEventListener('click', () => {
+      if (table.key === col.key) table.dir = table.dir === 'asc' ? 'desc' : 'asc';
+      else { table.key = col.key; table.dir = NUMERIC_KEYS.has(col.key) ? 'desc' : 'asc'; }
+      renderTable();
+    });
+    th.append(b);
+    head.append(th);
+  }
+  $('ref-filter').addEventListener('input', renderTable);
+  $('ref').addEventListener('toggle', () => { if ($('ref').open) renderTable(); });
+}
+
+function renderTable() {
+  const body = $('ref-body');
+  const q = fold($('ref-filter').value.trim());
+  const rows = sortCountries(state.countries, table.key, table.dir).filter((c) => !q || fold(c.name).includes(q) || fold(c.continent).includes(q) || fold(c.designation).includes(q));
+  for (const b of document.querySelectorAll('#ref-head .sort')) {
+    const on = b.dataset.key === table.key;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-sort', on ? (table.dir === 'asc' ? 'ascending' : 'descending') : 'none');
+    b.textContent = TABLE_COLS.find((c) => c.key === b.dataset.key).label + (on ? (table.dir === 'asc' ? ' ▲' : ' ▼') : '');
+  }
+  body.replaceChildren();
+  for (const c of rows) {
+    const tr = el('tr'); tr.tabIndex = 0; tr.title = `Show ${c.name} on the globe`;
+    tr.append(el('td', 'flagcell', c.flag), el('td', null, c.name), el('td', null, c.continent), el('td', null, c.designation));
+    tr.append(el('td', 'num', c.population == null ? '—' : fmtN(c.population)), el('td', 'num', fmtN(c.area)), el('td', 'num', String(c.borders.length)));
+    const go = () => { state.globe.flyTo(c.code); $('globe-wrap').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };
+    tr.addEventListener('click', go);
+    tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+    body.append(tr);
+  }
+  $('ref-count').textContent = `${rows.length} of ${state.countries.length}`;
 }
 
 // -------------------------------------------------------------- difficulty --
