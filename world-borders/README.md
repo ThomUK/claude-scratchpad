@@ -33,7 +33,8 @@ Live: https://thomuk.github.io/claude-scratchpad/world-borders/
 
 Below the game, a collapsible **Country reference** lists all 250 countries and
 territories with flag, continent, designation (UN member, UN observer, territory
-of …, partially recognised, disputed, Antarctic Treaty), population, land area
+of …, partially recognised, disputed, Antarctic Treaty), population, land area,
+population density,
 number of land neighbours, and a tick for the countries Easy mode can pick.
 Click a heading to sort, type to filter, click a row to highlight it on the
 globe, and ⓘ for the same info card the game shows when you find a country.

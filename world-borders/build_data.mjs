@@ -177,6 +177,8 @@ const POP_FIX = { GIB: 32700, BVT: 0, UMI: 0 };
 const UN_FIX = { VAT: false };
 const areaRank = [...rc].sort((a, b) => b.area - a.area).map((c) => c.cca3);
 const popRank = [...rc].filter((c) => (pop.get(c.cca3) ?? POP_FIX[c.cca3]) > 0).sort((a, b) => pop.get(b.cca3) - pop.get(a.cca3)).map((c) => c.cca3);
+const densityOf = (c) => { const p = pop.get(c.cca3) ?? POP_FIX[c.cca3]; return p != null && c.area > 0 ? p / c.area : null; };
+const densityRank = [...rc].filter((c) => densityOf(c) > 0).sort((a, b) => densityOf(b) - densityOf(a)).map((c) => c.cca3);
 const N = rc.length;
 const maxBorders = Math.max(...rc.map((c) => c.borders.length));
 
@@ -222,6 +224,11 @@ const countries = rc.map((c) => {
   if (pRank > 0 && pRank <= 10) facts.push(`It is the ${nth(pRank)}most populous, with about ${fmt(population)} people.`);
   else if (population === 0 || (pRank > 0 && population < 1000)) facts.push(population === 0 ? 'It has no permanent population.' : `Fewer than 1,000 people live there.`);
 
+  const density = densityOf(c);
+  const dRank = densityRank.indexOf(code) + 1;
+  if (dRank > 0 && dRank <= 5) facts.push(`It is the ${nth(dRank)}most densely populated place, with about ${fmt(density)} people per km².`);
+  else if (density != null && density > 0 && density < 5 && population > 1000) facts.push(`It is very sparsely populated: about ${density < 1 ? density.toFixed(2) : density.toFixed(1)} people per km².`);
+
   if (c.landlocked) facts.push('It is landlocked: it has no coastline.');
   else if (c.borders.length === 0 && code !== 'ATA') facts.push('It has no land borders at all: it is entirely surrounded by sea.');
   if (c.borders.length === maxBorders) facts.push(`With ${c.borders.length} neighbours it shares land borders with more countries than any other.`);
@@ -238,7 +245,7 @@ const countries = rc.map((c) => {
   return {
     code, name, official: c.name.official, flag: c.flag, cca2: c.cca2,
     capital: c.capital, region: c.region, subregion: c.subregion, continent, designation,
-    population, area: c.area, latlng: c.latlng, borders: c.borders,
+    population, area: c.area, density: density == null ? null : +density.toFixed(density < 10 ? 2 : 1), latlng: c.latlng, borders: c.borders,
     landlocked: c.landlocked, independent: !!c.independent, unMember: UN_FIX[code] ?? c.unMember,
     languages: langs, currencies: currs,
     dependentOf: dep ? dep[0] : null,

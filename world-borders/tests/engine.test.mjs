@@ -200,6 +200,12 @@ check('sortCountries: numeric keys with nulls last, text keys by locale, stable 
   assert.ok(firstNull === -1 || byPopAsc.slice(firstNull).every((c) => c.population == null), 'nulls at the end even ascending');
   assert.ok(sortCountries([{ name: 'a', population: null, borders: [] }, { name: 'b', population: 5, borders: [] }], 'population', 'asc')[0].name === 'b');
   assert.equal(sortCountries(countries, 'area', 'desc')[0].code, 'RUS');
+  const byDensity = sortCountries(countries, 'density', 'desc');
+  assert.ok(['MAC', 'MCO', 'SGP', 'HKG'].includes(byDensity[0].code), `densest is ${byDensity[0].code}`);
+  close(C('GBR').density, C('GBR').population / C('GBR').area, 0.1, 'density = population / area');
+  assert.equal(C('BVT').density, 0); assert.equal(C('ATA').density < 0.01, true);
+  assert.match(C('MCO').facts.join(' '), /densely populated/);
+  assert.match(C('MNG').facts.join(' '), /sparsely populated/);
   const byN = sortCountries(countries, 'neighbours', 'desc');
   assert.equal(byN[0].code, 'CHN'); assert.equal(byN[1].code, 'RUS');
   const byName = sortCountries(countries, 'name', 'asc');

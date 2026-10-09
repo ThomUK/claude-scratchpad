@@ -5,6 +5,7 @@ import { Globe, COLORS } from './globe.js?v=dev';
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const fmtN = (n) => (n == null ? '—' : Math.round(n).toLocaleString('en-GB'));
+const fmtDensity = (d) => (d == null ? '—' : d < 10 ? d.toLocaleString('en-GB', { maximumFractionDigits: d < 1 ? 2 : 1 }) : fmtN(d));
 const fold = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 const state = {
@@ -66,6 +67,7 @@ const TABLE_COLS = [
   { key: 'designation', label: 'Designation' },
   { key: 'population', label: 'Population', numeric: true },
   { key: 'area', label: 'Land area (km²)', numeric: true },
+  { key: 'density', label: 'People / km²', numeric: true },
   { key: 'neighbours', label: 'Neighbours', numeric: true },
   { key: 'easy', label: 'Easy mode', numeric: true },
   { key: 'info', label: '', sortable: false },
@@ -124,7 +126,7 @@ function renderTable() {
     const tr = el('tr'); tr.tabIndex = 0; tr.title = `Show ${c.name} on the globe`; tr.dataset.code = c.code;
     tr.classList.toggle('selected', state.browse === c.code);
     tr.append(el('td', 'flagcell', c.flag), el('td', null, c.name), el('td', null, c.continent), el('td', null, c.designation));
-    tr.append(el('td', 'num', c.population == null ? '—' : fmtN(c.population)), el('td', 'num', fmtN(c.area)), el('td', 'num', String(c.borders.length)));
+    tr.append(el('td', 'num', c.population == null ? '—' : fmtN(c.population)), el('td', 'num', fmtN(c.area)), el('td', 'num', fmtDensity(c.density)), el('td', 'num', String(c.borders.length)));
     const easy = el('td', 'num easy', c.easy ? '✓' : ''); easy.title = c.easy ? 'Can be the mystery country on Easy' : ''; tr.append(easy);
     const ib = el('button', 'infobtn', 'ⓘ'); ib.type = 'button'; ib.setAttribute('aria-label', `About ${c.name}`); ib.title = `About ${c.name}`;
     ib.addEventListener('click', (e) => { e.stopPropagation(); showInfo(c.code); });
@@ -360,6 +362,7 @@ function countryCard(c, startCode) {
   add('Status', c.designation);
   add('Population', c.population == null ? 'unknown' : fmtN(c.population));
   add('Area', `${fmtN(c.area)} km²`);
+  add('Density', c.density == null ? '—' : `${fmtDensity(c.density)} people per km²`);
   add('Region', c.subregion || c.region);
   add('Languages', c.languages.length ? c.languages.join(', ') : '—');
   add('Currency', c.currencies.length ? c.currencies.join(', ') : '—');

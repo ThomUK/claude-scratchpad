@@ -156,7 +156,7 @@ export function pickCountry(features, countries, lat, lon, tolDeg = 0) {
  * nulls last; other keys sort as text. `dir` is 'asc' or 'desc'. Ties and
  * equal values fall back to name order so the result is stable.
  */
-export const NUMERIC_KEYS = new Set(['population', 'area', 'neighbours', 'easy']);
+export const NUMERIC_KEYS = new Set(['population', 'area', 'density', 'neighbours', 'easy']);
 export function sortCountries(countries, key, dir = 'asc') {
   const sign = dir === 'desc' ? -1 : 1;
   const val = (c) => (key === 'neighbours' ? c.borders.length : key === 'easy' ? (c.easy ? 1 : 0) : c[key]);
