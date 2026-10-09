@@ -124,15 +124,15 @@ export function countryAt(features, countries, lat, lon) {
 /** What each difficulty reveals. */
 export const DIFFICULTY = {
   easy: {
-    label: 'Easy', names: true, click: true, distances: true, bearings: true, clueButton: false,
-    blurb: 'Country names on the map, click the map to guess, and every guess shows its distance and compass direction.',
+    label: 'Easy', names: true, click: true, distances: true, bearings: true, clueButton: false, pool: 'easy',
+    blurb: 'Country names on the map, click the map to guess, every guess shows distance and compass direction, and the mystery country is one of the 50 countries UK residents visit most.',
   },
   intermediate: {
-    label: 'Intermediate', names: true, click: false, distances: true, bearings: false, clueButton: true,
+    label: 'Intermediate', names: true, click: false, distances: true, bearings: false, clueButton: true, pool: null,
     blurb: 'Country names on the map. Guesses show distance; a clue reveals the compass direction.',
   },
   hard: {
-    label: 'Hard', names: false, click: false, distances: true, bearings: false, clueButton: true,
+    label: 'Hard', names: false, click: false, distances: true, bearings: false, clueButton: true, pool: null,
     blurb: 'No names on the map. Guesses show distance; a clue reveals the compass direction.',
   },
 };
@@ -141,8 +141,18 @@ export const DIFFICULTY = {
  * Start a round. `countries` is the full list from data/countries.json;
  * `pool` (optional) restricts which codes may be the hidden target.
  */
-export function createGame(countries, startCode, { rng = Math.random, pool = null, difficulty = 'hard' } = {}) {
+/** The codes a difficulty may pick its target from (null = every country). `pools` is data/countries.json's `pools`. */
+export function targetPool(difficulty, pools) {
+  const key = DIFFICULTY[difficulty]?.pool;
+  if (!key) return null;
+  const p = pools && pools[key];
+  if (!p || !p.codes || !p.codes.length) throw new Error(`pool "${key}" missing from data`);
+  return p.codes;
+}
+
+export function createGame(countries, startCode, { rng = Math.random, pool = null, difficulty = 'hard', pools = null } = {}) {
   if (!DIFFICULTY[difficulty]) throw new Error(`unknown difficulty ${difficulty}`);
+  if (pool == null && pools) pool = targetPool(difficulty, pools);
   const byCode = new Map(countries.map((c) => [c.code, c]));
   const start = byCode.get(startCode);
   if (!start) throw new Error(`unknown start country ${startCode}`);

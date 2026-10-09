@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import {
   haversineKm, initialBearing, compassPoint, formatKm, decodeTopology,
   createGame, makeGuess, giveUp, referenceDistance, guessCount, cameraDistanceForSpan,
-  rhumbBearing, directionClue, useClue, countryAt, DIFFICULTY,
+  rhumbBearing, directionClue, useClue, countryAt, DIFFICULTY, targetPool,
 } from '../engine.js';
 
 let n = 0;
@@ -133,6 +133,29 @@ check('DIFFICULTY: three levels; createGame records it and rejects unknown ones'
   assert.equal(r.compass, 'S');
   const c = directionClue(g, countries);
   close(c.fromStart.distanceKm, g.startDistanceKm, 1e-9, 'clue carries distance');
+});
+
+check('easy pool: 50 distinct, valid codes; Easy targets come only from it, other levels from everywhere', () => {
+  const pool = data.pools.easy.codes;
+  assert.equal(pool.length, 50); assert.equal(new Set(pool).size, 50);
+  for (const code of pool) assert.ok(C(code), `pool code ${code}`);
+  assert.deepEqual(pool.slice(0, 10), ['ESP', 'FRA', 'ITA', 'TUR', 'USA', 'GRC', 'PRT', 'IRL', 'DEU', 'POL']);
+  assert.equal(targetPool('easy', data.pools), pool);
+  assert.equal(targetPool('hard', data.pools), null);
+  assert.throws(() => targetPool('easy', {}), /missing/);
+  const poolSet = new Set(pool);
+  for (let i = 0; i < 200; i++) {
+    const g = createGame(countries, 'GBR', { rng: () => i / 200, difficulty: 'easy', pools: data.pools });
+    assert.ok(poolSet.has(g.targetCode), `easy target ${g.targetCode} in pool`);
+  }
+  // Starting from a pool member never yields itself; the pool still has 49 options.
+  const seen = new Set();
+  for (let i = 0; i < 200; i++) seen.add(createGame(countries, 'ESP', { rng: () => i / 200, difficulty: 'easy', pools: data.pools }).targetCode);
+  assert.equal(seen.size, 49); assert.ok(!seen.has('ESP'));
+  // Hard can land outside the pool.
+  const hardSeen = new Set();
+  for (let i = 0; i < 250; i++) hardSeen.add(createGame(countries, 'GBR', { rng: () => i / 250, difficulty: 'hard', pools: data.pools }).targetCode);
+  assert.ok([...hardSeen].some((c) => !poolSet.has(c)));
 });
 
 check('createGame: never picks the start as the target; honours the pool and rng', () => {

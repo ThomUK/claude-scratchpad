@@ -111,10 +111,27 @@ const DEPENDENT = {
   TWN: [null, 'self-governing, but its status is disputed and it is not a UN member'],
 };
 
+// ---- Easy-mode target pool ---------------------------------------------------
+// The 50 countries UK residents visit most, per the ONS "Travel trends"
+// release (UK residents' visits abroad, main country visited). Ranks 1-10 are
+// the published 2024 figures (Spain 17.8m, France 9.3m, Italy 4.8m, Turkey 4.1m,
+// USA 4.1m, Greece 3.8m, Portugal 3.7m, Ireland 3.6m, Germany 3.2m, Poland 2.9m).
+// Ranks 11-50 follow the ONS country table as best reconstructed without
+// access to the spreadsheet; edit this list to correct the order or members.
+const EASY_POOL = [
+  'ESP', 'FRA', 'ITA', 'TUR', 'USA', 'GRC', 'PRT', 'IRL', 'DEU', 'POL',
+  'NLD', 'CYP', 'BEL', 'CHE', 'AUT', 'HRV', 'EGY', 'ARE', 'IND', 'CZE',
+  'HUN', 'MLT', 'CAN', 'DNK', 'SWE', 'AUS', 'ROU', 'BGR', 'NOR', 'THA',
+  'MEX', 'MAR', 'PAK', 'ISL', 'JPN', 'LTU', 'JAM', 'ZAF', 'TUN', 'FIN',
+  'LVA', 'BRB', 'SVK', 'SGP', 'CHN', 'HKG', 'NGA', 'DOM', 'SAU', 'SVN',
+];
+
 // Natural Earth features whose ISO code does not match the country list.
 const NE_OVERRIDE = { KOS: 'UNK', SOL: 'SOM', CYN: 'CYP', KAS: null };
 
 const byCode = new Map(rc.map((c) => [c.cca3, c]));
+for (const code of EASY_POOL) if (!byCode.has(code)) throw new Error(`EASY_POOL: unknown code ${code}`);
+if (new Set(EASY_POOL).size !== 50) throw new Error('EASY_POOL must hold 50 distinct codes');
 const neCodeOf = (p) => {
   if (p.ADM0_A3 in NE_OVERRIDE) return NE_OVERRIDE[p.ADM0_A3];
   for (const k of ['ISO_A3', 'ISO_A3_EH', 'ADM0_A3']) if (byCode.has(p[k])) return p[k];
@@ -224,6 +241,13 @@ writeFileSync('data/countries.json', JSON.stringify({
   sources: {
     countries: 'mledoze/countries (the REST Countries dataset), ODbL',
     geometry: 'Natural Earth 1:50m admin-0 map units (public domain); population is Natural Earth POP_EST',
+  },
+  pools: {
+    easy: {
+      label: 'the 50 countries UK residents visit most',
+      source: "ONS Travel trends 2024, UK residents' visits abroad by main country visited (top 10 as published; 11-50 reconstructed)",
+      codes: EASY_POOL,
+    },
   },
   countries,
 }));

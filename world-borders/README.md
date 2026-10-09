@@ -8,6 +8,12 @@ An educational guessing game on a 3D globe.
    | Level | Names on map | Click map to guess | Per guess | Clue button |
    |---|---|---|---|---|
    | Easy | yes | yes | warmer/cooler, distance and compass direction | not needed |
+
+   On Easy the mystery country is drawn only from the 50 countries UK residents
+   visit most (ONS *Travel trends*, UK residents' visits abroad by main country
+   visited). The top 10 are the published 2024 figures; ranks 11–50 are a
+   reconstruction of the ONS country table and live in `build_data.mjs`
+   (`EASY_POOL`) for correction. The start country can still be anywhere.
    | Intermediate | yes | no | warmer/cooler and distance | direction from start and latest guess |
    | Hard | no | no | warmer/cooler and distance | direction from start and latest guess |
 2. The game hides a random second country and tells you how far it is from your start.

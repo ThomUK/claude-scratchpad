@@ -37,6 +37,7 @@ async function main() {
     fetch('data/world.json?v=dev').then((r) => r.json()),
   ]);
   state.countries = cJson.countries;
+  state.pools = cJson.pools || {};
   state.byCode = new Map(state.countries.map((c) => [c.code, c]));
   state.globe = new Globe($('globe'), decodeTopology(topo), state.countries);
   state.globe.onPick = (code) => choose(code);
@@ -120,7 +121,7 @@ function choose(code) {
 function startRound(startCode) {
   state.startCode = startCode;
   state.clue = null;
-  state.game = createGame(state.countries, startCode, { difficulty: state.difficulty });
+  state.game = createGame(state.countries, startCode, { difficulty: state.difficulty, pools: state.pools });
   state.phase = 'guessing';
   applyDifficultyToGlobe();
   state.globe.flyTo(startCode);
