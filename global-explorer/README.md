@@ -5,7 +5,8 @@ tab bar, full-screen globe with a sliding panel) that also works on the desktop
 web, where the tab bar becomes a side rail. Installable as a web app and works
 offline; the shell is ready for a Capacitor wrap.
 
-**Play.** Pick a starting country (search, random, or your current location).
+**Play.** Tap Begin and choose where to start: where you are, somewhere
+random, a tap on the map, or a search.
 The game hides a second country and tells you how far it is. Guess a country:
 a line is drawn from your previous guess (or the start) to it, **orange** if
 that hop took you closer (warmer), **blue** if further (cooler). Points are

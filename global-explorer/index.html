@@ -43,6 +43,16 @@
           <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
         </div>
 
+        <div class="menu-backdrop" id="begin-menu" hidden>
+          <div class="menu" role="dialog" aria-modal="true" aria-labelledby="begin-title">
+            <h2 id="begin-title">Where do you want to begin?</h2>
+            <button type="button" class="opt" data-mode="locate"><span class="ico">📍</span><span><b>Where I am</b><span class="d">Use your location to start from the country you are in.</span></span></button>
+            <button type="button" class="opt" data-mode="random"><span class="ico">🎲</span><span><b>Somewhere random</b><span class="d">Start from a random country anywhere on Earth.</span></span></button>
+            <button type="button" class="opt" data-mode="map"><span class="ico">🌍</span><span><b>Choose on the map</b><span class="d">Tap any country on the globe.</span></span></button>
+            <button type="button" class="opt" data-mode="search"><span class="ico">🔎</span><span><b>Search for a country</b><span class="d">Type the name of the country to start from.</span></span></button>
+            <button type="button" class="ghost" id="begin-cancel">Cancel</button>
+          </div>
+        </div>
         <div class="sheet" id="sheet" data-state="half">
           <button class="grip" id="grip" type="button" aria-label="Expand or collapse the panel"><span></span></button>
           <div class="sheet-body" id="sheet-body">
@@ -52,15 +62,17 @@
               <div class="titlerow">
                 <h1>Global Explorer</h1>
               </div>
-              <p class="muted small">Find the mystery country from distance clues. Pick where to start.</p>
-              <div class="picker" id="picker-start">
+              <p class="intro">Explore the globe while you search for a mystery country.</p>
+              <p class="muted small" id="start-prompt">Choose where to begin.</p>
+              <div class="picker" id="picker-start" hidden>
                 <label for="search" class="sr-only">Country</label>
                 <input id="search" type="search" autocomplete="off" spellcheck="false" enterkeyhint="go" placeholder="Type a country to start from…" />
                 <div id="results" class="results" hidden></div>
               </div>
+              <p class="cluebox" id="start-map-hint" hidden>🌍 Tap any country on the globe to start there.</p>
               <div class="btnrow">
-                <button type="button" id="btn-random">🎲 Random start</button>
-                <button type="button" id="btn-locate">📍 Start from where I am</button>
+                <button type="button" class="primary" id="btn-begin">Begin</button>
+                <button type="button" class="ghost" id="btn-start-cancel" hidden>Other ways to begin</button>
               </div>
               <div class="stats" id="stats-strip"></div>
             </div>

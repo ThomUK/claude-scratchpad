@@ -31,7 +31,7 @@ const state = {
   countries: [], byCode: new Map(), features: [], pools: {}, globe: null,
   screen: 'play',
   phase: 'pick-start', // pick-start | guessing | over
-  game: null, clue: null, browse: null,
+  game: null, clue: null, browse: null, startMode: null,
   settings: { ...DEFAULT_SETTINGS },
   stats: null,
   atlas: { key: 'name', dir: 'asc', filter: '' },
@@ -75,12 +75,32 @@ async function main() {
   $('btn-giveup').addEventListener('click', onGiveUp);
   $('btn-clue').addEventListener('click', onClue);
   $('btn-newstart').addEventListener('click', () => resetToPickStart());
-  $('btn-random').addEventListener('click', () => startRound(state.countries[Math.floor(Math.random() * state.countries.length)].code));
-  $('btn-locate').addEventListener('click', onLocate);
+  $('btn-begin').addEventListener('click', () => { $('begin-menu').hidden = false; });
+  $('begin-cancel').addEventListener('click', () => { $('begin-menu').hidden = true; });
+  $('begin-menu').addEventListener('click', (e) => { if (e.target === $('begin-menu')) $('begin-menu').hidden = true; });
+  $('btn-start-cancel').addEventListener('click', () => setStartMode(null));
+  for (const b of document.querySelectorAll('#begin-menu .opt')) b.addEventListener('click', () => beginWith(b.dataset.mode));
   $('compass').addEventListener('click', recentre);
   applyRulesToGlobe();
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js?v=dev').catch(() => {});
+}
+
+/** One of the four ways to begin a round, chosen from the Begin menu. */
+function beginWith(mode) {
+  $('begin-menu').hidden = true;
+  if (mode === 'locate') { setStartMode(null); onLocate(); return; }
+  if (mode === 'random') { setStartMode(null); startRound(state.countries[Math.floor(Math.random() * state.countries.length)].code); return; }
+  setStartMode(mode);
+  if (mode === 'map') { setSheet('collapsed'); toast('Tap any country on the globe to start there.'); }
+  if (mode === 'search') { setSheet('half'); setTimeout(() => $('search').focus({ preventScroll: true }), 50); }
+}
+
+/** How the start country is being chosen on the new-round screen: null | 'map' | 'search'. */
+function setStartMode(mode) {
+  state.startMode = mode;
+  applyRulesToGlobe();
+  render();
 }
 
 /** Fly back to whatever the player is working from: latest guess, start, or browsed country. */
@@ -204,13 +224,14 @@ function onLocate() {
 function applyRulesToGlobe() {
   const r = rules();
   state.globe.setNamesVisible(r.names);
-  const canClick = r.click && state.phase !== 'over';
+  const canClick = state.phase === 'pick-start' ? state.startMode === 'map' : r.click && state.phase === 'guessing';
   state.globe.pickEnabled = canClick;
   $('screen-play').classList.toggle('clickable', canClick);
 }
 
 function startRound(startCode) {
-  state.clue = null; state.browse = null;
+  state.clue = null; state.browse = null; state.startMode = null;
+  $('begin-menu').hidden = true;
   flash('');
   const r = rules();
   const pool = remainingPool(state.countries, state.pools, r, state.stats);
@@ -266,7 +287,7 @@ function finishRound() {
 }
 
 function resetToPickStart() {
-  state.phase = 'pick-start'; state.game = null; state.clue = null;
+  state.phase = 'pick-start'; state.game = null; state.clue = null; state.startMode = null;
   flash('');
   paintGlobe();
   state.globe.controls.autoRotate = true;
@@ -314,10 +335,18 @@ function render(lastResult) {
   $('panel-over').hidden = state.phase !== 'over';
   $('sheet-footer').hidden = state.phase !== 'over';
   const click = r.click ? ' or tap the map' : '';
-  $('search').placeholder = `Type a country to start from${click}…`;
   $('search-guess').placeholder = `Type your guess${click}…`;
 
-  if (state.phase === 'pick-start') { renderStats($('stats-strip'), true); return; }
+  if (state.phase === 'pick-start') {
+    const m = state.startMode;
+    $('picker-start').hidden = m !== 'search';
+    $('start-map-hint').hidden = m !== 'map';
+    $('start-prompt').hidden = !!m;
+    $('btn-begin').hidden = !!m;
+    $('btn-start-cancel').hidden = !m;
+    renderStats($('stats-strip'), true);
+    return;
+  }
 
   const start = state.byCode.get(g.startCode), gr = g.rules;
   $('difficulty-tag').textContent = gr.label;
