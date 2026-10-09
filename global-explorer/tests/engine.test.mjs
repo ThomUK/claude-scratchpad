@@ -170,6 +170,17 @@ check('data: 250 countries, every one has latlng, facts, and a resolvable border
 check('data: world.json decodes and covers every country except the three with no 50m shape', () => {
   const topo = JSON.parse(readFileSync(new URL('../data/world.json', import.meta.url), 'utf8'));
   const feats = decodeTopology(topo);
+  const hatched = feats.filter((f) => f.hatch);
+  assert.deepEqual(hatched.map((f) => f.code).sort(), ['CYP', 'ESH', 'SYR'], 'hatched overlays');
+  assert.ok(hatched.every((f) => f.name), 'hatched overlays are named');
+  // The moved areas now sit inside the recognised state: Golan is Syria, western Sahara is Western Sahara, Crimea is Ukraine.
+  assert.equal(countryAt(feats, countries, 33.0, 35.8), 'SYR');
+  assert.equal(countryAt(feats, countries, 25.5, -13.5), 'ESH');
+  assert.equal(countryAt(feats, countries, 45.3, 34.4), 'UKR');
+  assert.equal(countryAt(feats, countries, 35.3, 33.9), 'CYP');
+  assert.match(C('ESH').facts.join(' '), /administered by Morocco/);
+  assert.match(C('SYR').facts.join(' '), /Golan/);
+  assert.match(C('CYP').facts.join(' '), /north of the island/);
   const shaped = new Set(feats.map((f) => f.code).filter(Boolean));
   const missing = countries.filter((c) => !shaped.has(c.code)).map((c) => c.code).sort();
   assert.deepEqual(missing, ['BVT', 'GIB', 'UMI']);
@@ -186,6 +197,7 @@ check('countryAt: finds countries by point, respects holes, falls back to shapel
   assert.equal(countryAt(feats, countries, 51.5, -0.1), 'GBR');     // London
   assert.equal(countryAt(feats, countries, 48.86, 2.35), 'FRA');    // Paris
   assert.equal(countryAt(feats, countries, 45.3, 34.4), 'UKR');     // central Crimea
+  assert.equal(countryAt(feats, countries, 33.0, 35.8), 'SYR');     // Golan Heights
   assert.equal(countryAt(feats, countries, 43.07, 12.6), 'ITA');    // Umbria
   assert.equal(countryAt(feats, countries, -29.6, 28.2), 'LSO');    // Lesotho (hole in South Africa)
   assert.equal(countryAt(feats, countries, -29.5, 27.0), 'ZAF');    // Free State, just outside the hole

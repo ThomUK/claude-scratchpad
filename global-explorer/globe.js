@@ -86,9 +86,11 @@ export class Globe {
     this.sphere = new THREE.Mesh(new THREE.SphereGeometry(SURFACE, 128, 96), new THREE.MeshBasicMaterial({ color: COLORS.ocean }));
     this.scene.add(this.sphere);
     this.fillGroup = new THREE.Group();
+    this.hatchGroup = new THREE.Group();
     this.fillsByCode = new Map();
     this.buildFills();
     this.scene.add(this.fillGroup);
+    this.scene.add(this.hatchGroup);
 
     // Soft atmosphere rim.
     const glow = new THREE.Mesh(
@@ -162,12 +164,23 @@ export class Globe {
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
   }
 
+  /** Diagonal stripes for areas under disputed administration. */
+  static hatchTexture() {
+    const s = 64, c = document.createElement('canvas'); c.width = c.height = s;
+    const g = c.getContext('2d');
+    g.strokeStyle = 'rgba(31, 41, 51, 0.55)'; g.lineWidth = 7; g.lineCap = 'square';
+    for (const o of [-s, 0, s]) { g.beginPath(); g.moveTo(o, s); g.lineTo(o + s, 0); g.stroke(); }
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+
   /** Triangulate every polygon into a mesh per feature; fills hug the sphere. */
   buildFills() {
     const edge = (a, b) => Math.hypot((a[0] - b[0]) * Math.cos(((a[1] + b[1]) / 2) * (Math.PI / 180)), a[1] - b[1]);
+    const hatchTex = Globe.hatchTexture();
+    const HATCH_DEG = 0.12; // one stripe repeat per 0.12 degrees (~13 km), fine enough for Northern Cyprus
     for (const f of this.features) {
-      const pos = [];
-      const push = (p) => { const v = latLonToVec3(p[1], p[0], FILL_R); pos.push(v.x, v.y, v.z); };
+      const pos = [], uv = [];
+      const push = (p) => { const v = latLonToVec3(p[1], p[0], f.hatch ? FILL_R + 0.0003 : FILL_R); pos.push(v.x, v.y, v.z); if (f.hatch) uv.push(p[0] / HATCH_DEG, p[1] / HATCH_DEG); };
       const emit = (a, b, c, depth) => {
         const e = [edge(a, b), edge(b, c), edge(c, a)];
         const i = e.indexOf(Math.max(e[0], e[1], e[2]));
@@ -187,6 +200,13 @@ export class Globe {
       if (!pos.length) continue;
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      if (f.hatch) {
+        geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+        const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: hatchTex, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+        mesh.userData.hatch = f.name;
+        this.hatchGroup.add(mesh);
+        continue;
+      }
       const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: COLORS.land, side: THREE.DoubleSide }));
       mesh.userData.code = f.code;
       this.fillGroup.add(mesh);
@@ -195,20 +215,30 @@ export class Globe {
   }
 
   buildBorders() {
-    const pos = [];
+    const pos = [], dashed = [];
     for (const f of this.features) for (const poly of f.polygons) for (const ring of poly) {
+      const out = f.hatch ? dashed : pos;
       for (let i = 0; i < ring.length - 1; i++) {
         const [lon1, lat1] = ring[i], [lon2, lat2] = ring[i + 1];
         // Skip Natural Earth's seams along the antimeridian and the south pole.
         if (Math.abs(lon1) > 179.99 && Math.abs(lon2) > 179.99) continue;
         if (lat1 < -89.99 && lat2 < -89.99) continue;
         const a = latLonToVec3(lat1, lon1, BORDER_R), b = latLonToVec3(lat2, lon2, BORDER_R);
-        pos.push(a.x, a.y, a.z, b.x, b.y, b.z);
+        out.push(a.x, a.y, a.z, b.x, b.y, b.z);
       }
     }
+    const group = new THREE.Group();
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: COLORS.border, transparent: true, opacity: 0.75 }));
+    group.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: COLORS.border, transparent: true, opacity: 0.75 })));
+    if (dashed.length) {
+      const dg = new THREE.BufferGeometry();
+      dg.setAttribute('position', new THREE.Float32BufferAttribute(dashed, 3));
+      const dl = new THREE.LineSegments(dg, new THREE.LineDashedMaterial({ color: COLORS.border, transparent: true, opacity: 0.8, dashSize: 0.004, gapSize: 0.003 }));
+      dl.computeLineDistances();
+      group.add(dl);
+    }
+    return group;
   }
 
   /** Apply the current highlight colours to the fill meshes. */

@@ -29,25 +29,46 @@ const rc = JSON.parse(readFileSync(rcPath, 'utf8'));
 const ne = JSON.parse(readFileSync(nePath, 'utf8'));
 const brk = JSON.parse(readFileSync(brkPath, 'utf8'));
 
-// ---- Borders: internationally recognised, pre-2014 ------------------------
-// Natural Earth's default view draws Crimea inside Russia. Move it to Ukraine.
+// ---- Borders: internationally recognised ---------------------------------
+// Natural Earth draws de facto control. Move these disputed-area polygons
+// into the state that holds recognised sovereignty. `hatch` marks the moved
+// area on the globe as under someone else's administration; Ukraine is drawn
+// whole and unhatched.
+const MOVES = [
+  { brk: 'Crimea', from: 'RUS', to: 'UKR', hatch: false },
+  { brk: 'W. Sahara', from: 'MAR', to: 'ESH', hatch: true, label: 'Western Sahara (Moroccan-administered)' },
+  { brk: 'Golan Heights', from: 'ISR', to: 'SYR', hatch: true, label: 'Golan Heights' },
+];
+// Areas already drawn inside the recognised state (as their own Natural Earth
+// map unit) that just need the hatch.
+const HATCH_UNITS = [{ adm0: 'CYN', in: 'CYP', label: 'Northern Cyprus' }];
+const hatched = []; // GeoJSON features for the hatch layer
 {
   const asMulti = (g) => (g.type === 'Polygon' ? [g.coordinates] : g.coordinates);
-  const crimea = brk.features.find((f) => f.properties.NAME === 'Crimea');
-  const rus = ne.features.find((f) => f.properties.ADM0_A3 === 'RUS');
-  const ukr = ne.features.find((f) => f.properties.ADM0_A3 === 'UKR');
-  if (!crimea || !rus || !ukr) throw new Error('Crimea/Russia/Ukraine features not found');
-  const crimeaMP = asMulti(crimea.geometry);
-  // Clipping can leave hairline slivers along the shared coastline; drop any
-  // Russian polygon that is tiny and sits inside Crimea's bounding box.
-  const cb = [180, 90, -180, -90];
-  for (const ring of crimeaMP.flat()) for (const [x, y] of ring) { cb[0] = Math.min(cb[0], x); cb[1] = Math.min(cb[1], y); cb[2] = Math.max(cb[2], x); cb[3] = Math.max(cb[3], y); }
   const ringArea = (r) => Math.abs(r.reduce((a, [x1, y1], i) => { const [x2, y2] = r[(i + 1) % r.length]; return a + x1 * y2 - x2 * y1; }, 0) / 2);
-  const inCrimeaBox = (poly) => poly[0].every(([x, y]) => x >= cb[0] - 0.05 && x <= cb[2] + 0.05 && y >= cb[1] - 0.05 && y <= cb[3] + 0.05);
-  const rusMP = pc.difference(asMulti(rus.geometry), crimeaMP).filter((poly) => !(inCrimeaBox(poly) && ringArea(poly[0]) < 0.05));
-  rus.geometry = { type: 'MultiPolygon', coordinates: rusMP };
-  ukr.geometry = { type: 'MultiPolygon', coordinates: pc.union(asMulti(ukr.geometry), crimeaMP) };
-  console.log(`moved Crimea: Russia now ${rusMP.length} polygons, Ukraine ${ukr.geometry.coordinates.length}`);
+  // Natural Earth's ADM0_A3 differs from ISO for some places (Western Sahara is SAH), so match any of its code fields.
+  const unitOf = (code) => ne.features.find((f) => [f.properties.ISO_A3, f.properties.ISO_A3_EH, f.properties.ADM0_A3].includes(code));
+  for (const m of MOVES) {
+    const area = brk.features.find((f) => f.properties.BRK_NAME === m.brk);
+    const from = unitOf(m.from);
+    const to = unitOf(m.to);
+    if (!area || !from || !to) throw new Error(`${m.brk}: features not found`);
+    const mp = asMulti(area.geometry);
+    // Clipping can leave hairline slivers along shared lines; drop tiny leftovers inside the area's box.
+    const cb = [180, 90, -180, -90];
+    for (const ring of mp.flat()) for (const [x, y] of ring) { cb[0] = Math.min(cb[0], x); cb[1] = Math.min(cb[1], y); cb[2] = Math.max(cb[2], x); cb[3] = Math.max(cb[3], y); }
+    const inBox = (poly) => poly[0].every(([x, y]) => x >= cb[0] - 0.05 && x <= cb[2] + 0.05 && y >= cb[1] - 0.05 && y <= cb[3] + 0.05);
+    const fromMP = pc.difference(asMulti(from.geometry), mp).filter((poly) => !(inBox(poly) && ringArea(poly[0]) < 0.05));
+    from.geometry = { type: 'MultiPolygon', coordinates: fromMP };
+    to.geometry = { type: 'MultiPolygon', coordinates: pc.union(asMulti(to.geometry), mp) };
+    if (m.hatch) hatched.push({ type: 'Feature', properties: { c: m.to, h: 1, n: m.label }, geometry: area.geometry });
+    console.log(`moved ${m.brk}: ${m.from} -> ${m.to}${m.hatch ? ' (hatched)' : ''}`);
+  }
+  for (const h of HATCH_UNITS) {
+    const unit = ne.features.find((f) => f.properties.ADM0_A3 === h.adm0);
+    if (!unit) throw new Error(`${h.adm0}: unit not found`);
+    hatched.push({ type: 'Feature', properties: { c: h.in, h: 1, n: h.label }, geometry: unit.geometry });
+  }
 }
 
 // ---- Dependent / special-status territories -------------------------------
@@ -168,7 +189,10 @@ for (const f of ne.features) {
   }
   geoms.push({ type: 'Feature', properties: { c: code }, geometry: f.geometry });
 }
-const topo = topology({ units: { type: 'FeatureCollection', features: geoms } }, 1e5);
+const topo = topology({
+  units: { type: 'FeatureCollection', features: geoms },
+  hatched: { type: 'FeatureCollection', features: hatched },
+}, 1e5);
 writeFileSync('data/world.json', JSON.stringify(topo));
 
 // ---- Countries -------------------------------------------------------------
@@ -240,6 +264,15 @@ const countries = rc.map((c) => {
   const dRank = densityRank.indexOf(code) + 1;
   if (dRank > 0 && dRank <= 5) facts.push(`It is the ${nth(dRank)}most densely populated place, with about ${fmt(density)} people per km².`);
   else if (density != null && density > 0 && density < 5 && population > 1000) facts.push(`It is very sparsely populated: about ${density < 1 ? density.toFixed(2) : density.toFixed(1)} people per km².`);
+
+  const HATCH_FACTS = {
+    ESH: 'The western part, shaded on the map, is administered by Morocco; the United Nations regards the territory\'s status as still to be decided.',
+    SYR: 'The Golan Heights, shaded on the map in the south-west, have been occupied by Israel since 1967 and are recognised as Syrian.',
+    CYP: 'The north of the island, shaded on the map, has been run by a Turkish-Cypriot administration since 1974 that only Türkiye recognises.',
+    MAR: 'Morocco administers most of neighbouring Western Sahara, shown shaded on the map; the territory\'s status is unresolved.',
+    ISR: 'It occupies the Golan Heights, shown shaded inside Syria on the map.',
+  };
+  if (HATCH_FACTS[code]) facts.push(HATCH_FACTS[code]);
 
   if (c.landlocked) facts.push('It is landlocked: it has no coastline.');
   else if (c.borders.length === 0 && code !== 'ATA') facts.push('It has no land borders at all: it is entirely surrounded by sea.');

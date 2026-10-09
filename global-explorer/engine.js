@@ -78,17 +78,18 @@ export function decodeTopology(topo) {
     return out;
   };
   const features = [];
-  for (const obj of Object.values(topo.objects)) {
+  for (const [objName, obj] of Object.entries(topo.objects)) {
     const geoms = obj.type === 'GeometryCollection' ? obj.geometries : [obj];
     for (const g of geoms) {
       const code = g.properties ? g.properties.c : null;
+      const hatch = objName === 'hatched' || !!(g.properties && g.properties.h);
       let polygons = [];
       if (g.type === 'Polygon') polygons = [g.arcs.map(ring)];
       else if (g.type === 'MultiPolygon') polygons = g.arcs.map((p) => p.map(ring));
       else continue;
       // Quantization can collapse a speck of an island to <4 points; drop those rings.
       polygons = polygons.map((p) => p.filter((r) => r.length >= 4)).filter((p) => p.length);
-      if (polygons.length) features.push({ code: code ?? null, polygons });
+      if (polygons.length) features.push(hatch ? { code: code ?? null, polygons, hatch: true, name: g.properties.n || '' } : { code: code ?? null, polygons });
     }
   }
   return features;
@@ -111,7 +112,7 @@ function inRing(ring, lon, lat) {
  */
 export function countryAt(features, countries, lat, lon) {
   for (const f of features) {
-    if (!f.code) continue;
+    if (!f.code || f.hatch) continue; // hatched overlays sit inside a country's own polygon
     for (const poly of f.polygons) {
       if (!inRing(poly[0], lon, lat)) continue;
       if (poly.slice(1).some((hole) => inRing(hole, lon, lat))) continue;
@@ -148,7 +149,7 @@ export function pickCountry(features, countries, lat, lon, tolDeg = 0) {
   if (exact && isSmall(exact)) return exact;
   let best = null, bestD = tolDeg;
   for (const f of features) {
-    if (!f.code || f.code === exact) continue;
+    if (!f.code || f.hatch || f.code === exact) continue;
     if (exact && !isSmall(f.code)) continue; // over land, only a small neighbour can steal the click
     for (const poly of f.polygons) for (const ring of poly) for (const [x, y] of ring) {
       const d = Math.hypot((x - lon) * cosLat, y - lat);

@@ -72,9 +72,13 @@ representative lat/lon from the dataset.
   a handful of corrections (e.g. Vatican City is a UN observer, not a member)
   are in `build_data.mjs`.
 - Boundaries and population estimates: [Natural Earth](https://www.naturalearthdata.com/)
-  1:50m admin-0 map units, public domain. Natural Earth's default view draws
-  Crimea inside Russia; the build script moves it into Ukraine so borders are
-  the internationally recognised, pre-2014 ones. Three territories have no
+  1:50m admin-0 map units, public domain. Natural Earth draws de facto
+  control; the build script moves Crimea into Ukraine, the Golan Heights into
+  Syria and the Moroccan-administered part of Western Sahara into Western
+  Sahara, so borders are the internationally recognised ones. Areas under
+  someone else's long-standing administration (western Western Sahara, the
+  Golan Heights, Northern Cyprus) are hatched; Ukraine is drawn whole and
+  unhatched. Three territories have no
   polygon at this scale (Bouvet Island, Gibraltar, US Minor Outlying Islands)
   and are shown as markers.
 - three.js is vendored under `vendor/three/`.
