@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import {
   haversineKm, initialBearing, compassPoint, formatKm, decodeTopology,
   createGame, makeGuess, giveUp, referenceDistance, guessCount, cameraDistanceForSpan,
-  rhumbBearing, directionClue, useClue, countryAt, pickCountry, DIFFICULTY, targetPool, sortCountries,
+  rhumbBearing, directionClue, useClue, countryAt, pickCountry, DIFFICULTY, targetPool, sortCountries, difficultyTier,
   formatDistance, resolveRules, score, recordRound, normalizeStats, stampsFor, remainingPool, STAMP_LEVELS,
 } from '../engine.js';
 
@@ -321,12 +321,15 @@ check('sortCountries: numeric keys with nulls last, text keys by locale, stable 
   assert.equal(byCont[0].continent, 'Africa'); assert.equal(byCont[0].code, 'DZA'); // ties broken by name
   assert.equal(sortCountries(countries, 'name', 'desc')[0].code, 'ZWE');
   assert.equal(countries.length, 250, 'input not mutated');
-  // 'easy' sorts pool members first when descending, and ties by name.
-  const easySet = new Set(data.pools.easy.codes);
-  const tagged = countries.map((c) => ({ ...c, easy: easySet.has(c.code) }));
-  const byEasy = sortCountries(tagged, 'easy', 'desc');
-  assert.ok(byEasy.slice(0, 80).every((c) => c.easy) && byEasy.slice(80).every((c) => !c.easy));
-  assert.equal(byEasy[0].code, 'ALB');
+  // 'difficulty' sorts by tier: Easy (80) first, then the other UN members, then everything else.
+  const tagged = countries.map((c) => ({ ...c, tier: difficultyTier(c, data.pools) }));
+  assert.equal(tagged.filter((c) => c.tier === 1).length, 80);
+  assert.equal(tagged.filter((c) => c.tier === 2).length, 193 - tagged.filter((c) => c.tier === 1 && c.unMember).length);
+  assert.equal(difficultyTier(C('ESP'), data.pools), 1); assert.equal(difficultyTier(C('AFG'), data.pools), 2); assert.equal(difficultyTier(C('ALA'), data.pools), 3);
+  assert.equal(difficultyTier(C('GIB'), data.pools), 1, 'Gibraltar is in the Easy pool even though it is a territory');
+  const byTier = sortCountries(tagged, 'difficulty', 'asc');
+  assert.ok(byTier.slice(0, 80).every((c) => c.tier === 1) && byTier.slice(80).every((c) => c.tier > 1));
+  assert.equal(byTier[0].code, 'ALB');
 });
 
 check('createGame: never picks the start as the target; honours the pool and rng', () => {

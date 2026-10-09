@@ -2,7 +2,7 @@
 // live in engine.js, rendering in globe.js.
 import {
   decodeTopology, createGame, makeGuess, giveUp, formatDistance, guessCount, haversineKm, initialBearing,
-  compassPoint, directionClue, useClue, DIFFICULTY, sortCountries, NUMERIC_KEYS, countryAt, resolveRules,
+  compassPoint, directionClue, useClue, DIFFICULTY, sortCountries, NUMERIC_KEYS, countryAt, resolveRules, difficultyTier,
   score, recordRound, normalizeStats, stampsFor, remainingPool, STAMP_LEVELS,
 } from './engine.js?v=dev';
 import { Globe, COLORS } from './globe.js?v=dev';
@@ -51,7 +51,7 @@ async function main() {
   state.countries = cJson.countries;
   state.pools = cJson.pools || {};
   const easySet = new Set((state.pools.easy && state.pools.easy.codes) || []);
-  for (const c of state.countries) c.easy = easySet.has(c.code);
+  for (const c of state.countries) { c.easy = easySet.has(c.code); c.tier = difficultyTier(c, state.pools); }
   state.byCode = new Map(state.countries.map((c) => [c.code, c]));
   state.features = decodeTopology(topo);
   // Old settings stored only a difficulty string; migrate it.
@@ -572,8 +572,9 @@ function renderPassport() {
 const SORTS = [
   { key: 'name', label: 'Name' }, { key: 'population', label: 'Population' }, { key: 'area', label: 'Area' },
   { key: 'density', label: 'Density' }, { key: 'neighbours', label: 'Neighbours' }, { key: 'continent', label: 'Continent' },
-  { key: 'designation', label: 'Status' }, { key: 'easy', label: 'Easy mode' },
+  { key: 'designation', label: 'Status' }, { key: 'difficulty', label: 'Difficulty' },
 ];
+const TIER_LABEL = ['', 'Easy', 'Intermediate', 'Advanced'];
 function wireAtlas() {
   const chips = $('sort-chips');
   chips.classList.add('sort');
@@ -581,7 +582,7 @@ function wireAtlas() {
     const b = el('button', 'sortchip', s.label); b.type = 'button'; b.dataset.key = s.key;
     b.addEventListener('click', () => {
       if (state.atlas.key === s.key) state.atlas.dir = state.atlas.dir === 'asc' ? 'desc' : 'asc';
-      else { state.atlas.key = s.key; state.atlas.dir = NUMERIC_KEYS.has(s.key) ? 'desc' : 'asc'; }
+      else { state.atlas.key = s.key; state.atlas.dir = NUMERIC_KEYS.has(s.key) && s.key !== 'difficulty' ? 'desc' : 'asc'; }
       renderAtlas();
     });
     chips.append(b);
@@ -597,7 +598,7 @@ function valueFor(c, key) {
     case 'neighbours': return [String(c.borders.length), c.borders.length === 1 ? 'neighbour' : 'neighbours'];
     case 'continent': return [c.continent, ''];
     case 'designation': return [c.designation, ''];
-    case 'easy': return [c.easy ? '✓' : '–', 'easy mode'];
+    case 'difficulty': return [TIER_LABEL[c.tier], 'lowest level'];
     default: return [fmtN(c.population), 'people'];
   }
 }
@@ -618,7 +619,6 @@ function renderAtlas() {
     li.classList.toggle('selected', state.browse === c.code);
     const nm = el('div');
     const n = el('div', 'name', c.name);
-    if (c.easy) n.append(el('span', 'badge easy', 'Easy'));
     n.append(miniStamps(c.code));
     nm.append(n, el('div', 'sub', `${c.continent} · ${c.designation}`));
     const [v, l] = valueFor(c, key);

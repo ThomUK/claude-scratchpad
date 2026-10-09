@@ -26,8 +26,8 @@ level. Shows rounds, streaks, best scores,
 progress bars per level and the stamp book.
 
 **Atlas.** All 250 countries and territories as a sortable list (name,
-population, area, density, neighbours, continent, status, Easy-mode pool) with
-a filter and mini stamps. Each country has its own page with the full card,
+population, area, density, neighbours, continent, status, difficulty) with a
+filter and mini stamps. Each country has its own page with the full card,
 stamps, "Show on globe" (highlights it in teal) and "Start a round here".
 
 **Settings.** Difficulty presets plus the individual rules they set, so a custom

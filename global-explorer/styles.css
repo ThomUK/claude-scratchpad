@@ -192,7 +192,6 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .row .val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 .row .val .l { display: block; color: var(--muted); font-size: 0.68rem; font-weight: 400; }
 .badge { font-size: 0.66rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.04em; }
-.badge.easy { background: #fff1d6; color: #9a5b00; }
 .badge.found { background: #dff5e6; color: #146c3a; }
 
 /* -------------------------------------------------------------- settings -- */
