@@ -173,6 +173,12 @@ check('data: world.json decodes and covers every country except the three with n
   const hatched = feats.filter((f) => f.hatch);
   assert.deepEqual(hatched.map((f) => f.code).sort(), ['CYP', 'ESH', 'SYR'], 'hatched overlays');
   assert.ok(hatched.every((f) => f.name), 'hatched overlays are named');
+  // Only the Moroccan-administered west of Western Sahara is hatched; the eastern strip is plain.
+  const inRing = (ring, lon, lat) => { let o = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j]; if (yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) o = !o; } return o; };
+  const hatchedAt = (lat, lon) => hatched.some((f) => f.polygons.some((p) => inRing(p[0], lon, lat) && !p.slice(1).some((h) => inRing(h, lon, lat))));
+  assert.equal(hatchedAt(25.5, -13.5), true, 'western Western Sahara hatched');
+  assert.equal(hatchedAt(23.5, -12.3), false, 'eastern strip (Tifariti area) unhatched');
+  assert.equal(countryAt(feats, countries, 23.5, -12.3), 'ESH');
   // The moved areas now sit inside the recognised state: Golan is Syria, western Sahara is Western Sahara, Crimea is Ukraine.
   assert.equal(countryAt(feats, countries, 33.0, 35.8), 'SYR');
   assert.equal(countryAt(feats, countries, 25.5, -13.5), 'ESH');

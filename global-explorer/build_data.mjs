@@ -36,7 +36,8 @@ const brk = JSON.parse(readFileSync(brkPath, 'utf8'));
 // whole and unhatched.
 const MOVES = [
   { brk: 'Crimea', from: 'RUS', to: 'UKR', hatch: false },
-  { brk: 'W. Sahara', from: 'MAR', to: 'ESH', hatch: true, label: 'Western Sahara (Moroccan-administered)' },
+  // Natural Earth's 'W. Sahara' polygon is the whole territory; the hatch is that minus the eastern strip already drawn as Western Sahara.
+  { brk: 'W. Sahara', from: 'MAR', to: 'ESH', hatch: true, hatchExcludeTo: true, label: 'Western Sahara (Moroccan-administered)' },
   { brk: 'Golan Heights', from: 'ISR', to: 'SYR', hatch: true, label: 'Golan Heights' },
 ];
 // Areas already drawn inside the recognised state (as their own Natural Earth
@@ -54,6 +55,7 @@ const hatched = []; // GeoJSON features for the hatch layer
     const to = unitOf(m.to);
     if (!area || !from || !to) throw new Error(`${m.brk}: features not found`);
     const mp = asMulti(area.geometry);
+    const toBefore = asMulti(to.geometry);
     // Clipping can leave hairline slivers along shared lines; drop tiny leftovers inside the area's box.
     const cb = [180, 90, -180, -90];
     for (const ring of mp.flat()) for (const [x, y] of ring) { cb[0] = Math.min(cb[0], x); cb[1] = Math.min(cb[1], y); cb[2] = Math.max(cb[2], x); cb[3] = Math.max(cb[3], y); }
@@ -61,7 +63,10 @@ const hatched = []; // GeoJSON features for the hatch layer
     const fromMP = pc.difference(asMulti(from.geometry), mp).filter((poly) => !(inBox(poly) && ringArea(poly[0]) < 0.05));
     from.geometry = { type: 'MultiPolygon', coordinates: fromMP };
     to.geometry = { type: 'MultiPolygon', coordinates: pc.union(asMulti(to.geometry), mp) };
-    if (m.hatch) hatched.push({ type: 'Feature', properties: { c: m.to, h: 1, n: m.label }, geometry: area.geometry });
+    if (m.hatch) {
+      const hatchMP = m.hatchExcludeTo ? pc.difference(mp, toBefore).filter((poly) => ringArea(poly[0]) > 0.01) : mp;
+      hatched.push({ type: 'Feature', properties: { c: m.to, h: 1, n: m.label }, geometry: { type: 'MultiPolygon', coordinates: hatchMP } });
+    }
     console.log(`moved ${m.brk}: ${m.from} -> ${m.to}${m.hatch ? ' (hatched)' : ''}`);
   }
   for (const h of HATCH_UNITS) {
