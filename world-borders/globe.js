@@ -50,7 +50,11 @@ export class Globe {
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.01, 200);
-    this.camera.position.copy(latLonToVec3(20, 0, 3.0));
+    // Open somewhere different each time: a random country, framed with its region around it.
+    const shaped = countries.filter((c) => c.hasShape && Math.abs(c.latlng[0]) < 70);
+    const pick = shaped[Math.floor(Math.random() * shaped.length)] || { latlng: [20, 0] };
+    this.camera.position.copy(latLonToVec3(pick.latlng[0], pick.latlng[1], 2.4));
+    this.openedAt = pick.code || null;
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
