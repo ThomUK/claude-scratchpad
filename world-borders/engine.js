@@ -87,12 +87,62 @@ export function decodeTopology(topo) {
   return features;
 }
 
+/** Is [lon, lat] inside a ring? Even-odd ray cast in plain lon/lat. */
+function inRing(ring, lon, lat) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    if (yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/**
+ * Which country is at [lat, lon]? Checks decoded polygons (outer ring minus
+ * holes); falls back to the nearest shapeless territory within ~1.5°.
+ * Returns a code or null.
+ */
+export function countryAt(features, countries, lat, lon) {
+  for (const f of features) {
+    if (!f.code) continue;
+    for (const poly of f.polygons) {
+      if (!inRing(poly[0], lon, lat)) continue;
+      if (poly.slice(1).some((hole) => inRing(hole, lon, lat))) continue;
+      return f.code;
+    }
+  }
+  let best = null, bestD = 1.5;
+  for (const c of countries) {
+    if (c.hasShape) continue;
+    const d = Math.hypot(c.latlng[0] - lat, (c.latlng[1] - lon) * Math.cos(rad(lat)));
+    if (d < bestD) { bestD = d; best = c.code; }
+  }
+  return best;
+}
+
 // -------------------------------------------------------------------- game --
+/** What each difficulty reveals. */
+export const DIFFICULTY = {
+  easy: {
+    label: 'Easy', names: true, click: true, distances: true, bearings: true, clueButton: false,
+    blurb: 'Country names on the map, click the map to guess, and every guess shows its distance and compass direction.',
+  },
+  intermediate: {
+    label: 'Intermediate', names: true, click: false, distances: false, bearings: false, clueButton: true,
+    blurb: 'Country names on the map, but only warmer or cooler per guess. A clue reveals distance and direction.',
+  },
+  hard: {
+    label: 'Hard', names: false, click: false, distances: true, bearings: false, clueButton: true,
+    blurb: 'No names on the map. Guesses show distance; a clue reveals the compass direction.',
+  },
+};
+
 /**
  * Start a round. `countries` is the full list from data/countries.json;
  * `pool` (optional) restricts which codes may be the hidden target.
  */
-export function createGame(countries, startCode, { rng = Math.random, pool = null } = {}) {
+export function createGame(countries, startCode, { rng = Math.random, pool = null, difficulty = 'hard' } = {}) {
+  if (!DIFFICULTY[difficulty]) throw new Error(`unknown difficulty ${difficulty}`);
   const byCode = new Map(countries.map((c) => [c.code, c]));
   const start = byCode.get(startCode);
   if (!start) throw new Error(`unknown start country ${startCode}`);
@@ -100,8 +150,9 @@ export function createGame(countries, startCode, { rng = Math.random, pool = nul
   if (!candidates.length) throw new Error('no candidate targets');
   const target = candidates[Math.min(candidates.length - 1, Math.floor(rng() * candidates.length))];
   return {
-    startCode, targetCode: target.code,
+    startCode, targetCode: target.code, difficulty,
     startDistanceKm: haversineKm(start.latlng, target.latlng),
+    startCompass: compassPoint(rhumbBearing(start.latlng, target.latlng)),
     guesses: [], status: 'playing', cluesUsed: 0,
   };
 }
@@ -129,7 +180,11 @@ export function makeGuess(game, countries, code) {
   else if (code === game.startCode || game.guesses.some((g) => g.code === code)) verdict = 'repeat';
   else if (Math.abs(distanceKm - ref) < 0.5) verdict = 'same';
   else verdict = distanceKm < ref ? 'warmer' : 'cooler';
-  const result = { code, distanceKm, referenceKm: ref, verdict, bearing: initialBearing(guessed.latlng, target.latlng) };
+  const result = {
+    code, distanceKm, referenceKm: ref, verdict,
+    bearing: initialBearing(guessed.latlng, target.latlng),
+    compass: compassPoint(rhumbBearing(guessed.latlng, target.latlng)),
+  };
   const guesses = verdict === 'repeat' ? game.guesses : [...game.guesses, result];
   return { game: { ...game, guesses, status: verdict === 'correct' ? 'won' : 'playing' }, result };
 }
@@ -142,7 +197,10 @@ export function makeGuess(game, countries, code) {
 export function directionClue(game, countries) {
   const byCode = new Map(countries.map((c) => [c.code, c]));
   const target = byCode.get(game.targetCode);
-  const from = (code) => ({ code, bearing: rhumbBearing(byCode.get(code).latlng, target.latlng), compass: compassPoint(rhumbBearing(byCode.get(code).latlng, target.latlng)) });
+  const from = (code) => {
+    const b = rhumbBearing(byCode.get(code).latlng, target.latlng);
+    return { code, bearing: b, compass: compassPoint(b), distanceKm: haversineKm(byCode.get(code).latlng, target.latlng) };
+  };
   const last = game.guesses.length ? game.guesses[game.guesses.length - 1].code : null;
   return { fromStart: from(game.startCode), fromLast: last ? from(last) : null };
 }

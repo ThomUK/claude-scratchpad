@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import {
   haversineKm, initialBearing, compassPoint, formatKm, decodeTopology,
   createGame, makeGuess, giveUp, referenceDistance, guessCount, cameraDistanceForSpan,
-  rhumbBearing, directionClue, useClue,
+  rhumbBearing, directionClue, useClue, countryAt, DIFFICULTY,
 } from '../engine.js';
 
 let n = 0;
@@ -100,6 +100,39 @@ check('data: world.json decodes and covers every country except the three with n
     assert.ok(ring.length >= 4, 'ring has at least 4 points');
     for (const [lon, lat] of ring) assert.ok(lon >= -180.01 && lon <= 180.01 && lat >= -90.01 && lat <= 90.01, 'coords in range');
   }
+});
+
+check('countryAt: finds countries by point, respects holes, falls back to shapeless specks', () => {
+  const topo = JSON.parse(readFileSync(new URL('../data/world.json', import.meta.url), 'utf8'));
+  const feats = decodeTopology(topo);
+  assert.equal(countryAt(feats, countries, 51.5, -0.1), 'GBR');     // London
+  assert.equal(countryAt(feats, countries, 48.86, 2.35), 'FRA');    // Paris
+  assert.equal(countryAt(feats, countries, 45.3, 34.4), 'UKR');     // central Crimea
+  assert.equal(countryAt(feats, countries, 43.07, 12.6), 'ITA');    // Umbria
+  assert.equal(countryAt(feats, countries, -29.6, 28.2), 'LSO');    // Lesotho (hole in South Africa)
+  assert.equal(countryAt(feats, countries, -29.5, 27.0), 'ZAF');    // Free State, just outside the hole
+  assert.equal(countryAt(feats, countries, 36.14, -5.35), 'GIB');   // no polygon at 50m
+  assert.equal(countryAt(feats, countries, 40, -40), null);         // mid-Atlantic
+  // Synthetic hole check independent of the data.
+  const sq = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]];
+  const f = [{ code: 'OUT', polygons: [[sq(0, 0, 10, 10), sq(4, 4, 6, 6)]] }, { code: 'IN', polygons: [[sq(4, 4, 6, 6)]] }];
+  assert.equal(countryAt(f, [], 2, 2), 'OUT');
+  assert.equal(countryAt(f, [], 5, 5), 'IN');
+});
+
+check('DIFFICULTY: three levels; createGame records it and rejects unknown ones', () => {
+  assert.deepEqual(Object.keys(DIFFICULTY), ['easy', 'intermediate', 'hard']);
+  assert.equal(DIFFICULTY.easy.names && DIFFICULTY.easy.click && DIFFICULTY.easy.distances && DIFFICULTY.easy.bearings, true);
+  assert.equal(DIFFICULTY.intermediate.names && !DIFFICULTY.intermediate.distances && DIFFICULTY.intermediate.clueButton, true);
+  assert.equal(!DIFFICULTY.hard.names && DIFFICULTY.hard.distances && !DIFFICULTY.hard.bearings, true);
+  const g = createGame(countries, 'GBR', { rng: () => 0, pool: ['AUS'], difficulty: 'easy' });
+  assert.equal(g.difficulty, 'easy'); assert.equal(g.startCompass, 'SE');
+  assert.equal(createGame(countries, 'GBR', { rng: () => 0 }).difficulty, 'hard');
+  assert.throws(() => createGame(countries, 'GBR', { difficulty: 'brutal' }));
+  const r = makeGuess(g, countries, 'JPN').result;
+  assert.equal(r.compass, 'S');
+  const c = directionClue(g, countries);
+  close(c.fromStart.distanceKm, g.startDistanceKm, 1e-9, 'clue carries distance');
 });
 
 check('createGame: never picks the start as the target; honours the pool and rng', () => {

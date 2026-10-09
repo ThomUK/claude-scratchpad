@@ -35,13 +35,15 @@
 
     <aside class="panel">
       <div id="panel-start">
-        <h2>Step 1 · Where are you starting from?</h2>
+        <h2>Difficulty</h2>
+        <div class="difficulty" id="difficulty" role="radiogroup" aria-label="Difficulty"></div>
+        <h2>Where are you starting from?</h2>
         <p class="muted small">Any of the 250 countries and territories. The globe will turn to show it.</p>
       </div>
 
       <div id="panel-game" hidden>
         <div class="status">
-          <div><span class="muted small">Starting from</span><br /><strong id="start-name"></strong></div>
+          <div><span class="muted small">Starting from · <span id="difficulty-tag"></span></span><br /><strong id="start-name"></strong></div>
           <div class="right"><span class="muted small">Guesses</span><br /><strong id="guess-count">0</strong> <span class="muted small" id="clues-used"></span></div>
         </div>
         <p class="clue" id="clue" aria-live="polite"></p>

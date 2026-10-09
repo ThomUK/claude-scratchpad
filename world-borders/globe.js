@@ -3,7 +3,7 @@
 // line segments; tiny or shapeless territories get a screen-space ring marker.
 import * as THREE from 'three';
 import { OrbitControls } from './vendor/three/OrbitControls.js?v=dev';
-import { cameraDistanceForSpan } from './engine.js?v=dev';
+import { cameraDistanceForSpan, countryAt } from './engine.js?v=dev';
 
 export const COLORS = {
   ocean: '#0c1a2b', land: '#34485d', border: '#0a1017', guessed: '#4b6482',
@@ -17,6 +17,15 @@ export function latLonToVec3(lat, lon, r = 1) {
   const phi = THREE.MathUtils.degToRad(lon + 180);
   const theta = THREE.MathUtils.degToRad(90 - lat);
   return new THREE.Vector3(-r * Math.cos(phi) * Math.sin(theta), r * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta));
+}
+
+/** Inverse of latLonToVec3 for a point on (or above) the sphere. */
+export function vec3ToLatLon(v) {
+  const n = v.clone().normalize();
+  const lat = 90 - THREE.MathUtils.radToDeg(Math.acos(THREE.MathUtils.clamp(n.y, -1, 1)));
+  let lon = THREE.MathUtils.radToDeg(Math.atan2(n.z, -n.x)) - 180;
+  if (lon < -180) lon += 360;
+  return [lat, lon];
 }
 
 export class Globe {
@@ -56,8 +65,8 @@ export class Globe {
     this.texture.colorSpace = THREE.SRGBColorSpace;
     this.texture.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
     this.paint();
-    const sphere = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64), new THREE.MeshBasicMaterial({ map: this.texture }));
-    this.scene.add(sphere);
+    this.sphere = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64), new THREE.MeshBasicMaterial({ map: this.texture }));
+    this.scene.add(this.sphere);
 
     // Soft atmosphere rim.
     const glow = new THREE.Mesh(
@@ -76,6 +85,25 @@ export class Globe {
     this.scene.add(this.pathGroup);
     this.labelGroup = new THREE.Group();
     this.scene.add(this.labelGroup);
+    this.nameGroup = new THREE.Group();
+    this.nameGroup.visible = false;
+    this.scene.add(this.nameGroup);
+    this.countryList = countries;
+
+    // Click (not drag) to pick a country; app sets onPick and pickEnabled.
+    this.onPick = null;
+    this.pickEnabled = false;
+    const dom = this.renderer.domElement;
+    let down = null;
+    dom.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+    dom.addEventListener('pointerup', (e) => {
+      if (!down || !this.pickEnabled || !this.onPick) return;
+      const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), dt = performance.now() - down.t;
+      down = null;
+      if (moved > 6 || dt > 500) return;
+      const code = this.pick(e.clientX, e.clientY);
+      if (code) this.onPick(code);
+    });
 
     this.resize();
     this.ro = new ResizeObserver(() => this.resize());
@@ -168,6 +196,60 @@ export class Globe {
     }
   }
 
+  /** Country code under a client-space pixel, or null. */
+  pick(clientX, clientY) {
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(ndc, this.camera);
+    const hit = ray.intersectObject(this.sphere, false)[0];
+    if (!hit) return null;
+    const [lat, lon] = vec3ToLatLon(hit.point);
+    return countryAt(this.features, this.countryList, lat, lon);
+  }
+
+  /** Text sprite for a country name. */
+  static nameTexture(text) {
+    const W = 512, H = 96, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d');
+    const size = text.length > 22 ? 30 : text.length > 14 ? 38 : 46;
+    g.font = `600 ${size}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.lineJoin = 'round'; g.lineWidth = 8; g.strokeStyle = 'rgba(8, 12, 18, 0.95)';
+    g.strokeText(text, W / 2, H / 2 + 2);
+    g.fillStyle = '#f2f6fa'; g.fillText(text, W / 2, H / 2 + 2);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+
+  /** Build name labels once; shown when `setNamesVisible(true)`. */
+  buildNames() {
+    if (this.nameGroup.children.length) return;
+    for (const c of this.countryList) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: Globe.nameTexture(c.name), sizeAttenuation: false, transparent: true, depthWrite: false, depthTest: false }));
+      sp.scale.set(0.14, 0.02625);
+      const pos = c.label || c.latlng;
+      sp.position.copy(latLonToVec3(pos[0], pos[1], 1.015));
+      sp.userData = { span: c.hasShape ? Math.min(c.span > 180 ? 60 : c.span, 60) : 0.3, dir: sp.position.clone().normalize() };
+      this.nameGroup.add(sp);
+    }
+  }
+
+  setNamesVisible(on) {
+    if (on) this.buildNames();
+    this.nameGroup.visible = !!on;
+  }
+
+  /** Show a label only when its country is big enough at this zoom and faces the camera. */
+  updateNames() {
+    if (!this.nameGroup.visible) return;
+    const d = this.camera.position.length() - 1;
+    const camDir = this.camera.position.clone().normalize();
+    for (const sp of this.nameGroup.children) {
+      const { span, dir } = sp.userData;
+      sp.visible = span >= d * 5.5 && dir.dot(camDir) > 0.25;
+    }
+  }
+
   /** A round label sprite: `text` on a disc of `color`. */
   static labelTexture(text, color, textColor = '#0f1419') {
     const s = 128, c = document.createElement('canvas'); c.width = c.height = s;
@@ -233,6 +315,7 @@ export class Globe {
       if (t >= 1) this.flight = null;
     }
     this.controls.update();
+    this.updateNames();
     this.renderer.render(this.scene, this.camera);
   }
 

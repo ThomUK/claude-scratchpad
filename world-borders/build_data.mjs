@@ -124,6 +124,7 @@ const neCodeOf = (p) => {
 // ---- Geometry --------------------------------------------------------------
 const pop = new Map(); // code -> NE population estimate (sum over map units)
 const bbox = new Map(); // code -> [minLon, minLat, maxLon, maxLat]
+const label = new Map(); // code -> { pos: [lat, lon], area } from the largest map unit's LABEL_X/Y
 const geoms = [];
 const walk = (coords, fn) => (typeof coords[0] === 'number' ? fn(coords) : coords.forEach((c) => walk(c, fn)));
 for (const f of ne.features) {
@@ -138,6 +139,11 @@ for (const f of ne.features) {
       b[0] = Math.min(b[0], x); b[1] = Math.min(b[1], y); b[2] = Math.max(b[2], x); b[3] = Math.max(b[3], y);
     });
     bbox.set(code, b);
+    const fb = [180, 90, -180, -90];
+    walk(f.geometry.coordinates, ([x, y]) => { fb[0] = Math.min(fb[0], x); fb[1] = Math.min(fb[1], y); fb[2] = Math.max(fb[2], x); fb[3] = Math.max(fb[3], y); });
+    const area = (fb[2] - fb[0]) * (fb[3] - fb[1]);
+    const { LABEL_X, LABEL_Y } = f.properties;
+    if (Number.isFinite(LABEL_X) && Number.isFinite(LABEL_Y) && (!label.has(code) || label.get(code).area < area)) label.set(code, { pos: [LABEL_Y, LABEL_X], area });
   }
   geoms.push({ type: 'Feature', properties: { c: code }, geometry: f.geometry });
 }
@@ -208,6 +214,7 @@ const countries = rc.map((c) => {
     languages: langs, currencies: currs,
     dependentOf: dep ? dep[0] : null,
     bbox: b, span: +span.toFixed(2), hasShape: !!b,
+    label: label.has(code) ? label.get(code).pos.map((v) => +v.toFixed(3)) : c.latlng,
     facts,
   };
 }).sort((a, b) => a.name.localeCompare(b.name));

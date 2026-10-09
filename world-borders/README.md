@@ -2,8 +2,14 @@
 
 An educational guessing game on a 3D globe.
 
-1. Pick a starting country (searchable list of all 250 countries and territories).
-   The globe turns to show it, highlighted in yellow.
+1. Choose a difficulty, then pick a starting country (searchable list of all 250
+   countries and territories). The globe turns to show it, highlighted in yellow.
+
+   | Level | Names on map | Click map to guess | Per guess | Clue button |
+   |---|---|---|---|---|
+   | Easy | yes | yes | warmer/cooler, distance and compass direction | not needed |
+   | Intermediate | yes | no | warmer/cooler only | distance and direction from start and latest guess |
+   | Hard | no | no | warmer/cooler and distance | direction from start and latest guess |
 2. The game hides a random second country and tells you how far it is from your start.
 3. Guess a country. A line is drawn from your previous guess (or from the start) to
    it: **orange** if that hop took you closer to the mystery country (warmer),
@@ -49,5 +55,5 @@ representative lat/lon from the dataset.
 
 ## Ideas for later
 
-Difficulty levels (restrict the target pool to larger or better-known places,
-or add compass-direction clues), scoring and streaks, and a native Android wrap.
+Restricting the target pool on easier levels, scoring and streaks, and a native
+Android wrap.

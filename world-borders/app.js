@@ -1,5 +1,5 @@
 // World Borders: UI glue. Game rules live in engine.js, rendering in globe.js.
-import { decodeTopology, createGame, makeGuess, giveUp, formatKm, guessCount, haversineKm, initialBearing, compassPoint, directionClue, useClue } from './engine.js?v=dev';
+import { decodeTopology, createGame, makeGuess, giveUp, formatKm, guessCount, haversineKm, initialBearing, compassPoint, directionClue, useClue, DIFFICULTY } from './engine.js?v=dev';
 import { Globe, COLORS } from './globe.js?v=dev';
 
 const $ = (id) => document.getElementById(id);
@@ -10,8 +10,26 @@ const fold = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const state = {
   countries: [], byCode: new Map(), globe: null,
   phase: 'pick-start', // pick-start | guessing | over
-  startCode: null, game: null,
+  startCode: null, game: null, clue: null,
+  difficulty: 'hard',
 };
+const rules = () => DIFFICULTY[state.difficulty];
+
+function loadDifficulty() {
+  try { const d = localStorage.getItem('world-borders.difficulty'); if (DIFFICULTY[d]) state.difficulty = d; } catch { /* storage unavailable */ }
+}
+function setDifficulty(d) {
+  state.difficulty = d;
+  try { localStorage.setItem('world-borders.difficulty', d); } catch { /* storage unavailable */ }
+  applyDifficultyToGlobe();
+  render();
+}
+function applyDifficultyToGlobe() {
+  const r = rules();
+  state.globe.setNamesVisible(r.names);
+  state.globe.pickEnabled = r.click && state.phase !== 'over';
+  $('globe-wrap').classList.toggle('clickable', r.click && state.phase !== 'over');
+}
 
 async function main() {
   const [cJson, topo] = await Promise.all([
@@ -21,13 +39,29 @@ async function main() {
   state.countries = cJson.countries;
   state.byCode = new Map(state.countries.map((c) => [c.code, c]));
   state.globe = new Globe($('globe'), decodeTopology(topo), state.countries);
+  state.globe.onPick = (code) => choose(code);
   $('loading').remove();
+  loadDifficulty();
+  wireDifficulty();
+  applyDifficultyToGlobe();
   $('data-note').textContent = `Data: ${cJson.sources.countries}; ${cJson.sources.geometry}. Built ${cJson.generated}.`;
   wirePicker();
   $('btn-giveup').addEventListener('click', onGiveUp);
   $('btn-clue').addEventListener('click', onClue);
   $('btn-newstart').addEventListener('click', () => resetToPickStart());
   render();
+}
+
+// -------------------------------------------------------------- difficulty --
+function wireDifficulty() {
+  const box = $('difficulty');
+  for (const [key, d] of Object.entries(DIFFICULTY)) {
+    const lab = el('label', 'diff');
+    const inp = el('input'); inp.type = 'radio'; inp.name = 'difficulty'; inp.value = key;
+    inp.addEventListener('change', () => setDifficulty(key));
+    lab.append(inp, el('span', 'dname', d.label), el('span', 'dblurb', d.blurb));
+    box.append(lab);
+  }
 }
 
 // ------------------------------------------------------------------ picker --
@@ -78,15 +112,17 @@ function choose(code) {
   $('results').hidden = true;
   if (state.phase === 'pick-start') startRound(code);
   else if (state.phase === 'guessing') onGuess(code);
-  $('search').focus({ preventScroll: true });
+  else return;
+  if (!rules().click) $('search').focus({ preventScroll: true });
 }
 
 // -------------------------------------------------------------------- game --
 function startRound(startCode) {
   state.startCode = startCode;
   state.clue = null;
-  state.game = createGame(state.countries, startCode);
+  state.game = createGame(state.countries, startCode, { difficulty: state.difficulty });
   state.phase = 'guessing';
+  applyDifficultyToGlobe();
   state.globe.flyTo(startCode);
   paintGlobe();
   render();
@@ -97,7 +133,7 @@ function onGuess(code) {
   state.game = game;
   state.globe.flyTo(code);
   if (result.verdict === 'repeat') { flash(`You have already used ${state.byCode.get(code).name}.`); return; }
-  if (game.status === 'won') state.phase = 'over';
+  if (game.status === 'won') { state.phase = 'over'; applyDifficultyToGlobe(); }
   paintGlobe();
   render(result);
 }
@@ -106,8 +142,10 @@ function onClue() {
   const g = state.game, name = (c) => state.byCode.get(c).name;
   const c = directionClue(g, state.countries);
   state.game = useClue(g);
-  const parts = [`From ${name(c.fromStart.code)} (your start) the mystery country lies to the ${DIR[c.fromStart.compass]}.`];
-  if (c.fromLast && c.fromLast.code !== c.fromStart.code) parts.push(`From ${name(c.fromLast.code)} (your latest guess) it lies to the ${DIR[c.fromLast.compass]}.`);
+  // Hard already shows distances, so the clue adds direction; Intermediate hides both, so the clue gives both.
+  const where = (x) => (rules().distances ? `to the ${DIR[x.compass]}` : `${formatKm(x.distanceKm)} away to the ${DIR[x.compass]}`);
+  const parts = [`From ${name(c.fromStart.code)} (your start) the mystery country lies ${where(c.fromStart)}.`];
+  if (c.fromLast && c.fromLast.code !== c.fromStart.code) parts.push(`From ${name(c.fromLast.code)} (your latest guess) it lies ${where(c.fromLast)}.`);
   state.clue = parts.join(' ');
   render();
 }
@@ -115,15 +153,18 @@ function onClue() {
 function onGiveUp() {
   state.game = giveUp(state.game);
   state.phase = 'over';
+  applyDifficultyToGlobe();
   state.globe.flyTo(state.game.targetCode);
   paintGlobe();
   render();
 }
 
 function resetToPickStart() {
-  state.phase = 'pick-start'; state.game = null; state.startCode = null;
+  state.phase = 'pick-start'; state.game = null; state.startCode = null; state.clue = null;
   state.globe.setHighlights(new Map());
+  state.globe.setPath([], []);
   state.globe.controls.autoRotate = true;
+  applyDifficultyToGlobe();
   render();
 }
 
@@ -157,14 +198,21 @@ function render(lastResult) {
   $('panel-game').hidden = state.phase === 'pick-start';
   $('reveal').hidden = state.phase !== 'over';
   $('picker').hidden = state.phase === 'over';
-  search.placeholder = state.phase === 'pick-start' ? 'Type a country to start from…' : 'Type your guess…';
+  const r = rules();
+  const click = r.click ? ' or click the map' : '';
+  search.placeholder = state.phase === 'pick-start' ? `Type a country to start from${click}…` : `Type your guess${click}…`;
+  for (const inp of document.querySelectorAll('#difficulty input')) inp.checked = inp.value === state.difficulty;
+  $('difficulty-tag').textContent = r.label;
 
   if (state.phase === 'pick-start') { $('clue').textContent = ''; return; }
 
   const start = state.byCode.get(g.startCode);
+  const gr = DIFFICULTY[g.difficulty] || r;
   $('start-name').textContent = `${start.flag} ${start.name}`;
   $('guess-count').textContent = String(guessCount(g));
-  $('clue').textContent = `The mystery country is ${formatKm(g.startDistanceKm)} from ${start.name}.`;
+  $('clue').textContent = gr.distances
+    ? `The mystery country is ${formatKm(g.startDistanceKm)} from ${start.name}${gr.bearings ? `, to the ${DIR[g.startCompass]}` : ''}.`
+    : `The mystery country is hidden somewhere. Guess, and each hop tells you warmer or cooler.`;
 
   const log = $('log');
   log.replaceChildren();
@@ -174,14 +222,15 @@ function render(lastResult) {
     const num = el('span', 'gnum', String(i + 1));
     num.style.background = x.verdict === 'correct' ? COLORS.correct : '#e6edf3';
     const line = el('span', 'gline'); line.style.background = verdictColor(x.verdict);
-    row.append(num, line, el('span', 'gname', name(x.code)), el('span', 'gdist', formatKm(x.distanceKm)));
+    const dist = gr.distances ? `${formatKm(x.distanceKm)}${gr.bearings && x.verdict !== 'correct' ? ` ${x.compass}` : ''}` : '';
+    row.append(num, line, el('span', 'gname', name(x.code)), el('span', 'gdist', dist));
     row.append(el('span', 'gverdict', x.verdict === 'correct' ? 'Found it!' : x.verdict === 'warmer' ? 'Warmer' : x.verdict === 'cooler' ? 'Cooler' : 'Same'));
-    row.title = `${from} → ${name(x.code)}: ${formatKm(x.referenceKm)} → ${formatKm(x.distanceKm)} from the mystery country`;
+    row.title = gr.distances ? `${from} → ${name(x.code)}: ${formatKm(x.referenceKm)} → ${formatKm(x.distanceKm)} from the mystery country` : `${from} → ${name(x.code)}`;
     log.prepend(row);
   });
   $('log-empty').hidden = g.guesses.length > 0;
   $('btn-giveup').hidden = state.phase !== 'guessing';
-  $('btn-clue').hidden = state.phase !== 'guessing';
+  $('btn-clue').hidden = state.phase !== 'guessing' || !gr.clueButton;
   $('clue-text').textContent = state.clue || '';
   $('clue-box').hidden = !state.clue;
   $('clues-used').textContent = g.cluesUsed ? `${g.cluesUsed} ${g.cluesUsed === 1 ? 'clue' : 'clues'}` : '';
@@ -189,10 +238,17 @@ function render(lastResult) {
   if (lastResult && state.phase === 'guessing') {
     const v = lastResult.verdict, i = g.guesses.length - 1;
     const prevName = i === 0 ? start.name : name(g.guesses[i - 1].code);
-    const here = `${name(lastResult.code)} is ${formatKm(lastResult.distanceKm)} from the mystery country`;
-    flash(v === 'warmer' ? `Warmer: ${here}, closer than ${prevName} was (${formatKm(lastResult.referenceKm)}).`
-      : v === 'cooler' ? `Cooler: ${here}, further than ${prevName} was (${formatKm(lastResult.referenceKm)}).`
-      : `Same: ${here}, the same as ${prevName}.`, v);
+    const dir = gr.bearings ? `, which lies to the ${DIR[lastResult.compass]}` : '';
+    if (gr.distances) {
+      const here = `${name(lastResult.code)} is ${formatKm(lastResult.distanceKm)} from the mystery country`;
+      flash(v === 'warmer' ? `Warmer: ${here}${dir}, closer than ${prevName} was (${formatKm(lastResult.referenceKm)}).`
+        : v === 'cooler' ? `Cooler: ${here}${dir}, further than ${prevName} was (${formatKm(lastResult.referenceKm)}).`
+        : `Same: ${here}, the same as ${prevName}.`, v);
+    } else {
+      flash(v === 'warmer' ? `Warmer: ${name(lastResult.code)} is closer to the mystery country than ${prevName} was.`
+        : v === 'cooler' ? `Cooler: ${name(lastResult.code)} is further from the mystery country than ${prevName} was.`
+        : `Same: ${name(lastResult.code)} is exactly as far from the mystery country as ${prevName} was.`, v);
+    }
   }
   if (state.phase === 'over') { flash(''); renderReveal(); }
 }
@@ -228,8 +284,9 @@ function renderReveal() {
   r.replaceChildren();
   const n = guessCount(g);
   const clues = g.cluesUsed ? ` with ${g.cluesUsed} ${g.cluesUsed === 1 ? 'clue' : 'clues'}` : '';
+  const level = DIFFICULTY[g.difficulty] ? ` on ${DIFFICULTY[g.difficulty].label}` : '';
   r.append(el('p', 'outcome', g.status === 'won'
-    ? `You found it in ${n} ${n === 1 ? 'guess' : 'guesses'}${clues}.`
+    ? `You found it in ${n} ${n === 1 ? 'guess' : 'guesses'}${clues}${level}.`
     : `The mystery country was ${c.name}.`));
   const head = el('div', 'rhead');
   head.append(el('span', 'bigflag', c.flag));
