@@ -9,8 +9,9 @@ offline; the shell is ready for a Capacitor wrap.
 random, a tap on the map, or a search.
 The game hides a second country and tells you how far it is. Guess a country:
 a line is drawn from your previous guess (or the start) to it, **orange** if
-that hop took you closer (warmer), **blue** if further (cooler). Points are
-numbered so the path reads in order. **Give me a clue** reveals the compass
+that hop took you closer, **blue** if further away, and the feedback tells
+you how far, and in which direction, the mystery country lies from that
+guess. Points are numbered so the path reads in order. **Give me a clue** reveals the compass
 direction (and, when distances are hidden, the distance) from your start and
 your latest guess; clues count against your score. Find it (green) and you get
 the country card: capital, population, area, density, region, languages,

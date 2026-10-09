@@ -352,7 +352,7 @@ function render(lastResult) {
   $('guess-count').textContent = String(guessCount(g));
   $('clue').textContent = gr.distances
     ? `The mystery country is ${km(g.startDistanceKm)} from ${start.name}${gr.bearings ? `, to the ${DIR[g.startCompass]}` : ''}.`
-    : 'The mystery country is hidden somewhere. Guess, and each hop tells you warmer or cooler.';
+    : 'The mystery country is hidden somewhere. Guess, and each hop tells you whether you got closer.';
   $('clue-text').textContent = state.clue || '';
   $('clue-box').hidden = !state.clue;
   $('clues-used').textContent = g.cluesUsed ? `· ${g.cluesUsed} ${g.cluesUsed === 1 ? 'clue' : 'clues'}` : '';
@@ -368,29 +368,21 @@ function render(lastResult) {
     const line = el('span', 'gline'); line.style.background = verdictColor(x.verdict);
     const dist = gr.distances ? `${km(x.distanceKm)}${gr.bearings && x.verdict !== 'correct' ? ` ${x.compass}` : ''}` : '';
     row.append(num, line, el('span', 'gname', name(x.code)), el('span', 'gdist', dist));
-    row.append(el('span', 'gverdict', x.verdict === 'correct' ? 'Found it!' : x.verdict === 'warmer' ? 'Warmer' : x.verdict === 'cooler' ? 'Cooler' : 'Same'));
+    row.append(el('span', 'gverdict', x.verdict === 'correct' ? 'Found it!' : x.verdict === 'warmer' ? 'Closer' : x.verdict === 'cooler' ? 'Further' : 'Same'));
     row.title = gr.distances ? `${from} → ${name(x.code)}: ${km(x.referenceKm)} → ${km(x.distanceKm)} from the mystery country` : `${from} → ${name(x.code)}`;
     log.prepend(row);
   });
   $('log-empty').hidden = g.guesses.length > 0;
 
   if (lastResult && state.phase === 'guessing') {
-    const v = lastResult.verdict, i = g.guesses.length - 1;
-    const prevName = i === 0 ? start.name : name(g.guesses[i - 1].code);
-    const dir = gr.bearings ? `, which lies to the ${DIR[lastResult.compass]}` : '';
-    let msg;
-    if (gr.distances) {
-      const here = `${name(lastResult.code)} is ${km(lastResult.distanceKm)} from the mystery country`;
-      msg = v === 'warmer' ? `Warmer: ${here}${dir}, closer than ${prevName} was (${km(lastResult.referenceKm)}).`
-        : v === 'cooler' ? `Cooler: ${here}${dir}, further than ${prevName} was (${km(lastResult.referenceKm)}).`
-        : `Same: ${here}, the same as ${prevName}.`;
-    } else {
-      msg = v === 'warmer' ? `Warmer: ${name(lastResult.code)} is closer to the mystery country than ${prevName} was.`
-        : v === 'cooler' ? `Cooler: ${name(lastResult.code)} is further from the mystery country than ${prevName} was.`
-        : `Same: ${name(lastResult.code)} is exactly as far from the mystery country as ${prevName} was.`;
-    }
-    flash(msg, v);
-    toast(v === 'warmer' ? `🔥 Warmer · ${name(lastResult.code)}` : v === 'cooler' ? `❄️ Cooler · ${name(lastResult.code)}` : `Same distance · ${name(lastResult.code)}`, v);
+    const v = lastResult.verdict, who = name(lastResult.code);
+    const lead = v === 'warmer' ? 'You got closer!' : v === 'cooler' ? 'Further away.' : 'Same distance as before.';
+    let where;
+    if (gr.distances && gr.bearings) where = `The mystery country is ${km(lastResult.distanceKm)} to the ${DIR[lastResult.compass]} of ${who}.`;
+    else if (gr.distances) where = `The mystery country is ${km(lastResult.distanceKm)} from ${who}.`;
+    else where = v === 'warmer' ? `${who} is nearer to the mystery country.` : v === 'cooler' ? `${who} is further from the mystery country.` : `${who} is exactly as far from the mystery country.`;
+    flash(`${lead} ${where}`, v);
+    toast(v === 'warmer' ? `🔥 Closer · ${who}` : v === 'cooler' ? `❄️ Further · ${who}` : `Same distance · ${who}`, v);
   }
   if (state.phase === 'over') { flash(''); renderOver(); }
 }
