@@ -3,7 +3,7 @@
 import {
   decodeTopology, createGame, makeGuess, giveUp, formatDistance, guessCount, haversineKm, initialBearing,
   compassPoint, directionClue, useClue, DIFFICULTY, sortCountries, NUMERIC_KEYS, countryAt, resolveRules,
-  score, recordRound,
+  score, recordRound, normalizeStats, stampsFor, remainingPool, STAMP_LEVELS,
 } from './engine.js?v=dev';
 import { Globe, COLORS } from './globe.js?v=dev';
 
@@ -29,6 +29,7 @@ const state = {
   settings: { ...DEFAULT_SETTINGS },
   stats: null,
   atlas: { key: 'name', dir: 'asc', filter: '' },
+  passportFilter: 'all',
   countryPage: null,
 };
 const rules = () => resolveRules(state.settings);
@@ -51,7 +52,7 @@ async function main() {
   const legacy = (() => { try { return localStorage.getItem('world-borders.difficulty'); } catch { return null; } })();
   state.settings = { ...DEFAULT_SETTINGS, ...load(KEYS.settings, {}) };
   if (legacy && DIFFICULTY[legacy] && !localStorage.getItem(KEYS.settings)) state.settings.preset = legacy;
-  state.stats = load(KEYS.stats, null);
+  state.stats = normalizeStats(load(KEYS.stats, null));
 
   state.globe = new Globe($('globe'), state.features, state.countries);
   state.globe.onPick = (code) => (code ? choose(code) : toast('No country there. Zoom in closer, or type its name.', 'warn'));
@@ -79,7 +80,7 @@ async function main() {
 // ------------------------------------------------------------- navigation --
 function wireTabs() {
   for (const b of document.querySelectorAll('.tab')) b.addEventListener('click', () => showScreen(b.dataset.screen));
-  $('country-back').addEventListener('click', () => showScreen('atlas'));
+  $('country-back').addEventListener('click', () => showScreen(state.countryFrom || 'atlas'));
   $('btn-show-globe').addEventListener('click', () => { browseCountry(state.countryPage); showScreen('play'); });
   $('btn-start-here').addEventListener('click', () => { startRound(state.countryPage); showScreen('play'); });
 }
@@ -87,8 +88,9 @@ function wireTabs() {
 function showScreen(which) {
   state.screen = which;
   for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== `screen-${which}`;
-  for (const b of document.querySelectorAll('.tab')) b.classList.toggle('on', b.dataset.screen === (which === 'country' ? 'atlas' : which));
+  for (const b of document.querySelectorAll('.tab')) b.classList.toggle('on', b.dataset.screen === (which === 'country' ? (state.countryFrom || 'atlas') : which));
   if (which === 'atlas') renderAtlas();
+  if (which === 'passport') renderPassport();
   if (which === 'settings') renderSettings();
   if (which === 'play') state.globe.resize();
 }
@@ -189,14 +191,19 @@ function applyRulesToGlobe() {
 function startRound(startCode) {
   state.clue = null; state.browse = null;
   flash('');
-  state.game = createGame(state.countries, startCode, { rules: rules(), pools: state.pools });
+  const r = rules();
+  const pool = remainingPool(state.countries, state.pools, r, state.stats);
+  // Only the start country left to stamp? Draw from the whole pool rather than fail.
+  const codes = pool.codes.filter((c) => c !== startCode).length ? pool.codes : state.countries.map((c) => c.code);
+  state.game = createGame(state.countries, startCode, { rules: r, pool: codes });
   state.phase = 'guessing';
   applyRulesToGlobe();
   state.globe.flyTo(startCode);
   paintGlobe();
   setSheet('half');
   render();
-  toast(`Starting from ${name(startCode)}. ${rules().distances ? `The mystery country is ${km(state.game.startDistanceKm)} away.` : 'Guess a country.'}`);
+  const left = pool.complete ? `Your ${r.label} passport is complete, so any of them can come up.` : STAMP_LEVELS.includes(r.preset) ? `${pool.total - pool.stamped} ${r.label} stamps left to collect.` : '';
+  toast(`Starting from ${name(startCode)}. ${r.distances ? `The mystery country is ${km(state.game.startDistanceKm)} away.` : ''} ${left}`.replace(/\s+/g, ' ').trim());
 }
 
 function onGuess(code) {
@@ -359,6 +366,17 @@ function renderOver() {
     ? `You found it in ${n} ${n === 1 ? 'guess' : 'guesses'}${clues} on ${g.rules.label}. Score ${score(g)}.`
     : `The mystery country was ${c.name}.`;
   $('outcome').style.color = g.status === 'won' ? COLORS.correct : COLORS.target;
+  const st = $('stamped');
+  st.replaceChildren();
+  if (g.status === 'won' && STAMP_LEVELS.includes(g.difficulty)) {
+    const n = stampsFor(state.stats, c.code)[g.difficulty];
+    st.append(stampEl(g.difficulty, true, 'lg'));
+    const t = el('div'); t.append(el('div', 't', n === 1 ? `${g.rules.label} stamp earned!` : `${g.rules.label} stamp again (${n} times)`));
+    const pool = remainingPool(state.countries, state.pools, g.rules, state.stats);
+    t.append(el('div', 's', pool.complete ? `Your ${g.rules.label} passport is complete: all ${pool.total} stamps!` : `${pool.stamped} of ${pool.total} ${g.rules.label} stamps collected.`));
+    st.append(t);
+    st.hidden = false;
+  } else st.hidden = true;
   $('reveal-card').replaceChildren(countryCard(c, g.startCode));
   const row = $('over-actions');
   row.replaceChildren();
@@ -394,9 +412,11 @@ function countryCard(c, startCode) {
   add('Languages', c.languages.length ? c.languages.join(', ') : '—');
   add('Currency', c.currencies.length ? c.currencies.join(', ') : '—');
   if (c.dependentOf) add('Administered by', name(c.dependentOf));
-  const found = state.stats && state.stats.found && state.stats.found[c.code];
-  if (found) add('Passport', `Found ${found} ${found === 1 ? 'time' : 'times'}`);
   frag.append(dl);
+  const ps = el('div', 'ps'); ps.style.margin = '12px 0 0'; ps.style.justifyContent = 'flex-start'; ps.style.gap = '10px';
+  const sf = stampsFor(state.stats, c.code);
+  for (const l of STAMP_LEVELS) ps.append(stampEl(l, sf[l] > 0, '', sf[l]));
+  frag.append(el('h3', null, 'Passport stamps'), ps);
 
   frag.append(el('h3', null, 'Bordering countries'));
   if (c.borders.length) {
@@ -432,16 +452,79 @@ function comparedToStart(c, start) {
   return out;
 }
 
-// ------------------------------------------------------------------- stats --
+// ---------------------------------------------------------------- passport --
+const LEVEL_LABEL = (l) => (DIFFICULTY[l] || { label: l }).label;
+/** A rubber-stamp element for a level; `got` renders it inked, otherwise a faint outline. */
+function stampEl(level, got, size = '', count = 0) {
+  const s = el('span', `stamp ${level} ${got ? 'got' : 'missing'} ${size}`.trim());
+  s.textContent = size === 'sm' ? LEVEL_LABEL(level)[0] : level === 'intermediate' ? 'Inter\nmediate' : LEVEL_LABEL(level);
+  if (got && count > 1) s.append(el('small', null, `×${count}`));
+  s.title = got ? `${LEVEL_LABEL(level)} stamp${count > 1 ? ` ×${count}` : ''}` : `No ${LEVEL_LABEL(level)} stamp yet`;
+  return s;
+}
+function miniStamps(code) {
+  const sf = stampsFor(state.stats, code);
+  const w = el('span', 'ministamps');
+  for (const l of STAMP_LEVELS) w.append(el('i', `${l} ${sf[l] > 0 ? 'got' : ''}`, LEVEL_LABEL(l)[0]));
+  return w;
+}
+function totalStamps() {
+  const f = (state.stats && state.stats.found) || {};
+  let n = 0; for (const v of Object.values(f)) for (const l of STAMP_LEVELS) if (v[l] > 0) n++;
+  return n;
+}
+
 function renderStats(container, compact) {
-  const s = state.stats || { rounds: 0, wins: 0, streak: 0, bestStreak: 0, best: {}, found: {} };
-  const foundCount = Object.keys(s.found || {}).length;
+  const s = state.stats || normalizeStats(null);
+  const stamps = totalStamps();
   const tiles = compact
-    ? [[s.rounds, 'rounds'], [foundCount, 'found of 250'], [s.streak, 'streak']]
-    : [[s.rounds, 'rounds played'], [s.wins, 'found'], [foundCount, 'passport stamps'], [s.streak, 'current streak'], [s.bestStreak, 'best streak'],
-      ...Object.entries(s.best || {}).map(([k, v]) => [v, `best score · ${(DIFFICULTY[k] || { label: k }).label}`])];
+    ? [[s.rounds, 'rounds'], [stamps, 'stamps of 550'], [s.streak, 'streak']]
+    : [[s.rounds, 'rounds played'], [s.wins, 'countries found'], [stamps, 'stamps of 550'], [s.streak, 'current streak'], [s.bestStreak, 'best streak'],
+      ...Object.entries(s.best || {}).map(([k, v]) => [v, `best score · ${LEVEL_LABEL(k)}`])];
   container.replaceChildren();
   for (const [v, l] of tiles) { const d = el('div', 'stat'); d.append(el('div', 'v', String(v)), el('div', 'l', l)); container.append(d); }
+}
+
+function renderPassport() {
+  renderStats($('stats-full'), false);
+  $('passport-count').textContent = `${totalStamps()} stamps`;
+  const levels = $('levels');
+  levels.replaceChildren();
+  for (const l of STAMP_LEVELS) {
+    const pool = remainingPool(state.countries, state.pools, resolveRules({ preset: l }), state.stats);
+    const d = el('div', 'level'); d.style.setProperty('--ink', l === 'easy' ? '#1f8a4c' : l === 'intermediate' ? '#2f6fcf' : '#b3261e');
+    const txt = el('div'); txt.append(el('div', 'ln', LEVEL_LABEL(l)), el('div', 'lh', l === 'easy' ? 'the 50 most visited countries' : 'all 250 countries and territories'));
+    const bar = el('div', 'bar'); const fill = el('i'); fill.style.width = `${(100 * pool.stamped) / pool.total}%`; bar.append(fill);
+    d.append(stampEl(l, pool.stamped > 0), txt, el('div', 'lc', `${pool.stamped} / ${pool.total}`), bar);
+    levels.append(d);
+  }
+  const chips = $('passport-filter');
+  if (!chips.children.length) {
+    for (const [k, label] of [['all', 'All'], ...STAMP_LEVELS.map((l) => [l, LEVEL_LABEL(l)])]) {
+      const b = el('button', 'sortchip', label); b.type = 'button'; b.dataset.key = k;
+      b.addEventListener('click', () => { state.passportFilter = k; renderPassport(); });
+      chips.append(b);
+    }
+  }
+  for (const b of chips.children) b.classList.toggle('on', b.dataset.key === state.passportFilter);
+  const book = $('book');
+  book.replaceChildren();
+  const f = state.passportFilter;
+  const cards = sortCountries(state.countries, 'name', 'asc').filter((c) => {
+    const sf = stampsFor(state.stats, c.code);
+    return f === 'all' ? STAMP_LEVELS.some((l) => sf[l] > 0) : sf[f] > 0;
+  });
+  for (const c of cards) {
+    const card = el('div', 'pcard'); card.tabIndex = 0;
+    const h = el('div', 'ph'); h.append(el('span', 'flag', c.flag), el('span', null, c.name));
+    const ps = el('div', 'ps'); const sf = stampsFor(state.stats, c.code);
+    for (const l of STAMP_LEVELS) ps.append(stampEl(l, sf[l] > 0, 'sm', sf[l]));
+    card.append(h, ps);
+    const open = () => showCountry(c.code);
+    card.addEventListener('click', open); card.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
+    book.append(card);
+  }
+  $('book-empty').hidden = cards.length > 0;
 }
 
 // ------------------------------------------------------------------- atlas --
@@ -481,13 +564,12 @@ function valueFor(c, key) {
 function renderAtlas() {
   const { key, dir } = state.atlas;
   const q = fold(state.atlas.filter.trim());
-  for (const b of document.querySelectorAll('.sortchip')) {
+  for (const b of document.querySelectorAll('#sort-chips .sortchip')) {
     const on = b.dataset.key === key;
     b.classList.toggle('on', on);
     b.textContent = SORTS.find((s) => s.key === b.dataset.key).label + (on ? (dir === 'asc' ? ' ▲' : ' ▼') : '');
   }
   const rows = sortCountries(state.countries, key, dir).filter((c) => !q || fold(c.name).includes(q) || fold(c.continent).includes(q) || fold(c.designation).includes(q));
-  const found = (state.stats && state.stats.found) || {};
   const list = $('atlas-list');
   list.replaceChildren();
   for (const c of rows) {
@@ -496,7 +578,7 @@ function renderAtlas() {
     const nm = el('div');
     const n = el('div', 'name', c.name);
     if (c.easy) n.append(el('span', 'badge easy', 'Easy'));
-    if (found[c.code]) n.append(el('span', 'badge found', '✓ found'));
+    n.append(miniStamps(c.code));
     nm.append(n, el('div', 'sub', `${c.continent} · ${c.designation}`));
     const [v, l] = valueFor(c, key);
     const val = el('div', 'val', v); if (l) val.append(el('span', 'l', l));
@@ -511,6 +593,7 @@ function renderAtlas() {
 
 function showCountry(code) {
   state.countryPage = code;
+  state.countryFrom = state.screen === 'country' ? state.countryFrom : state.screen;
   const c = state.byCode.get(code);
   $('country-title').textContent = c.name;
   $('country-body').replaceChildren(countryCard(c, state.game ? state.game.startCode : null));
@@ -553,7 +636,7 @@ function wireSettings() {
     sw.append(lab);
   }
   for (const inp of document.querySelectorAll('#units input')) inp.addEventListener('change', () => { state.settings.units = inp.value; saveSettings(); });
-  $('btn-reset-stats').addEventListener('click', () => { if (confirm('Reset rounds, streaks and passport stamps?')) { state.stats = null; save(KEYS.stats, null); renderSettings(); } });
+  $('btn-reset-stats').addEventListener('click', () => { if (confirm('Reset rounds, streaks and all passport stamps?')) { state.stats = normalizeStats(null); save(KEYS.stats, null); renderPassport(); } });
 }
 
 function applyPreset(key) {
@@ -577,7 +660,6 @@ function renderSettings() {
     inp.checked = s.on ? r.pool === s.on : !!r[s.key];
   }
   for (const inp of document.querySelectorAll('#units input')) inp.checked = inp.value === state.settings.units;
-  renderStats($('stats-full'), false);
 }
 
 main().catch((err) => {

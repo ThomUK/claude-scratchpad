@@ -313,16 +313,31 @@ export function score(game) {
   return guessCount(game) + (game.cluesUsed || 0);
 }
 
+/** The difficulties that award passport stamps. */
+export const STAMP_LEVELS = ['easy', 'intermediate', 'hard'];
+
+/** Bring stored stats up to the current shape (old builds kept found[code] as a plain count). */
+export function normalizeStats(stats) {
+  const s = { rounds: 0, wins: 0, streak: 0, bestStreak: 0, best: {}, found: {}, ...(stats || {}) };
+  s.best = { ...s.best };
+  s.found = Object.fromEntries(Object.entries(s.found || {}).map(([code, v]) => [code, typeof v === 'number' ? { hard: v } : { ...v }]));
+  return s;
+}
+
+/** Stamps a country holds: { easy: n, intermediate: n, hard: n } (missing = 0). */
+export function stampsFor(stats, code) {
+  const f = (stats && stats.found && stats.found[code]) || {};
+  return Object.fromEntries(STAMP_LEVELS.map((l) => [l, f[l] || 0]));
+}
+
 /**
  * Fold a finished round into persistent stats. `stats` shape:
- * { rounds, wins, streak, bestStreak, best: { [preset]: score }, found: { [code]: times } }.
+ * { rounds, wins, streak, bestStreak, best: { [preset]: score },
+ *   found: { [code]: { easy: n, intermediate: n, hard: n } } }.
+ * A win on a preset level stamps the passport; Custom rounds count but do not stamp.
  */
 export function recordRound(stats, game) {
-  const s = {
-    rounds: 0, wins: 0, streak: 0, bestStreak: 0, best: {}, found: {},
-    ...(stats || {}),
-  };
-  s.best = { ...s.best }; s.found = { ...s.found };
+  const s = normalizeStats(stats);
   s.rounds += 1;
   if (game.status === 'won') {
     s.wins += 1;
@@ -330,11 +345,29 @@ export function recordRound(stats, game) {
     s.bestStreak = Math.max(s.bestStreak, s.streak);
     const sc = score(game), key = game.difficulty || 'hard';
     if (s.best[key] == null || sc < s.best[key]) s.best[key] = sc;
-    s.found[game.targetCode] = (s.found[game.targetCode] || 0) + 1;
+    if (STAMP_LEVELS.includes(key)) {
+      const f = { ...(s.found[game.targetCode] || {}) };
+      f[key] = (f[key] || 0) + 1;
+      s.found[game.targetCode] = f;
+    }
   } else {
     s.streak = 0;
   }
   return s;
+}
+
+/**
+ * Which countries a level can still stamp: the level's base pool (Easy's 50,
+ * otherwise everyone) minus those already stamped at that level. When the
+ * whole pool is stamped the base pool is returned with `complete: true`.
+ * Custom rounds have no stamps, so they draw from their configured pool.
+ */
+export function remainingPool(countries, pools, rules, stats) {
+  const base = rules.pool && pools && pools[rules.pool] ? pools[rules.pool].codes : countries.map((c) => c.code);
+  if (!STAMP_LEVELS.includes(rules.preset)) return { codes: base, complete: false, total: base.length, stamped: 0 };
+  const stamped = base.filter((code) => stampsFor(stats, code)[rules.preset] > 0);
+  const codes = base.filter((code) => stampsFor(stats, code)[rules.preset] === 0);
+  return codes.length ? { codes, complete: false, total: base.length, stamped: stamped.length } : { codes: base, complete: true, total: base.length, stamped: stamped.length };
 }
 
 /**

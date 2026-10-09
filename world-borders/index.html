@@ -85,11 +85,27 @@
             <!-- Round over -->
             <div id="panel-over" hidden>
               <p class="outcome" id="outcome"></p>
+              <div class="stamped" id="stamped" hidden></div>
               <div id="reveal-card"></div>
               <div class="btnrow sticky-actions" id="over-actions"></div>
             </div>
 
           </div>
+        </div>
+      </section>
+
+      <!-- ============================ PASSPORT ============================ -->
+      <section class="screen" id="screen-passport" hidden>
+        <header class="appbar"><h1>Passport</h1><span class="muted small" id="passport-count"></span></header>
+        <div class="page">
+          <div class="stats" id="stats-full"></div>
+          <h2>Stamps to collect</h2>
+          <div class="levels" id="levels"></div>
+          <h2>Your stamps <span class="muted small">(tap a country for details)</span></h2>
+          <div class="chips sort" id="passport-filter"></div>
+          <div class="book" id="book"></div>
+          <p class="muted small" id="book-empty" hidden>No stamps yet. Find a country on Easy, Intermediate or Hard to earn its stamp. Custom rounds don't stamp.</p>
+          <div class="btnrow"><button type="button" class="ghost" id="btn-reset-stats">Reset passport and progress</button></div>
         </div>
       </section>
 
@@ -129,10 +145,6 @@
             <label><input type="radio" name="units" value="mi" /> Miles</label>
           </div>
 
-          <h2>Progress</h2>
-          <div class="stats" id="stats-full"></div>
-          <div class="btnrow"><button type="button" class="ghost" id="btn-reset-stats">Reset progress</button></div>
-
           <h2>About</h2>
           <p class="muted small" id="data-note"></p>
           <p class="muted small">Boundaries follow internationally recognised borders (Crimea is shown in Ukraine). Distances are great-circle, centre to centre.</p>
@@ -143,9 +155,13 @@
     </main>
 
     <nav class="tabbar" id="tabbar" aria-label="Sections">
-      <button type="button" class="tab on" data-screen="play" aria-label="Play">
+      <button type="button" class="tab on" data-screen="play" aria-label="Game">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10.5c3 .5 5 2 6 4.5s3 3 5.5 3M12 3c-1.5 2.5-1 5 .5 6.5s3.5 1.5 5 .5M9 4c-.5 2 .5 3.5 2 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <span>Play</span>
+        <span>Game</span>
+      </button>
+      <button type="button" class="tab" data-screen="passport" aria-label="Passport">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 16.5h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Passport</span>
       </button>
       <button type="button" class="tab" data-screen="atlas" aria-label="Atlas">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v15H6.5A2.5 2.5 0 0 0 4 20.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H19M8 7h7M8 10.5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>

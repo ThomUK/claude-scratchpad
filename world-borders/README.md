@@ -16,15 +16,20 @@ the country card: capital, population, area, density, region, languages,
 currency, neighbours and a few facts, with dependent territories saying who
 administers them. Chain on: the next round can start from the country you found.
 
+**Passport.** The scoring page. Each country has three stamps to collect, one
+per level (Easy, Intermediate, Hard; Custom rounds don't stamp). Finding a
+country stamps it, and until a level's passport is complete the mystery
+country is always drawn from the countries you have not yet stamped at that
+level (Easy's 50, otherwise all 250). Shows rounds, streaks, best scores,
+progress bars per level and the stamp book.
+
 **Atlas.** All 250 countries and territories as a sortable list (name,
 population, area, density, neighbours, continent, status, Easy-mode pool) with
-a filter. Each country has its own page with the full card, "Show on globe"
-(highlights it in teal) and "Start a round here". Countries you have found get a
-passport stamp.
+a filter and mini stamps. Each country has its own page with the full card,
+stamps, "Show on globe" (highlights it in teal) and "Start a round here".
 
 **Settings.** Difficulty presets plus the individual rules they set, so a custom
-mix is possible; kilometres or miles; progress (rounds, streaks, best score per
-level, passport stamps) with a reset; data credits.
+mix is possible; kilometres or miles; data credits.
 
 | Level | Names on map | Tap map to guess | Per guess | Mystery pool | Clue button |
 |---|---|---|---|---|---|

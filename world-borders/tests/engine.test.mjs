@@ -5,7 +5,7 @@ import {
   haversineKm, initialBearing, compassPoint, formatKm, decodeTopology,
   createGame, makeGuess, giveUp, referenceDistance, guessCount, cameraDistanceForSpan,
   rhumbBearing, directionClue, useClue, countryAt, pickCountry, DIFFICULTY, targetPool, sortCountries,
-  formatDistance, resolveRules, score, recordRound,
+  formatDistance, resolveRules, score, recordRound, normalizeStats, stampsFor, remainingPool, STAMP_LEVELS,
 } from '../engine.js';
 
 let n = 0;
@@ -76,20 +76,53 @@ check('resolveRules: presets pass through, custom uses the switches, clue button
   assert.equal(createGame(countries, 'GBR', { rng: () => 0, difficulty: 'easy', pools: data.pools }).rules.label, 'Easy');
 });
 
-check('score and recordRound: wins count, streaks, best per level, passport stamps', () => {
+check('score and recordRound: wins count, streaks, best per level, stamps per level', () => {
   let g = createGame(countries, 'GBR', { rng: () => 0, pool: ['FRA'], difficulty: 'hard' });
   g = makeGuess(g, countries, 'ESP').game; g = useClue(g); g = makeGuess(g, countries, 'FRA').game;
   assert.equal(score(g), 3);
   let s = recordRound(null, g);
-  assert.deepEqual([s.rounds, s.wins, s.streak, s.bestStreak, s.best.hard, s.found.FRA], [1, 1, 1, 1, 3, 1]);
+  assert.deepEqual([s.rounds, s.wins, s.streak, s.bestStreak, s.best.hard], [1, 1, 1, 1, 3]);
+  assert.deepEqual(stampsFor(s, 'FRA'), { easy: 0, intermediate: 0, hard: 1 });
   const s0 = s;
   s = recordRound(s, giveUp(createGame(countries, 'GBR', { rng: () => 0, pool: ['DEU'] })));
   assert.deepEqual([s.rounds, s.wins, s.streak, s.bestStreak], [2, 1, 0, 1]);
   assert.equal(s0.rounds, 1, 'input stats not mutated');
-  let g2 = createGame(countries, 'GBR', { rng: () => 0, pool: ['FRA'], difficulty: 'hard' });
+  let g2 = createGame(countries, 'GBR', { rng: () => 0, pool: ['FRA'], difficulty: 'easy' });
   g2 = makeGuess(g2, countries, 'FRA').game;
   s = recordRound(s, g2);
-  assert.equal(s.best.hard, 1); assert.equal(s.found.FRA, 2); assert.equal(s.streak, 1);
+  assert.equal(s.best.easy, 1); assert.deepEqual(stampsFor(s, 'FRA'), { easy: 1, intermediate: 0, hard: 1 });
+  // Custom rounds count as wins but never stamp.
+  let g3 = createGame(countries, 'GBR', { rng: () => 0, pool: ['DEU'], rules: resolveRules({ preset: 'custom', distances: true }) });
+  g3 = makeGuess(g3, countries, 'DEU').game;
+  s = recordRound(s, g3);
+  assert.equal(s.wins, 3); assert.deepEqual(stampsFor(s, 'DEU'), { easy: 0, intermediate: 0, hard: 0 });
+  // Old-format stats (plain counts) are read as hard stamps.
+  assert.deepEqual(stampsFor(normalizeStats({ found: { ITA: 2 } }), 'ITA'), { easy: 0, intermediate: 0, hard: 2 });
+  assert.deepEqual(STAMP_LEVELS, ['easy', 'intermediate', 'hard']);
+});
+
+check('remainingPool: stamped countries drop out of the pool until it is complete', () => {
+  const easy = resolveRules({ preset: 'easy' }), hard = resolveRules({ preset: 'hard' });
+  const empty = remainingPool(countries, data.pools, easy, null);
+  assert.equal(empty.codes.length, 50); assert.equal(empty.total, 50); assert.equal(empty.complete, false);
+  let s = normalizeStats(null);
+  s.found = { ESP: { easy: 1 }, FRA: { easy: 1, hard: 1 } };
+  const r = remainingPool(countries, data.pools, easy, s);
+  assert.equal(r.codes.length, 48); assert.equal(r.stamped, 2); assert.ok(!r.codes.includes('ESP') && !r.codes.includes('FRA'));
+  const h = remainingPool(countries, data.pools, hard, s);
+  assert.equal(h.codes.length, 249); assert.ok(!h.codes.includes('FRA') && h.codes.includes('ESP'));
+  // Complete: every Easy country stamped -> whole pool again, flagged complete.
+  s.found = Object.fromEntries(data.pools.easy.codes.map((c) => [c, { easy: 1 }]));
+  const done = remainingPool(countries, data.pools, easy, s);
+  assert.equal(done.complete, true); assert.equal(done.codes.length, 50); assert.equal(done.stamped, 50);
+  // Custom never excludes.
+  const custom = remainingPool(countries, data.pools, resolveRules({ preset: 'custom', pool: 'easy' }), s);
+  assert.equal(custom.codes.length, 50); assert.equal(custom.complete, false);
+  // The game draws from the remaining pool.
+  for (let i = 0; i < 60; i++) {
+    const g = createGame(countries, 'GBR', { rng: () => i / 60, rules: easy, pool: r.codes });
+    assert.ok(g.targetCode !== 'ESP' && g.targetCode !== 'FRA');
+  }
 });
 
 check('decodeTopology: reverses negative arc indices and dequantizes', () => {
