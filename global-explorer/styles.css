@@ -114,7 +114,9 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .chip-item { background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; font-size: 0.85rem; }
 .factlist { margin: 0; padding-left: 18px; font-size: 0.9rem; }
 .factlist li { margin-bottom: 4px; }
-.sticky-actions { position: sticky; bottom: 0; background: var(--surface); padding: 10px 0 4px; margin-top: 14px; border-top: 1px solid var(--border); }
+.sheet-footer { flex: none; padding: 10px 16px calc(12px + var(--safe-b)); background: var(--surface); border-top: 1px solid var(--border); }
+.sheet-footer .btnrow { margin-top: 0; }
+.sheet-footer .btnrow .primary { flex-basis: 100%; }
 
 /* -------------------------------------------------------------- passport -- */
 .stamp { white-space: pre-line; --ink: #8a94a0; display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 50%; border: 3px double var(--ink); color: var(--ink); font-weight: 800; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; line-height: 1.05; transform: rotate(-9deg); position: relative; background: transparent; flex: none; }

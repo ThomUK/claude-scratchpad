@@ -304,6 +304,7 @@ function render(lastResult) {
   $('panel-start').hidden = state.phase !== 'pick-start';
   $('panel-game').hidden = state.phase !== 'guessing';
   $('panel-over').hidden = state.phase !== 'over';
+  $('sheet-footer').hidden = state.phase !== 'over';
   $('legend').hidden = state.phase === 'pick-start';
   const click = r.click ? ' or tap the map' : '';
   $('search').placeholder = `Type a country to start from${click}…`;
