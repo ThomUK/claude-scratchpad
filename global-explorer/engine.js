@@ -137,10 +137,15 @@ export function countryAt(features, countries, lat, lon) {
 export function pickCountry(features, countries, lat, lon, tolDeg = 0) {
   const exact = countryAt(features, countries, lat, lon);
   if (tolDeg <= 0) return exact;
+  const cosLat = Math.cos(rad(lat));
+  // A shapeless speck (drawn as a dot) under the pointer wins outright: it has no area to hit.
+  for (const c of countries) {
+    if (c.hasShape) continue;
+    if (Math.hypot((c.latlng[1] - lon) * cosLat, c.latlng[0] - lat) < tolDeg) return c.code;
+  }
   const spanOf = new Map(countries.map((c) => [c.code, c.hasShape ? c.span : 0]));
   const isSmall = (code) => (spanOf.get(code) ?? 0) < 1.5;
   if (exact && isSmall(exact)) return exact;
-  const cosLat = Math.cos(rad(lat));
   let best = null, bestD = tolDeg;
   for (const f of features) {
     if (!f.code || f.code === exact) continue;
@@ -149,11 +154,6 @@ export function pickCountry(features, countries, lat, lon, tolDeg = 0) {
       const d = Math.hypot((x - lon) * cosLat, y - lat);
       if (d < bestD) { bestD = d; best = f.code; }
     }
-  }
-  for (const c of countries) {
-    if (c.hasShape) continue;
-    const d = Math.hypot((c.latlng[1] - lon) * cosLat, c.latlng[0] - lat);
-    if (d < bestD) { bestD = d; best = c.code; }
   }
   return best ?? exact;
 }

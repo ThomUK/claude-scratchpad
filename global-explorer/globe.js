@@ -102,6 +102,19 @@ export class Globe {
     this.markerTexture = Globe.ringTexture();
     this.markerGroup = new THREE.Group();
     this.scene.add(this.markerGroup);
+    // Territories with no polygon at this map scale (Gibraltar, Bouvet Island,
+    // US Minor Outlying Islands) get a small fixed-size dot so they can be seen and tapped.
+    this.speckGroup = new THREE.Group();
+    const dotTex = Globe.dotTexture();
+    for (const c of countries) {
+      if (c.hasShape) continue;
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, transparent: true, depthWrite: false, sizeAttenuation: false }));
+      sp.scale.setScalar(0.016);
+      sp.position.copy(latLonToVec3(c.latlng[0], c.latlng[1], MARK_R));
+      sp.userData.code = c.code;
+      this.speckGroup.add(sp);
+    }
+    this.scene.add(this.speckGroup);
     this.pathGroup = new THREE.Group();
     this.scene.add(this.pathGroup);
     this.labelGroup = new THREE.Group();
@@ -129,6 +142,15 @@ export class Globe {
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(container);
     this.renderer.setAnimationLoop(() => this.frame());
+  }
+
+  /** A small filled dot with a dark rim, in the land colour. */
+  static dotTexture() {
+    const s = 64, c = document.createElement('canvas'); c.width = c.height = s;
+    const g = c.getContext('2d');
+    g.fillStyle = COLORS.land; g.strokeStyle = COLORS.border; g.lineWidth = 6;
+    g.beginPath(); g.arc(s / 2, s / 2, s / 2 - 6, 0, Math.PI * 2); g.fill(); g.stroke();
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
   }
 
   static ringTexture() {

@@ -211,8 +211,11 @@ check('pickCountry: tolerant clicks snap to small countries and nearby coasts', 
   assert.equal(pickCountry(feats, countries, 47.0, 2.5, 0.5), 'FRA');
   // Mid-Atlantic stays null even with tolerance.
   assert.equal(pickCountry(feats, countries, 40, -40, 1.0), null);
-  // Shapeless speck by proximity.
+  // Shapeless speck by proximity, even though the point is inside Spain's polygon.
   assert.equal(pickCountry(feats, countries, 36.3, -5.5, 0.4), 'GIB');
+  assert.equal(countryAt(feats, countries, 36.2, -5.4), 'ESP');
+  assert.equal(pickCountry(feats, countries, 36.2, -5.4, 0.2), 'GIB');
+  assert.equal(pickCountry(feats, countries, 36.2, -5.4, 0.02), 'ESP');
 });
 
 check('DIFFICULTY: three levels; createGame records it and rejects unknown ones', () => {
