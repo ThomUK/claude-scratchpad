@@ -64,7 +64,12 @@ export class Globe {
     this.controls.maxDistance = 4.5;
     this.controls.rotateSpeed = 0.3; // overridden every frame by updateRotateSpeed()
     this.controls.zoomSpeed = 0.8;
-    this.controls.zoomToCursor = true; // zoom towards the pointer, so small islands can be homed in on
+    // Not OrbitControls' zoomToCursor: that moves the orbit centre off the globe's
+    // centre, so minDistance stops protecting the surface and the camera can dive
+    // through the land. Instead the orbit centre stays put and steerTowards()
+    // rotates the view toward the pointer as you zoom in.
+    this.controls.zoomToCursor = false;
+    this.wireZoomSteering();
     this.controls.autoRotate = true;
     this.controls.autoRotateSpeed = 0.5;
     this.controls.addEventListener('start', () => { this.flight = null; this.controls.autoRotate = false; });
@@ -209,6 +214,58 @@ export class Globe {
       }
       s.material.color.set(color);
     }
+  }
+
+  /** Direction (unit vector) of the globe surface under a client-space pixel, or null. */
+  surfaceDirAt(clientX, clientY) {
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(ndc, this.camera);
+    const hit = ray.intersectObject(this.sphere, false)[0];
+    return hit ? hit.point.clone().normalize() : null;
+  }
+
+  /**
+   * Rotate the view toward `dir` by the fraction of the zoom step, so the
+   * place under the pointer stays under the pointer as the globe grows.
+   * `scale` is the dolly factor (< 1 zooming in, > 1 zooming out).
+   */
+  steerTowards(dir, scale) {
+    if (!dir || scale >= 1) return;
+    const pos = this.camera.position;
+    const d = pos.length();
+    const newDir = Globe.slerp(pos.clone().normalize(), dir, 1 - scale);
+    pos.copy(newDir.multiplyScalar(d));
+    this.camera.lookAt(0, 0, 0);
+  }
+
+  wireZoomSteering() {
+    const dom = this.renderer.domElement;
+    // Mouse wheel: mirror OrbitControls' own zoom scale for this event.
+    dom.addEventListener('wheel', (e) => {
+      if (!this.controls.enableZoom) return;
+      const scale = Math.pow(0.95, this.controls.zoomSpeed * Math.abs(e.deltaY * 0.01));
+      if (e.deltaY < 0) this.steerTowards(this.surfaceDirAt(e.clientX, e.clientY), scale);
+    }, { passive: true });
+    // Touch pinch: steer toward the midpoint as the fingers spread.
+    const pointers = new Map();
+    let lastDist = 0;
+    dom.addEventListener('pointerdown', (e) => { pointers.set(e.pointerId, [e.clientX, e.clientY]); lastDist = 0; });
+    const end = (e) => { pointers.delete(e.pointerId); lastDist = 0; };
+    dom.addEventListener('pointerup', end); dom.addEventListener('pointercancel', end);
+    dom.addEventListener('pointermove', (e) => {
+      if (!pointers.has(e.pointerId)) return;
+      pointers.set(e.pointerId, [e.clientX, e.clientY]);
+      if (pointers.size !== 2) return;
+      const [a, b] = [...pointers.values()];
+      const dist = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      if (lastDist && dist > lastDist) {
+        const scale = lastDist / dist; // OrbitControls dollies by this ratio
+        this.steerTowards(this.surfaceDirAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), Math.max(0.5, scale));
+      }
+      lastDist = dist;
+    });
   }
 
   /** Country code under a client-space pixel, or null. */
@@ -386,6 +443,9 @@ export class Globe {
       if (t >= 1) this.flight = null;
     }
     this.controls.update();
+    // Hard floor: never let the camera dip into the globe, whatever the controls did.
+    const floor = this.controls.minDistance;
+    if (this.camera.position.length() < floor) { this.camera.position.setLength(floor); this.camera.lookAt(0, 0, 0); }
     // Rebuild the path when the zoom has changed enough for its thickness to look wrong.
     if (this.pathSegments && this.pathSegments.length) {
       const d = this.camera.position.length();
