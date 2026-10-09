@@ -54,6 +54,17 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 3px; flex: none; }
 .swatch.line { height: 4px; border-radius: 2px; width: 16px; }
 .swatch.hatch { background: repeating-linear-gradient(135deg, #e9e0c7 0 2px, rgba(31,41,51,0.6) 2px 3px); border: 1px solid #7c8794; }
+.compass { position: absolute; right: 10px; top: calc(10px + var(--safe-t)); width: 64px; height: 64px; padding: 0; min-height: 0; border: 0; border-radius: 50%; background: none; z-index: 3; cursor: pointer; }
+.compass:hover { border: 0; }
+.compass svg { width: 100%; height: 100%; display: block; }
+.compass .c-bg { fill: rgba(255,255,255,0.88); stroke: var(--border); stroke-width: 1.5; }
+.compass .c-ring { fill: none; stroke: #c9c2b4; stroke-width: 1; }
+.compass .c-minor { fill: #c9c2b4; }
+.compass .c-major { fill: #fff; stroke: #1f2933; stroke-width: 1.6; stroke-linejoin: round; }
+.compass .c-north { fill: #d6409f; }
+.compass .c-hub { fill: #1f2933; }
+.compass .c-txt { font: 700 12px system-ui, sans-serif; fill: #1f2933; text-anchor: middle; dominant-baseline: middle; }
+.compass:active svg { transform: scale(0.94); }
 .toast { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); max-width: calc(100% - 32px); padding: 10px 14px; border-radius: 12px; background: #1f2933; color: #fff; font-size: 0.9rem; box-shadow: 0 6px 20px rgba(0,0,0,0.25); z-index: 3; pointer-events: none; }
 .toast.warmer { background: var(--warm); } .toast.cooler { background: var(--cool); } .toast.warn { background: #b45309; }
 

@@ -77,9 +77,17 @@ async function main() {
   $('btn-newstart').addEventListener('click', () => resetToPickStart());
   $('btn-random').addEventListener('click', () => startRound(state.countries[Math.floor(Math.random() * state.countries.length)].code));
   $('btn-locate').addEventListener('click', onLocate);
+  $('compass').addEventListener('click', recentre);
   applyRulesToGlobe();
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js?v=dev').catch(() => {});
+}
+
+/** Fly back to whatever the player is working from: latest guess, start, or browsed country. */
+function recentre() {
+  const g = state.game;
+  const code = g ? (g.status !== 'playing' ? g.targetCode : g.guesses.length ? g.guesses[g.guesses.length - 1].code : g.startCode) : state.browse || state.globe.openedAt;
+  if (code) state.globe.flyTo(code);
 }
 
 // ------------------------------------------------------------- navigation --
