@@ -341,7 +341,6 @@ function render(lastResult) {
     const m = state.startMode;
     $('picker-start').hidden = m !== 'search';
     $('start-map-hint').hidden = m !== 'map';
-    $('start-prompt').hidden = !!m;
     $('btn-begin').hidden = !!m;
     $('btn-start-cancel').hidden = !m;
     renderStats($('stats-strip'), true);
