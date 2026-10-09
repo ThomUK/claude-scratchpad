@@ -1,6 +1,6 @@
 {
-  "name": "World Borders",
-  "short_name": "Borders",
+  "name": "Global Explorer",
+  "short_name": "Explorer",
   "description": "Find the mystery country from distance clues on a 3D globe.",
   "start_url": "./",
   "scope": "./",

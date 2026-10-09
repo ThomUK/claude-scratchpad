@@ -44,7 +44,7 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .tab.on svg { background: var(--accent-soft); border-radius: 14px; padding: 2px 10px; width: 46px; }
 
 /* ----------------------------------------------------------- play: globe -- */
-.globe-wrap { position: absolute; top: 0; left: 0; right: 0; bottom: var(--sheet-h, var(--sheet-half)); touch-action: none; transition: bottom .25s ease; }
+.globe-wrap { position: absolute; top: 0; left: 0; right: 0; bottom: var(--sheet-half); touch-action: none; }
 #screen-play.clickable #globe canvas { cursor: pointer; }
 #globe { position: absolute; inset: 0; }
 #globe canvas { width: 100% !important; height: 100% !important; display: block; }
@@ -59,13 +59,11 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .toast.warmer { background: var(--warm); } .toast.cooler { background: var(--cool); } .toast.warn { background: #b45309; }
 
 /* ----------------------------------------------------------- play: sheet -- */
-.sheet { position: absolute; left: 0; right: 0; bottom: 0; height: var(--sheet-h, var(--sheet-half)); background: var(--surface); border-radius: 18px 18px 0 0; box-shadow: 0 -6px 24px rgba(31,41,51,0.12); display: flex; flex-direction: column; transition: height .25s ease; z-index: 4; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; height: auto; max-height: var(--sheet-h, var(--sheet-half)); background: var(--surface); border-radius: 18px 18px 0 0; box-shadow: 0 -6px 24px rgba(31,41,51,0.12); display: flex; flex-direction: column; z-index: 4; }
 .sheet[data-state="collapsed"] { --sheet-h: var(--sheet-collapsed); }
-.sheet[data-state="half"] { --sheet-h: var(--sheet-half); }
-.sheet[data-state="full"] { --sheet-h: calc(100% - var(--safe-t) - 8px); }
-#screen-play[data-sheet="collapsed"] .globe-wrap { bottom: var(--sheet-collapsed); }
-#screen-play[data-sheet="half"] .globe-wrap { bottom: var(--sheet-half); }
-#screen-play[data-sheet="full"] .globe-wrap { bottom: 40%; }
+.sheet[data-state="half"] { --sheet-h: 56vh; }
+.sheet[data-state="full"] { --sheet-h: calc(100% - var(--safe-t) - 170px); height: var(--sheet-h); }
+.sheet[data-state="collapsed"] .sheet-body { overflow: hidden; }
 .grip { flex: none; height: 26px; min-height: 0; padding: 0; border: 0; border-radius: 18px 18px 0 0; background: none; display: flex; align-items: center; justify-content: center; touch-action: none; }
 .grip span { width: 44px; height: 5px; border-radius: 3px; background: var(--border); }
 .sheet-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 16px calc(16px + var(--safe-b)); -webkit-overflow-scrolling: touch; }

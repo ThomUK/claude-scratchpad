@@ -1,4 +1,4 @@
-// World Borders: app shell (tabs, bottom sheet, atlas, settings). Game rules
+// Global Explorer: app shell (tabs, bottom sheet, atlas, settings). Game rules
 // live in engine.js, rendering in globe.js.
 import {
   decodeTopology, createGame, makeGuess, giveUp, formatDistance, guessCount, haversineKm, initialBearing,
@@ -71,7 +71,6 @@ async function main() {
   $('btn-newstart').addEventListener('click', () => resetToPickStart());
   $('btn-random').addEventListener('click', () => startRound(state.countries[Math.floor(Math.random() * state.countries.length)].code));
   $('btn-locate').addEventListener('click', onLocate);
-  $('level-chip').addEventListener('click', () => showScreen('settings'));
   applyRulesToGlobe();
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js?v=dev').catch(() => {});
@@ -99,7 +98,13 @@ function showScreen(which) {
 function setSheet(stateName) {
   $('sheet').dataset.state = stateName;
   $('screen-play').dataset.sheet = stateName;
-  setTimeout(() => state.globe && state.globe.resize(), 270);
+  fitGlobeToSheet();
+}
+/** The sheet is as tall as its content (up to its state's limit); the globe fills whatever is left above it. */
+function fitGlobeToSheet() {
+  if (window.matchMedia('(min-width: 900px)').matches) { $('globe-wrap').style.bottom = ''; state.globe && state.globe.resize(); return; }
+  $('globe-wrap').style.bottom = `${$('sheet').offsetHeight}px`;
+  state.globe && state.globe.resize();
 }
 function wireSheet() {
   const grip = $('grip');
@@ -117,6 +122,8 @@ function wireSheet() {
     setSheet(order[i]);
   });
   setSheet('half');
+  new ResizeObserver(() => fitGlobeToSheet()).observe($('sheet'));
+  window.addEventListener('resize', fitGlobeToSheet);
 }
 
 // ------------------------------------------------------------------ picker --
@@ -202,7 +209,7 @@ function startRound(startCode) {
   paintGlobe();
   setSheet('half');
   render();
-  const left = pool.complete ? `Your ${r.label} passport is complete, so any of them can come up.` : STAMP_LEVELS.includes(r.preset) ? `${pool.total - pool.stamped} ${r.label} stamps left to collect.` : '';
+  const left = pool.complete ? `Your ${r.label} passport is complete, so any of them can come up.` : '';
   toast(`Starting from ${name(startCode)}. ${r.distances ? `The mystery country is ${km(state.game.startDistanceKm)} away.` : ''} ${left}`.replace(/\s+/g, ' ').trim());
 }
 
@@ -292,7 +299,6 @@ function render(lastResult) {
   $('panel-game').hidden = state.phase !== 'guessing';
   $('panel-over').hidden = state.phase !== 'over';
   $('legend').hidden = state.phase === 'pick-start';
-  $('level-chip').textContent = r.label;
   const click = r.click ? ' or tap the map' : '';
   $('search').placeholder = `Type a country to start from${click}…`;
   $('search-guess').placeholder = `Type your guess${click}…`;

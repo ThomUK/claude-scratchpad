@@ -1,6 +1,6 @@
-# World Borders — find the mystery country
+# Global Explorer — find the mystery country
 
-An educational guessing game on a 3D globe, laid out as a phone app (bottom
+An educational guessing game on a 3D globe (the directory is still `world-borders/`), laid out as a phone app (bottom
 tab bar, full-screen globe with a sliding panel) that also works on the desktop
 web, where the tab bar becomes a side rail. Installable as a web app and works
 offline; the shell is ready for a Capacitor wrap.
