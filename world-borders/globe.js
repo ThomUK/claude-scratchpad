@@ -7,9 +7,10 @@ import * as THREE from 'three';
 import { OrbitControls } from './vendor/three/OrbitControls.js?v=dev';
 import { cameraDistanceForSpan, pickCountry } from './engine.js?v=dev';
 
+// Light "atlas" palette: pale ocean, sand land, soft grey borders.
 export const COLORS = {
-  ocean: '#0c1a2b', land: '#34485d', border: '#0a1017', guessed: '#4b6482',
-  start: '#ffd166', warmer: '#ff7a1a', cooler: '#4a90e2', same: '#9aa7b4', correct: '#2ecc71', target: '#e05aa0', browse: '#4cc2ff',
+  ocean: '#cfe3f2', land: '#e9e0c7', border: '#7c8794', guessed: '#cfc2a0',
+  start: '#f4b63a', warmer: '#f26a1b', cooler: '#3b82d6', same: '#8a94a0', correct: '#22a55b', target: '#d6409f', browse: '#0f766e',
 };
 
 const SURFACE = 1.0;        // sphere radius
@@ -82,13 +83,12 @@ export class Globe {
 
     // Soft atmosphere rim.
     const glow = new THREE.Mesh(
-      new THREE.SphereGeometry(1.035, 64, 48),
-      new THREE.MeshBasicMaterial({ color: 0x4cc2ff, transparent: true, opacity: 0.08, side: THREE.BackSide, depthWrite: false }),
+      new THREE.SphereGeometry(1.03, 64, 48),
+      new THREE.MeshBasicMaterial({ color: 0x3b82d6, transparent: true, opacity: 0.14, side: THREE.BackSide, depthWrite: false }),
     );
     this.scene.add(glow);
 
     this.scene.add(this.buildBorders());
-    this.scene.add(this.buildStars());
 
     this.markerTexture = Globe.ringTexture();
     this.markerGroup = new THREE.Group();
@@ -125,9 +125,9 @@ export class Globe {
   static ringTexture() {
     const s = 128, c = document.createElement('canvas'); c.width = c.height = s;
     const g = c.getContext('2d');
-    g.lineWidth = 12; g.strokeStyle = '#fff';
+    g.lineWidth = 14; g.strokeStyle = '#fff';
     g.beginPath(); g.arc(s / 2, s / 2, s / 2 - 10, 0, Math.PI * 2); g.stroke();
-    g.fillStyle = 'rgba(255,255,255,0.25)'; g.beginPath(); g.arc(s / 2, s / 2, s / 2 - 18, 0, Math.PI * 2); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.3)'; g.beginPath(); g.arc(s / 2, s / 2, s / 2 - 18, 0, Math.PI * 2); g.fill();
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
   }
 
@@ -177,20 +177,7 @@ export class Globe {
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: COLORS.border, transparent: true, opacity: 0.9 }));
-  }
-
-  buildStars() {
-    const n = 1500, pos = new Float32Array(n * 3);
-    let seed = 7;
-    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    for (let i = 0; i < n; i++) {
-      const v = new THREE.Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).normalize().multiplyScalar(60 + rnd() * 20);
-      pos.set([v.x, v.y, v.z], i * 3);
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    return new THREE.Points(geo, new THREE.PointsMaterial({ color: 0x9aa7b4, size: 0.25, sizeAttenuation: true, transparent: true, opacity: 0.7 }));
+    return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: COLORS.border, transparent: true, opacity: 0.75 }));
   }
 
   /** Apply the current highlight colours to the fill meshes. */
@@ -244,9 +231,9 @@ export class Globe {
     g.font = font(size);
     while (size > 22 && g.measureText(text).width > W - 20) { size -= 2; g.font = font(size); } // long names shrink to fit
     g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.lineJoin = 'round'; g.lineWidth = 10; g.strokeStyle = 'rgba(8, 12, 18, 0.95)';
+    g.lineJoin = 'round'; g.lineWidth = 10; g.strokeStyle = 'rgba(255, 255, 255, 0.95)';
     g.strokeText(text, W / 2, H / 2 + 2);
-    g.fillStyle = '#f2f6fa'; g.fillText(text, W / 2, H / 2 + 2);
+    g.fillStyle = '#1f2933'; g.fillText(text, W / 2, H / 2 + 2);
     const wfrac = Math.min(1, (g.measureText(text).width + 12) / W);
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
     return { texture: t, wfrac };
@@ -314,11 +301,11 @@ export class Globe {
   }
 
   /** A round label sprite: `text` on a disc of `color`. */
-  static labelTexture(text, color, textColor = '#0f1419') {
+  static labelTexture(text, color, textColor = '#1f2933') {
     const s = 128, c = document.createElement('canvas'); c.width = c.height = s;
     const g = c.getContext('2d');
     g.fillStyle = color; g.beginPath(); g.arc(s / 2, s / 2, s / 2 - 6, 0, Math.PI * 2); g.fill();
-    g.lineWidth = 6; g.strokeStyle = '#0f1419'; g.stroke();
+    g.lineWidth = 6; g.strokeStyle = '#1f2933'; g.stroke();
     g.fillStyle = textColor; g.font = `bold ${text.length > 2 ? 48 : 64}px system-ui, sans-serif`;
     g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, s / 2, s / 2 + 4);
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;

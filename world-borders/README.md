@@ -1,54 +1,59 @@
 # World Borders — find the mystery country
 
-An educational guessing game on a 3D globe.
+An educational guessing game on a 3D globe, laid out as a phone app (bottom
+tab bar, full-screen globe with a sliding panel) that also works on the desktop
+web, where the tab bar becomes a side rail. Installable as a web app and works
+offline; the shell is ready for a Capacitor wrap.
 
-1. Choose a difficulty, then pick a starting country (searchable list of all 250
-   countries and territories). The globe turns to show it, highlighted in yellow.
+**Play.** Pick a starting country (search, random, or your current location).
+The game hides a second country and tells you how far it is. Guess a country:
+a line is drawn from your previous guess (or the start) to it, **orange** if
+that hop took you closer (warmer), **blue** if further (cooler). Points are
+numbered so the path reads in order. **Give me a clue** reveals the compass
+direction (and, when distances are hidden, the distance) from your start and
+your latest guess; clues count against your score. Find it (green) and you get
+the country card: capital, population, area, density, region, languages,
+currency, neighbours and a few facts, with dependent territories saying who
+administers them. Chain on: the next round can start from the country you found.
 
-   | Level | Names on map | Click map to guess | Per guess | Clue button |
-   |---|---|---|---|---|
-   | Easy | yes | yes | warmer/cooler, distance and compass direction | not needed |
+**Atlas.** All 250 countries and territories as a sortable list (name,
+population, area, density, neighbours, continent, status, Easy-mode pool) with
+a filter. Each country has its own page with the full card, "Show on globe"
+(highlights it in teal) and "Start a round here". Countries you have found get a
+passport stamp.
 
-   On Easy the mystery country is drawn only from the 50 countries UK residents
-   visit most (ONS *Travel trends*, UK residents' visits abroad by main country
-   visited). The top 10 are the published 2024 figures; ranks 11–50 are a
-   reconstruction of the ONS country table and live in `build_data.mjs`
-   (`EASY_POOL`) for correction. The start country can still be anywhere.
-   | Intermediate | yes | no | warmer/cooler and distance | direction from start and latest guess |
-   | Hard | no | no | warmer/cooler and distance | direction from start and latest guess |
-2. The game hides a random second country and tells you how far it is from your start.
-3. Guess a country. A line is drawn from your previous guess (or from the start) to
-   it: **orange** if that hop took you closer to the mystery country (warmer),
-   **blue** if further away (cooler). Points are numbered so the path reads in
-   order, and each guess shows its own distance.
-4. Stuck? **Give me a clue** tells you the compass direction to the mystery
-   country from your start and from your latest guess (rhumb-line bearing, i.e.
-   the direction as it looks on a map). Clues used are counted.
-5. Find it (green) and you get an info card: capital, population, area, region,
-   languages, currency, bordering countries and a few facts. Dependent territories
-   say who administers them. Then chain on: the next round can start from the
-   country you just found.
+**Settings.** Difficulty presets plus the individual rules they set, so a custom
+mix is possible; kilometres or miles; progress (rounds, streaks, best score per
+level, passport stamps) with a reset; data credits.
+
+| Level | Names on map | Tap map to guess | Per guess | Mystery pool | Clue button |
+|---|---|---|---|---|---|
+| Easy | yes | yes | warmer/cooler, distance and compass direction | 50 most visited | not needed |
+| Intermediate | yes | no | warmer/cooler and distance | all 250 | direction |
+| Hard | no | no | warmer/cooler and distance | all 250 | direction |
+
+On Easy the mystery country is drawn only from the 50 countries UK residents
+visit most (ONS *Travel trends*, UK residents' visits abroad by main country
+visited). The top 10 are the published 2024 figures; ranks 11–50 are a
+reconstruction of the ONS country table and live in `build_data.mjs`
+(`EASY_POOL`) for correction. The start country can still be anywhere.
 
 Live: https://thomuk.github.io/claude-scratchpad/world-borders/
 
-Below the game, a collapsible **Country reference** lists all 250 countries and
-territories with flag, continent, designation (UN member, UN observer, territory
-of …, partially recognised, disputed, Antarctic Treaty), population, land area,
-population density,
-number of land neighbours, and a tick for the countries Easy mode can pick.
-Click a heading to sort, type to filter, click a row to highlight it on the
-globe, and ⓘ for the same info card the game shows when you find a country.
-
 ## How it works
 
-- `engine.js` — DOM-free rules: haversine distance, warmer/cooler, round state,
-  and a small TopoJSON decoder. Tested with `node tests/engine.test.mjs`.
+- `engine.js` — DOM-free rules: haversine distance and rhumb-line bearings,
+  warmer/cooler, round state, rule presets, scoring and stats, sorting, a
+  point-in-country lookup for map taps and a small TopoJSON decoder. Tested
+  with `node tests/engine.test.mjs`.
 - `globe.js` — three.js globe. Country fills are vector meshes (each polygon
   triangulated in lon/lat, long edges bisected so triangles hug the sphere),
   borders are 3D line segments, and tiny or shapeless territories get a ring
-  marker, so everything stays crisp at any zoom. Map clicks snap to the nearest
-  small country within a few pixels.
-- `app.js` — UI: picker, guess log, reveal card.
+  marker, so everything stays crisp at any zoom. Dragging keeps the ground
+  under the pointer; taps snap to the nearest small country.
+- `app.js` — the app shell: tabs, bottom sheet, picker, atlas, settings,
+  local storage for settings and progress.
+- `sw.js` + `manifest.webmanifest` + `icons/` — offline cache and install.
 - `build_data.mjs` — regenerates `data/` from the sources below (see its header
   for the download URLs and the run command).
 
@@ -71,5 +76,5 @@ representative lat/lon from the dataset.
 
 ## Ideas for later
 
-Restricting the target pool on easier levels, scoring and streaks, and a native
-Android wrap.
+A daily challenge with a shareable result, haptics on warmer/cooler, a
+follow-system dark theme, and the Capacitor Android wrap.

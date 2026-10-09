@@ -46,6 +46,13 @@ export function formatKm(km) {
   return `${Math.round(km).toLocaleString('en-GB')} km`;
 }
 
+const KM_PER_MILE = 1.609344;
+/** Distance in the player's units: 'km' or 'mi'. */
+export function formatDistance(km, units = 'km') {
+  if (units === 'mi') return `${Math.round(km / KM_PER_MILE).toLocaleString('en-GB')} mi`;
+  return formatKm(km);
+}
+
 // ----------------------------------------------------------------- TopoJSON --
 /**
  * Decode a quantized TopoJSON topology into a flat list of
@@ -203,9 +210,29 @@ export function targetPool(difficulty, pools) {
   return p.codes;
 }
 
-export function createGame(countries, startCode, { rng = Math.random, pool = null, difficulty = 'hard', pools = null } = {}) {
-  if (!DIFFICULTY[difficulty]) throw new Error(`unknown difficulty ${difficulty}`);
-  if (pool == null && pools) pool = targetPool(difficulty, pools);
+/**
+ * Turn saved settings into the rules a round plays by. A preset name uses
+ * DIFFICULTY as-is; 'custom' takes the individual switches. The clue button
+ * is offered whenever the round does not already show everything.
+ */
+export function resolveRules(settings = {}) {
+  const preset = settings.preset || 'hard';
+  const base = DIFFICULTY[preset] || DIFFICULTY.hard;
+  const r = preset === 'custom'
+    ? { label: 'Custom', names: !!settings.names, click: !!settings.click, distances: !!settings.distances, bearings: !!settings.bearings, pool: settings.pool === 'easy' ? 'easy' : null }
+    : { label: base.label, names: base.names, click: base.click, distances: base.distances, bearings: base.bearings, pool: base.pool };
+  r.clueButton = !(r.distances && r.bearings);
+  r.preset = preset;
+  return r;
+}
+
+export function createGame(countries, startCode, { rng = Math.random, pool = null, difficulty = 'hard', pools = null, rules = null } = {}) {
+  if (!rules && !DIFFICULTY[difficulty]) throw new Error(`unknown difficulty ${difficulty}`);
+  if (rules) difficulty = rules.preset || 'custom';
+  if (pool == null && pools) {
+    if (rules) { const p = rules.pool && pools[rules.pool]; pool = p ? p.codes : null; }
+    else pool = targetPool(difficulty, pools);
+  }
   const byCode = new Map(countries.map((c) => [c.code, c]));
   const start = byCode.get(startCode);
   if (!start) throw new Error(`unknown start country ${startCode}`);
@@ -213,7 +240,7 @@ export function createGame(countries, startCode, { rng = Math.random, pool = nul
   if (!candidates.length) throw new Error('no candidate targets');
   const target = candidates[Math.min(candidates.length - 1, Math.floor(rng() * candidates.length))];
   return {
-    startCode, targetCode: target.code, difficulty,
+    startCode, targetCode: target.code, difficulty, rules: rules || { ...DIFFICULTY[difficulty], preset: difficulty, clueButton: DIFFICULTY[difficulty].clueButton },
     startDistanceKm: haversineKm(start.latlng, target.latlng),
     startCompass: compassPoint(rhumbBearing(start.latlng, target.latlng)),
     guesses: [], status: 'playing', cluesUsed: 0,
@@ -279,6 +306,35 @@ export function giveUp(game) {
 /** Guesses that count (everything recorded; repeats are never recorded). */
 export function guessCount(game) {
   return game.guesses.length;
+}
+
+/** Score for a finished round: lower is better; a clue costs as much as a guess. */
+export function score(game) {
+  return guessCount(game) + (game.cluesUsed || 0);
+}
+
+/**
+ * Fold a finished round into persistent stats. `stats` shape:
+ * { rounds, wins, streak, bestStreak, best: { [preset]: score }, found: { [code]: times } }.
+ */
+export function recordRound(stats, game) {
+  const s = {
+    rounds: 0, wins: 0, streak: 0, bestStreak: 0, best: {}, found: {},
+    ...(stats || {}),
+  };
+  s.best = { ...s.best }; s.found = { ...s.found };
+  s.rounds += 1;
+  if (game.status === 'won') {
+    s.wins += 1;
+    s.streak += 1;
+    s.bestStreak = Math.max(s.bestStreak, s.streak);
+    const sc = score(game), key = game.difficulty || 'hard';
+    if (s.best[key] == null || sc < s.best[key]) s.best[key] = sc;
+    s.found[game.targetCode] = (s.found[game.targetCode] || 0) + 1;
+  } else {
+    s.streak = 0;
+  }
+  return s;
 }
 
 /**

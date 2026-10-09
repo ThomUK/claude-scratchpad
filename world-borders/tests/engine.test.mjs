@@ -5,6 +5,7 @@ import {
   haversineKm, initialBearing, compassPoint, formatKm, decodeTopology,
   createGame, makeGuess, giveUp, referenceDistance, guessCount, cameraDistanceForSpan,
   rhumbBearing, directionClue, useClue, countryAt, pickCountry, DIFFICULTY, targetPool, sortCountries,
+  formatDistance, resolveRules, score, recordRound,
 } from '../engine.js';
 
 let n = 0;
@@ -52,6 +53,43 @@ check('directionClue / useClue: from start and latest guess; clue count is recor
 check('formatKm rounds and groups thousands', () => {
   assert.equal(formatKm(1234.6), '1,235 km');
   assert.equal(formatKm(0.2), '0 km');
+  assert.equal(formatDistance(1609.344, 'mi'), '1,000 mi');
+  assert.equal(formatDistance(1609.344), '1,609 km');
+});
+
+check('resolveRules: presets pass through, custom uses the switches, clue button when something is hidden', () => {
+  const easy = resolveRules({ preset: 'easy' });
+  assert.equal(easy.label, 'Easy'); assert.equal(easy.pool, 'easy'); assert.equal(easy.clueButton, false);
+  const hard = resolveRules({});
+  assert.equal(hard.preset, 'hard'); assert.equal(hard.clueButton, true); assert.equal(hard.pool, null);
+  const custom = resolveRules({ preset: 'custom', names: true, click: false, distances: false, bearings: false, pool: 'easy' });
+  assert.equal(custom.label, 'Custom'); assert.equal(custom.names, true); assert.equal(custom.click, false);
+  assert.equal(custom.pool, 'easy'); assert.equal(custom.clueButton, true);
+  const all = resolveRules({ preset: 'custom', names: true, click: true, distances: true, bearings: true, pool: 'all' });
+  assert.equal(all.clueButton, false); assert.equal(all.pool, null);
+  // createGame honours custom rules and their pool.
+  const poolSet = new Set(data.pools.easy.codes);
+  for (let i = 0; i < 100; i++) {
+    const g = createGame(countries, 'GBR', { rng: () => i / 100, rules: custom, pools: data.pools });
+    assert.ok(poolSet.has(g.targetCode)); assert.equal(g.difficulty, 'custom'); assert.equal(g.rules.names, true);
+  }
+  assert.equal(createGame(countries, 'GBR', { rng: () => 0, difficulty: 'easy', pools: data.pools }).rules.label, 'Easy');
+});
+
+check('score and recordRound: wins count, streaks, best per level, passport stamps', () => {
+  let g = createGame(countries, 'GBR', { rng: () => 0, pool: ['FRA'], difficulty: 'hard' });
+  g = makeGuess(g, countries, 'ESP').game; g = useClue(g); g = makeGuess(g, countries, 'FRA').game;
+  assert.equal(score(g), 3);
+  let s = recordRound(null, g);
+  assert.deepEqual([s.rounds, s.wins, s.streak, s.bestStreak, s.best.hard, s.found.FRA], [1, 1, 1, 1, 3, 1]);
+  const s0 = s;
+  s = recordRound(s, giveUp(createGame(countries, 'GBR', { rng: () => 0, pool: ['DEU'] })));
+  assert.deepEqual([s.rounds, s.wins, s.streak, s.bestStreak], [2, 1, 0, 1]);
+  assert.equal(s0.rounds, 1, 'input stats not mutated');
+  let g2 = createGame(countries, 'GBR', { rng: () => 0, pool: ['FRA'], difficulty: 'hard' });
+  g2 = makeGuess(g2, countries, 'FRA').game;
+  s = recordRound(s, g2);
+  assert.equal(s.best.hard, 1); assert.equal(s.found.FRA, 2); assert.equal(s.streak, 1);
 });
 
 check('decodeTopology: reverses negative arc indices and dequantizes', () => {

@@ -2,100 +2,161 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>World Borders — find the mystery country</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#f6f3ec" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="World Borders" />
+  <title>World Borders</title>
+  <link rel="manifest" href="manifest.webmanifest?v=dev" />
+  <link rel="icon" href="icons/icon.svg?v=dev" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png?v=dev" />
   <link rel="stylesheet" href="styles.css?v=dev" />
   <script type="importmap">
     { "imports": { "three": "./vendor/three/three.module.js?v=dev" } }
   </script>
 </head>
 <body>
-  <header>
-    <h1>World Borders <span class="muted">— find the mystery country</span></h1>
-    <nav class="crumbs"><a href="../">← All toy models</a> ·
-      <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/world-borders" target="_blank" rel="noopener">source</a></nav>
-    <p class="subtitle">Pick a country to start from. The game hides another one somewhere on the globe
-      and tells you how far away it is. Each guess draws a line from your previous guess: an
-      <b class="w">orange</b> line means that hop took you closer to the mystery country (warmer), a
-      <b class="c">blue</b> one means further away (cooler). Find it and learn a little about it.</p>
-  </header>
+  <div id="app">
+    <main id="screens">
 
-  <main>
-    <section class="viewport" id="globe-wrap">
-      <div id="globe"></div>
-      <div class="loading" id="loading"><div class="spin"></div>Loading the world…</div>
-      <ul class="legend" aria-label="Map colours">
-        <li><span class="swatch" style="background:#ffd166"></span>start</li>
-        <li><span class="swatch line" style="background:#ff7a1a"></span>warmer hop</li>
-        <li><span class="swatch line" style="background:#4a90e2"></span>cooler hop</li>
-        <li><span class="swatch" style="background:#2ecc71"></span>found</li>
-        <li><span class="swatch" style="background:#e05aa0"></span>revealed</li>
-        <li><span class="swatch" style="background:#4cc2ff"></span>from table</li>
-      </ul>
-    </section>
-
-    <aside class="panel">
-      <div id="panel-start">
-        <h2>Difficulty</h2>
-        <div class="difficulty" id="difficulty" role="radiogroup" aria-label="Difficulty"></div>
-        <h2>Where are you starting from?</h2>
-        <p class="muted small">Any of the 250 countries and territories. The globe will turn to show it.</p>
-      </div>
-
-      <div id="panel-game" hidden>
-        <div class="status">
-          <div><span class="muted small">Starting from · <span id="difficulty-tag"></span></span><br /><strong id="start-name"></strong></div>
-          <div class="right"><span class="muted small">Guesses</span><br /><strong id="guess-count">0</strong> <span class="muted small" id="clues-used"></span></div>
+      <!-- ============================== PLAY ============================== -->
+      <section class="screen" id="screen-play">
+        <div class="globe-wrap" id="globe-wrap">
+          <div id="globe"></div>
+          <div class="loading" id="loading"><div class="spin"></div>Loading the world…</div>
+          <ul class="legend" id="legend" aria-label="Map colours" hidden>
+            <li><span class="swatch" style="background:#f4b63a"></span>start</li>
+            <li><span class="swatch line" style="background:#f26a1b"></span>warmer</li>
+            <li><span class="swatch line" style="background:#3b82d6"></span>cooler</li>
+            <li><span class="swatch" style="background:#22a55b"></span>found</li>
+            <li><span class="swatch" style="background:#d6409f"></span>revealed</li>
+          </ul>
+          <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
         </div>
-        <p class="clue" id="clue" aria-live="polite"></p>
-        <p class="cluebox" id="clue-box" aria-live="polite" hidden>🧭 <span id="clue-text"></span></p>
-        <p class="flash" id="flash" aria-live="polite" hidden></p>
-      </div>
 
-      <div class="picker" id="picker">
-        <label for="search" class="sr-only">Country</label>
-        <input id="search" type="search" autocomplete="off" spellcheck="false" placeholder="Type a country…" />
-        <div id="results" class="results" hidden></div>
-      </div>
+        <div class="sheet" id="sheet" data-state="half">
+          <button class="grip" id="grip" type="button" aria-label="Expand or collapse the panel"><span></span></button>
+          <div class="sheet-body" id="sheet-body">
 
-      <div id="panel-game-log">
-        <ol class="log" id="log"></ol>
-        <p class="muted small" id="log-empty" hidden>No guesses yet. Each guess is compared with the one before it: warmer means this hop took you closer to the mystery country.</p>
-        <div class="btnrow">
-          <button id="btn-clue" type="button" hidden>Give me a clue</button>
-          <button id="btn-giveup" type="button" hidden>Give up and reveal</button>
-          <button id="btn-newstart" type="button" class="ghost">Start over</button>
+            <!-- New round -->
+            <div id="panel-start">
+              <div class="titlerow">
+                <h1>World Borders</h1>
+                <button type="button" class="chip" id="level-chip" title="Change difficulty in Settings">Hard</button>
+              </div>
+              <p class="muted small">Find the mystery country from distance clues. Pick where to start.</p>
+              <div class="picker" id="picker-start">
+                <label for="search" class="sr-only">Country</label>
+                <input id="search" type="search" autocomplete="off" spellcheck="false" enterkeyhint="go" placeholder="Type a country to start from…" />
+                <div id="results" class="results" hidden></div>
+              </div>
+              <div class="btnrow">
+                <button type="button" id="btn-random">🎲 Random start</button>
+                <button type="button" id="btn-locate">📍 Start from where I am</button>
+              </div>
+              <div class="stats" id="stats-strip"></div>
+            </div>
+
+            <!-- In a round -->
+            <div id="panel-game" hidden>
+              <div class="status">
+                <div><span class="muted small">From · <span id="difficulty-tag"></span></span><br /><strong id="start-name"></strong></div>
+                <div class="right"><span class="muted small">Guesses</span><br /><strong id="guess-count">0</strong> <span class="muted small" id="clues-used"></span></div>
+              </div>
+              <p class="clue" id="clue" aria-live="polite"></p>
+              <p class="cluebox" id="clue-box" aria-live="polite" hidden>🧭 <span id="clue-text"></span></p>
+              <p class="flash" id="flash" aria-live="polite" hidden></p>
+              <div class="picker" id="picker-guess">
+                <label for="search-guess" class="sr-only">Guess</label>
+                <input id="search-guess" type="search" autocomplete="off" spellcheck="false" enterkeyhint="go" placeholder="Type your guess…" />
+                <div id="results-guess" class="results" hidden></div>
+              </div>
+              <ol class="log" id="log"></ol>
+              <p class="muted small" id="log-empty" hidden>No guesses yet. Each guess is compared with the one before it: warmer means this hop took you closer.</p>
+              <div class="btnrow">
+                <button type="button" id="btn-clue" hidden>🧭 Give me a clue</button>
+                <button type="button" id="btn-giveup">Give up and reveal</button>
+                <button type="button" class="ghost" id="btn-newstart">Start over</button>
+              </div>
+            </div>
+
+            <!-- Round over -->
+            <div id="panel-over" hidden>
+              <p class="outcome" id="outcome"></p>
+              <div id="reveal-card"></div>
+              <div class="btnrow sticky-actions" id="over-actions"></div>
+            </div>
+
+          </div>
         </div>
-      </div>
+      </section>
 
-      <section class="reveal" id="reveal" hidden></section>
+      <!-- ============================== ATLAS ============================= -->
+      <section class="screen" id="screen-atlas" hidden>
+        <header class="appbar"><h1>Atlas</h1><span class="muted small" id="ref-count"></span></header>
+        <div class="atlas-tools">
+          <input id="ref-filter" type="search" placeholder="Filter by name, continent or status…" autocomplete="off" />
+          <div class="chips" id="sort-chips"></div>
+        </div>
+        <ul class="atlas" id="atlas-list"></ul>
+      </section>
 
-      <p class="muted small footnote" id="data-note"></p>
-    </aside>
-  </main>
+      <!-- Country page (from the Atlas) -->
+      <section class="screen" id="screen-country" hidden>
+        <header class="appbar"><button type="button" class="back" id="country-back" aria-label="Back">‹</button><h1 id="country-title">Country</h1></header>
+        <div class="page" id="country-body"></div>
+        <div class="btnrow page-actions">
+          <button type="button" class="primary" id="btn-show-globe">Show on globe</button>
+          <button type="button" id="btn-start-here">Start a round here</button>
+        </div>
+      </section>
 
-  <section class="wrap">
-    <details class="panel accordion" id="ref">
-      <summary><span>Country reference</span> <span class="muted small">all 250 countries and territories · click a heading to sort, a row to highlight it on the globe, ⓘ for details</span></summary>
-      <div class="ref-tools">
-        <input id="ref-filter" type="search" placeholder="Filter by name, continent or designation…" autocomplete="off" />
-        <span class="muted small" id="ref-count"></span>
-      </div>
-      <div class="ref-scroll">
-        <table class="ref">
-          <thead><tr id="ref-head"></tr></thead>
-          <tbody id="ref-body"></tbody>
-        </table>
-      </div>
-    </details>
-  </section>
+      <!-- ============================= SETTINGS =========================== -->
+      <section class="screen" id="screen-settings" hidden>
+        <header class="appbar"><h1>Settings</h1></header>
+        <div class="page">
+          <h2>Difficulty</h2>
+          <div class="difficulty" id="difficulty" role="radiogroup" aria-label="Difficulty"></div>
 
-  <dialog id="info" class="info" aria-labelledby="info-title">
-    <div class="info-inner">
-      <button type="button" class="close" id="info-close" aria-label="Close">×</button>
-      <div id="info-body"></div>
-    </div>
-  </dialog>
+          <h2>Rules <span class="muted small">(editing one switches to Custom)</span></h2>
+          <div class="switches" id="switches"></div>
+
+          <h2>Units</h2>
+          <div class="seg" id="units">
+            <label><input type="radio" name="units" value="km" /> Kilometres</label>
+            <label><input type="radio" name="units" value="mi" /> Miles</label>
+          </div>
+
+          <h2>Progress</h2>
+          <div class="stats" id="stats-full"></div>
+          <div class="btnrow"><button type="button" class="ghost" id="btn-reset-stats">Reset progress</button></div>
+
+          <h2>About</h2>
+          <p class="muted small" id="data-note"></p>
+          <p class="muted small">Boundaries follow internationally recognised borders (Crimea is shown in Ukraine). Distances are great-circle, centre to centre.</p>
+          <p class="muted small web-only"><a href="../">← All toy models</a> · <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/world-borders" target="_blank" rel="noopener">Source on GitHub</a></p>
+        </div>
+      </section>
+
+    </main>
+
+    <nav class="tabbar" id="tabbar" aria-label="Sections">
+      <button type="button" class="tab on" data-screen="play" aria-label="Play">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10.5c3 .5 5 2 6 4.5s3 3 5.5 3M12 3c-1.5 2.5-1 5 .5 6.5s3.5 1.5 5 .5M9 4c-.5 2 .5 3.5 2 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Play</span>
+      </button>
+      <button type="button" class="tab" data-screen="atlas" aria-label="Atlas">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v15H6.5A2.5 2.5 0 0 0 4 20.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H19M8 7h7M8 10.5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Atlas</span>
+      </button>
+      <button type="button" class="tab" data-screen="settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+  </div>
 
   <script type="module" src="app.js?v=dev"></script>
 </body>
