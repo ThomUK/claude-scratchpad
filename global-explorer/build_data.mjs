@@ -177,6 +177,14 @@ const nth = (n) => (n === 1 ? '' : ord(n) + ' ');
 const fmt = (n) => (n < 10 ? n.toLocaleString('en-GB', { maximumFractionDigits: 2 }) : Math.round(n).toLocaleString('en-GB'));
 // Population for territories Natural Earth has no polygon for (approximate).
 const POP_FIX = { GIB: 32700, BVT: 0, UMI: 0 };
+// Land areas the source dataset leaves as -1 ("unknown"). Svalbard 61,022 km²
+// + Jan Mayen 377 km² (Statistics Norway); the CIA World Factbook gives 62,045 for Svalbard alone.
+const AREA_FIX = { SJM: 61399 };
+for (const c of rc) if (AREA_FIX[c.cca3] != null) c.area = AREA_FIX[c.cca3];
+{
+  const bad = rc.filter((c) => !(c.area > 0));
+  if (bad.length) throw new Error(`non-positive land area for ${bad.map((c) => c.cca3).join(', ')}; add to AREA_FIX`);
+}
 // The source dataset marks the Holy See as a UN member; it is a permanent observer.
 const UN_FIX = { VAT: false };
 const areaRank = [...rc].sort((a, b) => b.area - a.area).map((c) => c.cca3);

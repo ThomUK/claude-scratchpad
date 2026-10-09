@@ -151,6 +151,9 @@ check('data: 250 countries, every one has latlng, facts, and a resolvable border
   assert.equal(countries.length, 250);
   const codes = new Set(countries.map((c) => c.code));
   for (const c of countries) {
+    assert.ok(c.area > 0, `${c.code} area ${c.area}`);
+    assert.ok(c.density == null || c.density >= 0, `${c.code} density ${c.density}`);
+    assert.ok(c.population == null || c.population >= 0, `${c.code} population ${c.population}`);
     assert.ok(Array.isArray(c.latlng) && c.latlng.length === 2, `${c.code} latlng`);
     assert.ok(c.facts.length >= 1, `${c.code} facts`);
     for (const b of c.borders) assert.ok(codes.has(b), `${c.code} border ${b}`);
@@ -160,6 +163,8 @@ check('data: 250 countries, every one has latlng, facts, and a resolvable border
   assert.match(C('BMU').facts[0], /British Overseas Territory/);
   assert.match(C('GRL').facts[0], /Kingdom of Denmark/);
   assert.match(C('VAT').facts[0], /not a member of the United Nations/);
+  assert.equal(C('SJM').area, 61399);
+  assert.ok(!C('SJM').facts.some((f) => /smallest/.test(f)), 'Svalbard is not ranked among the smallest');
 });
 
 check('data: world.json decodes and covers every country except the three with no 50m shape', () => {
