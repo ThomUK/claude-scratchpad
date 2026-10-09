@@ -104,20 +104,22 @@ check('score and recordRound: wins count, streaks, best per level, stamps per le
 check('remainingPool: stamped countries drop out of the pool until it is complete', () => {
   const easy = resolveRules({ preset: 'easy' }), hard = resolveRules({ preset: 'hard' });
   const empty = remainingPool(countries, data.pools, easy, null);
-  assert.equal(empty.codes.length, 50); assert.equal(empty.total, 50); assert.equal(empty.complete, false);
+  assert.equal(empty.codes.length, 80); assert.equal(empty.total, 80); assert.equal(empty.complete, false);
+  const inter = remainingPool(countries, data.pools, resolveRules({ preset: 'intermediate' }), null);
+  assert.equal(inter.total, 193);
   let s = normalizeStats(null);
   s.found = { ESP: { easy: 1 }, FRA: { easy: 1, hard: 1 } };
   const r = remainingPool(countries, data.pools, easy, s);
-  assert.equal(r.codes.length, 48); assert.equal(r.stamped, 2); assert.ok(!r.codes.includes('ESP') && !r.codes.includes('FRA'));
+  assert.equal(r.codes.length, 78); assert.equal(r.stamped, 2); assert.ok(!r.codes.includes('ESP') && !r.codes.includes('FRA'));
   const h = remainingPool(countries, data.pools, hard, s);
   assert.equal(h.codes.length, 249); assert.ok(!h.codes.includes('FRA') && h.codes.includes('ESP'));
   // Complete: every Easy country stamped -> whole pool again, flagged complete.
   s.found = Object.fromEntries(data.pools.easy.codes.map((c) => [c, { easy: 1 }]));
   const done = remainingPool(countries, data.pools, easy, s);
-  assert.equal(done.complete, true); assert.equal(done.codes.length, 50); assert.equal(done.stamped, 50);
+  assert.equal(done.complete, true); assert.equal(done.codes.length, 80); assert.equal(done.stamped, 80);
   // Custom never excludes.
   const custom = remainingPool(countries, data.pools, resolveRules({ preset: 'custom', pool: 'easy' }), s);
-  assert.equal(custom.codes.length, 50); assert.equal(custom.complete, false);
+  assert.equal(custom.codes.length, 80); assert.equal(custom.complete, false);
   // The game draws from the remaining pool.
   for (let i = 0; i < 60; i++) {
     const g = createGame(countries, 'GBR', { rng: () => i / 60, rules: easy, pool: r.codes });
@@ -228,9 +230,16 @@ check('DIFFICULTY: three levels; createGame records it and rejects unknown ones'
   close(c.fromStart.distanceKm, g.startDistanceKm, 1e-9, 'clue carries distance');
 });
 
-check('easy pool: 50 distinct, valid codes; Easy targets come only from it, other levels from everywhere', () => {
+check('pools: Easy = 80 most visited, Intermediate = 193 UN members, Advanced = everyone', () => {
   const pool = data.pools.easy.codes;
-  assert.equal(pool.length, 50); assert.equal(new Set(pool).size, 50);
+  assert.equal(pool.length, 80); assert.equal(new Set(pool).size, 80);
+  const un = data.pools.un.codes;
+  assert.equal(un.length, 193); assert.ok(un.every((c) => C(c).unMember)); assert.ok(!un.includes('VAT') && !un.includes('TWN') && un.includes('GBR'));
+  assert.equal(DIFFICULTY.intermediate.pool, 'un'); assert.equal(DIFFICULTY.hard.pool, null); assert.equal(DIFFICULTY.hard.label, 'Advanced');
+  assert.equal(targetPool('intermediate', data.pools), un);
+  const unSet = new Set(un);
+  for (let i = 0; i < 100; i++) assert.ok(unSet.has(createGame(countries, 'GBR', { rng: () => i / 100, difficulty: 'intermediate', pools: data.pools }).targetCode));
+  assert.equal(resolveRules({ preset: 'custom', pool: 'un' }).pool, 'un');
   for (const code of pool) assert.ok(C(code), `pool code ${code}`);
   assert.deepEqual(pool.slice(0, 10), ['ESP', 'FRA', 'ITA', 'TUR', 'USA', 'GRC', 'PRT', 'IRL', 'DEU', 'POL']);
   assert.equal(targetPool('easy', data.pools), pool);
@@ -241,10 +250,10 @@ check('easy pool: 50 distinct, valid codes; Easy targets come only from it, othe
     const g = createGame(countries, 'GBR', { rng: () => i / 200, difficulty: 'easy', pools: data.pools });
     assert.ok(poolSet.has(g.targetCode), `easy target ${g.targetCode} in pool`);
   }
-  // Starting from a pool member never yields itself; the pool still has 49 options.
+  // Starting from a pool member never yields itself; the pool still has 79 options.
   const seen = new Set();
-  for (let i = 0; i < 200; i++) seen.add(createGame(countries, 'ESP', { rng: () => i / 200, difficulty: 'easy', pools: data.pools }).targetCode);
-  assert.equal(seen.size, 49); assert.ok(!seen.has('ESP'));
+  for (let i = 0; i < 400; i++) seen.add(createGame(countries, 'ESP', { rng: () => i / 400, difficulty: 'easy', pools: data.pools }).targetCode);
+  assert.equal(seen.size, 79); assert.ok(!seen.has('ESP'));
   // Hard can land outside the pool.
   const hardSeen = new Set();
   for (let i = 0; i < 250; i++) hardSeen.add(createGame(countries, 'GBR', { rng: () => i / 250, difficulty: 'hard', pools: data.pools }).targetCode);
@@ -256,6 +265,7 @@ check('data: every country has a continent and a designation', () => {
   assert.deepEqual([...continents].sort(), ['Africa', 'Antarctica', 'Asia', 'Europe', 'North America', 'Oceania', 'South America']);
   assert.equal(C('BRA').continent, 'South America'); assert.equal(C('JAM').continent, 'North America');
   assert.equal(C('GBR').designation, 'UN member'); assert.equal(C('BMU').designation, 'Territory of United Kingdom');
+  assert.equal(countries.filter((c) => c.unMember).length, 193);
   assert.equal(C('VAT').designation, 'UN observer'); assert.equal(C('UNK').designation, 'Partially recognised');
   assert.equal(C('ATA').designation, 'Antarctic Treaty'); assert.equal(C('ESH').designation, 'Disputed');
   for (const c of countries) assert.ok(c.designation && c.continent, `${c.code} designation/continent`);
@@ -289,8 +299,8 @@ check('sortCountries: numeric keys with nulls last, text keys by locale, stable 
   const easySet = new Set(data.pools.easy.codes);
   const tagged = countries.map((c) => ({ ...c, easy: easySet.has(c.code) }));
   const byEasy = sortCountries(tagged, 'easy', 'desc');
-  assert.ok(byEasy.slice(0, 50).every((c) => c.easy) && byEasy.slice(50).every((c) => !c.easy));
-  assert.equal(byEasy[0].code, 'AUS');
+  assert.ok(byEasy.slice(0, 80).every((c) => c.easy) && byEasy.slice(80).every((c) => !c.easy));
+  assert.equal(byEasy[0].code, 'ALB');
 });
 
 check('createGame: never picks the start as the target; honours the pool and rng', () => {

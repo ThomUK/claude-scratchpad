@@ -479,13 +479,16 @@ function totalStamps() {
   let n = 0; for (const v of Object.values(f)) for (const l of STAMP_LEVELS) if (v[l] > 0) n++;
   return n;
 }
+function poolSize(level) { const key = DIFFICULTY[level].pool; return key && state.pools[key] ? state.pools[key].codes.length : state.countries.length; }
+function poolLabel(level) { const key = DIFFICULTY[level].pool; return key && state.pools[key] ? state.pools[key].label : `all ${state.countries.length} countries and territories`; }
+const allStamps = () => STAMP_LEVELS.reduce((n, l) => n + poolSize(l), 0);
 
 function renderStats(container, compact) {
   const s = state.stats || normalizeStats(null);
   const stamps = totalStamps();
   const tiles = compact
-    ? [[s.rounds, 'rounds'], [stamps, 'stamps of 550'], [s.streak, 'streak']]
-    : [[s.rounds, 'rounds played'], [s.wins, 'countries found'], [stamps, 'stamps of 550'], [s.streak, 'current streak'], [s.bestStreak, 'best streak'],
+    ? [[s.rounds, 'rounds'], [stamps, `stamps of ${allStamps()}`], [s.streak, 'streak']]
+    : [[s.rounds, 'rounds played'], [s.wins, 'countries found'], [stamps, `stamps of ${allStamps()}`], [s.streak, 'current streak'], [s.bestStreak, 'best streak'],
       ...Object.entries(s.best || {}).map(([k, v]) => [v, `best score · ${LEVEL_LABEL(k)}`])];
   container.replaceChildren();
   for (const [v, l] of tiles) { const d = el('div', 'stat'); d.append(el('div', 'v', String(v)), el('div', 'l', l)); container.append(d); }
@@ -499,7 +502,7 @@ function renderPassport() {
   for (const l of STAMP_LEVELS) {
     const pool = remainingPool(state.countries, state.pools, resolveRules({ preset: l }), state.stats);
     const d = el('div', 'level'); d.style.setProperty('--ink', l === 'easy' ? '#1f8a4c' : l === 'intermediate' ? '#2f6fcf' : '#b3261e');
-    const txt = el('div'); txt.append(el('div', 'ln', LEVEL_LABEL(l)), el('div', 'lh', l === 'easy' ? 'the 50 most visited countries' : 'all 250 countries and territories'));
+    const txt = el('div'); txt.append(el('div', 'ln', LEVEL_LABEL(l)), el('div', 'lh', poolLabel(l)));
     const bar = el('div', 'bar'); const fill = el('i'); fill.style.width = `${(100 * pool.stamped) / pool.total}%`; bar.append(fill);
     d.append(stampEl(l, pool.stamped > 0), txt, el('div', 'lc', `${pool.stamped} / ${pool.total}`), bar);
     levels.append(d);
@@ -614,7 +617,11 @@ const SWITCHES = [
   { key: 'click', label: 'Tap the map to guess', hint: 'Otherwise type the name.' },
   { key: 'distances', label: 'Show distance for each guess', hint: 'How far each guess is from the mystery country.' },
   { key: 'bearings', label: 'Show compass direction', hint: 'Which way the mystery country lies from each guess.' },
-  { key: 'pool', label: 'Mystery country from the 50 most visited', hint: 'Off: any of the 250 countries and territories.', on: 'easy', off: 'all' },
+];
+const POOLS = [
+  { key: 'easy', label: '80 most visited', hint: 'Easy' },
+  { key: 'un', label: '193 UN members', hint: 'Intermediate' },
+  { key: 'all', label: 'All 250', hint: 'Advanced' },
 ];
 
 function wireSettings() {
@@ -634,19 +641,30 @@ function wireSettings() {
     inp.addEventListener('change', () => {
       // Editing a switch makes the preset Custom, seeded from the current rules.
       const r = rules();
-      state.settings = { ...state.settings, preset: 'custom', names: r.names, click: r.click, distances: r.distances, bearings: r.bearings, pool: r.pool === 'easy' ? 'easy' : 'all' };
-      state.settings[s.key] = s.on ? (inp.checked ? s.on : s.off) : inp.checked;
+      state.settings = { ...state.settings, preset: 'custom', names: r.names, click: r.click, distances: r.distances, bearings: r.bearings, pool: r.pool || 'all' };
+      state.settings[s.key] = inp.checked;
       saveSettings();
     });
     lab.append(txt, inp);
     sw.append(lab);
+  }
+  const pb = $('pool');
+  for (const p of POOLS) {
+    const lab = el('label'); const inp = el('input'); inp.type = 'radio'; inp.name = 'pool'; inp.value = p.key;
+    inp.addEventListener('change', () => {
+      const r = rules();
+      state.settings = { ...state.settings, preset: 'custom', names: r.names, click: r.click, distances: r.distances, bearings: r.bearings, pool: p.key };
+      saveSettings();
+    });
+    lab.append(inp, ` ${p.label}`);
+    pb.append(lab);
   }
   for (const inp of document.querySelectorAll('#units input')) inp.addEventListener('change', () => { state.settings.units = inp.value; saveSettings(); });
   $('btn-reset-stats').addEventListener('click', () => { if (confirm('Reset rounds, streaks and all passport stamps?')) { state.stats = normalizeStats(null); save(KEYS.stats, null); renderPassport(); } });
 }
 
 function applyPreset(key) {
-  if (key === 'custom') { const r = rules(); state.settings = { ...state.settings, preset: 'custom', names: r.names, click: r.click, distances: r.distances, bearings: r.bearings, pool: r.pool === 'easy' ? 'easy' : 'all' }; }
+  if (key === 'custom') { const r = rules(); state.settings = { ...state.settings, preset: 'custom', names: r.names, click: r.click, distances: r.distances, bearings: r.bearings, pool: r.pool || 'all' }; }
   else state.settings.preset = key;
   saveSettings();
 }
@@ -661,10 +679,8 @@ function saveSettings() {
 function renderSettings() {
   const r = rules();
   for (const inp of document.querySelectorAll('#difficulty input')) inp.checked = inp.value === r.preset;
-  for (const inp of document.querySelectorAll('#switches input')) {
-    const s = SWITCHES.find((x) => x.key === inp.dataset.key);
-    inp.checked = s.on ? r.pool === s.on : !!r[s.key];
-  }
+  for (const inp of document.querySelectorAll('#switches input')) inp.checked = !!r[inp.dataset.key];
+  for (const inp of document.querySelectorAll('#pool input')) inp.checked = inp.value === (r.pool || 'all');
   for (const inp of document.querySelectorAll('#units input')) inp.checked = inp.value === state.settings.units;
 }
 

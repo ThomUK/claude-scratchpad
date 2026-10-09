@@ -185,15 +185,15 @@ export function sortCountries(countries, key, dir = 'asc') {
 export const DIFFICULTY = {
   easy: {
     label: 'Easy', names: true, click: true, distances: true, bearings: true, clueButton: false, pool: 'easy',
-    blurb: 'Country names on the map, click the map to guess, every guess shows distance and compass direction, and the mystery country is one of the 50 countries UK residents visit most.',
+    blurb: 'Names on the map, tap the map to guess, every guess shows distance and direction. The mystery country is one of the 80 countries UK residents visit most.',
   },
   intermediate: {
-    label: 'Intermediate', names: true, click: false, distances: true, bearings: false, clueButton: true, pool: null,
-    blurb: 'Country names on the map. Guesses show distance; a clue reveals the compass direction.',
+    label: 'Intermediate', names: true, click: false, distances: true, bearings: false, clueButton: true, pool: 'un',
+    blurb: 'Names on the map. Guesses show distance; a clue reveals the direction. The mystery country is one of the 193 UN member states.',
   },
   hard: {
-    label: 'Hard', names: false, click: false, distances: true, bearings: false, clueButton: true, pool: null,
-    blurb: 'No names on the map. Guesses show distance; a clue reveals the compass direction.',
+    label: 'Advanced', names: false, click: false, distances: true, bearings: false, clueButton: true, pool: null,
+    blurb: 'No names on the map. Guesses show distance; a clue reveals the direction. The mystery country can be any of the 250 countries and territories, dependencies and disputed places included.',
   },
 };
 
@@ -219,7 +219,7 @@ export function resolveRules(settings = {}) {
   const preset = settings.preset || 'hard';
   const base = DIFFICULTY[preset] || DIFFICULTY.hard;
   const r = preset === 'custom'
-    ? { label: 'Custom', names: !!settings.names, click: !!settings.click, distances: !!settings.distances, bearings: !!settings.bearings, pool: settings.pool === 'easy' ? 'easy' : null }
+    ? { label: 'Custom', names: !!settings.names, click: !!settings.click, distances: !!settings.distances, bearings: !!settings.bearings, pool: settings.pool === 'easy' || settings.pool === 'un' ? settings.pool : null }
     : { label: base.label, names: base.names, click: base.click, distances: base.distances, bearings: base.bearings, pool: base.pool };
   r.clueButton = !(r.distances && r.bearings);
   r.preset = preset;

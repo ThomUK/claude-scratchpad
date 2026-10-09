@@ -17,10 +17,10 @@ currency, neighbours and a few facts, with dependent territories saying who
 administers them. Chain on: the next round can start from the country you found.
 
 **Passport.** The scoring page. Each country has three stamps to collect, one
-per level (Easy, Intermediate, Hard; Custom rounds don't stamp). Finding a
+per level (Easy, Intermediate, Advanced; Custom rounds don't stamp). Finding a
 country stamps it, and until a level's passport is complete the mystery
 country is always drawn from the countries you have not yet stamped at that
-level (Easy's 50, otherwise all 250). Shows rounds, streaks, best scores,
+level. Shows rounds, streaks, best scores,
 progress bars per level and the stamp book.
 
 **Atlas.** All 250 countries and territories as a sortable list (name,
@@ -33,13 +33,13 @@ mix is possible; kilometres or miles; data credits.
 
 | Level | Names on map | Tap map to guess | Per guess | Mystery pool | Clue button |
 |---|---|---|---|---|---|
-| Easy | yes | yes | warmer/cooler, distance and compass direction | 50 most visited | not needed |
-| Intermediate | yes | no | warmer/cooler and distance | all 250 | direction |
-| Hard | no | no | warmer/cooler and distance | all 250 | direction |
+| Easy | yes | yes | warmer/cooler, distance and compass direction | 80 most visited | not needed |
+| Intermediate | yes | no | warmer/cooler and distance | 193 UN member states | direction |
+| Advanced | no | no | warmer/cooler and distance | all 250, dependencies and disputed places included | direction |
 
-On Easy the mystery country is drawn only from the 50 countries UK residents
+On Easy the mystery country is drawn only from the 80 countries UK residents
 visit most (ONS *Travel trends*, UK residents' visits abroad by main country
-visited). The top 10 are the published 2024 figures; ranks 11–50 are a
+visited). The top 10 are the published 2024 figures; ranks 11–80 are a
 reconstruction of the ONS country table and live in `build_data.mjs`
 (`EASY_POOL`) for correction. The start country can still be anywhere.
 
