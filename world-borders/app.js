@@ -115,12 +115,26 @@ function resetToPickStart() {
   render();
 }
 
+const verdictColor = (v) => (v === 'warmer' ? COLORS.warmer : v === 'cooler' ? COLORS.cooler : v === 'correct' ? COLORS.correct : COLORS.same);
+
 function paintGlobe() {
-  const g = state.game, hl = new Map();
+  const g = state.game, hl = new Map(), ll = (code) => state.byCode.get(code).latlng;
+  // Fills: only the anchor points carry colour; guessed countries get a neutral lift.
+  for (const x of g.guesses) hl.set(x.code, COLORS.guessed);
   hl.set(g.startCode, COLORS.start);
-  for (const x of g.guesses) hl.set(x.code, x.verdict === 'warmer' ? COLORS.warmer : x.verdict === 'cooler' ? COLORS.cooler : x.verdict === 'correct' ? COLORS.correct : COLORS.land);
+  if (g.status === 'won') hl.set(g.targetCode, COLORS.correct);
   if (g.status === 'gaveup') hl.set(g.targetCode, COLORS.target);
   state.globe.setHighlights(hl);
+  // The path: start -> guess 1 -> guess 2 ..., each hop coloured by its verdict.
+  const segments = [], labels = [{ latlng: ll(g.startCode), text: 'S', color: COLORS.start }];
+  let prev = g.startCode;
+  g.guesses.forEach((x, i) => {
+    segments.push({ from: ll(prev), to: ll(x.code), color: verdictColor(x.verdict) });
+    labels.push({ latlng: ll(x.code), text: String(i + 1), color: x.verdict === 'correct' ? COLORS.correct : '#e6edf3' });
+    prev = x.code;
+  });
+  if (g.status === 'gaveup') labels.push({ latlng: ll(g.targetCode), text: '?', color: COLORS.target });
+  state.globe.setPath(segments, labels);
 }
 
 // ------------------------------------------------------------------ render --
@@ -142,21 +156,27 @@ function render(lastResult) {
 
   const log = $('log');
   log.replaceChildren();
-  for (const x of [...g.guesses].reverse()) {
+  g.guesses.forEach((x, i) => {
     const row = el('li', `guess ${x.verdict}`);
-    const sw = el('span', 'swatch'); sw.style.background = x.verdict === 'correct' ? COLORS.correct : x.verdict === 'warmer' ? COLORS.warmer : x.verdict === 'cooler' ? COLORS.cooler : COLORS.land;
-    row.append(sw, el('span', 'gname', name(x.code)), el('span', 'gdist', formatKm(x.distanceKm)));
-    row.append(el('span', 'gverdict', x.verdict === 'correct' ? 'Correct!' : x.verdict === 'warmer' ? 'Warmer' : x.verdict === 'cooler' ? 'Cooler' : 'Same distance'));
-    log.append(row);
-  }
+    const from = i === 0 ? start.name : name(g.guesses[i - 1].code);
+    const num = el('span', 'gnum', String(i + 1));
+    num.style.background = x.verdict === 'correct' ? COLORS.correct : '#e6edf3';
+    const line = el('span', 'gline'); line.style.background = verdictColor(x.verdict);
+    row.append(num, line, el('span', 'gname', name(x.code)), el('span', 'gdist', formatKm(x.distanceKm)));
+    row.append(el('span', 'gverdict', x.verdict === 'correct' ? 'Found it!' : x.verdict === 'warmer' ? 'Warmer' : x.verdict === 'cooler' ? 'Cooler' : 'Same'));
+    row.title = `${from} → ${name(x.code)}: ${formatKm(x.referenceKm)} → ${formatKm(x.distanceKm)} from the mystery country`;
+    log.prepend(row);
+  });
   $('log-empty').hidden = g.guesses.length > 0;
   $('btn-giveup').hidden = state.phase !== 'guessing';
 
   if (lastResult && state.phase === 'guessing') {
-    const v = lastResult.verdict;
-    flash(v === 'warmer' ? `Warmer. ${name(lastResult.code)} is ${formatKm(lastResult.distanceKm)} away.`
-      : v === 'cooler' ? `Cooler. ${name(lastResult.code)} is ${formatKm(lastResult.distanceKm)} away.`
-      : `Same distance as before: ${formatKm(lastResult.distanceKm)}.`, v);
+    const v = lastResult.verdict, i = g.guesses.length - 1;
+    const prevName = i === 0 ? start.name : name(g.guesses[i - 1].code);
+    const here = `${name(lastResult.code)} is ${formatKm(lastResult.distanceKm)} from the mystery country`;
+    flash(v === 'warmer' ? `Warmer: ${here}, closer than ${prevName} was (${formatKm(lastResult.referenceKm)}).`
+      : v === 'cooler' ? `Cooler: ${here}, further than ${prevName} was (${formatKm(lastResult.referenceKm)}).`
+      : `Same: ${here}, the same as ${prevName}.`, v);
   }
   if (state.phase === 'over') { flash(''); renderReveal(); }
 }
@@ -166,7 +186,11 @@ const times = (x) => (x >= 10 ? `${Math.round(x)}×` : x >= 1.05 ? `${x.toFixed(
 /** Facts that relate the found country to the player's starting country. */
 function comparedToStart(c, start) {
   if (!start || c.code === start.code) return [];
-  const out = [`It lies ${formatKm(haversineKm(start.latlng, c.latlng))} to the ${DIR[compassPoint(initialBearing(start.latlng, c.latlng))]} of ${start.name}.`];
+  const km = haversineKm(start.latlng, c.latlng);
+  // Beyond ~10,000 km the great-circle heading (often over a pole) stops matching intuition.
+  const out = [km < 10000
+    ? `It lies ${formatKm(km)} to the ${DIR[compassPoint(initialBearing(start.latlng, c.latlng))]} of ${start.name}.`
+    : `It lies ${formatKm(km)} from ${start.name}, ${km > 15000 ? 'close to the far side of the world' : 'more than a quarter of the way around the world'}.`];
   if (c.area > 0 && start.area > 0) {
     const a = times(c.area / start.area);
     out.push(a === 'about the same' ? `Its area is about the same as ${start.name}'s.` : a.endsWith('smaller than') ? `Its area is ${a} ${start.name}'s.` : `Its area is ${a} that of ${start.name}.`);

@@ -5,9 +5,10 @@ An educational guessing game on a 3D globe.
 1. Pick a starting country (searchable list of all 250 countries and territories).
    The globe turns to show it, highlighted in yellow.
 2. The game hides a random second country and tells you how far it is from your start.
-3. Guess a country. If it is closer to the mystery country than your previous guess
-   (or than your start, for the first guess) the game says **warmer** and paints it
-   orange; otherwise **cooler** and blue. Each guess also shows its own distance.
+3. Guess a country. A line is drawn from your previous guess (or from the start) to
+   it: **orange** if that hop took you closer to the mystery country (warmer),
+   **blue** if further away (cooler). Points are numbered so the path reads in
+   order, and each guess shows its own distance.
 4. Find it (green) and you get an info card: capital, population, area, region,
    languages, currency, bordering countries and a few facts. Dependent territories
    say who administers them. Then chain on: the next round can start from the
@@ -36,9 +37,11 @@ representative lat/lon from the dataset.
   a handful of corrections (e.g. Vatican City is a UN observer, not a member)
   are in `build_data.mjs`.
 - Boundaries and population estimates: [Natural Earth](https://www.naturalearthdata.com/)
-  1:50m admin-0 map units, public domain. Three territories have no polygon at
-  this scale (Bouvet Island, Gibraltar, US Minor Outlying Islands) and are shown
-  as markers.
+  1:50m admin-0 map units, public domain. Natural Earth's default view draws
+  Crimea inside Russia; the build script moves it into Ukraine so borders are
+  the internationally recognised, pre-2014 ones. Three territories have no
+  polygon at this scale (Bouvet Island, Gibraltar, US Minor Outlying Islands)
+  and are shown as markers.
 - three.js is vendored under `vendor/three/`.
 
 ## Ideas for later

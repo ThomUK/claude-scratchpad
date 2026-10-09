@@ -6,24 +6,49 @@
 //                      (the dataset behind REST Countries; ODbL)
 //   map_units.geojson  https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_map_units.geojson
 //                      (Natural Earth 1:50m admin-0 map units; public domain)
-//   tools dir          a directory with node_modules containing topojson-server
-//                      (npm install topojson-server)
+//   breakaway.geojson  https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_breakaway_disputed_areas.geojson
+//                      (Natural Earth's disputed-area polygons; used to move Crimea into Ukraine)
+//   tools dir          a directory with node_modules containing topojson-server and polygon-clipping
+//                      (npm install topojson-server polygon-clipping)
 //
 // Run from world-borders/:
-//   node build_data.mjs <countries.json> <map_units.geojson> <tools dir>
+//   node build_data.mjs <countries.json> <map_units.geojson> <breakaway.geojson> <tools dir>
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const [rcPath, nePath, toolsDir] = process.argv.slice(2);
-if (!rcPath || !nePath || !toolsDir) {
-  console.error('usage: node build_data.mjs <countries.json> <map_units.geojson> <tools dir>');
+const [rcPath, nePath, brkPath, toolsDir] = process.argv.slice(2);
+if (!rcPath || !nePath || !brkPath || !toolsDir) {
+  console.error('usage: node build_data.mjs <countries.json> <map_units.geojson> <breakaway.geojson> <tools dir>');
   process.exit(1);
 }
 const { topology } = await import(pathToFileURL(join(toolsDir, 'node_modules/topojson-server/src/index.js')));
+const pc = (await import(pathToFileURL(join(toolsDir, 'node_modules/polygon-clipping/dist/polygon-clipping.esm.js')))).default;
 
 const rc = JSON.parse(readFileSync(rcPath, 'utf8'));
 const ne = JSON.parse(readFileSync(nePath, 'utf8'));
+const brk = JSON.parse(readFileSync(brkPath, 'utf8'));
+
+// ---- Borders: internationally recognised, pre-2014 ------------------------
+// Natural Earth's default view draws Crimea inside Russia. Move it to Ukraine.
+{
+  const asMulti = (g) => (g.type === 'Polygon' ? [g.coordinates] : g.coordinates);
+  const crimea = brk.features.find((f) => f.properties.NAME === 'Crimea');
+  const rus = ne.features.find((f) => f.properties.ADM0_A3 === 'RUS');
+  const ukr = ne.features.find((f) => f.properties.ADM0_A3 === 'UKR');
+  if (!crimea || !rus || !ukr) throw new Error('Crimea/Russia/Ukraine features not found');
+  const crimeaMP = asMulti(crimea.geometry);
+  // Clipping can leave hairline slivers along the shared coastline; drop any
+  // Russian polygon that is tiny and sits inside Crimea's bounding box.
+  const cb = [180, 90, -180, -90];
+  for (const ring of crimeaMP.flat()) for (const [x, y] of ring) { cb[0] = Math.min(cb[0], x); cb[1] = Math.min(cb[1], y); cb[2] = Math.max(cb[2], x); cb[3] = Math.max(cb[3], y); }
+  const ringArea = (r) => Math.abs(r.reduce((a, [x1, y1], i) => { const [x2, y2] = r[(i + 1) % r.length]; return a + x1 * y2 - x2 * y1; }, 0) / 2);
+  const inCrimeaBox = (poly) => poly[0].every(([x, y]) => x >= cb[0] - 0.05 && x <= cb[2] + 0.05 && y >= cb[1] - 0.05 && y <= cb[3] + 0.05);
+  const rusMP = pc.difference(asMulti(rus.geometry), crimeaMP).filter((poly) => !(inCrimeaBox(poly) && ringArea(poly[0]) < 0.05));
+  rus.geometry = { type: 'MultiPolygon', coordinates: rusMP };
+  ukr.geometry = { type: 'MultiPolygon', coordinates: pc.union(asMulti(ukr.geometry), crimeaMP) };
+  console.log(`moved Crimea: Russia now ${rusMP.length} polygons, Ukraine ${ukr.geometry.coordinates.length}`);
+}
 
 // ---- Dependent / special-status territories -------------------------------
 // cca3 -> { sov: cca3 of the administering state (null if none), rel: phrase }

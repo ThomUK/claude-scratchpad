@@ -6,8 +6,8 @@ import { OrbitControls } from './vendor/three/OrbitControls.js?v=dev';
 import { cameraDistanceForSpan } from './engine.js?v=dev';
 
 export const COLORS = {
-  ocean: '#0c1a2b', land: '#34485d', border: '#0a1017',
-  start: '#ffd166', warmer: '#ff7a1a', cooler: '#4a90e2', correct: '#2ecc71', target: '#e05aa0',
+  ocean: '#0c1a2b', land: '#34485d', border: '#0a1017', guessed: '#4b6482',
+  start: '#ffd166', warmer: '#ff7a1a', cooler: '#4a90e2', same: '#9aa7b4', correct: '#2ecc71', target: '#e05aa0',
 };
 
 const TEX_W = 4096, TEX_H = 2048;
@@ -72,6 +72,10 @@ export class Globe {
     this.markerTexture = Globe.ringTexture();
     this.markerGroup = new THREE.Group();
     this.scene.add(this.markerGroup);
+    this.pathGroup = new THREE.Group();
+    this.scene.add(this.pathGroup);
+    this.labelGroup = new THREE.Group();
+    this.scene.add(this.labelGroup);
 
     this.resize();
     this.ro = new ResizeObserver(() => this.resize());
@@ -161,6 +165,48 @@ export class Globe {
         this.markerGroup.add(s); this.markers.set(code, s);
       }
       s.material.color.set(color);
+    }
+  }
+
+  /** A round label sprite: `text` on a disc of `color`. */
+  static labelTexture(text, color, textColor = '#0f1419') {
+    const s = 128, c = document.createElement('canvas'); c.width = c.height = s;
+    const g = c.getContext('2d');
+    g.fillStyle = color; g.beginPath(); g.arc(s / 2, s / 2, s / 2 - 6, 0, Math.PI * 2); g.fill();
+    g.lineWidth = 6; g.strokeStyle = '#0f1419'; g.stroke();
+    g.fillStyle = textColor; g.font = `bold ${text.length > 2 ? 48 : 64}px system-ui, sans-serif`;
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, s / 2, s / 2 + 4);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+
+  /**
+   * Draw the guess path. `segments` is [{ from: [lat, lon], to: [lat, lon], color }]
+   * (great-circle arcs, lifted so long hops stay visible over the horizon);
+   * `labels` is [{ latlng, text, color }] for numbered points.
+   */
+  setPath(segments, labels) {
+    for (const g of [this.pathGroup, this.labelGroup]) {
+      for (const child of [...g.children]) { child.geometry?.dispose(); child.material?.map?.dispose?.(); child.material?.dispose(); g.remove(child); }
+    }
+    for (const seg of segments) {
+      const a = latLonToVec3(seg.from[0], seg.from[1]), b = latLonToVec3(seg.to[0], seg.to[1]);
+      const angle = Math.acos(THREE.MathUtils.clamp(a.dot(b), -1, 1));
+      const lift = Math.min(0.22, (angle / Math.PI) * 0.35);
+      const n = Math.max(12, Math.ceil(angle * 40));
+      const pts = [];
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        pts.push(Globe.slerp(a, b, t).multiplyScalar(1.012 + lift * Math.sin(Math.PI * t)));
+      }
+      const curve = new THREE.CatmullRomCurve3(pts);
+      const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, n * 2, 0.0045, 8, false), new THREE.MeshBasicMaterial({ color: seg.color }));
+      this.pathGroup.add(tube);
+    }
+    for (const l of labels) {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: Globe.labelTexture(l.text, l.color), sizeAttenuation: false, transparent: true, depthWrite: false }));
+      sp.scale.setScalar(0.042);
+      sp.position.copy(latLonToVec3(l.latlng[0], l.latlng[1], 1.03));
+      this.labelGroup.add(sp);
     }
   }
 

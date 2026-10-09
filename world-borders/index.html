@@ -15,8 +15,9 @@
     <nav class="crumbs"><a href="../">← All toy models</a> ·
       <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/world-borders" target="_blank" rel="noopener">source</a></nav>
     <p class="subtitle">Pick a country to start from. The game hides another one somewhere on the globe
-      and tells you how far away it is. Each guess comes back <b class="w">warmer</b> or
-      <b class="c">cooler</b> than your last, until you find it and learn a little about it.</p>
+      and tells you how far away it is. Each guess draws a line from your previous guess: an
+      <b class="w">orange</b> line means that hop took you closer to the mystery country (warmer), a
+      <b class="c">blue</b> one means further away (cooler). Find it and learn a little about it.</p>
   </header>
 
   <main>
@@ -25,8 +26,8 @@
       <div class="loading" id="loading"><div class="spin"></div>Loading the world…</div>
       <ul class="legend" aria-label="Map colours">
         <li><span class="swatch" style="background:#ffd166"></span>start</li>
-        <li><span class="swatch" style="background:#ff7a1a"></span>warmer</li>
-        <li><span class="swatch" style="background:#4a90e2"></span>cooler</li>
+        <li><span class="swatch line" style="background:#ff7a1a"></span>hop got warmer</li>
+        <li><span class="swatch line" style="background:#4a90e2"></span>hop got cooler</li>
         <li><span class="swatch" style="background:#2ecc71"></span>found</li>
         <li><span class="swatch" style="background:#e05aa0"></span>revealed</li>
       </ul>
@@ -55,7 +56,7 @@
 
       <div id="panel-game-log">
         <ol class="log" id="log"></ol>
-        <p class="muted small" id="log-empty" hidden>No guesses yet. Warmer means closer than your previous guess.</p>
+        <p class="muted small" id="log-empty" hidden>No guesses yet. Each guess is compared with the one before it: warmer means this hop took you closer to the mystery country.</p>
         <div class="btnrow">
           <button id="btn-giveup" type="button" hidden>Give up and reveal</button>
           <button id="btn-newstart" type="button" class="ghost">Start over</button>
