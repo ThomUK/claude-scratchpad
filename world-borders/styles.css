@@ -148,6 +148,16 @@ button.ghost { color: var(--muted); }
 .ref td.flagcell { font-size: 1.15rem; width: 1.6em; padding-right: 0; }
 .ref tbody tr { cursor: pointer; }
 .ref tbody tr:hover, .ref tbody tr:focus-visible { background: #18222f; outline: none; }
+.ref tbody tr.selected td { background: #10304a; }
+.ref td.easy { color: var(--found); font-weight: 700; }
+.ref td.infocell { width: 2.2em; padding: 2px 6px; }
+.infobtn { font: inherit; font-size: 1.05rem; line-height: 1; padding: 4px 7px; border-radius: 8px; color: var(--accent); background: none; border: 1px solid transparent; }
+.infobtn:hover { border-color: var(--accent); background: #0f1620; }
+
+.info { border: 1px solid var(--panel-border); border-radius: 14px; background: var(--panel); color: var(--text); padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px); }
+.info::backdrop { background: rgba(5, 8, 12, 0.7); }
+.info-inner { padding: 20px 20px 22px; max-height: calc(100vh - 48px); overflow: auto; position: relative; }
+.info .close { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 1.3rem; line-height: 1; }
 /* Flag and name stay pinned while the rest scrolls sideways on narrow screens. */
 .ref th:nth-child(1), .ref td:nth-child(1) { position: sticky; left: 0; z-index: 2; background: var(--panel); }
 .ref th:nth-child(2), .ref td:nth-child(2) { position: sticky; left: 2.3em; z-index: 2; background: var(--panel); box-shadow: 4px 0 6px -4px rgba(0, 0, 0, 0.6); }

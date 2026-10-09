@@ -30,6 +30,7 @@
         <li><span class="swatch line" style="background:#4a90e2"></span>cooler hop</li>
         <li><span class="swatch" style="background:#2ecc71"></span>found</li>
         <li><span class="swatch" style="background:#e05aa0"></span>revealed</li>
+        <li><span class="swatch" style="background:#4cc2ff"></span>from table</li>
       </ul>
     </section>
 
@@ -75,7 +76,7 @@
 
   <section class="wrap">
     <details class="panel accordion" id="ref">
-      <summary><span>Country reference</span> <span class="muted small">all 250 countries and territories · click a heading to sort, a row to show it on the globe</span></summary>
+      <summary><span>Country reference</span> <span class="muted small">all 250 countries and territories · click a heading to sort, a row to highlight it on the globe, ⓘ for details</span></summary>
       <div class="ref-tools">
         <input id="ref-filter" type="search" placeholder="Filter by name, continent or designation…" autocomplete="off" />
         <span class="muted small" id="ref-count"></span>
@@ -88,6 +89,13 @@
       </div>
     </details>
   </section>
+
+  <dialog id="info" class="info" aria-labelledby="info-title">
+    <div class="info-inner">
+      <button type="button" class="close" id="info-close" aria-label="Close">×</button>
+      <div id="info-body"></div>
+    </div>
+  </dialog>
 
   <script type="module" src="app.js?v=dev"></script>
 </body>

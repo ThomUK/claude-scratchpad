@@ -208,6 +208,12 @@ check('sortCountries: numeric keys with nulls last, text keys by locale, stable 
   assert.equal(byCont[0].continent, 'Africa'); assert.equal(byCont[0].code, 'DZA'); // ties broken by name
   assert.equal(sortCountries(countries, 'name', 'desc')[0].code, 'ZWE');
   assert.equal(countries.length, 250, 'input not mutated');
+  // 'easy' sorts pool members first when descending, and ties by name.
+  const easySet = new Set(data.pools.easy.codes);
+  const tagged = countries.map((c) => ({ ...c, easy: easySet.has(c.code) }));
+  const byEasy = sortCountries(tagged, 'easy', 'desc');
+  assert.ok(byEasy.slice(0, 50).every((c) => c.easy) && byEasy.slice(50).every((c) => !c.easy));
+  assert.equal(byEasy[0].code, 'AUS');
 });
 
 check('createGame: never picks the start as the target; honours the pool and rng', () => {

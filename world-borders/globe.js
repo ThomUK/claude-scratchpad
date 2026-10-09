@@ -9,7 +9,7 @@ import { cameraDistanceForSpan, pickCountry } from './engine.js?v=dev';
 
 export const COLORS = {
   ocean: '#0c1a2b', land: '#34485d', border: '#0a1017', guessed: '#4b6482',
-  start: '#ffd166', warmer: '#ff7a1a', cooler: '#4a90e2', same: '#9aa7b4', correct: '#2ecc71', target: '#e05aa0',
+  start: '#ffd166', warmer: '#ff7a1a', cooler: '#4a90e2', same: '#9aa7b4', correct: '#2ecc71', target: '#e05aa0', browse: '#4cc2ff',
 };
 
 const SURFACE = 1.0;        // sphere radius

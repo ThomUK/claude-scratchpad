@@ -12,6 +12,7 @@ const state = {
   phase: 'pick-start', // pick-start | guessing | over
   startCode: null, game: null, clue: null,
   difficulty: 'hard',
+  browse: null, // country highlighted from the reference table
 };
 const rules = () => DIFFICULTY[state.difficulty];
 
@@ -38,6 +39,8 @@ async function main() {
   ]);
   state.countries = cJson.countries;
   state.pools = cJson.pools || {};
+  const easySet = new Set((state.pools.easy && state.pools.easy.codes) || []);
+  for (const c of state.countries) c.easy = easySet.has(c.code);
   state.byCode = new Map(state.countries.map((c) => [c.code, c]));
   state.globe = new Globe($('globe'), decodeTopology(topo), state.countries);
   state.globe.onPick = (code) => (code ? choose(code) : flash('No country there. Zoom in closer, or type its name.', 'warn'));
@@ -64,6 +67,8 @@ const TABLE_COLS = [
   { key: 'population', label: 'Population', numeric: true },
   { key: 'area', label: 'Land area (km²)', numeric: true },
   { key: 'neighbours', label: 'Neighbours', numeric: true },
+  { key: 'easy', label: 'Easy mode', numeric: true },
+  { key: 'info', label: '', sortable: false },
 ];
 const table = { key: 'name', dir: 'asc' };
 
@@ -83,6 +88,25 @@ function wireTable() {
   }
   $('ref-filter').addEventListener('input', renderTable);
   $('ref').addEventListener('toggle', () => { if ($('ref').open) renderTable(); });
+  $('info-close').addEventListener('click', () => $('info').close());
+  $('info').addEventListener('click', (e) => { if (e.target === $('info')) $('info').close(); });
+}
+
+/** Highlight a country from the table and fly to it. */
+function browseCountry(code) {
+  state.browse = code;
+  state.globe.flyTo(code);
+  paintGlobe();
+  for (const tr of document.querySelectorAll('#ref-body tr')) tr.classList.toggle('selected', tr.dataset.code === code);
+  $('globe-wrap').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/** Open the info dialog with the same card the reveal uses. */
+function showInfo(code) {
+  const c = state.byCode.get(code);
+  const body = $('info-body');
+  body.replaceChildren(countryCard(c, state.game ? state.game.startCode : null));
+  $('info').showModal();
 }
 
 function renderTable() {
@@ -97,12 +121,16 @@ function renderTable() {
   }
   body.replaceChildren();
   for (const c of rows) {
-    const tr = el('tr'); tr.tabIndex = 0; tr.title = `Show ${c.name} on the globe`;
+    const tr = el('tr'); tr.tabIndex = 0; tr.title = `Show ${c.name} on the globe`; tr.dataset.code = c.code;
+    tr.classList.toggle('selected', state.browse === c.code);
     tr.append(el('td', 'flagcell', c.flag), el('td', null, c.name), el('td', null, c.continent), el('td', null, c.designation));
     tr.append(el('td', 'num', c.population == null ? '—' : fmtN(c.population)), el('td', 'num', fmtN(c.area)), el('td', 'num', String(c.borders.length)));
-    const go = () => { state.globe.flyTo(c.code); $('globe-wrap').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };
-    tr.addEventListener('click', go);
-    tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+    const easy = el('td', 'num easy', c.easy ? '✓' : ''); easy.title = c.easy ? 'Can be the mystery country on Easy' : ''; tr.append(easy);
+    const ib = el('button', 'infobtn', 'ⓘ'); ib.type = 'button'; ib.setAttribute('aria-label', `About ${c.name}`); ib.title = `About ${c.name}`;
+    ib.addEventListener('click', (e) => { e.stopPropagation(); showInfo(c.code); });
+    const ic = el('td', 'infocell'); ic.append(ib); tr.append(ic);
+    tr.addEventListener('click', () => browseCountry(c.code));
+    tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') browseCountry(c.code); });
     body.append(tr);
   }
   $('ref-count').textContent = `${rows.length} of ${state.countries.length}`;
@@ -176,6 +204,8 @@ function choose(code) {
 function startRound(startCode) {
   state.startCode = startCode;
   state.clue = null;
+  state.browse = null;
+  for (const tr of document.querySelectorAll('#ref-body tr.selected')) tr.classList.remove('selected');
   flash('');
   state.game = createGame(state.countries, startCode, { difficulty: state.difficulty, pools: state.pools });
   state.phase = 'guessing';
@@ -219,9 +249,7 @@ function onGiveUp() {
 function resetToPickStart() {
   state.phase = 'pick-start'; state.game = null; state.startCode = null; state.clue = null;
   flash('');
-  state.globe.setHighlights(new Map());
-  state.globe.setPath([], []);
-  state.globe.setNameExclusions([]);
+  paintGlobe();
   state.globe.controls.autoRotate = true;
   applyDifficultyToGlobe();
   render();
@@ -231,6 +259,8 @@ const verdictColor = (v) => (v === 'warmer' ? COLORS.warmer : v === 'cooler' ? C
 
 function paintGlobe() {
   const g = state.game, hl = new Map(), ll = (code) => state.byCode.get(code).latlng;
+  if (state.browse) hl.set(state.browse, COLORS.browse);
+  if (!g) { state.globe.setHighlights(hl); state.globe.setPath([], []); state.globe.setNameExclusions([]); return; }
   // Fills: only the anchor points carry colour; guessed countries get a neutral lift.
   for (const x of g.guesses) hl.set(x.code, COLORS.guessed);
   hl.set(g.startCode, COLORS.start);
@@ -313,6 +343,44 @@ function render(lastResult) {
   if (state.phase === 'over') { flash(''); renderReveal(); }
 }
 
+/** The country card: header, key facts, neighbours and "Did you know?". Shared by the reveal and the info dialog. */
+function countryCard(c, startCode) {
+  const frag = document.createDocumentFragment();
+  const head = el('div', 'rhead');
+  head.append(el('span', 'bigflag', c.flag));
+  const t = el('div');
+  t.append(el('h2', null, c.name), el('p', 'muted small', c.official));
+  head.append(t);
+  frag.append(head);
+
+  const dl = el('dl', 'facts-grid');
+  const add = (k, v) => { dl.append(el('dt', null, k), el('dd', null, v)); };
+  add('Capital', c.capital.length ? c.capital.join(', ') : '—');
+  add('Continent', c.continent);
+  add('Status', c.designation);
+  add('Population', c.population == null ? 'unknown' : fmtN(c.population));
+  add('Area', `${fmtN(c.area)} km²`);
+  add('Region', c.subregion || c.region);
+  add('Languages', c.languages.length ? c.languages.join(', ') : '—');
+  add('Currency', c.currencies.length ? c.currencies.join(', ') : '—');
+  if (c.dependentOf) add('Administered by', state.byCode.get(c.dependentOf).name);
+  frag.append(dl);
+
+  frag.append(el('h3', null, 'Bordering countries'));
+  if (c.borders.length) {
+    const ul = el('ul', 'chips');
+    for (const b of c.borders) ul.append(el('li', 'chip', `${state.byCode.get(b).flag} ${state.byCode.get(b).name}`));
+    frag.append(ul);
+  } else frag.append(el('p', 'muted', c.landlocked ? 'None.' : 'None: no land borders.'));
+
+  frag.append(el('h3', null, 'Did you know?'));
+  const fl = el('ul', 'factlist');
+  const start = startCode ? state.byCode.get(startCode) : null;
+  for (const f of [...c.facts, ...comparedToStart(c, start)]) fl.append(el('li', null, f));
+  frag.append(fl);
+  return frag;
+}
+
 const DIR = { N: 'north', NE: 'north-east', E: 'east', SE: 'south-east', S: 'south', SW: 'south-west', W: 'west', NW: 'north-west' };
 const times = (x) => (x >= 10 ? `${Math.round(x)}×` : x >= 1.05 ? `${x.toFixed(1)}×` : x > 0.95 ? 'about the same' : x >= 0.1 ? `${(1 / x).toFixed(1)}× smaller than` : `${Math.round(1 / x)}× smaller than`);
 /** Facts that relate the found country to the player's starting country. */
@@ -348,36 +416,7 @@ function renderReveal() {
   r.append(el('p', 'outcome', g.status === 'won'
     ? `You found it in ${n} ${n === 1 ? 'guess' : 'guesses'}${clues}${level}.`
     : `The mystery country was ${c.name}.`));
-  const head = el('div', 'rhead');
-  head.append(el('span', 'bigflag', c.flag));
-  const t = el('div');
-  t.append(el('h2', null, c.name), el('p', 'muted small', c.official));
-  head.append(t);
-  r.append(head);
-
-  const dl = el('dl', 'facts-grid');
-  const add = (k, v) => { dl.append(el('dt', null, k), el('dd', null, v)); };
-  add('Capital', c.capital.length ? c.capital.join(', ') : '—');
-  add('Population', c.population == null ? 'unknown' : fmtN(c.population));
-  add('Area', `${fmtN(c.area)} km²`);
-  add('Region', c.subregion || c.region);
-  add('Languages', c.languages.length ? c.languages.join(', ') : '—');
-  add('Currency', c.currencies.length ? c.currencies.join(', ') : '—');
-  if (c.dependentOf) add('Administered by', state.byCode.get(c.dependentOf).name);
-  r.append(dl);
-
-  const bh = el('h3', null, 'Bordering countries');
-  r.append(bh);
-  if (c.borders.length) {
-    const ul = el('ul', 'chips');
-    for (const b of c.borders) ul.append(el('li', 'chip', `${state.byCode.get(b).flag} ${state.byCode.get(b).name}`));
-    r.append(ul);
-  } else r.append(el('p', 'muted', c.landlocked ? 'None.' : 'None: no land borders.'));
-
-  r.append(el('h3', null, 'Did you know?'));
-  const fl = el('ul', 'factlist');
-  for (const f of [...c.facts, ...comparedToStart(c, state.byCode.get(g.startCode))]) fl.append(el('li', null, f));
-  r.append(fl);
+  r.append(countryCard(c, g.startCode));
 
   const row = el('div', 'btnrow');
   const next = el('button', 'primary', `Next round: start from ${c.name}`);
