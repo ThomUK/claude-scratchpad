@@ -208,30 +208,42 @@ export class Globe {
     return countryAt(this.features, this.countryList, lat, lon);
   }
 
-  /** Text sprite for a country name. */
+  /** Text sprite for a country name. Returns { texture, wfrac: text width as a fraction of the canvas }. */
   static nameTexture(text) {
     const W = 512, H = 96, c = document.createElement('canvas'); c.width = W; c.height = H;
     const g = c.getContext('2d');
-    const size = text.length > 22 ? 30 : text.length > 14 ? 38 : 46;
-    g.font = `600 ${size}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+    const size = text.length > 22 ? 36 : text.length > 14 ? 46 : 58;
+    g.font = `700 ${size}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
     g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.lineJoin = 'round'; g.lineWidth = 8; g.strokeStyle = 'rgba(8, 12, 18, 0.95)';
+    g.lineJoin = 'round'; g.lineWidth = 10; g.strokeStyle = 'rgba(8, 12, 18, 0.95)';
     g.strokeText(text, W / 2, H / 2 + 2);
     g.fillStyle = '#f2f6fa'; g.fillText(text, W / 2, H / 2 + 2);
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+    const wfrac = Math.min(1, (g.measureText(text).width + 12) / W);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    return { texture: t, wfrac };
   }
 
   /** Build name labels once; shown when `setNamesVisible(true)`. */
   buildNames() {
     if (this.nameGroup.children.length) return;
     for (const c of this.countryList) {
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: Globe.nameTexture(c.name), sizeAttenuation: false, transparent: true, depthWrite: false, depthTest: false }));
-      sp.scale.set(0.14, 0.02625);
+      const { texture, wfrac } = Globe.nameTexture(c.name);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, sizeAttenuation: false, transparent: true, depthWrite: false, depthTest: false }));
       const pos = c.label || c.latlng;
       sp.position.copy(latLonToVec3(pos[0], pos[1], 1.015));
-      sp.userData = { span: c.hasShape ? Math.min(c.span > 180 ? 60 : c.span, 60) : 0.3, dir: sp.position.clone().normalize() };
+      sp.userData = { code: c.code, span: c.hasShape ? Math.min(c.span > 180 ? 60 : c.span, 60) : 0.3, dir: sp.position.clone().normalize(), wfrac };
       this.nameGroup.add(sp);
     }
+    // Biggest countries first, so they win when labels collide.
+    this.nameGroup.children.sort((a, b) => b.userData.span - a.userData.span);
+    this.applyLabelScale();
+  }
+
+  /** Base label size is ~5% of the viewport height; short viewports (phones) get a boost. */
+  applyLabelScale() {
+    const h = this.container.clientHeight || 600;
+    this.labelScale = THREE.MathUtils.clamp(560 / h, 1, 1.7);
+    for (const sp of this.nameGroup.children) sp.scale.set(0.224 * this.labelScale, 0.042 * this.labelScale);
   }
 
   setNamesVisible(on) {
@@ -239,14 +251,36 @@ export class Globe {
     this.nameGroup.visible = !!on;
   }
 
-  /** Show a label only when its country is big enough at this zoom and faces the camera. */
+  /** Codes whose name label should be hidden (they carry a path marker instead). */
+  setNameExclusions(codes) {
+    this.nameExclude = new Set(codes);
+  }
+
+  /**
+   * Show a label only when its country is big enough at this zoom, faces the
+   * camera, and its on-screen box does not overlap a bigger country's label.
+   */
   updateNames() {
     if (!this.nameGroup.visible) return;
     const d = this.camera.position.length() - 1;
     const camDir = this.camera.position.clone().normalize();
+    const w = this.container.clientWidth, h = this.container.clientHeight;
+    // Sprite size with sizeAttenuation=false is scale × projection; both axes end up proportional to viewport height.
+    const px = this.camera.projectionMatrix.elements[5] / 2 * h; // pixels per unit of sprite scale
+    const kept = [];
+    const v = new THREE.Vector3();
     for (const sp of this.nameGroup.children) {
-      const { span, dir } = sp.userData;
-      sp.visible = span >= d * 5.5 && dir.dot(camDir) > 0.25;
+      const { span, dir, wfrac, code } = sp.userData;
+      sp.visible = false;
+      if (span < d * 7 || dir.dot(camDir) <= 0.25) continue;
+      if (this.nameExclude && this.nameExclude.has(code)) continue;
+      v.copy(sp.position).project(this.camera);
+      const cx = (v.x + 1) / 2 * w, cy = (1 - v.y) / 2 * h;
+      const hw = sp.scale.x * px * wfrac / 2, hh = sp.scale.y * px * 0.42;
+      const box = [cx - hw, cy - hh, cx + hw, cy + hh];
+      if (kept.some((k) => box[0] < k[2] && box[2] > k[0] && box[1] < k[3] && box[3] > k[1])) continue;
+      kept.push(box);
+      sp.visible = true;
     }
   }
 
@@ -338,5 +372,6 @@ export class Globe {
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
+    if (this.nameGroup) this.applyLabelScale();
   }
 }

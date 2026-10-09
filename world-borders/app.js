@@ -163,6 +163,7 @@ function resetToPickStart() {
   state.phase = 'pick-start'; state.game = null; state.startCode = null; state.clue = null;
   state.globe.setHighlights(new Map());
   state.globe.setPath([], []);
+  state.globe.setNameExclusions([]);
   state.globe.controls.autoRotate = true;
   applyDifficultyToGlobe();
   render();
@@ -188,6 +189,7 @@ function paintGlobe() {
   });
   if (g.status === 'gaveup') labels.push({ latlng: ll(g.targetCode), text: '?', color: COLORS.target });
   state.globe.setPath(segments, labels);
+  state.globe.setNameExclusions([g.startCode, ...g.guesses.map((x) => x.code)]);
 }
 
 // ------------------------------------------------------------------ render --

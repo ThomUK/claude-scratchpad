@@ -51,7 +51,10 @@ main {
   display: flex; gap: 12px; font-size: 0.75rem; color: var(--muted);
   background: rgba(15, 20, 25, 0.7); border-radius: 999px; pointer-events: none;
 }
-.legend li { display: inline-flex; align-items: center; gap: 5px; }
+.legend li { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+@media (max-width: 480px) {
+  .legend { left: 0; right: 0; bottom: 0; gap: 6px 10px; font-size: 0.68rem; padding: 5px 8px; flex-wrap: wrap; justify-content: center; border-radius: 0; background: rgba(15, 20, 25, 0.82); }
+}
 .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 3px; flex: none; }
 
 .difficulty { display: grid; gap: 6px; margin: 0 0 16px; }
