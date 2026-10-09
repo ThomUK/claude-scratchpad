@@ -347,11 +347,10 @@ function render(lastResult) {
   }
 
   const start = state.byCode.get(g.startCode), gr = g.rules;
-  $('difficulty-tag').textContent = gr.label;
   $('start-name').textContent = `${start.flag} ${start.name}`;
   $('guess-count').textContent = String(guessCount(g));
   $('clue').textContent = gr.distances
-    ? `The mystery country is ${km(g.startDistanceKm)} from ${start.name}${gr.bearings ? `, to the ${DIR[g.startCompass]}` : ''}.`
+    ? (gr.bearings ? `The mystery country is ${km(g.startDistanceKm)} to the ${DIR[g.startCompass]} of ${start.name}.` : `The mystery country is ${km(g.startDistanceKm)} from ${start.name}.`)
     : 'The mystery country is hidden somewhere. Guess, and each hop tells you whether you got closer.';
   $('clue-text').textContent = state.clue || '';
   $('clue-box').hidden = !state.clue;
