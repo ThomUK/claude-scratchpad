@@ -1,6 +1,6 @@
 // Engine validation — run with: node tests/engine.test.mjs
 import {
-  W, H, D, SEA, SPRING_DEPTH, B, BLOCKS, ITEMS, World, raycast, rayBox, stepEntity, updateVillager, JUMP, callVillager, nearestVillager, topView,
+  W, H, D, SEA, SPRING_DEPTH, B, BLOCKS, ITEMS, CATEGORIES, World, LEGACY_W, facingDir, BOUNCE, raycast, rayBox, stepEntity, updateVillager, JUMP, callVillager, nearestVillager, topView,
   moveItem, rle, unrle, serialize, deserialize, makeRng, key, CHEST_SLOTS,
 } from '../engine.js';
 
@@ -212,9 +212,64 @@ console.log('— save / load —');
   ok(back.surface.every((v, i) => v === w.surface[i]), 'surface heights survive');
   ok(back.meta.size === w.meta.size, 'meta survives');
   ok(state.player.z === 3 && state.pocket[0] === 'gem', 'extra state survives');
-  ok(json.length < 400000, `save is a sensible size (${(json.length / 1024).toFixed(0)} KB)`);
+  ok(json.length < 1500000, `save fits in localStorage (${(json.length / 1024).toFixed(0)} KB)`);
   let threw = false; try { deserialize({ v: 0 }); } catch { threw = true; }
   ok(threw, 'unknown save format is rejected');
+}
+
+console.log('— new blocks, beds, bouncy, lights —');
+{
+  ok(W === 256 && D === 256, 'world is 256 x 256');
+  ok(BLOCKS.length > 75 && BLOCKS.every((b) => b.name), `${BLOCKS.length} block types, all named`);
+  const inCats = new Set(CATEGORIES.flatMap((c) => c.ids));
+  const placeable = BLOCKS.filter((b) => b.placeable).map((b) => b.id);
+  ok(placeable.every((id) => inCats.has(id)) && [...inCats].every((id) => BLOCKS[id].placeable), 'every placeable block is in exactly one category and vice versa');
+  ok(new Set(CATEGORIES.flatMap((c) => c.ids)).size === CATEGORIES.flatMap((c) => c.ids).length, 'no block is in two categories');
+  ok(JSON.stringify(facingDir(0)) === '[0,-1]' && JSON.stringify(facingDir(3)) === '[1,0]' && JSON.stringify(facingDir(-1)) === '[1,0]', 'facingDir');
+  const x = 40, z = 40, y = w.groundAt(x, z) + 1;
+  for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) for (let dy = 0; dy < 3; dy++) w.set(x + dx, y + dy, z + dz, B.AIR);
+  ok(w.place(x, y, z, B.BED, { facing: 3 }) === '' && w.get(x + 1, y, z) === B.BED_FOOT, 'bed takes two cells in the facing direction');
+  ok(w.place(x + 1, y, z + 1, B.BED, { facing: 0 }) !== '' && w.get(x + 1, y, z + 1) === B.AIR, 'a bed cannot overlap another');
+  ok(w.isSolid(x + 1, y, z), 'bed foot is solid');
+  w.dig(x + 1, y, z);
+  ok(w.get(x, y, z) === B.AIR && w.get(x + 1, y, z) === B.AIR && !w.meta.has(key(x, y, z)) && !w.meta.has(key(x + 1, y, z)), 'digging the foot removes the whole bed');
+  ok(w.place(x, y, z, B.LAMP) === '' && w.lights().length === 1 && w.lights()[0][0] === x, 'lamps show up in lights()');
+  ok(!w.isSolid(x, y, z), 'lamp is walk-through');
+  w.dig(x, y, z);
+  ok(w.lights().length === 0, 'dug lamp is gone');
+  ok(w.place(x, y, z, B.CARPET_RAINBOW) === '' && w.meta.get(key(x, y, z)).facing === 0, 'furniture stores its facing');
+  w.dig(x, y, z);
+  // bouncy block: land on it and spring back up higher than a jump
+  w.set(x, y - 1, z, B.BOUNCY);
+  const e = { x: x + 0.5, y: y + 3, z: z + 0.5, vx: 0, vy: 0, vz: 0, w: 0.6, h: 1.8, onGround: false };
+  let bounced = false, peak = 0;
+  for (let i = 0; i < 150; i++) { const r = stepEntity(w, e, { mx: 0, mz: 0, yaw: 0, jump: false }, 1 / 60); if (r.bounced) bounced = true; if (bounced) peak = Math.max(peak, e.y); }
+  ok(bounced && peak > y + 3, `bouncy block springs you up (peak ${(peak - y).toFixed(1)} blocks above it)`);
+  w.set(x, y - 1, z, B.STONE);
+}
+
+console.log('— legacy 128-wide saves —');
+{
+  // build a fake legacy save: the middle of the current world, with a door and the player in it
+  const OFF = (W - LEGACY_W) / 2;
+  const old = new Uint8Array(LEGACY_W * H * LEGACY_W), oldSurf = new Uint8Array(LEGACY_W * LEGACY_W);
+  const src = new World(42).generate();
+  for (let y = 0; y < H; y++) for (let z = 0; z < LEGACY_W; z++) for (let x = 0; x < LEGACY_W; x++) old[x + LEGACY_W * (z + LEGACY_W * y)] = src.get(x + OFF, y, z + OFF);
+  for (let z = 0; z < LEGACY_W; z++) for (let x = 0; x < LEGACY_W; x++) oldSurf[x + LEGACY_W * z] = src.surfaceAt(x + OFF, z + OFF);
+  const dy = src.groundAt(70 + OFF, 70 + OFF) + 1;
+  old[70 + LEGACY_W * (70 + LEGACY_W * dy)] = B.DOOR; old[70 + LEGACY_W * (70 + LEGACY_W * (dy + 1))] = B.DOOR_TOP;
+  const data = { v: 1, seed: 42, w: LEGACY_W, h: H, d: LEGACY_W, blocks: rle(old), surface: rle(oldSurf), meta: [[`70,${dy},70`, { facing: 2, open: true }]], player: { x: 70.5, y: dy + 1, z: 70.5 }, villagers: [{ x: 10, y: 20, z: 10 }] };
+  const { world: mw, state } = deserialize(JSON.parse(JSON.stringify(data)));
+  ok(state.migrated && state.player.x === 70.5 + OFF && state.villagers[0].z === 10 + OFF, 'player and villagers move with the world');
+  ok(mw.get(70 + OFF, dy, 70 + OFF) === B.DOOR && mw.meta.get(key(70 + OFF, dy, 70 + OFF)).open === true, 'door and its meta are carried across');
+  let same = true;
+  for (let z = 0; z < LEGACY_W && same; z += 7) for (let x = 0; x < LEGACY_W; x += 7) if (mw.surfaceAt(x + OFF, z + OFF) !== oldSurf[x + LEGACY_W * z]) same = false;
+  ok(same, 'old terrain lands in the middle of the new world');
+  // the join is seamless: heights just outside the old edge are within a block or two of just inside
+  let worst = 0;
+  for (let z = OFF; z < OFF + LEGACY_W; z += 5) worst = Math.max(worst, Math.abs(mw.surfaceAt(OFF - 1, z) - mw.surfaceAt(OFF, z)), Math.abs(mw.surfaceAt(OFF + LEGACY_W, z) - mw.surfaceAt(OFF + LEGACY_W - 1, z)));
+  ok(worst <= 2, `terrain joins seamlessly at the old edge (worst step ${worst})`);
+  ok(mw.surface.every((h) => h > 0), 'new land all around is generated');
 }
 
 console.log(fails ? `\n${fails} FAILED` : '\nall passed');

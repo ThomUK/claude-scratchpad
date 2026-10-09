@@ -2,40 +2,71 @@
 // raycasting, villagers, special blocks and save/load.
 // Unit tests: node tests/engine.test.mjs
 
-export const W = 128, H = 48, D = 128;   // world size in blocks (x, y, z)
+export const W = 256, H = 48, D = 256;   // world size in blocks (x, y, z)
+export const LEGACY_W = 128;             // the first worlds were 128 wide; they load into the middle
 export const SEA = 14;                   // lakes fill up to this level
 export const SPRING_DEPTH = 3;           // dig this far under the ground and water appears
 export const CHUNK = 16;
 
-export const B = {
-  AIR: 0, GRASS: 1, EARTH: 2, STONE: 3, SAND: 4, WOOD: 5, LOG: 6, LEAVES: 7,
-  METAL: 8, GLASS: 9, WATER: 10, DOOR: 11, DOOR_TOP: 12, TRAPDOOR: 13,
-  CHEST: 14, COMPUTER: 15, CAMERA: 16, BEDROCK: 17, BRICK: 18,
-};
+const names = [
+  'AIR', 'GRASS', 'EARTH', 'STONE', 'SAND', 'WOOD', 'LOG', 'LEAVES', 'METAL', 'GLASS', 'WATER', 'DOOR', 'DOOR_TOP', 'TRAPDOOR',
+  'CHEST', 'COMPUTER', 'CAMERA', 'BEDROCK', 'BRICK',
+  // nature
+  'SNOW', 'MUD', 'PEBBLES', 'MOSSY', 'ICE', 'HAY', 'CLOUD',
+  // building
+  'DARKWOOD', 'COPPER', 'RUSTY', 'SLATE', 'MARBLE', 'ROOF', 'COBBLES', 'CHECKER', 'BOOKCASE',
+  // colours
+  'PAINT_RED', 'PAINT_ORANGE', 'PAINT_YELLOW', 'PAINT_GREEN', 'PAINT_BLUE', 'PAINT_PURPLE', 'PAINT_PINK', 'PAINT_WHITE', 'PAINT_BLACK',
+  'CANDY', 'CHOCOLATE', 'RAINBOW', 'HONEYCOMB',
+  // magic
+  'GLOW_RED', 'GLOW_GREEN', 'GLOW_BLUE', 'GLOW_YELLOW', 'GLOW_PURPLE', 'GLOW_WHITE', 'MOONSTONE', 'EMBER', 'STARRY', 'CRYSTAL', 'BOUNCY',
+  // furniture
+  'BED', 'BED_FOOT', 'LAMP', 'LANTERN', 'CEILING_LIGHT', 'SHELF', 'TABLE', 'DESK', 'CHAIR', 'SOFA',
+  'CARPET_RED', 'CARPET_BLUE', 'CARPET_GREEN', 'CARPET_PURPLE', 'CARPET_RAINBOW', 'PLANT', 'PAINTING', 'CLOCK', 'TOILET', 'BATH', 'FRIDGE', 'COOKER',
+];
+export const B = Object.fromEntries(names.map((n, i) => [n, i]));
 
 // solid: blocks movement (doors/trapdoors only when closed). opaque: hides
 // neighbouring faces. special: rendered as a prop, not part of the chunk mesh.
-export const BLOCKS = [
-  { id: 0, name: 'Air', solid: false, opaque: false },
-  { id: 1, name: 'Grass', solid: true, opaque: true, placeable: true },
-  { id: 2, name: 'Earth', solid: true, opaque: true, placeable: true },
-  { id: 3, name: 'Stone', solid: true, opaque: true, placeable: true },
-  { id: 4, name: 'Sand', solid: true, opaque: true, placeable: true },
-  { id: 5, name: 'Wood', solid: true, opaque: true, placeable: true },
-  { id: 6, name: 'Log', solid: true, opaque: true, placeable: true },
-  { id: 7, name: 'Leaves', solid: true, opaque: true, placeable: true },
-  { id: 8, name: 'Metal', solid: true, opaque: true, placeable: true },
-  { id: 9, name: 'Glass', solid: true, opaque: false, placeable: true },
-  { id: 10, name: 'Water', solid: false, opaque: false },
-  { id: 11, name: 'Door', solid: true, opaque: false, special: true, placeable: true },
-  { id: 12, name: 'Door (top)', solid: true, opaque: false, special: true },
-  { id: 13, name: 'Passcode trapdoor', solid: true, opaque: false, special: true, placeable: true },
-  { id: 14, name: 'Chest', solid: true, opaque: false, special: true, placeable: true },
-  { id: 15, name: 'Computer', solid: true, opaque: false, special: true, placeable: true },
-  { id: 16, name: 'Security camera', solid: false, opaque: false, special: true, placeable: true },
-  { id: 17, name: 'Bedrock', solid: true, opaque: true },
-  { id: 18, name: 'Brick', solid: true, opaque: true, placeable: true },
-];
+// glow: lit up at night. light: casts a real light. bouncy: springs you up.
+const cube = (name, extra = {}) => ({ name, solid: true, opaque: true, placeable: true, ...extra });
+const prop = (name, extra = {}) => ({ name, solid: false, opaque: false, special: true, placeable: true, ...extra });
+const DEFS = {
+  AIR: { name: 'Air', solid: false, opaque: false },
+  GRASS: cube('Grass'), EARTH: cube('Earth'), STONE: cube('Stone'), SAND: cube('Sand'), WOOD: cube('Wood'), LOG: cube('Log'),
+  LEAVES: cube('Leaves'), METAL: cube('Metal'), GLASS: cube('Glass', { opaque: false, clear: true }),
+  WATER: { name: 'Water', solid: false, opaque: false },
+  DOOR: prop('Door', { solid: true }), DOOR_TOP: prop('Door (top)', { solid: true, placeable: false }),
+  TRAPDOOR: prop('Passcode trapdoor', { solid: true }), CHEST: prop('Chest', { solid: true }), COMPUTER: prop('Computer', { solid: true }),
+  CAMERA: prop('Security camera'), BEDROCK: cube('Bedrock', { placeable: false }), BRICK: cube('Brick'),
+  SNOW: cube('Snow'), MUD: cube('Mud'), PEBBLES: cube('Pebbles'), MOSSY: cube('Mossy stone'), ICE: cube('Ice'), HAY: cube('Hay bale'), CLOUD: cube('Cloud'),
+  DARKWOOD: cube('Dark wood'), COPPER: cube('Copper'), RUSTY: cube('Rusty metal'), SLATE: cube('Slate'), MARBLE: cube('Marble'), ROOF: cube('Roof tiles'),
+  COBBLES: cube('Cobbles'), CHECKER: cube('Checkerboard'), BOOKCASE: cube('Bookcase'),
+  PAINT_RED: cube('Red paint'), PAINT_ORANGE: cube('Orange paint'), PAINT_YELLOW: cube('Yellow paint'), PAINT_GREEN: cube('Green paint'),
+  PAINT_BLUE: cube('Blue paint'), PAINT_PURPLE: cube('Purple paint'), PAINT_PINK: cube('Pink paint'), PAINT_WHITE: cube('White paint'), PAINT_BLACK: cube('Black paint'),
+  CANDY: cube('Candy stripe'), CHOCOLATE: cube('Chocolate'), RAINBOW: cube('Rainbow'), HONEYCOMB: cube('Honeycomb'),
+  GLOW_RED: cube('Red glow', { glow: true }), GLOW_GREEN: cube('Green glow', { glow: true }), GLOW_BLUE: cube('Blue glow', { glow: true }),
+  GLOW_YELLOW: cube('Yellow glow', { glow: true }), GLOW_PURPLE: cube('Purple glow', { glow: true }), GLOW_WHITE: cube('White glow', { glow: true }),
+  MOONSTONE: cube('Moonstone', { glow: true }), EMBER: cube('Ember rock', { glow: true }), STARRY: cube('Starry night', { glow: true }),
+  CRYSTAL: cube('Crystal', { opaque: false, clear: true }), BOUNCY: cube('Bouncy block', { bouncy: true }),
+  BED: prop('Bed', { solid: true }), BED_FOOT: prop('Bed (foot)', { solid: true, placeable: false }),
+  LAMP: prop('Lamp', { light: true }), LANTERN: prop('Lantern', { light: true }), CEILING_LIGHT: prop('Ceiling light', { light: true }),
+  SHELF: prop('Shelf'), TABLE: prop('Table', { solid: true }), DESK: prop('Desk', { solid: true }), CHAIR: prop('Chair', { seat: 0.5 }), SOFA: prop('Sofa', { solid: true, seat: 0.45 }),
+  CARPET_RED: prop('Red carpet'), CARPET_BLUE: prop('Blue carpet'), CARPET_GREEN: prop('Green carpet'), CARPET_PURPLE: prop('Purple carpet'), CARPET_RAINBOW: prop('Rainbow carpet'),
+  PLANT: prop('Pot plant'), PAINTING: prop('Painting'), CLOCK: prop('Clock'), TOILET: prop('Toilet'), BATH: prop('Bath'),
+  FRIDGE: prop('Fridge', { solid: true }), COOKER: prop('Cooker', { solid: true }),
+};
+export const BLOCKS = names.map((n, i) => ({ id: i, ...DEFS[n] }));
+
+// Groups for the block bar.
+export const CATEGORIES = [
+  { name: 'Nature', icon: '🌳', ids: ['GRASS', 'EARTH', 'STONE', 'SAND', 'LOG', 'LEAVES', 'SNOW', 'MUD', 'PEBBLES', 'MOSSY', 'ICE', 'HAY', 'CLOUD'] },
+  { name: 'Building', icon: '🧱', ids: ['WOOD', 'DARKWOOD', 'BRICK', 'METAL', 'GLASS', 'COPPER', 'RUSTY', 'SLATE', 'MARBLE', 'ROOF', 'COBBLES', 'CHECKER', 'BOOKCASE'] },
+  { name: 'Colours', icon: '🎨', ids: ['PAINT_RED', 'PAINT_ORANGE', 'PAINT_YELLOW', 'PAINT_GREEN', 'PAINT_BLUE', 'PAINT_PURPLE', 'PAINT_PINK', 'PAINT_WHITE', 'PAINT_BLACK', 'CANDY', 'CHOCOLATE', 'RAINBOW', 'HONEYCOMB'] },
+  { name: 'Magic', icon: '✨', ids: ['GLOW_RED', 'GLOW_GREEN', 'GLOW_BLUE', 'GLOW_YELLOW', 'GLOW_PURPLE', 'GLOW_WHITE', 'MOONSTONE', 'EMBER', 'STARRY', 'CRYSTAL', 'BOUNCY'] },
+  { name: 'Furniture', icon: '🛋️', ids: ['BED', 'LAMP', 'LANTERN', 'CEILING_LIGHT', 'SHELF', 'TABLE', 'DESK', 'CHAIR', 'SOFA', 'CARPET_RED', 'CARPET_BLUE', 'CARPET_GREEN', 'CARPET_PURPLE', 'CARPET_RAINBOW', 'PLANT', 'PAINTING', 'CLOCK', 'TOILET', 'BATH', 'FRIDGE', 'COOKER'] },
+  { name: 'Gadgets', icon: '🔧', ids: ['DOOR', 'TRAPDOOR', 'CHEST', 'COMPUTER', 'CAMERA'] },
+].map((c) => ({ ...c, ids: c.ids.map((n) => B[n]) }));
 
 export const ITEMS = [
   { id: 'apple', label: 'Apple', emoji: '🍎' },
@@ -86,6 +117,7 @@ export function fbm(x, y, seed, octaves = 4) {
 }
 
 export const key = (x, y, z) => `${x},${y},${z}`;
+export const facingDir = (f) => [[0, -1], [-1, 0], [0, 1], [1, 0]][((f % 4) + 4) % 4];
 export const chunkKey = (x, z) => `${Math.floor(x / CHUNK)},${Math.floor(z / CHUNK)}`;
 
 // ---------- world ----------
@@ -142,9 +174,10 @@ export class World {
   generate() {
     const s = this.seed, rng = makeRng(s);
     this.blocks.fill(0);
+    const OFF = (W - LEGACY_W) / 2;   // noise coordinates match the original 128-wide worlds in the middle
     for (let z = 0; z < D; z++) for (let x = 0; x < W; x++) {
-      const n = fbm(x / 40, z / 40, s, 4);
-      const ridge = fbm(x / 13, z / 13, s + 1000, 2);
+      const n = fbm((x - OFF) / 40, (z - OFF) / 40, s, 4);
+      const ridge = fbm((x - OFF) / 13, (z - OFF) / 13, s + 1000, 2);
       const t = Math.max(-1, Math.min(1, (n - 0.5) * 2.6));   // spread the noise out: valleys become lakes
       let h = Math.round(SEA + 5 + t * 16 + (ridge - 0.5) * 3);
       h = Math.max(4, Math.min(H - 10, h));
@@ -155,17 +188,17 @@ export class World {
         if (y === 0) id = B.BEDROCK;
         else if (y < h - 3) id = B.STONE;
         else if (y < h) id = beach ? B.SAND : B.EARTH;
-        else id = beach ? B.SAND : B.GRASS;
+        else id = beach ? B.SAND : h >= SEA + 15 ? B.SNOW : B.GRASS;
         this.blocks[this.idx(x, y, z)] = id;
       }
       for (let y = h + 1; y <= SEA; y++) this.blocks[this.idx(x, y, z)] = B.WATER;
     }
     // trees
-    for (let i = 0; i < 220; i++) {
+    for (let i = 0; i < (W * D) / 75; i++) {
       const x = 3 + Math.floor(rng() * (W - 6)), z = 3 + Math.floor(rng() * (D - 6));
       const h = this.surfaceAt(x, z);
       if (this.get(x, h, z) !== B.GRASS || h + 7 >= H) continue;
-      if (fbm(x / 25, z / 25, s + 77, 2) < 0.5) continue;   // forests in patches
+      if (fbm((x - OFF) / 25, (z - OFF) / 25, s + 77, 2) < 0.5) continue;   // forests in patches
       if (Math.hypot(x - W / 2, z - D / 2) < 10) continue;   // keep the spawn clearing open
       let crowded = false;   // trees keep a little space between them
       for (let dx = -2; dx <= 2 && !crowded; dx++) for (let dz = -2; dz <= 2; dz++) if (this.get(x + dx, h + 1, z + dz) === B.LOG) { crowded = true; break; }
@@ -173,7 +206,7 @@ export class World {
       this.tree(x, h + 1, z, 4 + Math.floor(rng() * 3));
     }
     // hidden treasure chests underground, each in a little stone pocket
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < (W * D) / 1200; i++) {
       const x = 4 + Math.floor(rng() * (W - 8)), z = 4 + Math.floor(rng() * (D - 8));
       const h = this.surfaceAt(x, z);
       const y = 2 + Math.floor(rng() * Math.max(1, h - 7));
@@ -186,7 +219,7 @@ export class World {
       this.meta.set(key(x, y, z), { items });
     }
     // a few chests on the surface too, so there is something to find straight away
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < (W * D) / 2700; i++) {
       const x = 4 + Math.floor(rng() * (W - 8)), z = 4 + Math.floor(rng() * (D - 8));
       const h = this.surfaceAt(x, z);
       if (this.get(x, h + 1, z) !== B.AIR || h <= SEA) continue;
@@ -245,17 +278,27 @@ export class World {
   // Returns the items a chest held (so the caller can hand them to the player), or null.
   dig(x, y, z) {
     if (!this.canDig(x, y, z)) return null;
-    const id = this.get(x, y, z);
+    let id = this.get(x, y, z);
     let spilled = [];
-    if (id === B.DOOR_TOP) y -= 1;
-    if (id === B.DOOR || id === B.DOOR_TOP) { this.set(x, y + 1, z, B.AIR); }
+    if (id === B.DOOR_TOP) { y -= 1; id = B.DOOR; }
+    if (id === B.BED_FOOT) {
+      const m = this.meta.get(key(x, y, z));
+      if (m && m.head) { [x, y, z] = m.head; id = B.BED; }
+    }
+    const other = this.otherHalf(x, y, z, id);
+    if (other) { this.meta.delete(key(...other)); this.set(other[0], other[1], other[2], B.AIR); this.queueWater(...other); }
     const m = this.meta.get(key(x, y, z));
     if (m && m.items) spilled = m.items.slice();
     this.meta.delete(key(x, y, z));
     this.set(x, y, z, B.AIR);
     this.queueWater(x, y, z);
-    if (id === B.DOOR || id === B.DOOR_TOP) this.queueWater(x, y + 1, z);
     return spilled;
+  }
+  // The second cell of a two-cell prop (door top, bed foot), or null.
+  otherHalf(x, y, z, id) {
+    if (id === B.DOOR) return [x, y + 1, z];
+    if (id === B.BED) { const m = this.meta.get(key(x, y, z)); const [fx, fz] = facingDir(m ? m.facing : 0); return [x + fx, y, z + fz]; }
+    return null;
   }
   // opts: { facing (0-3), code, yaw, pitch }. Returns '' on success or an error message.
   place(x, y, z, id, opts = {}) {
@@ -271,6 +314,15 @@ export class World {
       this.meta.set(key(x, y, z), { facing: opts.facing | 0, open: false });
       return '';
     }
+    if (id === B.BED) {
+      const [fx, fz] = facingDir(opts.facing | 0);
+      const foot = this.get(x + fx, y, z + fz);
+      if (!this.inBounds(x + fx, y, z + fz) || !(foot === B.AIR || foot === B.WATER)) return 'Beds need two blocks of room';
+      this.set(x, y, z, B.BED); this.set(x + fx, y, z + fz, B.BED_FOOT);
+      this.meta.set(key(x, y, z), { facing: opts.facing | 0 });
+      this.meta.set(key(x + fx, y, z + fz), { head: [x, y, z] });
+      return '';
+    }
     if (id === B.TRAPDOOR) {
       if (!/^\d{4}$/.test(opts.code || '')) return 'Trapdoors need a 4-digit code';
       this.meta.set(key(x, y, z), { code: opts.code, open: false, facing: opts.facing | 0 });
@@ -280,6 +332,8 @@ export class World {
       this.meta.set(key(x, y, z), { facing: opts.facing | 0 });
     } else if (id === B.CAMERA) {
       this.meta.set(key(x, y, z), { yaw: opts.yaw || 0, pitch: opts.pitch || 0, n: this.nextCameraNumber() });
+    } else if (info.special) {
+      this.meta.set(key(x, y, z), { facing: opts.facing | 0 });
     }
     this.set(x, y, z, id);
     return '';
@@ -296,6 +350,14 @@ export class World {
       if (this.get(x, y, z) === B.CAMERA) out.push({ x, y, z, ...m });
     }
     return out.sort((a, b) => a.n - b.n);
+  }
+  lights() {
+    const out = [];
+    for (const k of this.meta.keys()) {
+      const [x, y, z] = k.split(',').map(Number);
+      if (BLOCKS[this.get(x, y, z)].light) out.push([x, y, z]);
+    }
+    return out;
   }
   toggleDoor(x, y, z) {
     let id = this.get(x, y, z);
@@ -407,7 +469,7 @@ export function rayBox(ox, oy, oz, dx, dy, dz, minx, miny, minz, maxx, maxy, max
 }
 
 // ---------- physics ----------
-export const GRAVITY = 28, JUMP = 9, SWIM = 4.5, FLY_SPEED = 7, FLY_HOLD = 0.3;
+export const GRAVITY = 28, JUMP = 9, SWIM = 4.5, FLY_SPEED = 7, FLY_HOLD = 0.3, BOUNCE = 16;
 
 function boxSolid(world, x, y, z, w, h) {
   const x0 = Math.floor(x - w / 2), x1 = Math.floor(x + w / 2 - 1e-6);
@@ -471,7 +533,12 @@ export function stepEntity(world, e, ctrl, dt) {
   const hitY = moveAxis(world, e, 'y', e.vy * dt);
   const wasGround = e.onGround;
   e.onGround = hitY && e.vy < 0;
-  if (hitY) e.vy = 0;
+  let bounced = false;
+  if (hitY && e.vy < 0 && !ctrl.noBounce) {
+    const under = world.get(Math.floor(e.x), Math.floor(e.y - 0.05), Math.floor(e.z));
+    if (BLOCKS[under].bouncy) { e.vy = BOUNCE; e.onGround = false; bounced = true; }
+  }
+  if (hitY && !bounced) e.vy = 0;
   if (e.y + e.h > H + 4) { e.y = H + 4 - e.h; e.vy = Math.min(e.vy, 0); }   // the sky has a ceiling
   // auto-jump: walked into a one-block step
   if ((hitX || hitZ) && wantMove && (wasGround || e.onGround || water)) {
@@ -483,7 +550,7 @@ export function stepEntity(world, e, ctrl, dt) {
   }
   if (hitX) e.vx = 0; if (hitZ) e.vz = 0;
   if (e.y < 1) { e.y = 1; e.vy = 0; e.onGround = true; }
-  return { water, head: headInWater(world, e), flying };
+  return { water, head: headInWater(world, e), flying, bounced };
 }
 
 export function nearestVillager(villagers, x, z, exclude = -1) {
@@ -588,12 +655,38 @@ export function serialize(world, state = {}) {
   };
 }
 export function deserialize(data) {
-  if (!data || data.v !== 1 || data.w !== W || data.h !== H || data.d !== D) throw new Error('Unknown save format');
-  const world = new World(data.seed);
-  world.blocks = unrle(data.blocks, W * H * D);
-  world.surface = unrle(data.surface, W * D);
-  world.meta = new Map(data.meta);
-  for (let cz = 0; cz < D / CHUNK; cz++) for (let cx = 0; cx < W / CHUNK; cx++) world.dirty.add(`${cx},${cz}`);
+  if (!data || data.v !== 1 || data.h !== H) throw new Error('Unknown save format');
   const { v, seed, w, h, d, blocks, surface, meta, ...state } = data;
+  if (w === W && d === D) {
+    const world = new World(seed);
+    world.blocks = unrle(blocks, W * H * D);
+    world.surface = unrle(surface, W * D);
+    world.meta = new Map(meta);
+    for (let cz = 0; cz < D / CHUNK; cz++) for (let cx = 0; cx < W / CHUNK; cx++) world.dirty.add(`${cx},${cz}`);
+    return { world, state };
+  }
+  if (w === LEGACY_W && d === LEGACY_W) return migrateLegacy(data, state);
+  throw new Error('Unknown save format');
+}
+// A 128-wide world is dropped into the middle of a freshly generated 256-wide
+// one with the same seed; the terrain noise lines up, so the join is seamless.
+export function migrateLegacy(data, state) {
+  const OFF = (W - LEGACY_W) / 2, LW = LEGACY_W;
+  const world = new World(data.seed).generate();
+  const old = unrle(data.blocks, LW * H * LW), oldSurf = unrle(data.surface, LW * LW);
+  for (let y = 0; y < H; y++) for (let z = 0; z < LW; z++) for (let x = 0; x < LW; x++) world.blocks[world.idx(x + OFF, y, z + OFF)] = old[x + LW * (z + LW * y)];
+  for (let z = 0; z < LW; z++) for (let x = 0; x < LW; x++) world.surface[x + OFF + W * (z + OFF)] = oldSurf[x + LW * z];
+  world.meta = new Map();
+  for (const [k, m] of data.meta) {
+    const [x, y, z] = k.split(',').map(Number);
+    if (m.head) m.head = [m.head[0] + OFF, m.head[1], m.head[2] + OFF];
+    world.meta.set(key(x + OFF, y, z + OFF), m);
+  }
+  // anything the new generation put inside the old area is gone, so drop stale meta there
+  for (const [k] of [...world.meta]) { const [x, y, z] = k.split(',').map(Number); if (!BLOCKS[world.get(x, y, z)].special) world.meta.delete(k); }
+  if (state.player) { state.player.x += OFF; state.player.z += OFF; }
+  if (state.villagers) for (const v of state.villagers) { v.x += OFF; v.z += OFF; }
+  world.spawn = { x: world.spawn.x, y: world.spawn.y, z: world.spawn.z };
+  state.migrated = true;
   return { world, state };
 }

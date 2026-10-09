@@ -2,15 +2,17 @@
 // all the rules in engine.js.
 import * as THREE from 'three';
 import {
-  W, H, D, B, BLOCKS, ITEMS, CHEST_SLOTS, POCKET_SLOTS, World, raycast, rayBox, stepEntity, updateVillager,
-  headInWater, moveItem, serialize, deserialize, makeRng, key, callVillager, nearestVillager, topView,
+  W, H, D, B, BLOCKS, CATEGORIES, ITEMS, CHEST_SLOTS, POCKET_SLOTS, World, raycast, rayBox, stepEntity, updateVillager,
+  headInWater, moveItem, serialize, deserialize, makeRng, key, callVillager, nearestVillager, topView, facingDir,
 } from './engine.js?v=dev';
-import { makeAtlas, tileIcon, WorldRenderer, makeVillagerMesh, animateVillager, propDescription } from './render.js?v=dev';
+import { makeAtlas, makeIcons, WorldRenderer, makeVillagerMesh, animateVillager, propDescription, animateClocks } from './render.js?v=dev';
 
 const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'block-world/save-v1';
-const HOTBAR = [B.GRASS, B.EARTH, B.STONE, B.SAND, B.WOOD, B.LOG, B.LEAVES, B.BRICK, B.METAL, B.GLASS, B.DOOR, B.TRAPDOOR, B.CHEST, B.COMPUTER, B.CAMERA];
-const EMOJI = { [B.DOOR]: '🚪', [B.TRAPDOOR]: '🔒', [B.CHEST]: '📦', [B.COMPUTER]: '💻', [B.CAMERA]: '📷' };
+// furniture that should face the player when placed in front of them
+const FACE_PLAYER = new Set([B.CHAIR, B.SOFA, B.FRIDGE, B.COOKER, B.TOILET, B.DESK]);
+const WALL_HUNG = new Set([B.SHELF, B.PAINTING, B.CLOCK, B.CAMERA]);
+const NUM_LIGHTS = 8;
 const isTouch = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 if (!isTouch) document.body.classList.add('no-touch');
 
@@ -25,9 +27,12 @@ const camCam = new THREE.PerspectiveCamera(70, 1, 0.1, 300);   // security camer
 camCam.rotation.order = 'YXZ';
 const sun = new THREE.DirectionalLight(0xffffff, 2.4); sun.position.set(60, 90, 30); scene.add(sun);
 const hemi = new THREE.HemisphereLight(0xcfe8ff, 0x5a4a3a, 1.1); scene.add(hemi);
-scene.fog = new THREE.Fog(0x87ceeb, 50, 150);
+scene.fog = new THREE.Fog(0x87ceeb, 40, 115);
+const VIEW_DIST = 122;   // chunks past the fog are not drawn at all
+const lamps = []; for (let i = 0; i < NUM_LIGHTS; i++) { const l = new THREE.PointLight(0xffe0a0, 0, 12, 2); scene.add(l); lamps.push(l); }
 const SKY = { day: new THREE.Color(0x87ceeb), night: new THREE.Color(0x0b1030) };
 const atlas = makeAtlas();
+const ICONS = makeIcons(atlas, BLOCKS.filter((b) => b.placeable).map((b) => b.id));
 const highlight = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.004, 1.004, 1.004)), new THREE.LineBasicMaterial({ color: 0x111111 }));
 scene.add(highlight);
 function resize() {
@@ -41,13 +46,14 @@ addEventListener('resize', resize); resize();
 // ---------- game state ----------
 let world, wr, villagers = [], vMeshes = [], rng = makeRng(Date.now() >>> 0);
 const player = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, w: 0.6, h: 1.8, onGround: false };
-let yaw = 0, pitch = -0.2, riding = -1, pocket = [], night = false, dayMix = 1, sel = 0;
+let yaw = 0, pitch = -0.2, riding = -1, pocket = [], night = false, dayMix = 1;
+let cat = +(localStorage.getItem('block-world/cat') || 0), selId = B.GRASS, sitting = null;
 let target = null;      // { kind: 'block', hit } | { kind: 'villager', i, dist }
 let camViewOpen = false, camIndex = 0;
 
 function newWorld(seed = (Math.random() * 1e9) >>> 0) {
   const w = new World(seed).generate();
-  useWorld(w, { villagers: w.makeVillagers(7, makeRng(seed ^ 0x9e3779b9)), pocket: ['apple'], night: false });
+  useWorld(w, { villagers: w.makeVillagers(12, makeRng(seed ^ 0x9e3779b9)), pocket: ['apple'], night: false });
 }
 function useWorld(w, state) {
   if (wr) { scene.remove(wr.group); wr.group.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
@@ -57,15 +63,16 @@ function useWorld(w, state) {
   vMeshes = villagers.map((v, i) => { const m = makeVillagerMesh(v, i); scene.add(m); return m; });
   pocket = state.pocket || [];
   night = !!state.night; dayMix = night ? 0 : 1; $('btnNight').classList.toggle('on', night);
-  sel = state.sel || 0; renderHotbar();
-  riding = -1; $('btnDismount').hidden = true;
+  selId = BLOCKS[state.selId] && BLOCKS[state.selId].placeable ? state.selId : B.GRASS; renderHotbar();
+  riding = -1; sitting = null; $('btnDismount').hidden = true;
+  lightTimer = 9; cullTimer = 9;
   const p = state.player || { ...world.spawn, yaw: 0, pitch: -0.2 };
   Object.assign(player, { x: p.x, y: p.y, z: p.z, vx: 0, vy: 0, vz: 0, onGround: false });
   yaw = p.yaw || 0; pitch = p.pitch ?? -0.2;
   wr.update(999);
 }
 function stateForSave() {
-  return { player: { x: player.x, y: player.y, z: player.z, yaw, pitch }, villagers, pocket, night, sel };
+  return { player: { x: player.x, y: player.y, z: player.z, yaw, pitch }, villagers, pocket, night, selId };
 }
 function save(quiet = true) {
   try {
@@ -79,6 +86,7 @@ function load() {
     if (!raw) return false;
     const { world: w, state } = deserialize(JSON.parse(raw));
     useWorld(w, state);
+    if (state.migrated) { save(); setTimeout(() => toast('Your world has grown! It is now 256 blocks wide, with new land all around. 🗺️', 5000), 1500); }
     return true;
   } catch (e) { console.warn('load failed', e); return false; }
 }
@@ -98,19 +106,29 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const itemOf = (id) => ITEMS.find((i) => i.id === id) || { emoji: '❔', label: id };
 
 function renderHotbar() {
-  const hb = $('hotbar'); hb.innerHTML = '';
-  HOTBAR.forEach((id, i) => {
+  const hb = $('hotbar'), cb = $('catbar'); hb.innerHTML = ''; cb.innerHTML = '';
+  CATEGORIES.forEach((c, i) => {
     const b = document.createElement('button');
-    b.className = i === sel ? 'sel' : '';
-    b.title = BLOCKS[id].name;
-    if (EMOJI[id]) b.textContent = EMOJI[id];
-    else { const img = document.createElement('img'); img.src = tileIcon(atlas.canvas, id); img.alt = ''; b.appendChild(img); }
-    const s = document.createElement('small'); s.textContent = BLOCKS[id].name.replace('Passcode t', 'T').replace('Security c', 'C'); b.appendChild(s);
-    b.addEventListener('pointerdown', (e) => { e.stopPropagation(); });
-    b.addEventListener('click', () => { sel = i; renderHotbar(); });
-    hb.appendChild(b);
+    b.className = i === cat ? 'sel' : ''; b.textContent = `${c.icon} ${c.name}`;
+    b.addEventListener('pointerdown', (e) => e.stopPropagation());
+    b.addEventListener('click', () => { cat = i; localStorage.setItem('block-world/cat', cat); if (!CATEGORIES[cat].ids.includes(selId)) selId = CATEGORIES[cat].ids[0]; renderHotbar(); });
+    cb.appendChild(b);
   });
-  const selBtn = hb.children[sel]; if (selBtn) selBtn.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  for (const id of CATEGORIES[cat].ids) {
+    const b = document.createElement('button');
+    b.className = id === selId ? 'sel' : '';
+    b.title = BLOCKS[id].name;
+    const img = document.createElement('img'); img.src = ICONS.get(id); img.alt = ''; b.appendChild(img);
+    const sm = document.createElement('small'); sm.textContent = BLOCKS[id].name.replace('Passcode t', 'T').replace('Security c', 'C'); b.appendChild(sm);
+    b.addEventListener('pointerdown', (e) => e.stopPropagation());
+    b.addEventListener('click', () => { selId = id; renderHotbar(); });
+    hb.appendChild(b);
+  }
+  const selBtn = [...hb.children].find((b) => b.classList.contains('sel')); if (selBtn) selBtn.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+}
+function selectOffset(d) {
+  const ids = CATEGORIES[cat].ids, i = Math.max(0, ids.indexOf(selId));
+  selId = ids[(i + d + ids.length) % ids.length]; renderHotbar();
 }
 
 // ---------- keypad (passcode trapdoors) ----------
@@ -229,6 +247,8 @@ function openHelp() {
       <li><b>Map:</b> the round map shows the land around you, you as the white arrow, and villagers as coloured dots. Tap <b>📣 Call</b> and the nearest villager walks over to you.</li>
       <li><b>Dig:</b> ${isTouch ? 'hold ⛏, or press and hold on a block.' : 'left click (hold to keep digging).'}</li>
       <li><b>Place / use:</b> ${isTouch ? 'tap ✋, or tap a block.' : 'right click or <kbd>F</kbd>.'} Pick what to place from the bar at the bottom.</li>
+      <li><b>Blocks</b> are sorted into tabs: Nature, Building, Colours, Magic (glowing blocks and the 🟪 bouncy block!), Furniture and Gadgets.</li>
+      <li><b>Furniture:</b> sit on chairs and sofas, sleep in a bed to make it morning, raid the fridge, bake in the cooker. Lamps and lanterns light up the night.</li>
       <li><b>Water</b> is hiding under the ground. Dig down four blocks and it bubbles up and spreads along tunnels. You can swim in it.</li>
       <li><b>Doors</b> open when you tap them. <b>Passcode trapdoors</b> ask for a 4-digit code when you place them, and again before they open.</li>
       <li><b>Chests</b> hold items. Open your 🎒 pocket to make items and carry them about. There are treasure chests buried underground!</li>
@@ -350,12 +370,13 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyE') openPocket();
   if (e.code === 'KeyX' && riding >= 0) dismount();
   if (e.code === 'KeyC') callNearest();
-  if (/^Digit[1-9]$/.test(e.code)) { sel = Math.min(HOTBAR.length - 1, +e.code.slice(5) - 1); renderHotbar(); }
-  if (e.code === 'KeyQ') { sel = (sel + HOTBAR.length - 1) % HOTBAR.length; renderHotbar(); }
-  if (e.code === 'KeyR') { sel = (sel + 1) % HOTBAR.length; renderHotbar(); }
+  if (/^Digit[1-9]$/.test(e.code)) { const ids = CATEGORIES[cat].ids, i = +e.code.slice(5) - 1; if (ids[i]) { selId = ids[i]; renderHotbar(); } }
+  if (e.code === 'KeyQ') selectOffset(-1);
+  if (e.code === 'KeyR') selectOffset(1);
+  if (e.code === 'Tab') { e.preventDefault(); cat = (cat + 1) % CATEGORIES.length; localStorage.setItem('block-world/cat', cat); if (!CATEGORIES[cat].ids.includes(selId)) selId = CATEGORIES[cat].ids[0]; renderHotbar(); }
 });
 addEventListener('keyup', (e) => { keys.delete(e.code); if (e.code === 'Space') jumpHeld = false; });
-addEventListener('wheel', (e) => { if (modalOpen) return; sel = (sel + (e.deltaY > 0 ? 1 : HOTBAR.length - 1)) % HOTBAR.length; renderHotbar(); }, { passive: true });
+addEventListener('wheel', (e) => { if (modalOpen) return; selectOffset(e.deltaY > 0 ? 1 : -1); }, { passive: true });
 addEventListener('blur', releaseInputs);
 const clampPitch = (p) => Math.max(-1.5, Math.min(1.5, p));
 
@@ -371,6 +392,7 @@ function moveInput() {
 // ---------- actions ----------
 function eye() {
   if (riding >= 0) { const v = villagers[riding]; return new THREE.Vector3(v.x, v.y + 2.45, v.z); }
+  if (sitting) return new THREE.Vector3(sitting.x + 0.5, sitting.y + sitting.seat + 0.95, sitting.z + 0.5);
   return new THREE.Vector3(player.x, player.y + 1.62, player.z);
 }
 function findTarget() {
@@ -422,9 +444,19 @@ function doUse() {
   if (id === B.CHEST) { openChest(x, y, z); return; }
   if (id === B.COMPUTER) { openCamView(); return; }
   if (id === B.CAMERA) { toast(propDescription(id, world.meta.get(key(x, y, z)))); return; }
+  if (id === B.BED || id === B.BED_FOOT) { night = false; $('btnNight').classList.remove('on'); toast('💤 Zzz… You slept till morning!'); return; }
+  if (BLOCKS[id].seat) { sit(x, y, z, BLOCKS[id].seat); return; }
+  if (id === B.FRIDGE || id === B.COOKER) {
+    const it = id === B.FRIDGE ? (Math.random() < 0.5 ? 'apple' : 'fish') : 'cake';
+    if (pocket.length >= POCKET_SLOTS) toast('Your pocket is full!');
+    else { pocket.push(it); toast(id === B.FRIDGE ? `🧊 Brrr! You found ${itemOf(it).label.toLowerCase()} in the fridge` : '🍰 Ding! You baked a cake'); }
+    return;
+  }
+  if (id === B.TOILET) { toast('🚽 Flusssh! 💦'); return; }
+  if (id === B.BATH) { toast('🛁 Splash! Rubber duck time'); return; }
   // place the selected block on the face we are looking at
   let px = x + nx, py = y + ny, pz = z + nz;
-  const pid = HOTBAR[sel];
+  const pid = selId;
   if (pid === B.TRAPDOOR && ny === 1 && !BLOCKS[id].special && world.canDig(x, y, z)) {
     // tapping the top of the ground sinks the trapdoor into it, flush with the floor
     keypad('🔒 New passcode trapdoor', 'Choose a secret 4-digit code. Remember it!', (code) => {
@@ -436,12 +468,16 @@ function doUse() {
     return;
   }
   if (!world.inBounds(px, py, pz)) { toast('That is outside the world'); return; }
+  let facing = facingFromYaw();
+  if (WALL_HUNG.has(pid) && ny === 0) facing = ((Math.round(Math.atan2(-nx, -nz) / (Math.PI / 2)) % 4) + 4) % 4;   // back against the wall
+  else if (FACE_PLAYER.has(pid)) facing = (facing + 2) % 4;
   if (BLOCKS[pid].solid) {
     const ents = riding >= 0 ? villagers : [player, ...villagers];
-    const cells = pid === B.DOOR ? [[px, py, pz], [px, py + 1, pz]] : [[px, py, pz]];
+    const [fx, fz] = facingDir(facing);
+    const cells = pid === B.DOOR ? [[px, py, pz], [px, py + 1, pz]] : pid === B.BED ? [[px, py, pz], [px + fx, py, pz + fz]] : [[px, py, pz]];
     for (const e of ents) for (const c of cells) if (cellOverlapsEntity(c[0], c[1], c[2], e)) { toast('Something is in the way'); return; }
   }
-  const opts = { facing: facingFromYaw() };
+  const opts = { facing };
   if (pid === B.CAMERA) {
     if (ny === 0) { opts.yaw = Math.atan2(-nx, -nz); opts.pitch = -0.35; }
     else { opts.yaw = yaw; opts.pitch = ny > 0 ? -0.15 : -0.7; }
@@ -459,7 +495,20 @@ function doUse() {
   else if (pid === B.CAMERA) toast(`Camera ${world.meta.get(key(px, py, pz)).n} placed. Tap a computer to watch it.`, 3000);
   navigator.vibrate?.(10);
 }
+function sit(x, y, z, seat) {
+  if (riding >= 0) dismount();
+  sitting = { x, y, z, seat };
+  Object.assign(player, { vx: 0, vy: 0, vz: 0 });
+  toast('Comfy! Move to get up.');
+}
+function standUp() {
+  if (!sitting) return;
+  const { x, y, z } = sitting, solid = BLOCKS[world.get(x, y, z)].solid;
+  Object.assign(player, { x: x + 0.5, y: y + (solid ? 1.01 : 0.01), z: z + 0.5, vx: 0, vy: 0, vz: 0, onGround: true });
+  sitting = null;
+}
 function mount(i) {
+  sitting = null;
   riding = i; $('btnDismount').hidden = false;
   toast(`You're riding ${villagers[i].name}! ${isTouch ? 'Steer with the joystick.' : 'Steer with WASD.'}`, 3000);
 }
@@ -526,7 +575,15 @@ tint.style.cssText = 'position:absolute;inset:0;background:rgba(30,90,200,0.35);
 $('game').insertBefore(tint, $('hud'));
 
 // ---------- main loop ----------
-let last = performance.now(), saveTimer = 0;
+let last = performance.now(), saveTimer = 0, lightTimer = 9, cullTimer = 9;
+// The nearest lamps get real point lights (there are only a few to go round).
+function updateLamps(e) {
+  const all = wr.allLights().map((p) => ({ p, d: Math.hypot(p[0] - e.x, p[1] - e.y, p[2] - e.z) })).filter((l) => l.d < 40).sort((a, b) => a.d - b.d);
+  lamps.forEach((l, i) => {
+    if (all[i]) { l.position.set(...all[i].p); l.intensity = 14 * (1 - 0.6 * dayMix); l.visible = true; }
+    else l.intensity = 0;
+  });
+}
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -543,8 +600,9 @@ function frame(now) {
     animateVillager(vMeshes[i], v, i === riding);
   });
   let head = false;
+  if (sitting && (Math.hypot(mx, mz) > 0.2 || jump)) standUp();
   if (riding >= 0) { const v = villagers[riding]; head = headInWater(world, { x: v.x, y: v.y + 0.7, z: v.z, h: 1.8 }); }
-  else { const r = stepEntity(world, player, { mx, mz, yaw, jump }, dt); head = r.head; }
+  else if (!sitting) { const r = stepEntity(world, player, { mx, mz, yaw, jump }, dt); head = r.head; if (r.bounced) toast('Boing! 🟪'); }
   world.tickWater(300);
   wr.update(4);
 
@@ -558,6 +616,7 @@ function frame(now) {
   const sky = SKY.night.clone().lerp(SKY.day, dayMix);
   scene.background = sky; scene.fog.color.copy(sky);
   sun.intensity = 0.3 + 2.1 * dayMix; hemi.intensity = 0.3 + 0.8 * dayMix;
+  for (const l of lamps) if (l.intensity > 0) l.intensity = 14 * (1 - 0.6 * dayMix);
 
   // target highlight + label
   if (active) {
@@ -578,6 +637,10 @@ function frame(now) {
 
   mapTimer += dt;
   if (mapTimer > 0.2) { mapTimer = 0; drawMap(); }
+  lightTimer += dt;
+  if (lightTimer > 0.5) { lightTimer = 0; updateLamps(e); animateClocks(wr.allClocks()); }
+  cullTimer += dt;
+  if (cullTimer > 0.5 || wr.world.dirty.size) { cullTimer = 0; wr.cull(e.x, e.z, VIEW_DIST); }
   saveTimer += dt;
   if (saveTimer > 15) { saveTimer = 0; save(); }
 }
@@ -593,5 +656,7 @@ if (!localStorage.getItem('block-world/seen-help')) { openHelp(); localStorage.s
 // Small hook for scripted smoke tests (not used by the game itself).
 window.blockWorld = {
   get world() { return world; }, get player() { return player; }, get villagers() { return villagers; }, get pocket() { return pocket; },
-  look(y, p) { yaw = y; pitch = p; }, select(i) { sel = i; renderHotbar(); }, dig: doDig, use: doUse, mount, dismount, findTarget, save, callNearest,
+  look(y, p) { yaw = y; pitch = p; }, select(id) { selId = id; renderHotbar(); }, dig: doDig, use: doUse, mount, dismount, findTarget, save, callNearest,
+  get sitting() { return sitting; }, get night() { return night; }, icons: ICONS,
+  stats() { const i = renderer.info.render; return { triangles: i.triangles, calls: i.calls, chunksVisible: [...wr.chunks.values()].filter((g) => g.visible).length }; },
 };

@@ -59,12 +59,18 @@ body.no-touch #actions { display: none; }
 #btnDismount { position: absolute; right: calc(16px + var(--safe-r)); bottom: calc(250px + var(--safe-b)); border-radius: 12px; border: 2px solid var(--bad);
   background: var(--panel); color: var(--text); font-size: 1rem; padding: 10px 14px; cursor: pointer; }
 
+#catbar { position: absolute; left: 50%; bottom: calc(80px + var(--safe-b)); transform: translateX(-50%); display: flex; gap: 4px; padding: 4px;
+  border-radius: 12px; background: rgba(0,0,0,0.55); max-width: calc(100vw - 20px); overflow-x: auto; pointer-events: auto; scrollbar-width: none; }
+#catbar::-webkit-scrollbar { display: none; }
+#catbar button { flex: 0 0 auto; border-radius: 8px; border: 1px solid transparent; background: rgba(255,255,255,0.08); color: var(--muted); font-size: 0.75rem; padding: 5px 9px; cursor: pointer; white-space: nowrap; }
+#catbar button.sel { background: var(--btnActive); color: #111; font-weight: 600; }
+@media (max-height: 520px) { #catbar { bottom: calc(66px + var(--safe-b)); } #hotbar button { width: 44px; height: 44px; } #hotbar button img { width: 28px; height: 28px; } }
 #hotbar { position: absolute; left: 50%; bottom: calc(10px + var(--safe-b)); transform: translateX(-50%); display: flex; gap: 6px;
-  padding: 6px; border-radius: 14px; background: rgba(0,0,0,0.45); max-width: calc(100vw - 20px); overflow-x: auto; pointer-events: auto; scrollbar-width: none; }
+  padding: 6px; border-radius: 14px; background: rgba(0,0,0,0.6); max-width: calc(100vw - 20px); overflow-x: auto; pointer-events: auto; scrollbar-width: none; }
 #hotbar::-webkit-scrollbar { display: none; }
 #hotbar button { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 10px; border: 2px solid transparent; background: rgba(255,255,255,0.08);
   color: var(--text); font-size: 1.5rem; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
-#hotbar button img { width: 32px; height: 32px; image-rendering: pixelated; border-radius: 4px; }
+#hotbar button img { width: 36px; height: 36px; border-radius: 4px; }
 #hotbar button small { font-size: 0.55rem; line-height: 1; margin-top: 2px; color: var(--muted); max-width: 48px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 #hotbar button.sel { border-color: var(--accent); background: rgba(255, 209, 102, 0.25); }
 #hotbar button.sel small { color: var(--text); }
