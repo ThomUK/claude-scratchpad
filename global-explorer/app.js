@@ -492,9 +492,17 @@ function comparedToStart(c, start) {
 
 // ---------------------------------------------------------------- passport --
 const LEVEL_LABEL = (l) => (DIFFICULTY[l] || { label: l }).label;
+/** Small deterministic pseudo-random in [-1, 1) from a string, so each stamp keeps its own tilt. */
+function jitter(seed) {
+  let h = 2166136261;
+  for (const ch of seed) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+  return ((h % 2000) / 1000) - 1;
+}
+
 /** A rubber-stamp element for a level; `got` renders it inked, otherwise a faint outline. */
-function stampEl(level, got, size = '', count = 0) {
-  const s = el('span', `stamp ${level} ${got ? 'got' : 'missing'} ${size}`.trim());
+function stampEl(level, got, size = '', count = 0, seed = '') {
+  const s = el('span', `stamp ${level} ${got ? 'got inked' : 'missing'} ${size}`.trim());
+  s.style.setProperty('--rot', `${(jitter(seed + level) * 12).toFixed(1)}deg`);
   s.textContent = size === 'sm' ? LEVEL_LABEL(level)[0] : level === 'intermediate' ? 'Inter\nmediate' : LEVEL_LABEL(level);
   if (got && count > 1) s.append(el('small', null, `×${count}`));
   s.title = got ? `${LEVEL_LABEL(level)} stamp${count > 1 ? ` ×${count}` : ''}` : `No ${LEVEL_LABEL(level)} stamp yet`;
@@ -528,15 +536,15 @@ function renderStats(container, compact) {
 
 function renderPassport() {
   renderStats($('stats-full'), false);
-  $('passport-count').textContent = `${totalStamps()} stamps`;
+  $('passport-count').textContent = `${totalStamps()} of ${allStamps()} stamps`;
   const levels = $('levels');
   levels.replaceChildren();
   for (const l of STAMP_LEVELS) {
     const pool = remainingPool(state.countries, state.pools, resolveRules({ preset: l }), state.stats);
-    const d = el('div', 'level'); d.style.setProperty('--ink', l === 'easy' ? '#1f8a4c' : l === 'intermediate' ? '#2f6fcf' : '#b3261e');
-    const txt = el('div'); txt.append(el('div', 'ln', LEVEL_LABEL(l)), el('div', 'lh', poolLabel(l)));
+    const d = el('div', 'lvl'); d.style.setProperty('--ink', l === 'easy' ? '#2f7d4f' : l === 'intermediate' ? '#3b63a8' : '#a3352f');
+    d.title = poolLabel(l);
     const bar = el('div', 'bar'); const fill = el('i'); fill.style.width = `${(100 * pool.stamped) / pool.total}%`; bar.append(fill);
-    d.append(stampEl(l, pool.stamped > 0), txt, el('div', 'lc', `${pool.stamped} / ${pool.total}`), bar);
+    d.append(stampEl(l, pool.stamped > 0, 'sm', 0, 'summary'), el('div', 'ln', `${LEVEL_LABEL(l)} · ${poolLabel(l)}`), el('div', 'lc', `${pool.stamped} / ${pool.total}`), bar);
     levels.append(d);
   }
   const chips = $('passport-filter');
@@ -556,11 +564,14 @@ function renderPassport() {
     return f === 'all' ? STAMP_LEVELS.some((l) => sf[l] > 0) : sf[f] > 0;
   });
   for (const c of cards) {
-    const card = el('div', 'pcard'); card.tabIndex = 0;
-    const h = el('div', 'ph'); h.append(el('span', 'flag', c.flag), el('span', null, c.name));
-    const ps = el('div', 'ps'); const sf = stampsFor(state.stats, c.code);
-    for (const l of STAMP_LEVELS) ps.append(stampEl(l, sf[l] > 0, 'sm', sf[l]));
-    card.append(h, ps);
+    const card = el('div', 'entry'); card.tabIndex = 0;
+    card.style.setProperty('--rot', `${(jitter(c.code) * 1.5).toFixed(2)}deg`);
+    const flag = el('span', 'eflag inked', c.flag);
+    flag.style.setProperty('--frot', `${(jitter(c.code + 'flag') * 7).toFixed(1)}deg`);
+    const row = el('div', 'erow'); row.append(flag);
+    const sf = stampsFor(state.stats, c.code);
+    for (const l of STAMP_LEVELS) row.append(stampEl(l, sf[l] > 0, 'sm', sf[l], c.code));
+    card.append(el('div', 'ename', c.name), row);
     const open = () => showCountry(c.code);
     card.addEventListener('click', open); card.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
     book.append(card);

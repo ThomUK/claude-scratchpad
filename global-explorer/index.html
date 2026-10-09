@@ -113,17 +113,18 @@
       </section>
 
       <!-- ============================ PASSPORT ============================ -->
-      <section class="screen" id="screen-passport" hidden>
+      <section class="screen passport" id="screen-passport" hidden>
         <header class="appbar"><h1>Passport</h1><span class="muted small" id="passport-count"></span></header>
         <div class="page">
-          <div class="stats" id="stats-full"></div>
-          <h2>Stamps to collect</h2>
-          <div class="levels" id="levels"></div>
-          <h2>Your stamps <span class="muted small">(tap a country for details)</span></h2>
+          <div class="travel" id="levels"></div>
           <div class="chips sort" id="passport-filter"></div>
           <div class="book" id="book"></div>
           <p class="muted small" id="book-empty" hidden>No stamps yet. Find a country on Easy, Intermediate or Advanced to earn its stamp. Custom rounds don't stamp.</p>
-          <div class="btnrow"><button type="button" class="ghost" id="btn-reset-stats">Reset passport and progress</button></div>
+          <details class="scoreboard" id="scoreboard">
+            <summary>Scoreboard</summary>
+            <div class="stats" id="stats-full"></div>
+            <div class="btnrow"><button type="button" class="ghost" id="btn-reset-stats">Reset passport and progress</button></div>
+          </details>
         </div>
       </section>
 
