@@ -206,6 +206,16 @@ const nth = (n) => (n === 1 ? '' : ord(n) + ' ');
 const fmt = (n) => (n < 10 ? n.toLocaleString('en-GB', { maximumFractionDigits: 2 }) : Math.round(n).toLocaleString('en-GB'));
 // Population for territories Natural Earth has no polygon for (approximate).
 const POP_FIX = { GIB: 32700, BVT: 0, UMI: 0 };
+// Places whose ISO code has no emoji flag on most phones. They fly their
+// parent state's flag, so show that, and say so in the facts.
+const FLAG_FIX = {
+  BES: ['🇳🇱', 'The Caribbean Netherlands has no flag of its own: four flags fly there, the flag of the Netherlands and a separate flag for each of its three islands, Bonaire, Sint Eustatius and Saba.'],
+  BVT: ['🇳🇴', 'It has no flag of its own and flies the flag of Norway.'],
+  HMD: ['🇦🇺', 'It has no flag of its own and flies the flag of Australia.'],
+  SJM: ['🇳🇴', 'It has no flag of its own and flies the flag of Norway.'],
+  UMI: ['🇺🇸', 'The islands have no flag of their own and fly the flag of the United States.'],
+  MAF: ['🇫🇷', 'Its official flag is the flag of France, although a local flag is used unofficially.'],
+};
 // Land areas the source dataset leaves as -1 ("unknown"). Svalbard 61,022 km²
 // + Jan Mayen 377 km² (Statistics Norway); the CIA World Factbook gives 62,045 for Svalbard alone.
 const AREA_FIX = { SJM: 61399 };
@@ -278,6 +288,7 @@ const countries = rc.map((c) => {
     ISR: 'It occupies the Golan Heights, shown shaded inside Syria on the map.',
   };
   if (HATCH_FACTS[code]) facts.push(HATCH_FACTS[code]);
+  if (FLAG_FIX[code]) facts.push(FLAG_FIX[code][1]);
 
   if (c.landlocked) facts.push('It is landlocked: it has no coastline.');
   else if (c.borders.length === 0 && code !== 'ATA') facts.push('It has no land borders at all: it is entirely surrounded by sea.');
@@ -293,7 +304,7 @@ const countries = rc.map((c) => {
   if (native) facts.push(`In its own language it is called "${native}".`);
 
   return {
-    code, name, official: c.name.official, flag: c.flag, cca2: c.cca2,
+    code, name, official: c.name.official, flag: FLAG_FIX[code] ? FLAG_FIX[code][0] : c.flag, cca2: c.cca2,
     capital: c.capital, region: c.region, subregion: c.subregion, continent, designation,
     population, area: c.area, density: density == null ? null : +density.toFixed(density < 10 ? 2 : 1), latlng: c.latlng, borders: c.borders,
     landlocked: c.landlocked, independent: !!c.independent, unMember: UN_FIX[code] ?? c.unMember,

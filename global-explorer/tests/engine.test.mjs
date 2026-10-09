@@ -164,6 +164,8 @@ check('data: 250 countries, every one has latlng, facts, and a resolvable border
   assert.match(C('GRL').facts[0], /Kingdom of Denmark/);
   assert.match(C('VAT').facts[0], /not a member of the United Nations/);
   assert.equal(C('SJM').area, 61399);
+  assert.equal(C('BES').flag, '🇳🇱'); assert.match(C('BES').facts.join(' '), /Bonaire, Sint Eustatius and Saba/);
+  assert.equal(C('BVT').flag, '🇳🇴'); assert.equal(C('MAF').flag, '🇫🇷');
   assert.ok(!C('SJM').facts.some((f) => /smallest/.test(f)), 'Svalbard is not ranked among the smallest');
 });
 
