@@ -8,6 +8,8 @@
 //                      (Natural Earth 1:50m admin-0 map units; public domain)
 //   breakaway.geojson  https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_breakaway_disputed_areas.geojson
 //                      (Natural Earth's disputed-area polygons; used to move Crimea into Ukraine)
+//   data/coastline.json  coastline lengths by cca3 (CIA World Factbook via the
+//                      factbook/factbook.json mirror; see the file's source field)
 //   tools dir          a directory with node_modules containing topojson-server and polygon-clipping
 //                      (npm install topojson-server polygon-clipping)
 //
@@ -26,6 +28,7 @@ const { topology } = await import(pathToFileURL(join(toolsDir, 'node_modules/top
 const pc = (await import(pathToFileURL(join(toolsDir, 'node_modules/polygon-clipping/dist/polygon-clipping.esm.js')))).default;
 
 const rc = JSON.parse(readFileSync(rcPath, 'utf8'));
+const coast = JSON.parse(readFileSync('data/coastline.json', 'utf8'));
 const ne = JSON.parse(readFileSync(nePath, 'utf8'));
 const brk = JSON.parse(readFileSync(brkPath, 'utf8'));
 
@@ -231,6 +234,7 @@ const popRank = [...rc].filter((c) => (pop.get(c.cca3) ?? POP_FIX[c.cca3]) > 0).
 const densityOf = (c) => { const p = pop.get(c.cca3) ?? POP_FIX[c.cca3]; return p != null && c.area > 0 ? p / c.area : null; };
 const densityRank = [...rc].filter((c) => densityOf(c) > 0).sort((a, b) => densityOf(b) - densityOf(a)).map((c) => c.cca3);
 const N = rc.length;
+const coastRank = [...rc].filter((c) => coast.km[c.cca3] > 0).sort((a, b) => coast.km[b.cca3] - coast.km[a.cca3]).map((c) => c.cca3);
 const maxBorders = Math.max(...rc.map((c) => c.borders.length));
 
 const countries = rc.map((c) => {
@@ -290,6 +294,10 @@ const countries = rc.map((c) => {
   if (HATCH_FACTS[code]) facts.push(HATCH_FACTS[code]);
   if (FLAG_FIX[code]) facts.push(FLAG_FIX[code][1]);
 
+  const coastline = coast.km[code] ?? null;
+  const cRank = coastRank.indexOf(code) + 1;
+  if (cRank > 0 && cRank <= 5) facts.push(`It has the ${nth(cRank)}longest coastline in the world: about ${fmt(coastline)} km.`);
+
   if (c.landlocked) facts.push('It is landlocked: it has no coastline.');
   else if (c.borders.length === 0 && code !== 'ATA') facts.push('It has no land borders at all: it is entirely surrounded by sea.');
   if (c.borders.length === maxBorders) facts.push(`With ${c.borders.length} neighbours it shares land borders with more countries than any other.`);
@@ -306,7 +314,7 @@ const countries = rc.map((c) => {
   return {
     code, name, official: c.name.official, flag: FLAG_FIX[code] ? FLAG_FIX[code][0] : c.flag, cca2: c.cca2,
     capital: c.capital, region: c.region, subregion: c.subregion, continent, designation,
-    population, area: c.area, density: density == null ? null : +density.toFixed(density < 10 ? 2 : 1), latlng: c.latlng, borders: c.borders,
+    population, area: c.area, density: density == null ? null : +density.toFixed(density < 10 ? 2 : 1), coastline, latlng: c.latlng, borders: c.borders,
     landlocked: c.landlocked, independent: !!c.independent, unMember: UN_FIX[code] ?? c.unMember,
     languages: langs, currencies: currs,
     dependentOf: dep ? dep[0] : null,
@@ -321,6 +329,7 @@ writeFileSync('data/countries.json', JSON.stringify({
   sources: {
     countries: 'mledoze/countries (the REST Countries dataset), ODbL',
     geometry: 'Natural Earth 1:50m admin-0 map units (public domain); population is Natural Earth POP_EST',
+    coastline: coast.source,
   },
   pools: {
     easy: {

@@ -446,6 +446,7 @@ function countryCard(c, startCode) {
   add('Population', c.population == null ? 'unknown' : fmtN(c.population));
   add('Area', `${fmtN(c.area)} km²`);
   add('Density', c.density == null ? '—' : `${fmtDensity(c.density)} people per km²`);
+  add('Coastline', c.coastline == null ? 'unknown' : c.coastline === 0 ? 'none (landlocked)' : `${fmtN(c.coastline)} km`);
   add('Region', c.subregion || c.region);
   add('Languages', c.languages.length ? c.languages.join(', ') : '—');
   add('Currency', c.currencies.length ? c.currencies.join(', ') : '—');
@@ -588,7 +589,7 @@ function renderPassport() {
 // ------------------------------------------------------------------- atlas --
 const SORTS = [
   { key: 'name', label: 'Name' }, { key: 'population', label: 'Population' }, { key: 'area', label: 'Area' },
-  { key: 'density', label: 'Density' }, { key: 'neighbours', label: 'Neighbours' }, { key: 'continent', label: 'Continent' },
+  { key: 'density', label: 'Density' }, { key: 'coastline', label: 'Coastline' }, { key: 'neighbours', label: 'Neighbours' }, { key: 'continent', label: 'Continent' },
   { key: 'designation', label: 'Status' }, { key: 'difficulty', label: 'Difficulty' },
 ];
 const TIER_LABEL = ['', 'Easy', 'Intermediate', 'Advanced'];
@@ -612,6 +613,7 @@ function valueFor(c, key) {
     case 'population': return [fmtN(c.population), 'people'];
     case 'area': return [fmtN(c.area), 'km²'];
     case 'density': return [fmtDensity(c.density), 'people per km²'];
+    case 'coastline': return [c.coastline == null ? '—' : fmtN(c.coastline), 'km of coastline'];
     case 'neighbours': return [String(c.borders.length), c.borders.length === 1 ? 'neighbour' : 'neighbours'];
     case 'continent': return [c.continent, ''];
     case 'designation': return [c.designation, ''];

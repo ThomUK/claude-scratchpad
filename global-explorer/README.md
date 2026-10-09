@@ -26,7 +26,7 @@ level. Shows rounds, streaks, best scores,
 progress bars per level and the stamp book.
 
 **Atlas.** All 250 countries and territories as a sortable list (name,
-population, area, density, neighbours, continent, status, difficulty) with a
+population, area, density, coastline, neighbours, continent, status, difficulty) with a
 filter and mini stamps. Each country has its own page with the full card,
 stamps, "Show on globe" (highlights it in teal) and "Start a round here".
 
@@ -73,6 +73,11 @@ representative lat/lon from the dataset.
   (the dataset behind REST Countries), ODbL. The dependency relationships and
   a handful of corrections (e.g. Vatican City is a UN observer, not a member)
   are in `build_data.mjs`.
+- Coastline lengths: the CIA World Factbook, fetched from the
+  [factbook/factbook.json](https://github.com/factbook/factbook.json) mirror
+  into `data/coastline.json`; Western Sahara and the French overseas
+  departments use the Factbook's earlier editions. Four territories have no
+  published figure.
 - Boundaries and population estimates: [Natural Earth](https://www.naturalearthdata.com/)
   1:50m admin-0 map units, public domain. Natural Earth draws de facto
   control; the build script moves Crimea into Ukraine, the Golan Heights into

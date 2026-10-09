@@ -1,0 +1,996 @@
+{
+ "source": "CIA World Factbook, Geography > Coastline (factbook/factbook.json mirror)",
+ "fetched": "2026-10-09",
+ "km": {
+  "ALB": 362,
+  "AND": 0,
+  "AUT": 0,
+  "DZA": 998,
+  "BLR": 0,
+  "AGO": 1600,
+  "ATG": 153,
+  "BHS": 3542,
+  "BEL": 66.5,
+  "AUS": 25760,
+  "BRB": 97,
+  "BEN": 121,
+  "BIH": 20,
+  "BLZ": 386,
+  "BHR": 161,
+  "ARG": 4989,
+  "BWA": 0,
+  "AFG": 0,
+  "BGR": 354,
+  "AZE": 0,
+  "ARM": 0,
+  "BDI": 0,
+  "BFA": 0,
+  "BRN": 161,
+  "BGD": 580,
+  "MMR": 1930,
+  "CMR": 402,
+  "BOL": 0,
+  "KHM": 443,
+  "CPV": 965,
+  "BTN": 0,
+  "CAF": 0,
+  "TCD": 0,
+  "BRA": 7491,
+  "COM": 340,
+  "HRV": 5835,
+  "COD": 37,
+  "COG": 169,
+  "CHN": 14500,
+  "CYP": 648,
+  "CZE": 0,
+  "CIV": 515,
+  "DNK": 7314,
+  "CRI": 1290,
+  "DJI": 314,
+  "CUB": 3735,
+  "EGY": 2450,
+  "GNQ": 296,
+  "EST": 3794,
+  "CHL": 6435,
+  "COL": 3208,
+  "DMA": 148,
+  "ERI": 2234,
+  "FIN": 1250,
+  "DOM": 1288,
+  "FRA": 4853,
+  "ETH": 0,
+  "SWZ": 0,
+  "DEU": 2389,
+  "SLV": 307,
+  "CAN": 202080,
+  "GAB": 885,
+  "GRC": 13676,
+  "GMB": 80,
+  "GHA": 539,
+  "ECU": 2237,
+  "HUN": 0,
+  "GIN": 320,
+  "ISL": 4970,
+  "GNB": 350,
+  "FJI": 1129,
+  "GTM": 400,
+  "IRL": 1448,
+  "HTI": 1771,
+  "GRD": 121,
+  "IDN": 54716,
+  "ITA": 7600,
+  "HND": 823,
+  "GUY": 459,
+  "KEN": 536,
+  "JPN": 29751,
+  "IRQ": 58,
+  "JAM": 1022,
+  "IRN": 2440,
+  "GEO": 310,
+  "UNK": 0,
+  "PRK": 2495,
+  "IND": 7000,
+  "ISR": 273,
+  "KIR": 1143,
+  "JOR": 26,
+  "LVA": 498,
+  "KOR": 2413,
+  "LIE": 0,
+  "LBR": 579,
+  "LTU": 90,
+  "LSO": 0,
+  "LBY": 1770,
+  "LUX": 0,
+  "LAO": 0,
+  "MDG": 4828,
+  "MLT": 196.8,
+  "MWI": 0,
+  "KAZ": 0,
+  "MRT": 754,
+  "MLI": 0,
+  "MYS": 4675,
+  "MUS": 177,
+  "LBN": 225,
+  "KWT": 499,
+  "MCO": 4.1,
+  "MDA": 0,
+  "MNE": 293.5,
+  "MHL": 370.4,
+  "MAR": 2945,
+  "MOZ": 2470,
+  "NAM": 1572,
+  "NLD": 451,
+  "KGZ": 0,
+  "MNG": 0,
+  "NOR": 25148,
+  "MKD": 0,
+  "FSM": 6112,
+  "NER": 0,
+  "NGA": 853,
+  "MDV": 644,
+  "NRU": 30,
+  "NIC": 910,
+  "NZL": 15134,
+  "PNG": 5152,
+  "PRT": 1793,
+  "POL": 440,
+  "PAN": 2490,
+  "MEX": 9330,
+  "NPL": 0,
+  "PLW": 1519,
+  "PHL": 36289,
+  "OMN": 2092,
+  "ROU": 225,
+  "SMR": 0,
+  "RWA": 0,
+  "PRY": 0,
+  "PER": 2414,
+  "STP": 209,
+  "PAK": 1046,
+  "KNA": 135,
+  "SEN": 531,
+  "SRB": 0,
+  "LCA": 158,
+  "VCT": 84,
+  "SVK": 0,
+  "SLE": 402,
+  "SYC": 491,
+  "QAT": 563,
+  "SOM": 3025,
+  "ESP": 4964,
+  "SVN": 46.6,
+  "ZAF": 2798,
+  "SGP": 193,
+  "WSM": 403,
+  "SSD": 0,
+  "CHE": 0,
+  "SWE": 3218,
+  "SAU": 2640,
+  "SDN": 853,
+  "TZA": 1424,
+  "RUS": 37653,
+  "SLB": 5313,
+  "THA": 3219,
+  "TLS": 706,
+  "TGO": 56,
+  "TUN": 1148,
+  "UKR": 2782,
+  "SYR": 193,
+  "TTO": 362,
+  "SUR": 386,
+  "LKA": 1340,
+  "UGA": 0,
+  "TON": 419,
+  "GBR": 12429,
+  "VAT": 0,
+  "TUR": 7200,
+  "TJK": 0,
+  "TUV": 24,
+  "VNM": 3444,
+  "ARE": 1318,
+  "ZMB": 0,
+  "ZWE": 0,
+  "TKM": 0,
+  "VUT": 2528,
+  "URY": 660,
+  "TWN": 1566.3,
+  "YEM": 1906,
+  "VEN": 2800,
+  "FRO": 1117,
+  "CXR": 138.9,
+  "HKG": 733,
+  "MAC": 41,
+  "CCK": 26,
+  "UZB": 0,
+  "USA": 19924,
+  "NFK": 32,
+  "MAF": 58.9,
+  "PYF": 2525,
+  "WLF": 129,
+  "NCL": 2254,
+  "CUW": 364,
+  "ABW": 68.5,
+  "HMD": 101.9,
+  "SJM": 3711.1,
+  "SXM": 58.9,
+  "GRL": 44087,
+  "COK": 120,
+  "NIU": 64,
+  "SPM": 120,
+  "ATF": 28,
+  "AIA": 61,
+  "TKL": 101,
+  "GIB": 12,
+  "GGY": 50,
+  "IMN": 160,
+  "VGB": 80,
+  "JEY": 70,
+  "CYM": 160,
+  "SHN": 60,
+  "MSR": 40,
+  "TCA": 389,
+  "PCN": 51,
+  "UMI": 32.1,
+  "IOT": 698,
+  "BVT": 29.6,
+  "ASM": 116,
+  "BMU": 103,
+  "GUM": 125.5,
+  "FLK": 1288,
+  "MNP": 1482,
+  "PRI": 501,
+  "VIR": 188,
+  "PSE": 40,
+  "ATA": 17968,
+  "ESH": 1110,
+  "GUF": 378,
+  "GLP": 306,
+  "MTQ": 350,
+  "MYT": 185.2,
+  "REU": 207
+ },
+ "parts": {
+  "ALB": [
+   "Albania"
+  ],
+  "AND": [
+   "Andorra"
+  ],
+  "AUT": [
+   "Austria"
+  ],
+  "DZA": [
+   "Algeria"
+  ],
+  "BLR": [
+   "Belarus"
+  ],
+  "AGO": [
+   "Angola"
+  ],
+  "ATG": [
+   "Antigua and Barbuda"
+  ],
+  "BHS": [
+   "The Bahamas"
+  ],
+  "BEL": [
+   "Belgium"
+  ],
+  "AUS": [
+   "Australia"
+  ],
+  "BRB": [
+   "Barbados"
+  ],
+  "BEN": [
+   "Benin"
+  ],
+  "BIH": [
+   "Bosnia and Herzegovina"
+  ],
+  "BLZ": [
+   "Belize"
+  ],
+  "BHR": [
+   "Bahrain"
+  ],
+  "ARG": [
+   "Argentina"
+  ],
+  "BWA": [
+   "Botswana"
+  ],
+  "AFG": [
+   "Afghanistan"
+  ],
+  "BGR": [
+   "Bulgaria"
+  ],
+  "AZE": [
+   "Azerbaijan"
+  ],
+  "ARM": [
+   "Armenia"
+  ],
+  "BDI": [
+   "Burundi"
+  ],
+  "BFA": [
+   "Burkina Faso"
+  ],
+  "BRN": [
+   "Brunei"
+  ],
+  "BGD": [
+   "Bangladesh"
+  ],
+  "MMR": [
+   "Burma"
+  ],
+  "CMR": [
+   "Cameroon"
+  ],
+  "BOL": [
+   "Bolivia"
+  ],
+  "KHM": [
+   "Cambodia"
+  ],
+  "CPV": [
+   "Cape Verde"
+  ],
+  "BTN": [
+   "Bhutan"
+  ],
+  "CAF": [
+   "Central African Republic"
+  ],
+  "TCD": [
+   "Chad"
+  ],
+  "BRA": [
+   "Brazil"
+  ],
+  "COM": [
+   "Comoros"
+  ],
+  "HRV": [
+   "Croatia"
+  ],
+  "COD": [
+   "Congo DR"
+  ],
+  "COG": [
+   "Congo"
+  ],
+  "CHN": [
+   "China"
+  ],
+  "CYP": [
+   "Cyprus"
+  ],
+  "CZE": [
+   "Czechia"
+  ],
+  "CIV": [
+   "Cote d'Ivoire"
+  ],
+  "DNK": [
+   "Denmark"
+  ],
+  "CRI": [
+   "Costa Rica"
+  ],
+  "DJI": [
+   "Djibouti"
+  ],
+  "CUB": [
+   "Cuba"
+  ],
+  "EGY": [
+   "Egypt"
+  ],
+  "GNQ": [
+   "Equatorial Guinea"
+  ],
+  "EST": [
+   "Estonia"
+  ],
+  "CHL": [
+   "Chile"
+  ],
+  "COL": [
+   "Colombia"
+  ],
+  "DMA": [
+   "Dominica"
+  ],
+  "ERI": [
+   "Eritrea"
+  ],
+  "FIN": [
+   "Finland"
+  ],
+  "DOM": [
+   "Dominican Republic"
+  ],
+  "FRA": [
+   "France"
+  ],
+  "ETH": [
+   "Ethiopia"
+  ],
+  "SWZ": [
+   "Eswatini"
+  ],
+  "DEU": [
+   "Germany"
+  ],
+  "SLV": [
+   "El Salvador"
+  ],
+  "CAN": [
+   "Canada"
+  ],
+  "GAB": [
+   "Gabon"
+  ],
+  "GRC": [
+   "Greece"
+  ],
+  "GMB": [
+   "The Gambia"
+  ],
+  "GHA": [
+   "Ghana"
+  ],
+  "ECU": [
+   "Ecuador"
+  ],
+  "HUN": [
+   "Hungary"
+  ],
+  "GIN": [
+   "Guinea"
+  ],
+  "ISL": [
+   "Iceland"
+  ],
+  "GNB": [
+   "Guinea-Bissau"
+  ],
+  "FJI": [
+   "Fiji"
+  ],
+  "GTM": [
+   "Guatemala"
+  ],
+  "IRL": [
+   "Ireland"
+  ],
+  "HTI": [
+   "Haiti"
+  ],
+  "GRD": [
+   "Grenada"
+  ],
+  "IDN": [
+   "Indonesia"
+  ],
+  "ITA": [
+   "Italy"
+  ],
+  "HND": [
+   "Honduras"
+  ],
+  "GUY": [
+   "Guyana"
+  ],
+  "KEN": [
+   "Kenya"
+  ],
+  "JPN": [
+   "Japan"
+  ],
+  "IRQ": [
+   "Iraq"
+  ],
+  "JAM": [
+   "Jamaica"
+  ],
+  "IRN": [
+   "Iran"
+  ],
+  "GEO": [
+   "Georgia"
+  ],
+  "UNK": [
+   "Kosovo"
+  ],
+  "PRK": [
+   "North Korea"
+  ],
+  "IND": [
+   "India"
+  ],
+  "ISR": [
+   "Israel"
+  ],
+  "KIR": [
+   "Kiribati"
+  ],
+  "JOR": [
+   "Jordan"
+  ],
+  "LVA": [
+   "Latvia"
+  ],
+  "KOR": [
+   "South Korea"
+  ],
+  "LIE": [
+   "Liechtenstein"
+  ],
+  "LBR": [
+   "Liberia"
+  ],
+  "LTU": [
+   "Lithuania"
+  ],
+  "LSO": [
+   "Lesotho"
+  ],
+  "LBY": [
+   "Libya"
+  ],
+  "LUX": [
+   "Luxembourg"
+  ],
+  "LAO": [
+   "Laos"
+  ],
+  "MDG": [
+   "Madagascar"
+  ],
+  "MLT": [
+   "Malta"
+  ],
+  "MWI": [
+   "Malawi"
+  ],
+  "KAZ": [
+   "Kazakhstan"
+  ],
+  "MRT": [
+   "Mauritania"
+  ],
+  "MLI": [
+   "Mali"
+  ],
+  "MYS": [
+   "Malaysia"
+  ],
+  "MUS": [
+   "Mauritius"
+  ],
+  "LBN": [
+   "Lebanon"
+  ],
+  "KWT": [
+   "Kuwait"
+  ],
+  "MCO": [
+   "Monaco"
+  ],
+  "MDA": [
+   "Moldova"
+  ],
+  "MNE": [
+   "Montenegro"
+  ],
+  "MHL": [
+   "Marshall Islands"
+  ],
+  "MAR": [
+   "Morocco"
+  ],
+  "MOZ": [
+   "Mozambique"
+  ],
+  "NAM": [
+   "Namibia"
+  ],
+  "NLD": [
+   "Netherlands"
+  ],
+  "KGZ": [
+   "Kyrgyzstan"
+  ],
+  "MNG": [
+   "Mongolia"
+  ],
+  "NOR": [
+   "Norway"
+  ],
+  "MKD": [
+   "North Macedonia"
+  ],
+  "FSM": [
+   "Micronesia"
+  ],
+  "NER": [
+   "Niger"
+  ],
+  "NGA": [
+   "Nigeria"
+  ],
+  "MDV": [
+   "Maldives"
+  ],
+  "NRU": [
+   "Nauru"
+  ],
+  "NIC": [
+   "Nicaragua"
+  ],
+  "NZL": [
+   "New Zealand"
+  ],
+  "PNG": [
+   "Papua New Guinea"
+  ],
+  "PRT": [
+   "Portugal"
+  ],
+  "POL": [
+   "Poland"
+  ],
+  "PAN": [
+   "Panama"
+  ],
+  "MEX": [
+   "Mexico"
+  ],
+  "NPL": [
+   "Nepal"
+  ],
+  "PLW": [
+   "Palau"
+  ],
+  "PHL": [
+   "Philippines"
+  ],
+  "OMN": [
+   "Oman"
+  ],
+  "ROU": [
+   "Romania"
+  ],
+  "SMR": [
+   "San Marino"
+  ],
+  "RWA": [
+   "Rwanda"
+  ],
+  "PRY": [
+   "Paraguay"
+  ],
+  "PER": [
+   "Peru"
+  ],
+  "STP": [
+   "Sao Tome and Principe"
+  ],
+  "PAK": [
+   "Pakistan"
+  ],
+  "KNA": [
+   "Saint Kitts and Nevis"
+  ],
+  "SEN": [
+   "Senegal"
+  ],
+  "SRB": [
+   "Serbia"
+  ],
+  "LCA": [
+   "Saint Lucia"
+  ],
+  "VCT": [
+   "Saint Vincent and the Grenadines"
+  ],
+  "SVK": [
+   "Slovakia"
+  ],
+  "SLE": [
+   "Sierra Leone"
+  ],
+  "SYC": [
+   "Seychelles"
+  ],
+  "QAT": [
+   "Qatar"
+  ],
+  "SOM": [
+   "Somalia"
+  ],
+  "ESP": [
+   "Spain"
+  ],
+  "SVN": [
+   "Slovenia"
+  ],
+  "ZAF": [
+   "South Africa"
+  ],
+  "SGP": [
+   "Singapore"
+  ],
+  "WSM": [
+   "Samoa"
+  ],
+  "SSD": [
+   "South Sudan"
+  ],
+  "CHE": [
+   "Switzerland"
+  ],
+  "SWE": [
+   "Sweden"
+  ],
+  "SAU": [
+   "Saudi Arabia"
+  ],
+  "SDN": [
+   "Sudan"
+  ],
+  "TZA": [
+   "Tanzania"
+  ],
+  "RUS": [
+   "Russia"
+  ],
+  "SLB": [
+   "Solomon Islands"
+  ],
+  "THA": [
+   "Thailand"
+  ],
+  "TLS": [
+   "Timor-Leste"
+  ],
+  "TGO": [
+   "Togo"
+  ],
+  "TUN": [
+   "Tunisia"
+  ],
+  "UKR": [
+   "Ukraine"
+  ],
+  "SYR": [
+   "Syria"
+  ],
+  "TTO": [
+   "Trinidad and Tobago"
+  ],
+  "SUR": [
+   "Suriname"
+  ],
+  "LKA": [
+   "Sri Lanka"
+  ],
+  "UGA": [
+   "Uganda"
+  ],
+  "TON": [
+   "Tonga"
+  ],
+  "GBR": [
+   "United Kingdom"
+  ],
+  "VAT": [
+   "Vatican City (Holy See)"
+  ],
+  "TUR": [
+   "Turkey"
+  ],
+  "TJK": [
+   "Tajikistan"
+  ],
+  "TUV": [
+   "Tuvalu"
+  ],
+  "VNM": [
+   "Vietnam"
+  ],
+  "ARE": [
+   "United Arab Emirates"
+  ],
+  "ZMB": [
+   "Zambia"
+  ],
+  "ZWE": [
+   "Zimbabwe"
+  ],
+  "TKM": [
+   "Turkmenistan"
+  ],
+  "VUT": [
+   "Vanuatu"
+  ],
+  "URY": [
+   "Uruguay"
+  ],
+  "TWN": [
+   "Taiwan"
+  ],
+  "YEM": [
+   "Yemen"
+  ],
+  "VEN": [
+   "Venezuela"
+  ],
+  "FRO": [
+   "Faroe Islands"
+  ],
+  "CXR": [
+   "Christmas Island"
+  ],
+  "HKG": [
+   "Hong Kong"
+  ],
+  "MAC": [
+   "Macau"
+  ],
+  "CCK": [
+   "Cocos (Keeling) Islands"
+  ],
+  "UZB": [
+   "Uzbekistan"
+  ],
+  "USA": [
+   "United States"
+  ],
+  "NFK": [
+   "Norfolk Island"
+  ],
+  "MAF": [
+   "Saint Martin"
+  ],
+  "PYF": [
+   "French Polynesia"
+  ],
+  "WLF": [
+   "Wallis and Futuna"
+  ],
+  "NCL": [
+   "New Caledonia"
+  ],
+  "CUW": [
+   "Curacao"
+  ],
+  "ABW": [
+   "Aruba"
+  ],
+  "HMD": [
+   "Heard Island and McDonald Islands"
+  ],
+  "SJM": [
+   "Jan Mayen",
+   "Svalbard"
+  ],
+  "SXM": [
+   "Sint Maarten"
+  ],
+  "GRL": [
+   "Greenland"
+  ],
+  "COK": [
+   "Cook Islands"
+  ],
+  "NIU": [
+   "Niue"
+  ],
+  "SPM": [
+   "Saint Pierre and Miquelon"
+  ],
+  "ATF": [
+   "French Southern and Antarctic Lands"
+  ],
+  "AIA": [
+   "Anguilla"
+  ],
+  "TKL": [
+   "Tokelau"
+  ],
+  "GIB": [
+   "Gibraltar"
+  ],
+  "GGY": [
+   "Guernsey"
+  ],
+  "IMN": [
+   "Isle of Man"
+  ],
+  "VGB": [
+   "British Virgin Islands"
+  ],
+  "JEY": [
+   "Jersey"
+  ],
+  "CYM": [
+   "Cayman Islands"
+  ],
+  "SHN": [
+   "Saint Helena"
+  ],
+  "MSR": [
+   "Montserrat"
+  ],
+  "TCA": [
+   "Turks and Caicos Islands"
+  ],
+  "PCN": [
+   "Pitcairn Islands"
+  ],
+  "UMI": [
+   "Navassa Island",
+   "US Pacific Island Wildlife Refuges",
+   "Wake Island"
+  ],
+  "IOT": [
+   "British Indian Ocean Territory"
+  ],
+  "BVT": [
+   "Bouvet Island"
+  ],
+  "ASM": [
+   "American Samoa"
+  ],
+  "BMU": [
+   "Bermuda"
+  ],
+  "GUM": [
+   "Guam"
+  ],
+  "FLK": [
+   "Falkland Islands"
+  ],
+  "MNP": [
+   "Northern Mariana Islands"
+  ],
+  "PRI": [
+   "Puerto Rico"
+  ],
+  "VIR": [
+   "US Virgin Islands"
+  ],
+  "PSE": [
+   "Gaza Strip",
+   "West Bank"
+  ],
+  "ATA": [
+   "Antarctica"
+  ],
+  "ESH": [
+   "CIA World Factbook, earlier editions"
+  ],
+  "GUF": [
+   "CIA World Factbook, earlier editions"
+  ],
+  "GLP": [
+   "CIA World Factbook, earlier editions"
+  ],
+  "MTQ": [
+   "CIA World Factbook, earlier editions"
+  ],
+  "MYT": [
+   "CIA World Factbook, earlier editions"
+  ],
+  "REU": [
+   "CIA World Factbook, earlier editions"
+  ]
+ }
+}

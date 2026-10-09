@@ -164,6 +164,12 @@ check('data: 250 countries, every one has latlng, facts, and a resolvable border
   assert.match(C('GRL').facts[0], /Kingdom of Denmark/);
   assert.match(C('VAT').facts[0], /not a member of the United Nations/);
   assert.equal(C('SJM').area, 61399);
+  // Coastline: CIA figures; landlocked places are 0, the longest is Canada, a few territories are unknown.
+  assert.equal(C('CAN').coastline, 202080); assert.equal(C('CHE').coastline, 0); assert.equal(C('SJM').coastline, 3711.1);
+  assert.ok(countries.filter((c) => c.coastline == null).length <= 4, 'few unknown coastlines');
+  assert.ok(countries.every((c) => !c.landlocked || c.coastline === 0), 'landlocked means zero coastline');
+  assert.match(C('CAN').facts.join(' '), /longest coastline/);
+  assert.equal(sortCountries(countries, 'coastline', 'desc')[0].code, 'CAN');
   assert.equal(C('BES').flag, '🇳🇱'); assert.match(C('BES').facts.join(' '), /Bonaire, Sint Eustatius and Saba/);
   assert.equal(C('BVT').flag, '🇳🇴'); assert.equal(C('MAF').flag, '🇫🇷');
   assert.ok(!C('SJM').facts.some((f) => /smallest/.test(f)), 'Svalbard is not ranked among the smallest');
