@@ -123,7 +123,7 @@ check('countryAt: finds countries by point, respects holes, falls back to shapel
 check('DIFFICULTY: three levels; createGame records it and rejects unknown ones', () => {
   assert.deepEqual(Object.keys(DIFFICULTY), ['easy', 'intermediate', 'hard']);
   assert.equal(DIFFICULTY.easy.names && DIFFICULTY.easy.click && DIFFICULTY.easy.distances && DIFFICULTY.easy.bearings, true);
-  assert.equal(DIFFICULTY.intermediate.names && !DIFFICULTY.intermediate.distances && DIFFICULTY.intermediate.clueButton, true);
+  assert.equal(DIFFICULTY.intermediate.names && DIFFICULTY.intermediate.distances && !DIFFICULTY.intermediate.bearings && DIFFICULTY.intermediate.clueButton, true);
   assert.equal(!DIFFICULTY.hard.names && DIFFICULTY.hard.distances && !DIFFICULTY.hard.bearings, true);
   const g = createGame(countries, 'GBR', { rng: () => 0, pool: ['AUS'], difficulty: 'easy' });
   assert.equal(g.difficulty, 'easy'); assert.equal(g.startCompass, 'SE');

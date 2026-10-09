@@ -8,7 +8,7 @@ An educational guessing game on a 3D globe.
    | Level | Names on map | Click map to guess | Per guess | Clue button |
    |---|---|---|---|---|
    | Easy | yes | yes | warmer/cooler, distance and compass direction | not needed |
-   | Intermediate | yes | no | warmer/cooler only | distance and direction from start and latest guess |
+   | Intermediate | yes | no | warmer/cooler and distance | direction from start and latest guess |
    | Hard | no | no | warmer/cooler and distance | direction from start and latest guess |
 2. The game hides a random second country and tells you how far it is from your start.
 3. Guess a country. A line is drawn from your previous guess (or from the start) to

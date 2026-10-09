@@ -128,8 +128,8 @@ export const DIFFICULTY = {
     blurb: 'Country names on the map, click the map to guess, and every guess shows its distance and compass direction.',
   },
   intermediate: {
-    label: 'Intermediate', names: true, click: false, distances: false, bearings: false, clueButton: true,
-    blurb: 'Country names on the map, but only warmer or cooler per guess. A clue reveals distance and direction.',
+    label: 'Intermediate', names: true, click: false, distances: true, bearings: false, clueButton: true,
+    blurb: 'Country names on the map. Guesses show distance; a clue reveals the compass direction.',
   },
   hard: {
     label: 'Hard', names: false, click: false, distances: true, bearings: false, clueButton: true,
