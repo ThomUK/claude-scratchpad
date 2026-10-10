@@ -69,7 +69,10 @@ Live: https://thomuk.github.io/claude-scratchpad/global-explorer/
   marker, so everything stays crisp at any zoom. Dragging keeps the ground
   under the pointer; taps snap to the nearest small country.
 - `app.js` — the app shell: tabs, bottom sheet, picker, atlas, settings,
-  local storage for settings and progress.
+  local storage for settings and progress. The globe screen is always in
+  one of three views (start, round, explore) applied by a single function,
+  so the passport and atlas can take the globe over and hand it back
+  without disturbing a round.
 - `sw.js` + `manifest.webmanifest` + `icons/` — offline cache and install.
 - `build_data.mjs` — regenerates `data/` from the sources below (see its header
   for the download URLs and the run command).

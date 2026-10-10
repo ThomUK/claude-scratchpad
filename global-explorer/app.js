@@ -30,9 +30,13 @@ const DEFAULT_SETTINGS = { preset: 'hard', names: false, click: false, distances
 const state = {
   countries: [], byCode: new Map(), features: [], pools: {}, globe: null,
   screen: 'play',
-  phase: 'pick-start', // pick-start | guessing | over
-  game: null, clue: null, browse: null,
-  explore: null, // { mode: 'easy'|'intermediate'|'hard'|'visited' } while exploring the globe from the passport
+  phase: 'pick-start', // the game: pick-start | guessing | over
+  game: null, clue: null,
+  // The globe screen shows exactly one view (see applyView): 'start' before a
+  // round, 'round' during/after one, or 'explore' when the passport or atlas
+  // takes the globe over. `explore` holds that view's context, or null.
+  explore: null, // { source: 'passport'|'atlas', mode: 'easy'|'intermediate'|'hard'|'visited'|null, back: screen }
+  selected: null, // country ringed on the globe with its card open (start and explore views)
   settings: { ...DEFAULT_SETTINGS },
   stats: null,
   atlas: { key: 'name', dir: 'asc', filter: '' },
@@ -65,8 +69,7 @@ async function main() {
 
   state.globe = new Globe($('globe'), state.features, state.countries);
   state.globe.onPick = (code) => {
-    if (state.explore) { if (code) showExplorePop(code); else closeExplorePop(); return; }
-    if (state.phase === 'pick-start') { if (code) browseCountry(code); else closeStartPop(); return; }
+    if (viewKind() !== 'round') { if (code) select(code); else deselect(); return; }
     if (code) choose(code); else toast('No country there. Zoom in closer, or type its name.', 'warn');
   };
   $('loading').remove();
@@ -81,76 +84,126 @@ async function main() {
   $('btn-giveup').addEventListener('click', onGiveUp);
   $('btn-clue').addEventListener('click', onClue);
   $('btn-newstart').addEventListener('click', () => resetToPickStart());
-  $('start-close').addEventListener('click', closeStartPop);
-  $('start-here').addEventListener('click', () => { if (state.browse) startRound(state.browse); });
+  $('start-close').addEventListener('click', deselect);
+  $('start-here').addEventListener('click', () => { if (state.selected) startRound(state.selected); });
   $('start-locate').addEventListener('click', onLocate);
   $('start-random').addEventListener('click', () => startRound(state.countries[Math.floor(Math.random() * state.countries.length)].code));
   $('compass').addEventListener('click', recentre);
-  applyRulesToGlobe();
   render();
+  applyView();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js?v=dev').catch(() => {});
 }
 
 
-// -------------------------------------------------------------- explorer --
+// ------------------------------------------------------------------- view --
+// The globe screen is always in exactly one view:
+//   start   – no round yet: the title card floats over the globe; tap a country to begin
+//   round   – a round is being played or has just finished: the sheet is open
+//   explore – a full-screen look at the globe from the passport or the atlas, with
+//             its own shading and bar; any round waits untouched underneath
+// applyView() sets up everything on the globe screen from state.phase,
+// state.explore and state.selected, so no view can leave stale pieces behind.
+const viewKind = () => (state.explore ? 'explore' : state.phase === 'pick-start' ? 'start' : 'round');
+
 const EXPLORE_INK = {
   easy: ['#2f7d4f', '#bfe0cc'], intermediate: ['#3b63a8', '#c5d5ee'], hard: ['#a3352f', '#efc9c4'], visited: ['#6b3fa0', null],
 };
-/** Shade the globe and header for the current explorer mode, from live progress. */
-function paintExplore() {
-  const mode = state.explore.mode;
-  const [dark, light] = EXPLORE_INK[mode];
+/** Shading, bar text and ring colour for an explore context, from live progress. */
+function describeExplore(ex) {
   const hl = new Map();
+  const mode = ex.mode;
+  if (!mode) return { hl, title: 'Atlas', sub: 'Tap any country for its facts', ink: COLORS.browse };
+  const [dark, light] = EXPLORE_INK[mode];
   if (mode === 'visited') {
     for (const code of state.visited) hl.set(code, dark);
     const n = state.visited.size;
-    $('explore-title').textContent = 'Been here for real';
-    $('explore-sub').textContent = `${n} ${n === 1 ? 'country' : 'countries'} visited · tap any country`;
-  } else {
-    const pool = remainingPool(state.countries, state.pools, resolveRules({ preset: mode }), state.stats);
-    const key = DIFFICULTY[mode].pool;
-    const base = key && state.pools[key] ? state.pools[key].codes : state.countries.map((c) => c.code);
-    for (const code of base) hl.set(code, stampsFor(state.stats, code)[mode] > 0 ? dark : light);
-    $('explore-title').textContent = `${LEVEL_LABEL(mode)} stamps`;
-    $('explore-sub').textContent = `${pool.stamped} of ${pool.total} collected · tap any country`;
+    return { hl, title: 'Been here for real', sub: `${n} ${n === 1 ? 'country' : 'countries'} visited · tap any country`, ink: dark };
   }
-  state.globe.setHighlights(hl);
-  // Keep an open quick card's stamp markers current too.
-  const pop = $('explore-pop');
-  if (!pop.hidden && pop.dataset.code) { const dd = pop.querySelector('#pop-facts dd:last-child'); if (dd) dd.replaceChildren(miniStamps(pop.dataset.code)); }
+  const pool = remainingPool(state.countries, state.pools, resolveRules({ preset: mode }), state.stats);
+  const key = DIFFICULTY[mode].pool;
+  const base = key && state.pools[key] ? state.pools[key].codes : state.countries.map((c) => c.code);
+  for (const code of base) hl.set(code, stampsFor(state.stats, code)[mode] > 0 ? dark : light);
+  return { hl, title: `${LEVEL_LABEL(mode)} stamps`, sub: `${pool.stamped} of ${pool.total} collected · tap any country`, ink: dark };
 }
 
-/** Open the globe full-screen shaded by one level's progress (or real travel). */
-function enterExplore(mode) {
-  state.explore = { mode };
-  closeExplorePop();
-  $('screen-play').classList.add('exploring', 'clickable');
-  $('explore-bar').hidden = false;
-  $('start-bar').hidden = true; // the explorer bar takes its place
-  paintExplore();
-  state.globe.setPath([], []);
-  state.globe.setNameExclusions([]);
-  state.globe.setNamesVisible(true);
-  state.globe.pickEnabled = true;
-  state.globe.controls.autoRotate = false;
-  showScreen('play');
+/** Put the globe screen in the view the state calls for. Idempotent; call after any state change. */
+function applyView() {
+  const view = viewKind(), r = rules(), sel = state.selected;
+  const sp = $('screen-play');
+  sp.classList.toggle('picking', view === 'start');
+  sp.classList.toggle('exploring', view === 'explore');
+  $('start-bar').hidden = view !== 'start';
+  $('explore-bar').hidden = view !== 'explore';
+  $('panel-game').hidden = state.phase !== 'guessing';
+  $('panel-over').hidden = state.phase !== 'over';
+  $('sheet-footer').hidden = state.phase !== 'over';
+  // What the globe shows.
+  let ink = COLORS.browse;
+  if (view === 'explore') {
+    const d = describeExplore(state.explore);
+    ink = d.ink;
+    $('explore-title').textContent = d.title; $('explore-sub').textContent = d.sub;
+    state.globe.setHighlights(d.hl);
+    state.globe.setPath([], []);
+    state.globe.setNameExclusions([]);
+    state.globe.setNamesVisible(true);
+  } else {
+    paintGlobe();
+    state.globe.setNamesVisible(r.names);
+  }
+  state.globe.setOutline(sel, ink);
+  const canClick = view !== 'round' || (r.click && state.phase === 'guessing');
+  state.globe.pickEnabled = canClick;
+  sp.classList.toggle('clickable', canClick);
+  if (view !== 'start' || sel) state.globe.controls.autoRotate = false;
+  // The card for the selected country, if the view has one.
+  $('start-pop').hidden = !(view === 'start' && sel);
+  $('explore-pop').hidden = !(view === 'explore' && sel);
+  if (view === 'start' && sel) fillStartCard(sel);
+  if (view === 'explore' && sel) fillExploreCard(sel);
   fitGlobeToSheet();
 }
-/** Leave explorer mode, restoring the game's own view; `to` is the screen to show (null = stay). */
+
+/** Ring a country and open the current view's card for it, flying it into the clear part of the globe. */
+function select(code) {
+  state.selected = code;
+  applyView();
+  const pop = viewKind() === 'explore' ? $('explore-pop') : $('start-pop');
+  const canvasH = $('globe').clientHeight || 1;
+  state.globe.flyTo(code, { lift: Math.min(0.25, pop.offsetHeight / (2 * canvasH)) });
+}
+function deselect() {
+  state.selected = null;
+  applyView();
+}
+
+/** Take the globe over for the passport or the atlas; `code` opens that country's card straight away. */
+function enterExplore(ctx, code) {
+  state.explore = ctx;
+  state.selected = null;
+  showScreen('play');
+  if (code) select(code);
+}
+/** Hand the globe back to the game and show `to`. */
 function exitExplore(to) {
-  if (!state.explore) return;
   state.explore = null;
-  $('screen-play').classList.remove('exploring');
-  $('explore-bar').hidden = true;
-  $('start-bar').hidden = state.phase !== 'pick-start';
-  closeExplorePop();
-  paintGlobe();
-  applyRulesToGlobe();
-  fitGlobeToSheet();
-  if (to) showScreen(to);
+  state.selected = null;
+  showScreen(to || 'play');
+}
+/** "Show on globe" from a country page: pick it as a start before a round, otherwise look at it in the atlas explorer. */
+function showOnGlobe(code) {
+  if (state.explore) { showScreen('play'); select(code); return; } // came here from an explorer: stay in it
+  if (state.phase === 'pick-start') { showScreen('play'); select(code); return; }
+  enterExplore({ source: 'atlas', mode: null, back: 'country' }, code);
+}
+
+/** The new-round card: the tapped country's name and the ways to begin. */
+function fillStartCard(code) {
+  const c = state.byCode.get(code);
+  $('start-flag').textContent = c.flag; $('start-pop-name').textContent = c.name; $('start-pop-status').textContent = `${c.continent} · ${c.designation}`;
 }
 /** Lightweight info card for a tapped country while exploring. */
-function showExplorePop(code) {
+function fillExploreCard(code) {
   const c = state.byCode.get(code);
   $('pop-flag').textContent = c.flag; $('pop-name').textContent = c.name; $('pop-status').textContent = `${c.continent} · ${c.designation}`;
   const dl = $('pop-facts'); dl.replaceChildren();
@@ -160,16 +213,6 @@ function showExplorePop(code) {
   add('Density', c.density == null ? '—' : `${fmtDensity(c.density)} people per km²`);
   add('Coastline', c.coastline == null ? 'unknown' : c.coastline === 0 ? 'none (landlocked)' : `${fmtN(c.coastline)} km`);
   const dd = el('dd'); dd.append(miniStamps(code)); dl.append(el('dt', null, 'Stamps'), dd);
-  $('explore-pop').dataset.code = code;
-  $('explore-pop').hidden = false;
-  state.globe.setOutline(code, EXPLORE_INK[state.explore.mode][0]); // ring it in the view's own ink
-  // Centre the country in the strip of globe left clear above the card.
-  const canvasH = $('globe').clientHeight || 1;
-  state.globe.flyTo(code, { lift: Math.min(0.25, $('explore-pop').offsetHeight / (2 * canvasH)) });
-}
-function closeExplorePop() {
-  $('explore-pop').hidden = true;
-  state.globe.setOutline(null);
 }
 
 // ------------------------------------------------------------ real travel --
@@ -190,41 +233,47 @@ function setVisited(code, on) {
   state.byCode.get(code).visited = on;
   save(KEYS.visited, [...state.visited]);
   toast(on ? `✈️ ${name(code)} stamped: been here for real.` : `Stamp removed from ${name(code)}.`);
-  if (state.explore) paintExplore();
+  if (state.screen === 'play') applyView(); // refresh explorer shading and an open card
   if (state.countryPage === code) showCountry(code);
 }
 
 /** Fly back to whatever the player is working from: latest guess, start, or browsed country. */
 function recentre() {
   const g = state.game;
-  const code = g ? (g.status !== 'playing' ? g.targetCode : g.guesses.length ? g.guesses[g.guesses.length - 1].code : g.startCode) : state.browse || state.globe.openedAt;
+  const code = viewKind() === 'round'
+    ? (g.status !== 'playing' ? g.targetCode : g.guesses.length ? g.guesses[g.guesses.length - 1].code : g.startCode)
+    : state.selected || state.globe.openedAt;
   if (code) state.globe.flyTo(code);
 }
 
 // ------------------------------------------------------------- navigation --
 function wireTabs() {
-  for (const b of document.querySelectorAll('.tab')) b.addEventListener('click', () => { exitExplore(null); showScreen(b.dataset.screen); });
+  for (const b of document.querySelectorAll('.tab')) b.addEventListener('click', () => { state.explore = null; state.selected = null; showScreen(b.dataset.screen); });
   $('country-back').addEventListener('click', () => showScreen(state.countryFrom || 'atlas'));
-  $('btn-show-globe').addEventListener('click', () => { exitExplore(null); showScreen('play'); browseCountry(state.countryPage); });
-  $('btn-start-here').addEventListener('click', () => { exitExplore(null); startRound(state.countryPage); showScreen('play'); });
+  $('btn-show-globe').addEventListener('click', () => showOnGlobe(state.countryPage));
+  $('btn-start-here').addEventListener('click', () => { state.explore = null; showScreen('play'); startRound(state.countryPage); });
   $('btn-visited').addEventListener('click', () => askVisited(state.countryPage));
-  $('explore-back').addEventListener('click', () => exitExplore('passport'));
-  $('explore-close').addEventListener('click', closeExplorePop);
-  $('pop-more').addEventListener('click', () => { const c = $('explore-pop').dataset.code; if (c) showCountry(c); });
+  $('explore-back').addEventListener('click', () => exitExplore(state.explore ? state.explore.back : 'passport'));
+  $('explore-close').addEventListener('click', deselect);
+  $('pop-more').addEventListener('click', () => { if (state.selected) showCountry(state.selected); });
   $('confirm-cancel').addEventListener('click', () => $('confirm').close());
   $('confirm').addEventListener('click', (e) => { if (e.target === $('confirm')) $('confirm').close(); });
 }
 
 function showScreen(which) {
-  if (state.explore && which !== 'play' && which !== 'country') exitExplore(null);
+  // Only the globe screen and a country page opened from it keep an explorer going.
+  if (which !== 'play' && which !== 'country') { state.explore = null; state.selected = null; }
   state.screen = which;
   for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== `screen-${which}`;
-  const tabFor = which === 'country' ? (state.countryFrom === 'play' && state.explore ? 'passport' : state.countryFrom || 'atlas') : which === 'play' && state.explore ? 'passport' : which;
+  const src = state.explore ? state.explore.source : null;
+  const tabFor = which === 'play' ? (src || 'play')
+    : which === 'country' ? (state.countryFrom === 'play' ? (src || 'play') : state.countryFrom || 'atlas')
+      : which;
   for (const b of document.querySelectorAll('.tab')) b.classList.toggle('on', b.dataset.screen === tabFor);
   if (which === 'atlas') renderAtlas();
   if (which === 'passport') renderPassport();
   if (which === 'settings') renderSettings();
-  if (which === 'play') state.globe.resize();
+  applyView(); // keep the globe screen consistent even while another screen covers it
 }
 
 // ------------------------------------------------------------ bottom sheet --
@@ -237,7 +286,8 @@ function setSheet(stateName) {
 function fitGlobeToSheet() {
   if (!state.globe) return;
   // Centre the globe below the card that floats over the top of the full-screen views.
-  const bar = state.explore ? $('explore-bar') : state.phase === 'pick-start' ? $('start-bar') : null;
+  const view = viewKind();
+  const bar = view === 'explore' ? $('explore-bar') : view === 'start' ? $('start-bar') : null;
   state.globe.topInset = bar && !bar.hidden ? bar.offsetTop + bar.offsetHeight : 0;
   if (window.matchMedia('(min-width: 900px)').matches) { $('globe-wrap').style.bottom = ''; state.globe.resize(); return; }
   $('globe-wrap').style.bottom = `${$('sheet').offsetHeight}px`;
@@ -308,9 +358,8 @@ function tagFor(code) {
 function choose(code) {
   $('search-guess').value = '';
   $('results-guess').hidden = true;
-  if (state.phase === 'pick-start') browseCountry(code);
-  else if (state.phase === 'guessing') onGuess(code);
-  else return;
+  if (state.phase !== 'guessing') return;
+  onGuess(code);
   if (!rules().click && state.phase === 'guessing') $('search-guess').focus({ preventScroll: true });
 }
 
@@ -324,19 +373,8 @@ function onLocate() {
 }
 
 // -------------------------------------------------------------------- game --
-function applyRulesToGlobe() {
-  if (state.explore) return;
-  const r = rules();
-  state.globe.setNamesVisible(r.names);
-  const canClick = state.phase === 'pick-start' || (r.click && state.phase === 'guessing');
-  state.globe.pickEnabled = canClick;
-  $('screen-play').classList.toggle('clickable', canClick);
-}
-
 function startRound(startCode) {
-  exitExplore(null);
-  state.clue = null;
-  closeStartPop();
+  state.explore = null; state.selected = null; state.clue = null;
   flash('');
   const r = rules();
   const pool = remainingPool(state.countries, state.pools, r, state.stats);
@@ -344,10 +382,9 @@ function startRound(startCode) {
   const codes = pool.codes.filter((c) => c !== startCode).length ? pool.codes : state.countries.map((c) => c.code);
   state.game = createGame(state.countries, startCode, { rules: r, pool: codes });
   state.phase = 'guessing';
-  applyRulesToGlobe();
-  paintGlobe();
   setSheet('half');
   render();
+  applyView();
   state.globe.flyTo(startCode); // after the sheet is laid out, so the fit knows the canvas shape
   const left = pool.complete ? `Your ${r.label} passport is complete, so any of them can come up.` : '';
   toast(`Starting from ${name(startCode)}. ${r.distances ? `The mystery country is ${km(state.game.startDistanceKm)} away.` : ''} ${left}`.replace(/\s+/g, ' ').trim());
@@ -359,8 +396,8 @@ function onGuess(code) {
   state.globe.flyTo(code);
   if (result.verdict === 'repeat') { toast(`You have already used ${name(code)}.`, 'warn'); return; }
   if (game.status === 'won') finishRound();
-  paintGlobe();
   render(result);
+  applyView();
 }
 
 function onClue() {
@@ -379,33 +416,31 @@ function onGiveUp() {
   state.game = giveUp(state.game);
   finishRound();
   state.globe.flyTo(state.game.targetCode);
-  paintGlobe();
   render();
+  applyView();
 }
 
 function finishRound() {
   state.phase = 'over';
   state.stats = recordRound(state.stats, state.game);
   save(KEYS.stats, state.stats);
-  applyRulesToGlobe();
   setSheet('full');
 }
 
 function resetToPickStart() {
-  state.phase = 'pick-start'; state.game = null; state.clue = null;
+  state.phase = 'pick-start'; state.game = null; state.clue = null; state.explore = null; state.selected = null;
   flash('');
-  paintGlobe();
   state.globe.controls.autoRotate = true;
-  applyRulesToGlobe();
   setSheet('half');
   render();
+  applyView();
 }
 
 const verdictColor = (v) => (v === 'warmer' ? COLORS.warmer : v === 'cooler' ? COLORS.cooler : v === 'correct' ? COLORS.correct : COLORS.same);
 
+/** Shade and draw the current round (or clear the globe when there is none). */
 function paintGlobe() {
   const g = state.game, hl = new Map(), ll = (code) => state.byCode.get(code).latlng;
-  state.globe.setOutline(state.browse, COLORS.browse); // atlas / start selection ring
   if (!g) { state.globe.setHighlights(hl); state.globe.setPath([], []); state.globe.setNameExclusions([]); return; }
   for (const x of g.guesses) hl.set(x.code, COLORS.guessed);
   hl.set(g.startCode, COLORS.start);
@@ -424,40 +459,13 @@ function paintGlobe() {
   state.globe.setNameExclusions([g.startCode, ...g.guesses.map((x) => x.code)]);
 }
 
-/** Ring a country (from the atlas or a tap on the new-round globe) and fly to it. */
-function browseCountry(code) {
-  state.browse = code;
-  paintGlobe();
-  if (state.phase === 'pick-start') { showStartPop(code); return; }
-  state.globe.flyTo(code);
-  setSheet('collapsed');
-}
-/** The new-round card: the tapped country's name and the ways to begin. */
-function showStartPop(code) {
-  const c = state.byCode.get(code);
-  $('start-flag').textContent = c.flag; $('start-pop-name').textContent = c.name; $('start-pop-status').textContent = `${c.continent} · ${c.designation}`;
-  $('start-pop').hidden = false;
-  state.globe.controls.autoRotate = false;
-  const canvasH = $('globe').clientHeight || 1;
-  state.globe.flyTo(code, { lift: Math.min(0.25, $('start-pop').offsetHeight / (2 * canvasH)) });
-}
-function closeStartPop() {
-  $('start-pop').hidden = true;
-  if (state.browse) { state.browse = null; paintGlobe(); }
-}
-
 // ------------------------------------------------------------------ render --
+/** Fill the sheet for the current round. Which panels show, and the globe itself, are applyView's job. */
 function render(lastResult) {
   const g = state.game, r = rules();
-  $('screen-play').classList.toggle('picking', state.phase === 'pick-start');
-  $('start-bar').hidden = state.phase !== 'pick-start';
-  $('panel-game').hidden = state.phase !== 'guessing';
-  $('panel-over').hidden = state.phase !== 'over';
-  $('sheet-footer').hidden = state.phase !== 'over';
   const click = r.click ? ' or tap the map' : '';
   $('search-guess').placeholder = `Type your guess${click}…`;
-
-  if (state.phase === 'pick-start') { fitGlobeToSheet(); return; }
+  if (state.phase === 'pick-start') return;
 
   const start = state.byCode.get(g.startCode), gr = g.rules;
   $('start-name').textContent = `${start.flag} ${start.name}`;
@@ -497,7 +505,6 @@ function render(lastResult) {
     toast(v === 'warmer' ? `🔥 Closer · ${who}` : v === 'cooler' ? `❄️ Further · ${who}` : `Same distance · ${who}`, v);
   }
   if (state.phase === 'over') { flash(''); renderOver(); }
-  fitGlobeToSheet(); // last, once the sheet holds its final content, so the canvas shape is right for any fly-to that follows
 }
 
 function flash(text, cls = '') {
@@ -667,7 +674,8 @@ function renderPassport() {
     const pool = remainingPool(state.countries, state.pools, resolveRules({ preset: l }), state.stats);
     const d = el('div', 'lvl'); d.style.setProperty('--ink', l === 'easy' ? '#2f7d4f' : l === 'intermediate' ? '#3b63a8' : '#a3352f');
     d.title = `Explore the globe shaded by your ${LEVEL_LABEL(l)} stamps`; d.tabIndex = 0; d.setAttribute('role', 'button');
-    d.addEventListener('click', () => enterExplore(l)); d.addEventListener('keydown', (e) => { if (e.key === 'Enter') enterExplore(l); });
+    const open = () => enterExplore({ source: 'passport', mode: l, back: 'passport' });
+    d.addEventListener('click', open); d.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
     const bar = el('div', 'bar'); const fill = el('i'); fill.style.width = `${(100 * pool.stamped) / pool.total}%`; bar.append(fill);
     d.append(stampEl(l, pool.stamped > 0, 'sm', 0, 'summary'), el('div', 'ln', `${LEVEL_LABEL(l)} · ${poolLabel(l)}`), el('div', 'lc', `${pool.stamped} / ${pool.total}`), bar);
     levels.append(d);
@@ -675,7 +683,8 @@ function renderPassport() {
   {
     const d = el('div', 'lvl'); d.style.setProperty('--ink', '#6b3fa0');
     d.title = 'Explore the globe shaded by where you have really been'; d.tabIndex = 0; d.setAttribute('role', 'button');
-    d.addEventListener('click', () => enterExplore('visited')); d.addEventListener('keydown', (e) => { if (e.key === 'Enter') enterExplore('visited'); });
+    const open = () => enterExplore({ source: 'passport', mode: 'visited', back: 'passport' });
+    d.addEventListener('click', open); d.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
     d.append(stampEl('visited', state.visited.size > 0, 'sm', 0, 'summary'), el('div', 'ln', 'Been here for real · places you have actually visited'), el('div', 'lc', String(state.visited.size)));
     levels.append(d);
   }
@@ -762,7 +771,7 @@ function renderAtlas() {
   list.replaceChildren();
   for (const c of rows) {
     const li = el('li', 'row'); li.tabIndex = 0; li.dataset.code = c.code;
-    li.classList.toggle('selected', state.browse === c.code);
+    li.classList.toggle('selected', state.selected === c.code);
     const nm = el('div');
     const n = el('div', 'name', c.name);
     n.append(miniStamps(c.code));
@@ -852,9 +861,9 @@ function applyPreset(key) {
 
 function saveSettings() {
   save(KEYS.settings, state.settings);
-  applyRulesToGlobe();
   renderSettings();
   render();
+  if (state.screen === 'play') applyView();
 }
 
 function renderSettings() {
