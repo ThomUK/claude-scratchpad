@@ -36,7 +36,9 @@ gold coins, and fill your home with pets and family.
   house the more often two turn up at once. Each burglar sneaks into one room.
   **Traps** from the gadget shop (a drop cage, a net, a banana skin) catch
   whoever enters that room; in the morning tap the trapped burglar to call the
-  police for a reward. Cameras, alarms, doorbell cameras, dogs,
+  police for a reward. A security camera in that room (or a doorbell or
+  outdoor camera) records an animated clip of the whole thing, which you can
+  watch in the morning and save to the Criminal Gallery. Cameras, alarms, doorbell cameras, dogs,
   parrots and dragons add security points: three or more catches the burglar
   and the police pay a reward, one or two scares them off, none and something
   goes missing.

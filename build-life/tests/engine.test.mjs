@@ -3,7 +3,7 @@ import {
   HOUSES, ITEMS, ITEM, PETS, PET, WALLPAPERS, FLOORS, PAINTS, NEIGHBOURS, SUBJECTS, LEVELS, HOURS, START_COINS, LESSONS_PER_DAY, QUESTIONS_PER_LESSON, PERFECT_BONUS, BABY_GROWS_AT, CHILD_SCHOOL_AGE, BURGLAR_GRACE_DAYS,
   makeRng, newGame, buildHouse, houseWidth, moveHouse, houseSalePrice, buyItem, sellFromVan, vanItems, vanCount, placeItem, removeItem, placedList, setWallpaper, setFlooring, setPaint,
   securityScore, buyPet, feedPet, playWithPet, mealsLeft, canHaveBaby, newBaby, feedPerson, lessonsLeft, canStartLesson, makeQuestion, startLesson, checkAnswer, answerQuestion, finishLesson,
-  neighbourHouse, visitNeighbour, trapInRoom, trapCount, callPolice, TRAP_REWARD, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
+  neighbourHouse, visitNeighbour, trapInRoom, trapCount, callPolice, TRAP_REWARD, cameraFor, saveClip, deleteClip, GALLERY_MAX, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
 } from '../engine.js';
 
 let fails = 0;
@@ -235,6 +235,33 @@ console.log('— burglar traps —');
   }
   const back = deserialize(serialize(t));
   ok(Array.isArray(back.caged), 'saves carry the caged list');
+}
+
+console.log('— camera footage and the criminal gallery —');
+{
+  const t = newGame('F'); moveHouse(t, 'flat'); t.coins += 1000; t.day = BURGLAR_GRACE_DAYS;
+  buyItem(t, 'camera'); placeItem(t, 0, 'wall', 0, 'camera'); buyItem(t, 'cagetrap'); placeItem(t, 0, 'wall', 1, 'cagetrap'); buyItem(t, 'bed'); placeItem(t, 2, 'floor', 0, 'bed');
+  ok(cameraFor(t.house, 0) === 'Living Room camera' && cameraFor(t.house, 2) === null, 'a wall camera records its own room only');
+  buyItem(t, 'doorbell'); placeItem(t, -1, 'garden', 0, 'doorbell');
+  ok(cameraFor(t.house, 2) === 'Doorbell camera', 'a doorbell camera records every burglar');
+  removeItem(t, -1, 'garden', 0);
+  let withClip = null, without = null;
+  for (let sd = 1; sd < 300 && !(withClip && without); sd++) {
+    const c = JSON.parse(serialize(t)); const rep = sleep(c, makeRng(sd)).report;
+    for (const b of rep.burglars) { if (b.room === 0 && !withClip) withClip = { c, b }; if (b.room === 2 && !without) without = { c, b }; }
+  }
+  ok(withClip && withClip.b.clip === 0 && withClip.c.footage[0].outcome === 'trapped' && withClip.c.footage[0].cam === 'Living Room camera' && withClip.c.footage[0].trap === 'cage', 'a burglar caught on camera leaves a clip of the trap springing');
+  ok(without && without.b.clip === undefined && !without.c.footage.some(f => f.room === 2), 'no camera in the bedroom, no clip');
+  const c = withClip.c; const r = saveClip(c, 0);
+  ok(r.ok && c.gallery.length === 1 && c.footage[0].saved && c.gallery[0].day === c.day - 1, 'saving a clip puts it in the gallery');
+  ok(!saveClip(c, 0).ok && !saveClip(c, 9).ok, 'cannot save the same clip twice or a missing one');
+  const back = deserialize(serialize(c));
+  ok(back.gallery.length === 1 && back.footage.length >= 1, 'the gallery and last night\'s footage survive a save');
+  c.hour = 20; sleep(c, makeRng(5));
+  ok(c.gallery.length >= 1 && !c.footage.some(f => f.day === c.day - 2), 'a new night replaces last night\'s footage but keeps the gallery');
+  for (let i = 0; i < GALLERY_MAX + 2; i++) { c.footage = [{ id: 'x' + i, day: 1, outcome: 'scared' }]; saveClip(c, 0); }
+  ok(c.gallery.length === GALLERY_MAX, 'the gallery has a limit');
+  ok(deleteClip(c, 0).ok && c.gallery.length === GALLERY_MAX - 1 && !deleteClip(c, 99).ok, 'clips can be deleted');
 }
 
 console.log('— save / load —');

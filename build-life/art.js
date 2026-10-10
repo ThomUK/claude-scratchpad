@@ -291,3 +291,63 @@ export function burglarSvg(outcome = 'scared') {
     : `<text x="6" y="30" font-size="18">🤷</text>`;
   return `<svg viewBox="0 0 100 100">${body}${extra}</svg>`;
 }
+
+// ───────────────────────── security camera footage (animated SVG, SMIL) ─────────────────────────
+// clip: { roomName, cam, outcome, trap, item, coins, wallpaper, flooring, hour, minute, day }; room: the live room (for furniture) or null
+export function footageSvg(clip, room = null) {
+  const W0 = 360, H0 = 210, floorY = 170;
+  const wp = wallFill(clip.wallpaper), fl = floorFill(clip.flooring);
+  const B = `<g id="bg"><rect x="-6" y="40" width="22" height="22" rx="8" fill="#b8905f"/><rect x="2" y="42" width="18" height="18" rx="7" fill="#b8905f"/></g>`;
+  const burglar = (extra = '') => `<rect x="16" y="56" width="10" height="34" fill="#1f1f24"/><rect x="30" y="56" width="10" height="34" fill="#1f1f24"/><rect x="14" y="88" width="13" height="5" fill="#111"/><rect x="29" y="88" width="13" height="5" fill="#111"/><rect x="10" y="30" width="36" height="30" rx="5" fill="#2a2a30"/><path d="M10 36H46M10 42H46M10 48H46M10 54H46" stroke="#f0f0f0" stroke-width="3"/><rect x="2" y="32" width="9" height="22" rx="4" fill="#2a2a30"/><rect x="45" y="32" width="9" height="22" rx="4" fill="#2a2a30"/><circle cx="28" cy="18" r="12" fill="#e7c3a0"/><rect x="16" y="13" width="24" height="8" fill="#1f1f24"/><circle cx="24" cy="17" r="1.6" fill="#fff"/><circle cx="33" cy="17" r="1.6" fill="#fff"/><path d="M14 10Q28 -2 42 10Z" fill="#1f1f24"/>${extra}`;
+  const walkIn = `<animateTransform attributeName="transform" type="translate" from="-70 ${floorY - 93}" to="150 ${floorY - 93}" begin="0.4s" dur="2.4s" fill="freeze"/>`;
+  const bob = `<animateTransform attributeName="transform" type="translate" values="0 0;0 -4;0 0" begin="0.4s" dur="0.4s" repeatCount="6" additive="sum"/>`;
+  let scene = '';
+  const o = clip.outcome;
+  if (o === 'trapped' && clip.trap === 'cage') {
+    scene = `<g>${walkIn}<g>${bob}${burglar('<text x="52" y="8" font-size="14" opacity="0"><set attributeName="opacity" to="1" begin="3.1s"/>💢</text>')}</g></g>
+      <g transform="translate(142 -120)"><animateTransform attributeName="transform" type="translate" from="142 -120" to="142 ${floorY - 100}" begin="2.9s" dur="0.25s" fill="freeze" calcMode="spline" keySplines="0.4 0 1 1"/><rect x="0" y="0" width="72" height="100" rx="5" fill="rgba(255,255,255,.06)" stroke="#9a9aa0" stroke-width="4"/>${[12, 24, 36, 48, 60].map(x => `<rect x="${x}" y="2" width="3" height="96" fill="#b0b0b6"/>`).join('')}<rect x="0" y="0" width="72" height="8" fill="#9a9aa0"/><rect x="33" y="-30" width="6" height="30" fill="#777"/></g>
+      <text x="180" y="60" font-size="26" font-weight="800" fill="#fff" stroke="#10201a" stroke-width="5" paint-order="stroke" text-anchor="middle" opacity="0" font-family="sans-serif"><set attributeName="opacity" to="1" begin="3.15s"/>CLANG!</text>`;
+  } else if (o === 'trapped') {
+    scene = `<g>${walkIn}<g>${bob}${burglar()}</g></g>
+      <g transform="translate(178 ${floorY})"><animateTransform attributeName="transform" type="scale" from="0 0" to="1 1" begin="2.9s" dur="0.3s" fill="freeze" additive="sum"/><g transform="translate(-45 -110)"><path d="M0 110Q45 -20 90 110Z" fill="rgba(140,110,60,.3)" stroke="#8a7a4a" stroke-width="2"/><path d="M8 90H82M16 66H74M24 42H66M45 0V110M22 20L68 100M68 20L22 100" stroke="#8a7a4a" stroke-width="1.2"/></g></g>
+      <text x="180" y="60" font-size="26" font-weight="800" fill="#fff" stroke="#10201a" stroke-width="5" paint-order="stroke" text-anchor="middle" opacity="0" font-family="sans-serif"><set attributeName="opacity" to="1" begin="3.15s"/>WHOOSH!</text>`;
+  } else if (o === 'slipped') {
+    scene = `<path transform="translate(150 ${floorY - 10})" d="M0 8Q16 -6 32 4Q20 8 12 12Q6 14 0 8Z" fill="#f0d040"/>
+      <g>${walkIn}<g><animateTransform attributeName="transform" type="rotate" from="0 28 92" to="85 28 92" begin="2.8s" dur="0.35s" fill="freeze" additive="sum" calcMode="spline" keySplines="0.3 0 1 1"/>${bob}${burglar()}</g></g>
+      ${[0, 1, 2, 3, 4].map(i => `<circle cx="${150 + i * 14}" cy="${floorY - 40}" r="5" fill="#c9a24a" opacity="0"><set attributeName="opacity" to="1" begin="2.9s"/><animate attributeName="cy" from="${floorY - 60}" to="${floorY - 6}" begin="2.9s" dur="${0.5 + i * 0.1}s" fill="freeze"/></circle>`).join('')}
+      <text x="180" y="60" font-size="26" font-weight="800" fill="#fff" stroke="#10201a" stroke-width="5" paint-order="stroke" text-anchor="middle" opacity="0" font-family="sans-serif"><set attributeName="opacity" to="1" begin="3.1s"/>WHOOPS!</text>`;
+  } else if (o === 'caught') {
+    scene = `<g>${walkIn}<g>${bob}${burglar('<g opacity="0"><set attributeName="opacity" to="1" begin="3.2s"/><rect x="-4" y="12" width="9" height="22" rx="4" fill="#2a2a30" transform="rotate(160 2 32)"/><rect x="51" y="12" width="9" height="22" rx="4" fill="#2a2a30" transform="rotate(-160 54 32)"/></g>')}</g></g>
+      <rect width="${W0}" height="${H0}" fill="#e03030" opacity="0"><animate attributeName="opacity" values="0;0.35;0;0.35;0;0.35;0" begin="2.9s" dur="1.5s" fill="freeze"/></rect>
+      <g transform="translate(${W0 + 20} ${floorY - 93})"><animateTransform attributeName="transform" type="translate" from="${W0 + 20} ${floorY - 93}" to="230 ${floorY - 93}" begin="3.4s" dur="1.2s" fill="freeze"/><rect x="16" y="56" width="10" height="34" fill="#1f2a44"/><rect x="30" y="56" width="10" height="34" fill="#1f2a44"/><rect x="10" y="30" width="36" height="30" rx="5" fill="#2b3a66"/><circle cx="28" cy="18" r="12" fill="#f1c9a5"/><path d="M12 14Q28 2 44 14L46 18H10Z" fill="#1f2a44"/><rect x="24" y="2" width="8" height="8" rx="2" fill="#1f2a44"/><circle cx="28" cy="44" r="4" fill="#c9a24a"/></g>
+      <text x="180" y="60" font-size="26" font-weight="800" fill="#fff" stroke="#10201a" stroke-width="5" paint-order="stroke" text-anchor="middle" opacity="0" font-family="sans-serif"><set attributeName="opacity" to="1" begin="3s"/>ALARM!</text>`;
+  } else if (o === 'scared') {
+    scene = `<g><animateTransform attributeName="transform" type="translate" values="-70 ${floorY - 93};110 ${floorY - 93};110 ${floorY - 93};-90 ${floorY - 93}" keyTimes="0;0.45;0.6;1" begin="0.4s" dur="4.2s" fill="freeze"/><g>${bob}${burglar('<text x="54" y="8" font-size="18" fill="#fff" opacity="0"><set attributeName="opacity" to="1" begin="2.4s"/><set attributeName="opacity" to="0" begin="3.1s"/>!</text>')}</g></g>
+      <text x="180" y="60" font-size="26" font-weight="800" fill="#fff" stroke="#10201a" stroke-width="5" paint-order="stroke" text-anchor="middle" opacity="0" font-family="sans-serif"><set attributeName="opacity" to="1" begin="2.5s"/>RUN AWAY!</text>`;
+  } else if (o === 'robbed') {
+    const it = clip.item && ITEM[clip.item];
+    const itemArt = it ? (it.kind === 'wall' ? `<g transform="translate(236 40)">${itemInner(clip.item, {})}</g>` : `<g transform="translate(236 ${floorY - FH})">${itemInner(clip.item, {})}</g>`) : '';
+    scene = `<g opacity="1"><set attributeName="opacity" to="0" begin="3.4s"/>${itemArt}</g>
+      <g><animateTransform attributeName="transform" type="translate" values="-70 ${floorY - 93};190 ${floorY - 93};190 ${floorY - 93};-90 ${floorY - 93}" keyTimes="0;0.4;0.55;1" begin="0.4s" dur="6s" fill="freeze"/><g>${bob}${burglar(`<g opacity="0"><set attributeName="opacity" to="1" begin="3.4s"/>${B.replace('<g id="bg">', '<g transform="translate(46 20)">')}</g>`)}</g></g>
+      <text x="180" y="60" font-size="26" font-weight="800" fill="#fff" stroke="#10201a" stroke-width="5" paint-order="stroke" text-anchor="middle" opacity="0" font-family="sans-serif"><set attributeName="opacity" to="1" begin="3.4s"/>${it ? esc(it.name.toUpperCase()) + ' TAKEN!' : 'ROBBED!'}</text>`;
+  } else {
+    scene = `<g><animateTransform attributeName="transform" type="translate" values="-70 ${floorY - 93};150 ${floorY - 93};150 ${floorY - 93};-90 ${floorY - 93}" keyTimes="0;0.4;0.6;1" begin="0.4s" dur="6s" fill="freeze"/><g>${bob}${burglar('<text x="52" y="10" font-size="16" opacity="0"><set attributeName="opacity" to="1" begin="2.8s"/>🤷</text>')}</g></g>
+      <text x="180" y="60" font-size="22" font-weight="800" fill="#fff" stroke="#10201a" stroke-width="5" paint-order="stroke" text-anchor="middle" opacity="0" font-family="sans-serif"><set attributeName="opacity" to="1" begin="3s"/>NOTHING HERE…</text>`;
+  }
+  // room furniture (current state of the room), drawn small along the back wall
+  let furniture = '';
+  if (room) room.floorSlots.forEach((id, si) => { if (id && !id.startsWith('@') && id !== clip.item) furniture += `<g transform="translate(${20 + si * 52} ${floorY - FH}) scale(0.9)" opacity=".8">${itemInner(id, {})}</g>`; });
+  const stamp = `${String(clip.hour ?? 2).padStart(2, '0')}:${String(clip.minute ?? 14).padStart(2, '0')} am`;
+  return `<svg class="footage" viewBox="0 0 ${W0} ${H0}" width="100%">${DEFS}
+    <rect width="${W0}" height="${H0}" fill="${wp.color}"/>${wp.pattern ? `<rect width="${W0}" height="${H0}" fill="${PAT[wp.pattern]}"/>` : ''}
+    <rect y="${floorY}" width="${W0}" height="${H0 - floorY}" fill="${fl.color}"/>${fl.pattern ? `<rect y="${floorY}" width="${W0}" height="${H0 - floorY}" fill="${PAT[fl.pattern]}"/>` : ''}
+    ${furniture}${scene}
+    <rect width="${W0}" height="${H0}" fill="#6ab07a" opacity=".28" pointer-events="none"/>
+    <rect width="${W0}" height="${H0}" fill="url(#pScan)" pointer-events="none"/>
+    <defs><pattern id="pScan" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="2" fill="rgba(0,0,0,.12)"/></pattern></defs>
+    <rect x="0" y="0" width="${W0}" height="22" fill="rgba(0,0,0,.55)"/>
+    <circle cx="14" cy="11" r="5" fill="#e03030"><animate attributeName="opacity" values="1;0.2;1" dur="1s" repeatCount="indefinite"/></circle>
+    <text x="24" y="15" font-size="11" fill="#fff" font-family="monospace">REC  ${esc(clip.cam || 'CAM')}</text>
+    <text x="${W0 - 8}" y="15" font-size="11" fill="#fff" text-anchor="end" font-family="monospace">DAY ${clip.day}  ${stamp}</text>
+  </svg>`;
+}

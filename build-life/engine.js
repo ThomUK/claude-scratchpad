@@ -8,6 +8,7 @@ export const BABY_GROWS_AT = 5;      // days old when a baby becomes a child
 export const CHILD_SCHOOL_AGE = 7;   // days old when a child can go to school
 export const BURGLAR_GRACE_DAYS = 2; // the very first night is safe
 export const BURGLAR_CHANCE = 1;     // a burglar every single night
+export const GALLERY_MAX = 40;        // clips the criminal gallery can hold
 export const TRAP_REWARD = 40;       // police reward for a burglar caught in a trap
 export const SECOND_BURGLAR_CHANCE = { flat: 0.15, terrace: 0.3, detached: 0.5, castle: 0.7 }; // posh houses attract more
 
@@ -153,7 +154,7 @@ export function houseWidth(h) { return Math.max(...houseType(h).floors.map(f => 
 export function newGame(name, rng = makeRng(7)) {
   const s = {
     name: String(name || 'Player').trim().slice(0, 16) || 'Player', coins: START_COINS, day: 1, hour: HOURS.START,
-    house: null, van: {}, pets: [], family: [], caged: [], lessonsToday: 0, extraLessonsToday: 0,
+    house: null, van: {}, pets: [], family: [], caged: [], footage: [], gallery: [], lessonsToday: 0, extraLessonsToday: 0,
     visitedToday: [], log: [], stats: { lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0 },
     seed: rng.int(1, 1e9),
   };
@@ -288,6 +289,22 @@ export function trapInRoom(house, roomIdx) {
   const strong = ids.find(id => ITEM[id].trap !== 'banana');
   return strong ? ITEM[strong].trap : ids.length ? 'banana' : null;
 }
+export function cameraFor(house, roomIdx) {
+  const r = house.rooms[roomIdx];
+  if (r.wallSlots.includes('camera')) return `${r.name} camera`;
+  if (house.garden.includes('outcam')) return 'Outdoor camera';
+  if (house.garden.includes('doorbell')) return 'Doorbell camera';
+  return null;
+}
+export function saveClip(s, idx) {
+  const clip = s.footage[idx]; if (!clip) return { ok: false };
+  if (clip.saved) return { ok: false, msg: 'Already in the gallery.' };
+  if (s.gallery.length >= GALLERY_MAX) return { ok: false, msg: 'The gallery is full! Delete an old clip first.' };
+  clip.saved = true;
+  s.gallery.unshift({ ...clip });
+  return { ok: true, msg: 'Saved to the Criminal Gallery.' };
+}
+export function deleteClip(s, idx) { if (!s.gallery[idx]) return { ok: false }; s.gallery.splice(idx, 1); return { ok: true }; }
 export function trapCount(house) { return countPlaced(house, i => i.trap && i.trap !== 'banana'); }
 export function callPolice(s, idx) {
   const c = s.caged[idx]; if (!c) return { ok: false };
@@ -632,6 +649,7 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
   while (s.caged.length) { callPolice(s, 0); report.collected++; }
   // burglars
   report.burglars = [];
+  s.footage = [];
   const attempts = s.day < BURGLAR_GRACE_DAYS ? 0 : (BURGLAR_CHANCE >= 1 || rng() < BURGLAR_CHANCE ? 1 : 0) + (rng() < (SECOND_BURGLAR_CHANCE[s.house.type] || 0.2) ? 1 : 0);
   for (let n = 0; n < attempts; n++) {
     const sec = securityScore(s);
@@ -640,6 +658,7 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
     const roomIdx = rng.int(0, s.house.rooms.length - 1);
     const roomName = s.house.rooms[roomIdx].name;
     const trap = trapInRoom(s.house, roomIdx);
+    const cam = cameraFor(s.house, roomIdx);
     let b;
     if (trap === 'cage' || trap === 'net') { s.caged.push({ room: roomIdx, trap }); b = { outcome: 'trapped', trap, room: roomIdx, msg: say(s, `${who} crept into the ${roomName} and ${trap === 'cage' ? 'CLANG! the cage dropped from the ceiling' : 'WHOOSH! the net scooped them up'}. They are still in there — tap them to call the police!`) }; }
     else if (trap === 'banana') { const dropped = rng.int(5, 12); s.coins += dropped; s.stats.coinsEarned += dropped; b = { outcome: 'slipped', coins: dropped, room: roomIdx, msg: say(s, `${who} crept into the ${roomName}, slipped on the banana skin and ran off, dropping ${dropped} coins.`) }; }
@@ -653,6 +672,10 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
         s.van[taken.id]--; if (!s.van[taken.id]) delete s.van[taken.id];
         b = { outcome: 'robbed', room: roomIdx, item: taken.id, msg: say(s, `Oh no! ${who} crept into the ${roomName} while everyone slept and took your ${ITEM[taken.id].name}. Buy cameras, an alarm or a trap at the gadget shop!`) };
       } else b = { outcome: 'nothing', room: roomIdx, msg: say(s, `${who} crept into the ${roomName}, found nothing worth taking, and left.`) };
+    }
+    if (cam) {
+      const clip = { id: `${s.day}-${n}-${s.seed % 1000}`, day: s.day, hour: rng.int(0, 4), minute: rng.int(0, 59), room: roomIdx, roomName, cam, who, outcome: b.outcome, trap: b.trap || null, item: b.item || null, coins: b.coins || b.reward || 0, wallpaper: s.house.rooms[roomIdx].wallpaper, flooring: s.house.rooms[roomIdx].flooring, saved: false };
+      s.footage.push(clip); b.clip = s.footage.length - 1;
     }
     report.burglars.push(b);
   }
@@ -674,7 +697,7 @@ export function serialize(s) { return JSON.stringify(s); }
 export function deserialize(json) {
   const s = JSON.parse(json);
   if (!s || typeof s !== 'object' || !s.name) throw new Error('bad save');
-  s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.caged = s.caged || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
+  s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.caged = s.caged || []; s.footage = s.footage || []; s.gallery = s.gallery || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
   s.stats = Object.assign({ lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0 }, s.stats || {});
   return s;
 }
