@@ -15,7 +15,7 @@ const fold = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const DIR = { N: 'north', NE: 'north-east', E: 'east', SE: 'south-east', S: 'south', SW: 'south-west', W: 'west', NW: 'north-west' };
 
 // --------------------------------------------------------------- storage --
-const KEYS = { settings: 'global-explorer.settings', stats: 'global-explorer.stats' };
+const KEYS = { settings: 'global-explorer.settings', stats: 'global-explorer.stats', visited: 'global-explorer.visited' };
 // Earlier builds stored under the old app name; read those if the new keys are empty.
 const load = (k, fallback) => {
   try {
@@ -59,6 +59,8 @@ async function main() {
   state.settings = { ...DEFAULT_SETTINGS, ...load(KEYS.settings, {}) };
   if (legacy && DIFFICULTY[legacy] && !localStorage.getItem(KEYS.settings) && !localStorage.getItem('world-borders.settings')) state.settings.preset = legacy;
   state.stats = normalizeStats(load(KEYS.stats, null));
+  state.visited = new Set(Array.isArray(load(KEYS.visited, [])) ? load(KEYS.visited, []) : []);
+  for (const c of state.countries) c.visited = state.visited.has(c.code);
 
   state.globe = new Globe($('globe'), state.features, state.countries);
   state.globe.onPick = (code) => (code ? choose(code) : toast('No country there. Zoom in closer, or type its name.', 'warn'));
@@ -103,6 +105,27 @@ function setStartMode(mode) {
   render();
 }
 
+// ------------------------------------------------------------ real travel --
+/** Ask before adding or removing the "been here for real" stamp. */
+function askVisited(code) {
+  const c = state.byCode.get(code), on = state.visited.has(code);
+  $('confirm-title').textContent = on ? `Remove your stamp for ${c.name}?` : `Stamp ${c.name}?`;
+  $('confirm-text').textContent = on
+    ? `This takes the "been here for real" stamp off ${c.name} in your passport.`
+    : `Mark ${c.name} as somewhere you have really been. It gets a special stamp in your passport.`;
+  const ok = $('confirm-ok');
+  ok.textContent = on ? 'Remove stamp' : 'Stamp it';
+  ok.onclick = () => { setVisited(code, !on); $('confirm').close(); };
+  $('confirm').showModal();
+}
+function setVisited(code, on) {
+  if (on) state.visited.add(code); else state.visited.delete(code);
+  state.byCode.get(code).visited = on;
+  save(KEYS.visited, [...state.visited]);
+  toast(on ? `✈️ ${name(code)} stamped: been here for real.` : `Stamp removed from ${name(code)}.`);
+  if (state.countryPage === code) showCountry(code);
+}
+
 /** Fly back to whatever the player is working from: latest guess, start, or browsed country. */
 function recentre() {
   const g = state.game;
@@ -116,6 +139,9 @@ function wireTabs() {
   $('country-back').addEventListener('click', () => showScreen(state.countryFrom || 'atlas'));
   $('btn-show-globe').addEventListener('click', () => { browseCountry(state.countryPage); showScreen('play'); });
   $('btn-start-here').addEventListener('click', () => { startRound(state.countryPage); showScreen('play'); });
+  $('btn-visited').addEventListener('click', () => askVisited(state.countryPage));
+  $('confirm-cancel').addEventListener('click', () => $('confirm').close());
+  $('confirm').addEventListener('click', (e) => { if (e.target === $('confirm')) $('confirm').close(); });
 }
 
 function showScreen(which) {
@@ -455,6 +481,7 @@ function countryCard(c, startCode) {
   const ps = el('div', 'ps'); ps.style.margin = '12px 0 0'; ps.style.justifyContent = 'flex-start'; ps.style.gap = '10px';
   const sf = stampsFor(state.stats, c.code);
   for (const l of STAMP_LEVELS) ps.append(stampEl(l, sf[l] > 0, '', sf[l]));
+  ps.append(stampEl('visited', state.visited.has(c.code), '', 0, c.code));
   frag.append(el('h3', null, 'Passport stamps'), ps);
 
   frag.append(el('h3', null, 'Bordering countries'));
@@ -510,7 +537,8 @@ function jitter(seed) {
 function stampEl(level, got, size = '', count = 0, seed = '') {
   const s = el('span', `stamp ${level} ${got ? 'got inked' : 'missing'} ${size}`.trim());
   s.style.setProperty('--rot', `${(jitter(seed + level) * 12).toFixed(1)}deg`);
-  s.textContent = size === 'sm' ? LEVEL_LABEL(level)[0] : level === 'intermediate' ? 'Inter\nmediate' : LEVEL_LABEL(level);
+  s.textContent = level === 'visited' ? (size === 'sm' ? 'Been' : 'Been\nhere') : size === 'sm' ? LEVEL_LABEL(level)[0] : level === 'intermediate' ? 'Inter\nmediate' : LEVEL_LABEL(level);
+  if (level === 'visited') s.title = got ? 'Been here for real' : 'Not visited for real yet';
   if (got && count > 1) s.append(el('small', null, `×${count}`));
   s.title = got ? `${LEVEL_LABEL(level)} stamp${count > 1 ? ` ×${count}` : ''}` : `No ${LEVEL_LABEL(level)} stamp yet`;
   return s;
@@ -519,6 +547,7 @@ function miniStamps(code) {
   const sf = stampsFor(state.stats, code);
   const w = el('span', 'ministamps');
   for (const l of STAMP_LEVELS) w.append(el('i', `${l} ${sf[l] > 0 ? 'got' : ''}`, LEVEL_LABEL(l)[0]));
+  w.append(el('i', `visited ${state.visited.has(code) ? 'got' : ''}`, '✈'));
   return w;
 }
 function totalStamps() {
@@ -554,9 +583,14 @@ function renderPassport() {
     d.append(stampEl(l, pool.stamped > 0, 'sm', 0, 'summary'), el('div', 'ln', `${LEVEL_LABEL(l)} · ${poolLabel(l)}`), el('div', 'lc', `${pool.stamped} / ${pool.total}`), bar);
     levels.append(d);
   }
+  {
+    const d = el('div', 'lvl'); d.style.setProperty('--ink', '#6b3fa0');
+    d.append(stampEl('visited', state.visited.size > 0, 'sm', 0, 'summary'), el('div', 'ln', 'Been here for real · places you have actually visited'), el('div', 'lc', String(state.visited.size)));
+    levels.append(d);
+  }
   const chips = $('passport-filter');
   if (!chips.children.length) {
-    for (const [k, label] of [['all', 'All'], ...STAMP_LEVELS.map((l) => [l, LEVEL_LABEL(l)])]) {
+    for (const [k, label] of [['all', 'All'], ...STAMP_LEVELS.map((l) => [l, LEVEL_LABEL(l)]), ['visited', 'Been here']]) {
       const b = el('button', 'sortchip', label); b.type = 'button'; b.dataset.key = k;
       b.addEventListener('click', () => { state.passportFilter = k; renderPassport(); });
       chips.append(b);
@@ -567,8 +601,8 @@ function renderPassport() {
   book.replaceChildren();
   const f = state.passportFilter;
   const cards = sortCountries(state.countries, 'name', 'asc').filter((c) => {
-    const sf = stampsFor(state.stats, c.code);
-    return f === 'all' ? STAMP_LEVELS.some((l) => sf[l] > 0) : sf[f] > 0;
+    const sf = stampsFor(state.stats, c.code), v = state.visited.has(c.code);
+    return f === 'all' ? v || STAMP_LEVELS.some((l) => sf[l] > 0) : f === 'visited' ? v : sf[f] > 0;
   });
   for (const c of cards) {
     const card = el('div', 'entry'); card.tabIndex = 0;
@@ -578,6 +612,7 @@ function renderPassport() {
     const row = el('div', 'erow'); row.append(flag);
     const sf = stampsFor(state.stats, c.code);
     for (const l of STAMP_LEVELS) row.append(stampEl(l, sf[l] > 0, 'sm', sf[l], c.code));
+    row.append(stampEl('visited', state.visited.has(c.code), 'sm', 0, c.code));
     card.append(el('div', 'ename', c.name), row);
     const open = () => showCountry(c.code);
     card.addEventListener('click', open); card.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
@@ -590,7 +625,7 @@ function renderPassport() {
 const SORTS = [
   { key: 'name', label: 'Name' }, { key: 'population', label: 'Population' }, { key: 'area', label: 'Area' },
   { key: 'density', label: 'Density' }, { key: 'coastline', label: 'Coastline' }, { key: 'neighbours', label: 'Neighbours' }, { key: 'continent', label: 'Continent' },
-  { key: 'designation', label: 'Status' }, { key: 'difficulty', label: 'Difficulty' },
+  { key: 'designation', label: 'Status' }, { key: 'difficulty', label: 'Difficulty' }, { key: 'visited', label: 'Been here' },
 ];
 const TIER_LABEL = ['', 'Easy', 'Intermediate', 'Advanced'];
 function wireAtlas() {
@@ -618,6 +653,7 @@ function valueFor(c, key) {
     case 'continent': return [c.continent, ''];
     case 'designation': return [c.designation, ''];
     case 'difficulty': return [TIER_LABEL[c.tier], 'lowest level'];
+    case 'visited': return [c.visited ? '✈️ yes' : '–', 'been here for real'];
     default: return [fmtN(c.population), 'people'];
   }
 }
@@ -658,6 +694,9 @@ function showCountry(code) {
   $('country-title').textContent = c.name;
   $('country-body').replaceChildren(countryCard(c, state.game ? state.game.startCode : null));
   $('btn-start-here').hidden = state.phase === 'guessing';
+  const vb = $('btn-visited'), on = state.visited.has(code);
+  vb.textContent = on ? '✈️ Been here for real · remove stamp' : "✈️ I've been here for real";
+  vb.classList.toggle('on', on);
   showScreen('country');
   $('screen-country').scrollTop = 0;
 }

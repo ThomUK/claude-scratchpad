@@ -164,7 +164,7 @@ export function pickCountry(features, countries, lat, lon, tolDeg = 0) {
  * nulls last; other keys sort as text. `dir` is 'asc' or 'desc'. Ties and
  * equal values fall back to name order so the result is stable.
  */
-export const NUMERIC_KEYS = new Set(['population', 'area', 'density', 'coastline', 'neighbours', 'difficulty']);
+export const NUMERIC_KEYS = new Set(['population', 'area', 'density', 'coastline', 'neighbours', 'difficulty', 'visited']);
 /** The lowest level a country can be the mystery country on: 1 Easy, 2 Intermediate, 3 Advanced. */
 export function difficultyTier(c, pools) {
   if (pools && pools.easy && pools.easy.codes.includes(c.code)) return 1;
@@ -173,7 +173,7 @@ export function difficultyTier(c, pools) {
 }
 export function sortCountries(countries, key, dir = 'asc') {
   const sign = dir === 'desc' ? -1 : 1;
-  const val = (c) => (key === 'neighbours' ? c.borders.length : key === 'difficulty' ? c.tier : c[key]);
+  const val = (c) => (key === 'neighbours' ? c.borders.length : key === 'difficulty' ? c.tier : key === 'visited' ? (c.visited ? 1 : 0) : c[key]);
   return [...countries].sort((a, b) => {
     const x = val(a), y = val(b);
     let r;

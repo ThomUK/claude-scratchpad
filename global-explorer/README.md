@@ -25,6 +25,10 @@ country is always drawn from the countries you have not yet stamped at that
 level. Shows rounds, streaks, best scores,
 progress bars per level and the stamp book.
 
+Countries you have really been to get a violet "been here for real" visa
+stamp: open the country in the Atlas and tap the button (with a confirmation
+to add or remove). Real travel is stored separately and survives a reset.
+
 **Atlas.** All 250 countries and territories as a sortable list (name,
 population, area, density, coastline, neighbours, continent, status, difficulty) with a
 filter and mini stamps. Each country has its own page with the full card,

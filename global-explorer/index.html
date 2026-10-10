@@ -119,7 +119,7 @@
           <div class="travel" id="levels"></div>
           <div class="chips sort" id="passport-filter"></div>
           <div class="book" id="book"></div>
-          <p class="muted small" id="book-empty" hidden>No stamps yet. Find a country on Easy, Intermediate or Advanced to earn its stamp. Custom rounds don't stamp.</p>
+          <p class="muted small" id="book-empty" hidden>No stamps yet. Find a country on Easy, Intermediate or Advanced to earn its stamp, or open a country in the Atlas to mark somewhere you have really been. Custom rounds don't stamp.</p>
           <details class="scoreboard" id="scoreboard">
             <summary>Scoreboard</summary>
             <div class="stats" id="stats-full"></div>
@@ -145,6 +145,7 @@
         <div class="btnrow page-actions">
           <button type="button" class="primary" id="btn-show-globe">Show on globe</button>
           <button type="button" id="btn-start-here">Start a round here</button>
+          <button type="button" class="visit" id="btn-visited">✈️ I've been here for real</button>
         </div>
       </section>
 
@@ -193,6 +194,17 @@
       </button>
     </nav>
   </div>
+
+  <dialog id="confirm" class="confirm" aria-labelledby="confirm-title">
+    <div class="confirm-inner">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-text" class="muted"></p>
+      <div class="btnrow">
+        <button type="button" class="primary" id="confirm-ok">Confirm</button>
+        <button type="button" id="confirm-cancel">Cancel</button>
+      </div>
+    </div>
+  </dialog>
 
   <script type="module" src="app.js?v=dev"></script>
 </body>

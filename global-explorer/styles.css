@@ -161,6 +161,13 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .stamp { white-space: pre-line; --ink: #8a94a0; display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 50%; border: 3px double var(--ink); color: var(--ink); font-weight: 800; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; line-height: 1.05; transform: rotate(var(--rot, -9deg)); position: relative; background: transparent; flex: none; font-family: Georgia, "Times New Roman", serif; }
 .stamp::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 1px solid var(--ink); opacity: 0.6; }
 .stamp.easy { --ink: #2f7d4f; } .stamp.intermediate { --ink: #3b63a8; } .stamp.hard { --ink: #a3352f; }
+/* The real-life stamp: a rectangular visa-style stamp in violet ink. */
+.stamp.visited { --ink: #6b3fa0; border-radius: 7px; width: 66px; height: 46px; font-size: 0.56rem; letter-spacing: 0.06em; }
+.stamp.visited::after { border-radius: 4px; inset: 3px; }
+.stamp.visited.sm { width: 40px; height: 30px; font-size: 0.62rem; }
+.stamp.visited.sm::after { inset: 2px; border-radius: 3px; }
+.stamp.visited.lg { width: 104px; height: 70px; font-size: 0.72rem; }
+.stamp.visited.lg::after { inset: 5px; border-radius: 5px; }
 .stamp.got { background: color-mix(in srgb, var(--ink) 9%, transparent); opacity: 0.92; }
 .stamp.missing { --ink: #cbc3b2; border-style: dashed; color: #cbc3b2; }
 .stamp.missing::after { display: none; }
@@ -187,7 +194,7 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .passport .sortchip.on { background: #3b3a36; border-color: #3b3a36; color: #efe6d3; }
 
 /* The collection: country name, inked flag, three stamps. Everything sits slightly crooked. */
-.book { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 14px 10px; margin-top: 12px; }
+.book { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px 10px; margin-top: 12px; }
 .entry { display: grid; gap: 6px; padding: 8px 6px 10px; cursor: pointer; border-bottom: 1px dotted #c9bda0; transform: rotate(var(--rot, 0deg)); }
 .entry:hover, .entry:focus-visible { background: rgba(255,255,255,0.4); outline: none; border-radius: 8px; }
 .entry .ename { font-family: Georgia, "Times New Roman", serif; font-size: 0.84rem; letter-spacing: 0.04em; text-transform: uppercase; color: #3b3a36; line-height: 1.2; min-height: 2.4em; display: flex; align-items: flex-end; }
@@ -198,6 +205,15 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .ministamps i.got.easy { border-color: #1f8a4c; color: #1f8a4c; background: #e3f3ea; }
 .ministamps i.got.intermediate { border-color: #2f6fcf; color: #2f6fcf; background: #e3edfb; }
 .ministamps i.got.hard { border-color: #b3261e; color: #b3261e; background: #fbe5e3; }
+.ministamps i.visited { border-radius: 3px; }
+.ministamps i.got.visited { border-color: #6b3fa0; color: #6b3fa0; background: #efe6f8; }
+button.visit { border-color: #6b3fa0; color: #6b3fa0; }
+button.visit.on { background: #6b3fa0; color: #fff; }
+.confirm { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); padding: 0; width: min(420px, calc(100vw - 32px)); }
+.confirm::backdrop { background: rgba(5, 8, 12, 0.55); }
+.confirm-inner { padding: 20px; }
+.confirm h2 { margin: 0 0 6px; font-size: 1.05rem; color: var(--text); text-transform: none; letter-spacing: 0; }
+.confirm p { margin: 0 0 14px; }
 
 /* Gameplay numbers, out of the way at the bottom. */
 .scoreboard { margin-top: 22px; border-top: 1px dashed #c9bda0; padding-top: 10px; }
