@@ -198,7 +198,7 @@ console.log('— night —');
   // burglars are frequent, and posh houses attract two
   let nights = 0, visits = 0, doubles = 0;
   for (let sd = 1; sd <= 200; sd++) { const c = JSON.parse(serialize(d)); const rp = sleep(c, makeRng(sd)).report; nights++; visits += rp.burglars.length; if (rp.burglars.length === 2) doubles++; }
-  ok(visits / nights > 0.6, `burglars most nights (${(visits / nights).toFixed(2)} per night at the flat)`);
+  ok(visits >= nights, `a burglar every night (${(visits / nights).toFixed(2)} per night at the flat)`);
   const castle = newGame('C'); castle.coins = 20000; moveHouse(castle, 'castle'); castle.day = BURGLAR_GRACE_DAYS; let cd = 0;
   for (let sd = 1; sd <= 200; sd++) { const c = JSON.parse(serialize(castle)); if (sleep(c, makeRng(sd)).report.burglars.length === 2) cd++; }
   ok(cd > doubles && cd > 60, `the castle gets two burglars in a night far more often than the flat (${cd} vs ${doubles} of 200)`);

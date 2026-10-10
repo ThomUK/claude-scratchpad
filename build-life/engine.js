@@ -7,7 +7,7 @@ export const START_COINS = 420;
 export const BABY_GROWS_AT = 5;      // days old when a baby becomes a child
 export const CHILD_SCHOOL_AGE = 7;   // days old when a child can go to school
 export const BURGLAR_GRACE_DAYS = 2; // the very first night is safe
-export const BURGLAR_CHANCE = 0.65;  // most nights a burglar has a go
+export const BURGLAR_CHANCE = 1;     // a burglar every single night
 export const SECOND_BURGLAR_CHANCE = { flat: 0.15, terrace: 0.3, detached: 0.5, castle: 0.7 }; // posh houses attract more
 
 // ───────────────────────── houses ─────────────────────────
@@ -608,7 +608,7 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
   if (happy) { report.happyBonus = happy * 2; s.coins += report.happyBonus; s.stats.coinsEarned += report.happyBonus; }
   // burglars
   report.burglars = [];
-  const attempts = s.day < BURGLAR_GRACE_DAYS ? 0 : (rng() < BURGLAR_CHANCE ? 1 : 0) + (rng() < (SECOND_BURGLAR_CHANCE[s.house.type] || 0.2) ? 1 : 0);
+  const attempts = s.day < BURGLAR_GRACE_DAYS ? 0 : (BURGLAR_CHANCE >= 1 || rng() < BURGLAR_CHANCE ? 1 : 0) + (rng() < (SECOND_BURGLAR_CHANCE[s.house.type] || 0.2) ? 1 : 0);
   for (let n = 0; n < attempts; n++) {
     const sec = securityScore(s);
     const items = placedItems(s.house);
