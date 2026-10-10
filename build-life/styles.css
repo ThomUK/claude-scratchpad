@@ -97,6 +97,9 @@ svg.house .slot:hover rect { fill: rgba(255,255,255,.4); }
 .meter { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 14px; background: #eee; }
 .meter.ok { background: #d9eedc; color: #245a33; } .meter.warn { background: #f7e7c4; color: #6a4a10; } .meter.bad { background: #f3d6d6; color: #6a2020; }
 .speech { background: #fff; border: 1.5px solid var(--line); border-radius: 16px; padding: 12px 16px; font-size: 18px; position: relative; }
+.speech.burglar { display: flex; gap: 14px; align-items: center; margin: 8px 0; }
+.speech.burglar svg { width: 84px; height: 84px; flex: none; }
+.speech.burglar.robbed { background: #f3d6d6; } .speech.burglar.caught { background: #d9eedc; } .speech.burglar.scared, .speech.burglar.nothing { background: #f7e7c4; }
 .help-list { padding-left: 20px; } .help-list li { margin: 6px 0; }
 @media (max-width: 760px) { svg.house { min-width: 680px; max-height: 50vh; } .stage.sky svg.house { min-width: 0; } }
 @media (max-width: 600px) { body { font-size: 16px; } .q { font-size: 20px; } .opts button { font-size: 19px; } .nav button { min-width: 0; flex: 1 1 40%; } }

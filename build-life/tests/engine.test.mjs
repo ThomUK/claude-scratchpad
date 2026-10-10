@@ -177,7 +177,7 @@ console.log('— night —');
   ok(r.ok && t.day === 2 && t.hour === HOURS.START && t.lessonsToday === 0 && t.visitedToday.length === 0, 'morning: new day, lessons and visits reset');
   ok(r.report.happyBonus === 4, 'happy pet + happy baby = 4 coin bonus');
   ok(t.pets[0].hunger === 1 && t.pets[0].fun === 2 && t.family[0].hunger === 1 && t.family[0].age === 1, 'everyone a bit hungrier, baby a day older');
-  ok(r.report.burglar === null, 'no burglars during the first nights');
+  ok(r.report.burglar === null && r.report.burglars.length === 0, 'no burglars on the very first night');
   for (let i = 0; i < BABY_GROWS_AT - 1; i++) sleep(t, makeRng(100));
   ok(t.family[0].stage === 'child', `baby grows into a child after ${BABY_GROWS_AT} days`);
   // burglary: find a seed that produces a burglar with no security
@@ -188,13 +188,20 @@ console.log('— night —');
   const v = JSON.parse(serialize(u)); buyItem(v, 'camera'); buyItem(v, 'alarm'); placeItem(v, 0, 'wall', 0, 'camera'); placeItem(v, 0, 'wall', 1, 'alarm');
   const coinsBefore = v.coins;
   rep = sleep(v, makeRng(seed)).report;
-  ok(rep.burglar && rep.burglar.outcome === 'caught' && v.coins === coinsBefore + 20 + 5 * 2 && v.house.rooms[2].floorSlots[0] === 'bed', 'camera + alarm catch the same burglar and earn a reward');
+  ok(rep.burglars.length >= 1 && rep.burglars.every(b => b.outcome === 'caught') && v.coins === coinsBefore + (20 + 5 * 2) * rep.burglars.length && v.house.rooms[2].floorSlots[0] === 'bed', `camera + alarm catch the same night's burglar${rep.burglars.length > 1 ? 's' : ''} and earn a reward each`);
   const w = JSON.parse(serialize(u)); buyItem(w, 'doorbell'); placeItem(w, -1, 'garden', 0, 'doorbell');
   rep = sleep(w, makeRng(seed)).report;
   ok(rep.burglar && rep.burglar.outcome === 'scared' && w.house.rooms[2].floorSlots[0] === 'bed', 'a doorbell camera alone scares them off');
   const d = JSON.parse(serialize(u)); d.coins += 1000; buyPet(d, 'dragon', 'Ember');
   rep = sleep(d, makeRng(seed)).report;
   ok(rep.burglar && rep.burglar.outcome === 'caught', 'a dragon catches burglars by itself');
+  // burglars are frequent, and posh houses attract two
+  let nights = 0, visits = 0, doubles = 0;
+  for (let sd = 1; sd <= 200; sd++) { const c = JSON.parse(serialize(d)); const rp = sleep(c, makeRng(sd)).report; nights++; visits += rp.burglars.length; if (rp.burglars.length === 2) doubles++; }
+  ok(visits / nights > 0.6, `burglars most nights (${(visits / nights).toFixed(2)} per night at the flat)`);
+  const castle = newGame('C'); castle.coins = 20000; moveHouse(castle, 'castle'); castle.day = BURGLAR_GRACE_DAYS; let cd = 0;
+  for (let sd = 1; sd <= 200; sd++) { const c = JSON.parse(serialize(castle)); if (sleep(c, makeRng(sd)).report.burglars.length === 2) cd++; }
+  ok(cd > doubles && cd > 60, `the castle gets two burglars in a night far more often than the flat (${cd} vs ${doubles} of 200)`);
 }
 
 console.log('— save / load —');

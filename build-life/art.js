@@ -265,3 +265,16 @@ export function houseThumb(typeId, paint) {
   for (let f = 0; f < t; f++) for (let u = 0; u < w; u++) { const isDoor = f === t - 1 && u === Math.floor(w / 2); s += isDoor ? `<rect x="${hx + u * 20 + 5}" y="${top + f * 24 + 6}" width="10" height="18" fill="${p.door}"/>` : `<rect x="${hx + u * 20 + 5}" y="${top + f * 24 + 6}" width="10" height="10" fill="#8fb8d8"/>`; }
   return s + '</svg>';
 }
+
+// ───────────────────────── burglar (morning report) ─────────────────────────
+export function burglarSvg(outcome = 'scared') {
+  const body = `<ellipse cx="50" cy="94" rx="26" ry="3" fill="rgba(0,0,0,.15)"/><rect x="36" y="56" width="10" height="34" fill="#1f1f24"/><rect x="50" y="56" width="10" height="34" fill="#1f1f24"/><rect x="34" y="88" width="13" height="5" fill="#111"/><rect x="49" y="88" width="13" height="5" fill="#111"/>
+    <rect x="30" y="30" width="36" height="30" rx="5" fill="#2a2a30"/><path d="M30 36H66M30 42H66M30 48H66M30 54H66" stroke="#f0f0f0" stroke-width="3"/>
+    <rect x="22" y="32" width="9" height="22" rx="4" fill="#2a2a30"/><rect x="65" y="32" width="9" height="22" rx="4" fill="#2a2a30"/>
+    <circle cx="48" cy="18" r="12" fill="#e7c3a0"/><rect x="36" y="13" width="24" height="8" fill="#1f1f24"/><circle cx="44" cy="17" r="1.6" fill="#fff"/><circle cx="53" cy="17" r="1.6" fill="#fff"/><path d="M34 10Q48 -2 62 10Z" fill="#1f1f24"/>`;
+  const sack = `<path d="M74 42Q92 40 90 62Q88 78 74 76Q62 74 64 58Q66 46 74 42Z" fill="#b8905f"/><path d="M72 42L80 36" stroke="#8b5e3c" stroke-width="3"/>`;
+  const extra = outcome === 'caught' ? `<rect x="14" y="6" width="22" height="22" rx="3" fill="#e9e9ec" stroke="#999"/><circle cx="25" cy="17" r="5" fill="#4a6a9a"/><circle cx="18" cy="11" r="1.6" fill="#e03030"/><path d="M4 70Q10 60 20 66" stroke="#4a9ad9" stroke-width="4" fill="none" stroke-linecap="round"/><text x="2" y="92" font-size="12" font-family="sans-serif" fill="#2b2420">POLICE</text>`
+    : outcome === 'scared' ? `<text x="4" y="30" font-size="22">💨</text><text x="68" y="16" font-size="16">!</text>`
+    : outcome === 'robbed' ? sack + `<text x="4" y="30" font-size="18">🤫</text>` : `<text x="6" y="30" font-size="18">🤷</text>`;
+  return `<svg viewBox="0 0 100 100">${body}${extra}</svg>`;
+}

@@ -150,7 +150,7 @@ const SCREENS = {
   morning() {
     const r = ui.a;
     return `<div class="screen"><div class="panel"><h2>☀️ Good morning! It is day ${S.day}.</h2>
-      ${r.burglar ? `<div class="speech" style="background:${r.burglar.outcome === 'robbed' ? '#f3d6d6' : r.burglar.outcome === 'caught' ? '#d9eedc' : '#f7e7c4'}">${r.burglar.outcome === 'robbed' ? '🥷' : r.burglar.outcome === 'caught' ? '👮' : '😮'} ${esc(r.burglar.msg)}</div>` : '<p>🌙 Everyone slept soundly.</p>'}
+      ${(r.burglars || []).length ? r.burglars.map(b => `<div class="speech burglar ${b.outcome}"><div>${A.burglarSvg(b.outcome)}</div><div>${b.outcome === 'robbed' ? '🥷' : b.outcome === 'caught' ? '👮' : '😮'} ${esc(b.msg)}</div></div>`).join('') : '<p>🌙 Everyone slept soundly. No burglars tonight.</p>'}
       ${r.happyBonus ? `<p>😊 Your happy pets and family found <b>🪙 ${r.happyBonus}</b> for you.</p>` : ''}
       ${r.grown.map(n => `<p>🎉 <b>${esc(n)}</b> has grown from a baby into a child!</p>`).join('')}
       ${r.cries.length ? `<p>🍼 ${r.cries.map(esc).join(' and ')} ${r.cries.length > 1 ? 'are' : 'is'} hungry. Tap them at home to feed them.</p>` : ''}
@@ -264,7 +264,7 @@ function helpModal() {
     <li><b>Earn coins at school.</b> Go to town → school, pick Maths, Words or The World and a level. Right answers pay coins; a perfect lesson pays a bonus. Three lessons a day (more when your children are old enough for school).</li>
     <li><b>Decorate.</b> Buy things in the shops. They go in your 🚚 van. At home, tap a dotted + to place them, tap a room name to change wallpaper and floor, and tap outside to paint the house and fill the garden.</li>
     <li><b>Pets</b> from the pet shop need feeding (buy pet food) and playing with. Happy pets do tricks and find coins. <b>Babies</b> come from the hospital once you own a cot; feed them and in a few days they grow up.</li>
-    <li><b>Burglars</b> may sneak in at night. Security cameras, alarms, doorbell cameras, dogs, parrots and dragons add security points. 3 or more catches the burglar (and the police pay a reward). 1–2 scares them away. None… and something goes missing.</li>
+    <li><b>Burglars</b> come most nights, and posh houses attract two at once. Security cameras, alarms, doorbell cameras, dogs, parrots and dragons add security points. 3 or more catches the burglar (and the police pay a reward). 1–2 scares them away. None… and something goes missing.</li>
     <li><b>Move house.</b> The estate agent buys your decorated house for more than you paid. Your furniture, pets and family move with you.</li>
     <li><b>Day and night.</b> Everything you do takes time. Shops shut at 6pm, school at 3pm. Go to bed in the evening to start a new day. Nobody in Build Life ever dies.</li></ul>
     <div class="row"><button data-act="closeModal">Got it</button></div>`);

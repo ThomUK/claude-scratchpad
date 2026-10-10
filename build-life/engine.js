@@ -6,8 +6,9 @@ export const LESSONS_PER_DAY = 3;
 export const START_COINS = 420;
 export const BABY_GROWS_AT = 5;      // days old when a baby becomes a child
 export const CHILD_SCHOOL_AGE = 7;   // days old when a child can go to school
-export const BURGLAR_GRACE_DAYS = 3; // no burglars for the first few nights
-export const BURGLAR_CHANCE = 0.3;
+export const BURGLAR_GRACE_DAYS = 2; // the very first night is safe
+export const BURGLAR_CHANCE = 0.65;  // most nights a burglar has a go
+export const SECOND_BURGLAR_CHANCE = { flat: 0.15, terrace: 0.3, detached: 0.5, castle: 0.7 }; // posh houses attract more
 
 // ───────────────────────── houses ─────────────────────────
 // Each floor is listed top to bottom. Room width `w` is in units; floor slots = 2 per unit, wall slots = 1 per unit.
@@ -605,19 +606,25 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
   // happiness bonus
   const happy = s.pets.filter(petHappy).length + s.family.filter(personHappy).length;
   if (happy) { report.happyBonus = happy * 2; s.coins += report.happyBonus; s.stats.coinsEarned += report.happyBonus; }
-  // burglar
-  if (s.day >= BURGLAR_GRACE_DAYS && rng() < BURGLAR_CHANCE) {
+  // burglars
+  report.burglars = [];
+  const attempts = s.day < BURGLAR_GRACE_DAYS ? 0 : (rng() < BURGLAR_CHANCE ? 1 : 0) + (rng() < (SECOND_BURGLAR_CHANCE[s.house.type] || 0.2) ? 1 : 0);
+  for (let n = 0; n < attempts; n++) {
     const sec = securityScore(s);
     const items = placedItems(s.house);
-    if (sec >= 3) { const reward = 20 + sec * 2; s.coins += reward; s.stats.burglarsCaught++; report.burglar = { outcome: 'caught', reward, msg: say(s, `A burglar tried to sneak in! Your security caught them red-handed and the police gave you a ${reward} coin reward.`) }; }
-    else if (sec >= 1) report.burglar = { outcome: 'scared', msg: say(s, 'A burglar crept up to the house, got spooked and ran away. Phew! More cameras would catch them next time.') };
+    const who = n === 0 ? 'A burglar' : 'A second burglar';
+    let b;
+    if (sec >= 3) { const reward = 20 + sec * 2; s.coins += reward; s.stats.burglarsCaught++; b = { outcome: 'caught', reward, msg: say(s, `${who} tried to sneak in! Your security caught them red-handed and the police gave you a ${reward} coin reward.`) }; }
+    else if (sec >= 1) b = { outcome: 'scared', msg: say(s, `${who} crept up to the house, got spooked and ran away. Phew! More cameras would catch them next time.`) };
     else if (items.length) {
       const taken = rng.pick(items);
       removeItem(s, taken.room, taken.kind, taken.slot);
       s.van[taken.id]--; if (!s.van[taken.id]) delete s.van[taken.id];
-      report.burglar = { outcome: 'robbed', item: taken.id, msg: say(s, `Oh no! A burglar sneaked in while everyone slept and took your ${ITEM[taken.id].name}. Buy cameras or an alarm at the gadget shop!`) };
-    } else report.burglar = { outcome: 'nothing', msg: say(s, 'A burglar looked in the window, saw nothing worth taking, and left.') };
+      b = { outcome: 'robbed', item: taken.id, msg: say(s, `Oh no! ${who} sneaked in while everyone slept and took your ${ITEM[taken.id].name}. Buy cameras or an alarm at the gadget shop!`) };
+    } else b = { outcome: 'nothing', msg: say(s, `${who} looked in the window, saw nothing worth taking, and left.`) };
+    report.burglars.push(b);
   }
+  report.burglar = report.burglars[0] || null;
   // pets
   for (const pet of s.pets) { pet.hunger = Math.min(3, pet.hunger + 1); pet.fun = Math.max(0, pet.fun - 1); pet.tricksToday = 0; pet.room = rng.int(0, s.house.rooms.length - 1); if (pet.hunger >= 2) report.hungryPets.push(pet.name); }
   // family
