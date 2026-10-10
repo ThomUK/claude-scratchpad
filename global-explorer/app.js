@@ -176,9 +176,7 @@ function applyView() {
 function select(code) {
   state.selected = code;
   applyView();
-  const pop = viewKind() === 'explore' ? $('explore-pop') : $('start-pop');
-  const canvasH = $('globe').clientHeight || 1;
-  state.globe.flyTo(code, { lift: Math.min(0.25, pop.offsetHeight / (2 * canvasH)) });
+  state.globe.flyTo(code); // applyView has already set the card inset, so the fit centres it in the clear strip
 }
 function deselect() {
   state.selected = null;
@@ -296,6 +294,8 @@ function fitGlobeToSheet() {
   const view = viewKind();
   const bar = view === 'explore' ? $('explore-bar') : view === 'start' ? $('start-bar') : null;
   state.globe.topInset = bar && !bar.hidden ? bar.offsetTop + bar.offsetHeight : 0;
+  const pop = [$('start-pop'), $('explore-pop')].find((p) => !p.hidden);
+  state.globe.bottomInset = pop ? $('globe').clientHeight - pop.offsetTop : 0; // the card over the bottom of the canvas
   state.globe.refHeight = $('screen-play').clientHeight; // the full-height canvas the zoom fit is tuned for
   if (window.matchMedia('(min-width: 900px)').matches) { $('globe-wrap').style.bottom = ''; state.globe.resize(); return; }
   $('globe-wrap').style.bottom = `${$('sheet').offsetHeight}px`;

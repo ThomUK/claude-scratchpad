@@ -671,11 +671,12 @@ export class Globe {
   }
 
   /**
-   * Animate the camera to look straight down on a country. `lift` is a
-   * fraction of the viewport height to place the country above centre, for
-   * when a card covers the bottom of the view.
+   * Animate the camera to look straight down on a country. Cards over the
+   * top or bottom of the canvas are handled by the view offset (see resize),
+   * so the country lands in the clear part of the view wherever it is, the
+   * poles included.
    */
-  flyTo(code, { duration = 1400, lift = 0 } = {}) {
+  flyTo(code, { duration = 1400 } = {}) {
     const c = this.countries.get(code);
     if (!c) return;
     this.controls.autoRotate = false;
@@ -689,10 +690,7 @@ export class Globe {
     // surface by the height ratio: the map keeps the same size on screen.
     const ratio = this.refHeight ? Math.min(1, this.container.clientHeight / this.refHeight) : 1;
     const dist = Math.max(this.controls.minDistance, 1 + (cameraDistanceForSpan(span) - 1) * ratio);
-    // Ground spans about 2(d−1)·tan(fov/2) radians per viewport height, so aim
-    // that far south of the country to show it higher on screen.
-    const latShift = THREE.MathUtils.radToDeg(lift * 2 * (dist - 1) * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)));
-    const lat = THREE.MathUtils.clamp(c.latlng[0] - latShift, -89, 89);
+    const lat = THREE.MathUtils.clamp(c.latlng[0], -89, 89); // the camera's up vector degenerates exactly over a pole
     const to = latLonToVec3(lat, c.latlng[1], dist);
     this.flight = { from, to, start: performance.now(), duration, fromDir: from.clone().normalize(), toDir: to.clone().normalize() };
   }
@@ -757,10 +755,10 @@ export class Globe {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     if (!w || !h) return;
     this.camera.aspect = w / h;
-    // A card over the top of the canvas hides that much of the view, so shift
-    // the view centre down by half the inset to centre the globe in what is left.
-    const inset = this.topInset || 0;
-    if (inset) this.camera.setViewOffset(w, h, 0, -inset / 2, w, h); else this.camera.clearViewOffset();
+    // Cards over the top or bottom of the canvas hide that much of the view, so
+    // shift the view centre to the middle of the strip left clear between them.
+    const dy = ((this.topInset || 0) - (this.bottomInset || 0)) / 2;
+    if (dy) this.camera.setViewOffset(w, h, 0, -dy, w, h); else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
     if (this.nameGroup) this.applyLabelScale();
