@@ -64,6 +64,8 @@ const F = {
   basin: () => `${shadow(60)}<path d="M10 30H50Q50 44 40 46H20Q10 44 10 30Z" fill="#f3f1ec" stroke="#cfcabf"/><ellipse cx="30" cy="32" rx="16" ry="4" fill="#e3e0d8"/><rect x="24" y="46" width="12" height="16" fill="#eceae4"/><path d="M30 28V20Q30 16 34 16Q38 16 38 20" fill="none" stroke="#9aa0a5" stroke-width="3" stroke-linecap="round"/><circle cx="22" cy="24" r="2" fill="#9aa0a5"/><circle cx="38" cy="24" r="2" fill="#9aa0a5"/>`,
   computer: () => `${shadow(60)}<rect x="2" y="34" width="56" height="4" rx="1" fill="url(#gWood)"/><rect x="4" y="38" width="4" height="24" fill="${WOOD2}"/><rect x="52" y="38" width="4" height="24" fill="${WOOD2}"/><rect x="12" y="8" width="34" height="22" rx="2" fill="#2a2a2e"/><rect x="14" y="10" width="30" height="18" fill="url(#gScreen)"/><rect x="16" y="12" width="12" height="2" fill="#5ad0a0"/><rect x="16" y="16" width="20" height="2" fill="#8fb8e8"/><rect x="16" y="20" width="16" height="2" fill="#e8c88f"/><rect x="26" y="30" width="6" height="4" fill="#444"/><rect x="18" y="31" width="22" height="3" rx="1" fill="#ddd"/><rect x="42" y="38" width="12" height="20" rx="1" fill="#3a3a40"/><circle cx="48" cy="42" r="1.2" fill="#5ad0a0"/>`,
   console: () => `${shadow(60)}<rect x="6" y="40" width="48" height="22" rx="2" fill="url(#gWood)"/><rect x="8" y="42" width="44" height="18" fill="#3b2a1e"/><rect x="14" y="32" width="32" height="8" rx="2" fill="#1e1e22"/><circle cx="42" cy="36" r="1.3" fill="#5ad0ff"/><path d="M18 24Q18 18 24 18H36Q42 18 42 24V28Q42 32 36 30H24Q18 32 18 28Z" fill="#2e2e33"/><circle cx="24" cy="24" r="2" fill="#666"/><circle cx="36" cy="23" r="1.5" fill="#d94a4a"/><circle cx="38" cy="26" r="1.5" fill="#4a9ad9"/>`,
+  nettrap: () => `<ellipse cx="30" cy="58" rx="24" ry="5" fill="#8a7a4a" opacity=".9"/><path d="M8 58Q14 50 22 56Q30 48 38 56Q46 50 52 58" fill="none" stroke="#5a4a2a" stroke-width="2"/><path d="M12 56L48 60M14 60L46 54M18 52L42 62M22 62L40 50" stroke="#5a4a2a" stroke-width="1"/><path d="M8 58Q30 44 52 58" fill="none" stroke="#5a4a2a" stroke-width="1.5" stroke-dasharray="3 2"/><circle cx="30" cy="50" r="3" fill="#c9a24a"/>`,
+  banana: () => `<path d="M14 58Q30 40 46 50Q34 54 26 60Q20 62 14 58Z" fill="#f0d040"/><path d="M14 58Q30 44 44 50" fill="none" stroke="#c9a020" stroke-width="2"/><path d="M26 50L20 60M34 48L30 58" stroke="#e8c030" stroke-width="2"/><circle cx="45" cy="50" r="2" fill="#6a4a1a"/>`,
   robot: () => `${shadow(60)}<ellipse cx="30" cy="56" rx="18" ry="6" fill="#2a2a2e"/><ellipse cx="30" cy="53" rx="18" ry="6" fill="#3a3a40"/><ellipse cx="30" cy="53" rx="6" ry="2" fill="#555"/><circle cx="30" cy="53" r="1.3" fill="#5ad0a0"/>`,
 };
 
@@ -79,6 +81,7 @@ const W = {
   tv: () => `<rect x="4" y="4" width="84" height="42" rx="2" fill="#141417"/><rect x="7" y="7" width="78" height="36" fill="url(#gScreen)"/><path d="M14 36L30 20L42 30L56 14L78 34" fill="none" stroke="#5ad0a0" stroke-width="2"/><circle cx="46" cy="44" r="1" fill="#d94a4a"/>`,
   camera: () => `<rect x="30" y="14" width="30" height="16" rx="3" fill="#e9e9ec" stroke="#999"/><rect x="58" y="16" width="10" height="12" rx="2" fill="#2a2a2e"/><circle cx="64" cy="22" r="3" fill="#4a6a9a"/><circle cx="35" cy="22" r="1.5" fill="#e03030"/><path d="M38 14V6H46" fill="none" stroke="#999" stroke-width="2"/>`,
   alarm: () => `<rect x="30" y="6" width="32" height="36" rx="3" fill="#f0c040" stroke="#b08020" stroke-width="1.5"/><path d="M46 14A8 8 0 0 1 54 22V30H38V22A8 8 0 0 1 46 14Z" fill="#2a2a2e"/><rect x="36" y="30" width="20" height="3" fill="#2a2a2e"/><circle cx="46" cy="36" r="1.6" fill="#e03030"/>`,
+  cagetrap: () => `<rect x="44" y="0" width="4" height="8" fill="#555"/><path d="M26 8H66V22Q66 28 60 28H32Q26 28 26 22Z" fill="#6b6b70"/>${[30, 36, 42, 48, 54, 60].map(x => `<rect x="${x}" y="10" width="2" height="30" fill="#8a8a90"/>`).join('')}<rect x="26" y="38" width="40" height="3" fill="#6b6b70"/><path d="M40 4L46 0L52 4" fill="none" stroke="#c9a24a" stroke-width="2"/><text x="70" y="24" font-size="10" fill="#9a3b3b" font-family="sans-serif" font-weight="700">TRAP</text>`,
   speaker: () => `<rect x="36" y="18" width="20" height="26" rx="6" fill="#444"/><rect x="36" y="18" width="20" height="26" rx="6" fill="url(#pSlots)"/><rect x="38" y="20" width="16" height="3" rx="1.5" fill="#5ad0ff"/>`,
 };
 
@@ -121,6 +124,12 @@ const P = {
 };
 export function petSvg(type, size = 44) { return `<svg viewBox="0 0 44 40" width="${size}" height="${size * 40 / 44}">${DEFS}${P[type] ? P[type]() : ''}</svg>`; }
 export function petInner(type) { return P[type] ? P[type]() : ''; }
+
+export function cagedInner(trap) {
+  const burglar = `<rect x="16" y="30" width="5" height="18" fill="#1f1f24"/><rect x="23" y="30" width="5" height="18" fill="#1f1f24"/><rect x="13" y="14" width="18" height="18" rx="3" fill="#2a2a30"/><path d="M13 18H31M13 23H31M13 28H31" stroke="#f0f0f0" stroke-width="2"/><circle cx="22" cy="8" r="7" fill="#e7c3a0"/><rect x="15" y="5" width="14" height="5" fill="#1f1f24"/><circle cx="19.5" cy="8" r="1" fill="#fff"/><circle cx="24.5" cy="8" r="1" fill="#fff"/>`;
+  if (trap === 'net') return `${burglar}<path d="M4 52Q22 -4 40 52Z" fill="rgba(90,74,42,.25)" stroke="#5a4a2a" stroke-width="1.5"/><path d="M8 40H36M11 30H33M14 20H30M22 2V52M14 10L30 50M30 10L14 50" stroke="#5a4a2a" stroke-width="1"/><text x="30" y="12" font-size="12">💢</text>`;
+  return `${burglar}<rect x="2" y="0" width="40" height="52" rx="4" fill="rgba(0,0,0,.08)" stroke="#6b6b70" stroke-width="3"/>${[9, 16, 23, 30, 37].map(x => `<rect x="${x}" y="2" width="2" height="50" fill="#8a8a90"/>`).join('')}<rect x="2" y="0" width="40" height="5" fill="#6b6b70"/><text x="30" y="12" font-size="12">💢</text>`;
+}
 
 // ───────────────────────── people ─────────────────────────
 const SKINS = ['#f1c9a5', '#d9a67a', '#b07a4f', '#8a5a3a', '#f6dcc3', '#5b3a24'];
@@ -200,6 +209,7 @@ export function interiorSvg(house, opts = {}) {
       else if (o.kind === 'person') { const h = o.p.stage === 'baby' ? 24 : 44; s += `<g class="person" data-person="${o.i}" transform="translate(${ox} ${r.h - 24 - h})"><rect width="24" height="${h}" fill="transparent"/>${personInner(o.p.stage, o.p.name)}${o.p.hunger >= 2 ? '<text x="20" y="6" font-size="12">🍼</text>' : ''}</g>`; }
       else s += `<g class="player" transform="translate(${ox} ${r.h - 24 - 64})">${personInner('adult', o.p.name)}</g>`;
     });
+    (opts.caged || []).forEach((c, i) => { if (c.room === r.idx) s += `<g class="caged" data-caged="${i}" transform="translate(${r.w - 54} ${r.h - 24 - 52})"><rect width="44" height="52" fill="transparent"/>${cagedInner(c.trap)}</g>`; });
     s += emptyFloor.join('');
     labels.push(`<g class="room" data-room="${r.idx}" transform="translate(${r.x + pad} ${ry})"><g class="roomlabel" data-room="${r.idx}"><rect x="4" y="-9" width="${Math.min(r.w - 8, r.room.name.length * 7.2 + 26)}" height="18" rx="9" fill="rgba(40,30,25,.78)"/><text x="12" y="4" font-size="11" fill="#fff" font-family="system-ui,sans-serif">${esc(r.room.name)}${opts.interactive ? ' ✎' : ''}</text></g></g>`);
     if (night) s += `<rect width="${r.w}" height="${r.h}" fill="#0b1026" opacity=".42" pointer-events="none"/>`;
@@ -275,6 +285,9 @@ export function burglarSvg(outcome = 'scared') {
   const sack = `<path d="M74 42Q92 40 90 62Q88 78 74 76Q62 74 64 58Q66 46 74 42Z" fill="#b8905f"/><path d="M72 42L80 36" stroke="#8b5e3c" stroke-width="3"/>`;
   const extra = outcome === 'caught' ? `<rect x="14" y="6" width="22" height="22" rx="3" fill="#e9e9ec" stroke="#999"/><circle cx="25" cy="17" r="5" fill="#4a6a9a"/><circle cx="18" cy="11" r="1.6" fill="#e03030"/><path d="M4 70Q10 60 20 66" stroke="#4a9ad9" stroke-width="4" fill="none" stroke-linecap="round"/><text x="2" y="92" font-size="12" font-family="sans-serif" fill="#2b2420">POLICE</text>`
     : outcome === 'scared' ? `<text x="4" y="30" font-size="22">💨</text><text x="68" y="16" font-size="16">!</text>`
-    : outcome === 'robbed' ? sack + `<text x="4" y="30" font-size="18">🤫</text>` : `<text x="6" y="30" font-size="18">🤷</text>`;
+    : outcome === 'robbed' ? sack + `<text x="4" y="30" font-size="18">🤫</text>`
+    : outcome === 'trapped' ? `<rect x="14" y="2" width="68" height="92" rx="5" fill="rgba(0,0,0,.06)" stroke="#6b6b70" stroke-width="4"/>${[26, 38, 50, 62, 74].map(x => `<rect x="${x}" y="4" width="3" height="88" fill="#8a8a90"/>`).join('')}<rect x="14" y="2" width="68" height="7" fill="#6b6b70"/><text x="78" y="24" font-size="16">💢</text>`
+    : outcome === 'slipped' ? `<path d="M4 90Q22 76 40 84Q28 88 18 94Q10 96 4 90Z" fill="#f0d040"/><text x="2" y="40" font-size="20">💫</text><text x="70" y="40" font-size="16">!</text>`
+    : `<text x="6" y="30" font-size="18">🤷</text>`;
   return `<svg viewBox="0 0 100 100">${body}${extra}</svg>`;
 }

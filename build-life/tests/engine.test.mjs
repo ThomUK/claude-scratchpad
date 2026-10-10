@@ -3,7 +3,7 @@ import {
   HOUSES, ITEMS, ITEM, PETS, PET, WALLPAPERS, FLOORS, PAINTS, NEIGHBOURS, SUBJECTS, LEVELS, HOURS, START_COINS, LESSONS_PER_DAY, QUESTIONS_PER_LESSON, PERFECT_BONUS, BABY_GROWS_AT, CHILD_SCHOOL_AGE, BURGLAR_GRACE_DAYS,
   makeRng, newGame, buildHouse, houseWidth, moveHouse, houseSalePrice, buyItem, sellFromVan, vanItems, vanCount, placeItem, removeItem, placedList, setWallpaper, setFlooring, setPaint,
   securityScore, buyPet, feedPet, playWithPet, mealsLeft, canHaveBaby, newBaby, feedPerson, lessonsLeft, canStartLesson, makeQuestion, startLesson, checkAnswer, answerQuestion, finishLesson,
-  neighbourHouse, visitNeighbour, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
+  neighbourHouse, visitNeighbour, trapInRoom, trapCount, callPolice, TRAP_REWARD, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
 } from '../engine.js';
 
 let fails = 0;
@@ -202,6 +202,39 @@ console.log('— night —');
   const castle = newGame('C'); castle.coins = 20000; moveHouse(castle, 'castle'); castle.day = BURGLAR_GRACE_DAYS; let cd = 0;
   for (let sd = 1; sd <= 200; sd++) { const c = JSON.parse(serialize(castle)); if (sleep(c, makeRng(sd)).report.burglars.length === 2) cd++; }
   ok(cd > doubles && cd > 60, `the castle gets two burglars in a night far more often than the flat (${cd} vs ${doubles} of 200)`);
+}
+
+console.log('— burglar traps —');
+{
+  const t = newGame('T'); moveHouse(t, 'flat'); t.coins += 1000; t.day = BURGLAR_GRACE_DAYS;
+  buyItem(t, 'bed'); placeItem(t, 2, 'floor', 0, 'bed');
+  buyItem(t, 'cagetrap'); buyItem(t, 'nettrap'); buyItem(t, 'banana');
+  ok(placeItem(t, 0, 'wall', 0, 'cagetrap').ok && placeItem(t, 1, 'floor', 0, 'nettrap').ok && placeItem(t, 3, 'floor', 0, 'banana').ok, 'traps go on walls and floors');
+  ok(trapInRoom(t.house, 0) === 'cage' && trapInRoom(t.house, 1) === 'net' && trapInRoom(t.house, 3) === 'banana' && trapInRoom(t.house, 2) === null && trapCount(t.house) === 2, 'trapInRoom finds the right trap per room');
+  ok(securityScore(t) === 0, 'traps do not add security points: they only guard their own room');
+  let trapped = null, slipped = null, robbed = null;
+  for (let sd = 1; sd < 300 && !(trapped && slipped && robbed); sd++) {
+    const c = JSON.parse(serialize(t)); const rep = sleep(c, makeRng(sd)).report;
+    for (const b of rep.burglars) { if (b.outcome === 'trapped' && !trapped) trapped = { c, b }; if (b.outcome === 'slipped' && !slipped) slipped = { c, b }; if (b.outcome === 'robbed' && !robbed) robbed = { c, b }; }
+  }
+  ok(trapped && trapped.c.caged.length >= 1 && trapped.c.caged[0].room === trapped.b.room && ['cage', 'net'].includes(trapped.b.trap), 'a burglar entering a trapped room is caught and stays in the cage');
+  ok(trapped && trapped.c.house.rooms[2].floorSlots[0] === 'bed' || !trapped, 'a trapped burglar takes nothing');
+  ok(slipped && slipped.b.coins >= 5 && slipped.b.room === 3, 'the banana skin makes them slip and drop coins');
+  ok(robbed && robbed.b.room === 2, 'the only room without a trap is where you get robbed');
+  if (trapped) {
+    const c = trapped.c; const n = c.caged.length; const coins = c.coins;
+    const r = callPolice(c, 0);
+    ok(r.ok && c.coins === coins + TRAP_REWARD && c.caged.length === n - 1 && c.stats.burglarsCaught >= 1, 'calling the police pays the reward and empties the trap');
+    ok(!callPolice(c, 99).ok, 'no burglar, no reward');
+    const d = JSON.parse(serialize(trapped.c)); d.hour = 20; const coins2 = d.coins; d.caged.push({ room: 0, trap: 'cage' }); const left = d.caged.length;
+    const rep = sleep(d, makeRng(999)).report;
+    ok(rep.collected === left && d.coins >= coins2 + left * TRAP_REWARD, 'burglars left in traps overnight are collected and paid for');
+    const e = JSON.parse(serialize(trapped.c)); e.coins += 5000; e.caged.push({ room: 1, trap: 'net' }); const coins3 = e.coins, left2 = e.caged.length;
+    moveHouse(e, 'terrace');
+    ok(e.caged.length === 0 && e.coins === coins3 - (HOUSES[1].price - houseSalePrice(trapped.c.house)) + left2 * TRAP_REWARD, 'moving house hands trapped burglars to the police first');
+  }
+  const back = deserialize(serialize(t));
+  ok(Array.isArray(back.caged), 'saves carry the caged list');
 }
 
 console.log('— save / load —');

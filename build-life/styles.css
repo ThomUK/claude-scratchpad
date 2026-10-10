@@ -36,7 +36,8 @@ p { margin: 6px 0; line-height: 1.4; }
 .stage.sky { background: #cfe0f0; padding: 0; }
 .stage.night { background: #1c2238; }
 svg.house { width: 100%; height: auto; display: block; max-height: 62vh; }
-svg.house .slot, svg.house .placed, svg.house .pet, svg.house .person, svg.house .roomlabel { cursor: pointer; }
+svg.house .slot, svg.house .placed, svg.house .pet, svg.house .person, svg.house .roomlabel, svg.house .caged { cursor: pointer; }
+.speech.burglar.trapped, .speech.burglar.slipped { background: #d9eedc; }
 svg.house .slot:hover rect { fill: rgba(255,255,255,.4); }
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .nav { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; padding: 6px 0 14px; }

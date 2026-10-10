@@ -63,8 +63,8 @@ const SCREENS = {
     const late = E.tooLate(S);
     return `<div class="screen">
       ${late ? `<div class="panel" style="background:#f7e7c4"><b>It is 10 o'clock at night.</b> Everyone is yawning. Time for bed!</div>` : ''}
-      <div class="stage ${night() ? 'night' : ''}">${A.interiorSvg(S.house, { ...ctx(), interactive: true, pets: S.pets, family: S.family, player: { name: S.name, room: S.house.rooms.reduce((best, r, i) => r.w > S.house.rooms[best].w ? i : best, 0) } })}</div>
-      <div class="panel"><div class="row">${secMeter()}${S.pets.length ? meter(`🐾 ${S.pets.length} pet${S.pets.length > 1 ? 's' : ''}${S.pets.some(p => p.hunger >= 2) ? ' · hungry!' : ''}`, S.pets.every(E.petHappy) ? 'ok' : 'warn') : ''}${S.family.length ? meter(`👪 ${S.family.length} in the family${S.family.some(p => p.hunger >= 2) ? ' · hungry!' : ''}`, S.family.every(E.personHappy) ? 'ok' : 'warn') : ''}<span class="spacer" style="flex:1"></span><button class="alt small" data-act="van">🚚 Van (${E.vanItems(S).reduce((a, v) => a + v.n, 0)})</button></div>
+      <div class="stage ${night() ? 'night' : ''}">${A.interiorSvg(S.house, { ...ctx(), interactive: true, pets: S.pets, family: S.family, caged: S.caged, player: { name: S.name, room: S.house.rooms.reduce((best, r, i) => r.w > S.house.rooms[best].w ? i : best, 0) } })}</div>
+      <div class="panel"><div class="row">${secMeter()}${S.pets.length ? meter(`🐾 ${S.pets.length} pet${S.pets.length > 1 ? 's' : ''}${S.pets.some(p => p.hunger >= 2) ? ' · hungry!' : ''}`, S.pets.every(E.petHappy) ? 'ok' : 'warn') : ''}${S.caged.length ? meter(`🥷 ${S.caged.length} burglar${S.caged.length > 1 ? 's' : ''} in a trap — tap to call the police!`, 'ok') : ''}${S.family.length ? meter(`👪 ${S.family.length} in the family${S.family.some(p => p.hunger >= 2) ? ' · hungry!' : ''}`, S.family.every(E.personHappy) ? 'ok' : 'warn') : ''}<span class="spacer" style="flex:1"></span><button class="alt small" data-act="van">🚚 Van (${E.vanItems(S).reduce((a, v) => a + v.n, 0)})</button></div>
       <p class="muted">Tap a dotted <b>+</b> to put something from the van there. Tap furniture to move or sell it. Tap a room name to change the wallpaper and floor. Tap pets and people to look after them.</p></div>
       ${nav(['🌳 Outside', 'go', 'outside'], late ? null : navTown(), bedBtn())}
       ${S.log.length ? `<div class="panel log">${S.log.slice(0, 6).map(l => `<div>Day ${l.day}: ${esc(l.msg)}</div>`).join('')}</div>` : ''}
@@ -150,7 +150,8 @@ const SCREENS = {
   morning() {
     const r = ui.a;
     return `<div class="screen"><div class="panel"><h2>☀️ Good morning! It is day ${S.day}.</h2>
-      ${(r.burglars || []).length ? r.burglars.map(b => `<div class="speech burglar ${b.outcome}"><div>${A.burglarSvg(b.outcome)}</div><div>${b.outcome === 'robbed' ? '🥷' : b.outcome === 'caught' ? '👮' : '😮'} ${esc(b.msg)}</div></div>`).join('') : '<p>🌙 Everyone slept soundly.</p>'}
+      ${(r.burglars || []).length ? r.burglars.map(b => `<div class="speech burglar ${b.outcome}"><div>${A.burglarSvg(b.outcome)}</div><div>${b.outcome === 'robbed' ? '🥷' : b.outcome === 'caught' ? '👮' : b.outcome === 'trapped' ? '🪤' : b.outcome === 'slipped' ? '🍌' : '😮'} ${esc(b.msg)}</div></div>`).join('') : '<p>🌙 Everyone slept soundly.</p>'}
+      ${r.collected ? `<p>👮 The police came for the ${r.collected === 1 ? 'burglar' : r.collected + ' burglars'} still in your traps and paid 🪙 ${r.collected * E.TRAP_REWARD}.</p>` : ''}
       ${r.happyBonus ? `<p>😊 Your happy pets and family found <b>🪙 ${r.happyBonus}</b> for you.</p>` : ''}
       ${r.grown.map(n => `<p>🎉 <b>${esc(n)}</b> has grown from a baby into a child!</p>`).join('')}
       ${r.cries.length ? `<p>🍼 ${r.cries.map(esc).join(' and ')} ${r.cries.length > 1 ? 'are' : 'is'} hungry. Tap them at home to feed them.</p>` : ''}
@@ -161,7 +162,7 @@ const SCREENS = {
 
 function itemCard(id, open) {
   const it = E.ITEM[id]; const can = open && S.coins >= it.price; const n = E.vanCount(S, id);
-  return `<div class="card ${can ? '' : 'off'}"><div class="art">${A.itemSvg(id, ctx())}</div><div class="nm">${it.name}</div><div class="muted" style="font-size:13px">${it.security ? `🔒 ${it.security} security` : it.bed ? '🛏 someone can sleep here' : it.cot ? '👶 needed for a baby' : it.light ? '💡 lights up at night' : it.kind === 'wall' ? 'goes on a wall' : it.kind === 'garden' ? 'goes outside' : it.size === 2 ? 'needs two floor spaces' : 'goes on the floor'}${n ? ` · ${n} in van` : ''}</div><div class="pr">🪙 ${it.price}</div><button class="small" data-act="buy" data-arg='${arg(id)}' ${can ? '' : 'disabled'}>Buy</button></div>`;
+  return `<div class="card ${can ? '' : 'off'}"><div class="art">${A.itemSvg(id, ctx())}</div><div class="nm">${it.name}</div><div class="muted" style="font-size:13px">${it.trap === 'banana' ? '🍌 burglars slip and drop coins' : it.trap ? `🪤 catches a burglar in this room (🪙 ${E.TRAP_REWARD})` : it.security ? `🔒 ${it.security} security` : it.bed ? '🛏 someone can sleep here' : it.cot ? '👶 needed for a baby' : it.light ? '💡 lights up at night' : it.kind === 'wall' ? 'goes on a wall' : it.kind === 'garden' ? 'goes outside' : it.size === 2 ? 'needs two floor spaces' : 'goes on the floor'}${n ? ` · ${n} in van` : ''}</div><div class="pr">🪙 ${it.price}</div><button class="small" data-act="buy" data-arg='${arg(id)}' ${can ? '' : 'disabled'}>Buy</button></div>`;
 }
 function shopScreen(title, ico, cat, blurb) {
   const open = S.hour >= 8 && S.hour < E.HOURS.SHOPS_CLOSE;
@@ -229,7 +230,7 @@ function placedModal(kind, room, slot) {
   if (kind === 'garden') id = S.house.garden[slot];
   else { const slots = kind === 'floor' ? S.house.rooms[room].floorSlots : S.house.rooms[room].wallSlots; id = slots[slot]; if (id && id.startsWith('@')) id = slots[Number(id.slice(1))]; }
   const it = E.ITEM[id];
-  openModal(`<div class="row"><div class="art">${A.itemSvg(id, ctx())}</div><div><h3>${it.name}</h3><p class="muted">${it.security ? `Adds ${it.security} security. ` : ''}${it.light ? 'Lights up at night. ' : ''}Worth 🪙 ${Math.floor(it.price / 2)} if you sell it.</p></div></div>
+  openModal(`<div class="row"><div class="art">${A.itemSvg(id, ctx())}</div><div><h3>${it.name}</h3><p class="muted">${it.trap ? 'Catches any burglar who sneaks into this room. ' : ''}${it.security ? `Adds ${it.security} security. ` : ''}${it.light ? 'Lights up at night. ' : ''}Worth 🪙 ${Math.floor(it.price / 2)} if you sell it.</p></div></div>
     <div class="row" style="margin-top:14px"><button data-act="remove" data-arg='${arg([room, kind, slot])}'>🚚 Put in the van</button><button class="danger" data-act="sellPlaced" data-arg='${arg([room, kind, slot, id])}'>Sell for 🪙 ${Math.floor(it.price / 2)}</button><button class="alt" data-act="closeModal">Close</button></div>`);
 }
 function roomModal(room) {
@@ -259,12 +260,17 @@ function personModal(i) {
   openModal(`<div class="row"><div>${A.personSvg(p.stage, p.name, 1.6)}</div><div><h3>${esc(p.name)}</h3><p>${p.stage === 'baby' ? '👶 Baby' : '🧒 Child'}, ${p.age} day${p.age === 1 ? '' : 's'} old.<br>${p.hunger === 0 ? '😄 Full up' : p.hunger === 1 ? '🙂 A bit peckish' : p.hunger === 2 ? '😐 Hungry' : '😢 Very hungry'}<br>${grow}</p></div></div>
     <div class="row" style="margin-top:14px"><button data-act="feedPerson" data-arg='${arg(i)}' ${p.hunger === 0 ? 'disabled' : ''}>${p.stage === 'baby' ? '🍼 Give a bottle' : '🍝 Give dinner'}</button><button class="alt" data-act="closeModal">Close</button></div>`);
 }
+function cagedModal(i) {
+  const c = S.caged[i]; if (!c) return;
+  openModal(`<div class="row"><svg viewBox="0 0 44 56" width="88" height="112">${A.cagedInner(c.trap)}</svg><div><h3>Got one!</h3><p>A burglar is stuck in your ${c.trap === 'cage' ? 'drop cage' : 'net'} in the ${esc(S.house.rooms[c.room].name)}. They look very sorry.</p></div></div>
+    <div class="row" style="margin-top:14px"><button data-act="callPolice" data-arg='${arg(i)}'>👮 Call the police (reward 🪙 ${E.TRAP_REWARD})</button><button class="alt" data-act="closeModal">Leave them there for now</button></div>`);
+}
 function helpModal() {
   openModal(`<h2>How to play</h2><ul class="help-list">
     <li><b>Earn coins at school.</b> Go to town → school, pick Maths, Words or The World and a level. Right answers pay coins; a perfect lesson pays a bonus. Three lessons a day (more when your children are old enough for school).</li>
     <li><b>Decorate.</b> Buy things in the shops. They go in your 🚚 van. At home, tap a dotted + to place them, tap a room name to change wallpaper and floor, and tap outside to paint the house and fill the garden.</li>
     <li><b>Pets</b> from the pet shop need feeding (buy pet food) and playing with. Happy pets do tricks and find coins. <b>Babies</b> come from the hospital once you own a cot; feed them and in a few days they grow up.</li>
-    <li><b>Burglars</b> come every night, and posh houses attract two at once. Security cameras, alarms, doorbell cameras, dogs, parrots and dragons add security points. 3 or more catches the burglar (and the police pay a reward). 1–2 scares them away. None… and something goes missing.</li>
+    <li><b>Burglars</b> come every night, and posh houses attract two at once. Each one sneaks into one room. <b>Traps</b> from the gadget shop catch a burglar who enters that room: a Drop Cage falls from the ceiling, a Net Trap scoops them up, and a Banana Skin makes them slip and drop coins. In the morning tap the trapped burglar to call the police for a bigger reward. More traps in more rooms means more burglars caught. Security cameras, alarms, doorbell cameras, dogs, parrots and dragons add security points. 3 or more catches the burglar (and the police pay a reward). 1–2 scares them away. None… and something goes missing.</li>
     <li><b>Move house.</b> The estate agent buys your decorated house for more than you paid. Your furniture, pets and family move with you.</li>
     <li><b>Day and night.</b> Everything you do takes time. Shops shut at 6pm, school at 3pm. Go to bed in the evening to start a new day. Nobody in Build Life ever dies.</li></ul>
     <div class="row"><button data-act="closeModal">Got it</button></div>`);
@@ -328,6 +334,7 @@ const ACT = {
   clearSeq() { ui.seq = []; render(); },
   next() { ui.feedback = null; ui.seq = []; render(); },
   collect() { const r = E.finishLesson(S, lesson); lesson = null; toast(r.msg, 4000); ui.feedback = null; render(); },
+  callPolice(i) { const r = E.callPolice(S, i); if (r.ok) toast(r.msg, 4000); closeModal(); render(); },
   sleep() {
     if (!E.canSleep(S)) { toast('It is too early for bed!'); return; }
     const r = E.sleep(S, E.makeRng(Date.now() % 1e9)); lesson = null; go('morning', r.report);
@@ -339,7 +346,7 @@ function handle(e) {
   const btn = e.target.closest('[data-act]');
   if (btn) { const act = btn.dataset.act; let a = null; try { a = btn.dataset.arg !== undefined ? JSON.parse(btn.dataset.arg) : null; } catch { } if (ACT[act]) ACT[act](a, btn); return; }
   if (!S) return;
-  const g = e.target.closest('g.slot, g.placed, g.pet, g.person, g.roomlabel');
+  const g = e.target.closest('g.slot, g.placed, g.pet, g.person, g.roomlabel, g.caged');
   if (!g) return;
   const roomEl = g.closest('g.room'); const room = roomEl ? Number(roomEl.dataset.room) : -1;
   if (g.classList.contains('slot')) { if (screen === 'home' || screen === 'outside') pickerModal(g.dataset.kind, room, Number(g.dataset.slot)); }
@@ -347,6 +354,7 @@ function handle(e) {
   else if (g.classList.contains('pet')) { if (screen === 'home') petModal(Number(g.dataset.pet)); }
   else if (g.classList.contains('person')) { if (screen === 'home') personModal(Number(g.dataset.person)); }
   else if (g.classList.contains('roomlabel')) { if (screen === 'home') roomModal(room); }
+  else if (g.classList.contains('caged')) { if (screen === 'home') cagedModal(Number(g.dataset.caged)); }
 }
 document.addEventListener('click', e => { if (e.target === modal) { closeModal(); return; } handle(e); });
 document.addEventListener('keydown', e => { if (e.key === 'Enter' && screen === 'start' && document.activeElement?.id === 'newName') ACT.newPlayer(); if (e.key === 'Enter' && document.activeElement?.id === 'babyName') ACT.newBaby(); if (e.key === 'Escape') closeModal(); });

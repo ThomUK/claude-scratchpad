@@ -33,7 +33,10 @@ gold coins, and fill your home with pets and family.
   bottle each day and after five days it grows into a child, who can later go
   to school with you. Nobody in Build Life ever dies.
 - **Burglars** come every night from the second night on, and the posher the
-  house the more often two turn up at once. Cameras, alarms, doorbell cameras, dogs,
+  house the more often two turn up at once. Each burglar sneaks into one room.
+  **Traps** from the gadget shop (a drop cage, a net, a banana skin) catch
+  whoever enters that room; in the morning tap the trapped burglar to call the
+  police for a reward. Cameras, alarms, doorbell cameras, dogs,
   parrots and dragons add security points: three or more catches the burglar
   and the police pay a reward, one or two scares them off, none and something
   goes missing.

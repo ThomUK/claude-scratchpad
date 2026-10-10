@@ -8,6 +8,7 @@ export const BABY_GROWS_AT = 5;      // days old when a baby becomes a child
 export const CHILD_SCHOOL_AGE = 7;   // days old when a child can go to school
 export const BURGLAR_GRACE_DAYS = 2; // the very first night is safe
 export const BURGLAR_CHANCE = 1;     // a burglar every single night
+export const TRAP_REWARD = 40;       // police reward for a burglar caught in a trap
 export const SECOND_BURGLAR_CHANCE = { flat: 0.15, terrace: 0.3, detached: 0.5, castle: 0.7 }; // posh houses attract more
 
 // ───────────────────────── houses ─────────────────────────
@@ -92,6 +93,10 @@ export const ITEMS = [
   { id: 'outcam', name: 'Outdoor Camera', cat: 'gadget', kind: 'garden', price: 100, security: 2 },
   { id: 'robot', name: 'Robot Vacuum', cat: 'gadget', kind: 'floor', price: 70, size: 1 },
   { id: 'speaker', name: 'Smart Speaker', cat: 'gadget', kind: 'wall', price: 40 },
+  // burglar traps — catch a burglar who sneaks into THAT room
+  { id: 'cagetrap', name: 'Drop Cage Trap', cat: 'gadget', kind: 'wall', price: 90, trap: 'cage' },
+  { id: 'nettrap', name: 'Net Trap', cat: 'gadget', kind: 'floor', price: 70, size: 1, trap: 'net' },
+  { id: 'banana', name: 'Banana Skin', cat: 'gadget', kind: 'floor', price: 15, size: 1, trap: 'banana' },
   // garden
   { id: 'tree', name: 'Apple Tree', cat: 'garden', kind: 'garden', price: 40 },
   { id: 'flowers', name: 'Flower Bed', cat: 'garden', kind: 'garden', price: 20 },
@@ -148,7 +153,7 @@ export function houseWidth(h) { return Math.max(...houseType(h).floors.map(f => 
 export function newGame(name, rng = makeRng(7)) {
   const s = {
     name: String(name || 'Player').trim().slice(0, 16) || 'Player', coins: START_COINS, day: 1, hour: HOURS.START,
-    house: null, van: {}, pets: [], family: [], lessonsToday: 0, extraLessonsToday: 0,
+    house: null, van: {}, pets: [], family: [], caged: [], lessonsToday: 0, extraLessonsToday: 0,
     visitedToday: [], log: [], stats: { lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0 },
     seed: rng.int(1, 1e9),
   };
@@ -193,6 +198,8 @@ export function moveHouse(s, typeId) {
   if (s.coins < cost) return { ok: false, msg: `You need ${cost - s.coins} more coins for the ${t.name}.` };
   const old = s.house;
   if (old) {
+    for (const c of s.caged) { s.coins += TRAP_REWARD; s.stats.burglarsCaught++; }
+    s.caged = [];
     for (const p of placedItems(old)) addToVan(s, p.id);
     say(s, `Sold the ${houseType(old).name} for ${sale} coins. Everything went into the van.`);
   }
@@ -274,6 +281,20 @@ export function securityScore(s) {
   return score;
 }
 export function securityLabel(score) { return score >= 5 ? 'Fortress' : score >= 3 ? 'Safe' : score >= 1 ? 'A bit risky' : 'Wide open'; }
+
+export function trapInRoom(house, roomIdx) {
+  const r = house.rooms[roomIdx];
+  const ids = [...r.wallSlots, ...r.floorSlots].filter(id => id && !id.startsWith('@') && ITEM[id].trap);
+  const strong = ids.find(id => ITEM[id].trap !== 'banana');
+  return strong ? ITEM[strong].trap : ids.length ? 'banana' : null;
+}
+export function trapCount(house) { return countPlaced(house, i => i.trap && i.trap !== 'banana'); }
+export function callPolice(s, idx) {
+  const c = s.caged[idx]; if (!c) return { ok: false };
+  s.caged.splice(idx, 1);
+  s.coins += TRAP_REWARD; s.stats.burglarsCaught++;
+  return { ok: true, reward: TRAP_REWARD, msg: say(s, `The police took the burglar away from the ${s.house.rooms[c.room].name} and paid you a ${TRAP_REWARD} coin reward.`) };
+}
 
 // ───────────────────────── pets ─────────────────────────
 export function buyPet(s, type, name) {
@@ -606,6 +627,9 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
   // happiness bonus
   const happy = s.pets.filter(petHappy).length + s.family.filter(personHappy).length;
   if (happy) { report.happyBonus = happy * 2; s.coins += report.happyBonus; s.stats.coinsEarned += report.happyBonus; }
+  // burglars left in traps overnight are collected by the police
+  report.collected = 0;
+  while (s.caged.length) { callPolice(s, 0); report.collected++; }
   // burglars
   report.burglars = [];
   const attempts = s.day < BURGLAR_GRACE_DAYS ? 0 : (BURGLAR_CHANCE >= 1 || rng() < BURGLAR_CHANCE ? 1 : 0) + (rng() < (SECOND_BURGLAR_CHANCE[s.house.type] || 0.2) ? 1 : 0);
@@ -613,15 +637,23 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
     const sec = securityScore(s);
     const items = placedItems(s.house);
     const who = n === 0 ? 'A burglar' : 'A second burglar';
+    const roomIdx = rng.int(0, s.house.rooms.length - 1);
+    const roomName = s.house.rooms[roomIdx].name;
+    const trap = trapInRoom(s.house, roomIdx);
     let b;
-    if (sec >= 3) { const reward = 20 + sec * 2; s.coins += reward; s.stats.burglarsCaught++; b = { outcome: 'caught', reward, msg: say(s, `${who} tried to sneak in! Your security caught them red-handed and the police gave you a ${reward} coin reward.`) }; }
-    else if (sec >= 1) b = { outcome: 'scared', msg: say(s, `${who} crept up to the house, got spooked and ran away. Phew! More cameras would catch them next time.`) };
-    else if (items.length) {
-      const taken = rng.pick(items);
-      removeItem(s, taken.room, taken.kind, taken.slot);
-      s.van[taken.id]--; if (!s.van[taken.id]) delete s.van[taken.id];
-      b = { outcome: 'robbed', item: taken.id, msg: say(s, `Oh no! ${who} sneaked in while everyone slept and took your ${ITEM[taken.id].name}. Buy cameras or an alarm at the gadget shop!`) };
-    } else b = { outcome: 'nothing', msg: say(s, `${who} looked in the window, saw nothing worth taking, and left.`) };
+    if (trap === 'cage' || trap === 'net') { s.caged.push({ room: roomIdx, trap }); b = { outcome: 'trapped', trap, room: roomIdx, msg: say(s, `${who} crept into the ${roomName} and ${trap === 'cage' ? 'CLANG! the cage dropped from the ceiling' : 'WHOOSH! the net scooped them up'}. They are still in there — tap them to call the police!`) }; }
+    else if (trap === 'banana') { const dropped = rng.int(5, 12); s.coins += dropped; s.stats.coinsEarned += dropped; b = { outcome: 'slipped', coins: dropped, room: roomIdx, msg: say(s, `${who} crept into the ${roomName}, slipped on the banana skin and ran off, dropping ${dropped} coins.`) }; }
+    else if (sec >= 3) { const reward = 20 + sec * 2; s.coins += reward; s.stats.burglarsCaught++; b = { outcome: 'caught', room: roomIdx, reward, msg: say(s, `${who} tried to sneak in! Your security caught them red-handed and the police gave you a ${reward} coin reward.`) }; }
+    else if (sec >= 1) b = { outcome: 'scared', room: roomIdx, msg: say(s, `${who} crept up to the house, got spooked and ran away. Phew! More cameras would catch them next time.`) };
+    else {
+      const here = items.filter(p => p.room === roomIdx && !ITEM[p.id].trap);
+      if (here.length) {
+        const taken = rng.pick(here);
+        removeItem(s, taken.room, taken.kind, taken.slot);
+        s.van[taken.id]--; if (!s.van[taken.id]) delete s.van[taken.id];
+        b = { outcome: 'robbed', room: roomIdx, item: taken.id, msg: say(s, `Oh no! ${who} crept into the ${roomName} while everyone slept and took your ${ITEM[taken.id].name}. Buy cameras, an alarm or a trap at the gadget shop!`) };
+      } else b = { outcome: 'nothing', room: roomIdx, msg: say(s, `${who} crept into the ${roomName}, found nothing worth taking, and left.`) };
+    }
     report.burglars.push(b);
   }
   report.burglar = report.burglars[0] || null;
@@ -642,7 +674,7 @@ export function serialize(s) { return JSON.stringify(s); }
 export function deserialize(json) {
   const s = JSON.parse(json);
   if (!s || typeof s !== 'object' || !s.name) throw new Error('bad save');
-  s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
+  s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.caged = s.caged || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
   s.stats = Object.assign({ lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0 }, s.stats || {});
   return s;
 }
