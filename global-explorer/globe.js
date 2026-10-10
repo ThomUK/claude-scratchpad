@@ -125,6 +125,7 @@ export class Globe {
     this.scene.add(glow);
 
     this.scene.add(this.buildBorders());
+    this.scene.add(this.buildGraticule());
 
     this.markerTexture = Globe.ringTexture();
     this.markerGroup = new THREE.Group();
@@ -240,6 +241,34 @@ export class Globe {
       this.fillGroup.add(mesh);
       if (f.code) { if (!this.fillsByCode.has(f.code)) this.fillsByCode.set(f.code, []); this.fillsByCode.get(f.code).push(mesh); }
     }
+  }
+
+  /**
+   * Very fine reference lines: the equator, and a small cross at each pole
+   * with one arm along the Greenwich meridian (0°/180°) and the other along
+   * 90°E/90°W.
+   */
+  buildGraticule() {
+    const pos = [];
+    const seg = (lat1, lon1, lat2, lon2) => {
+      const a = latLonToVec3(lat1, lon1, BORDER_R), b = latLonToVec3(lat2, lon2, BORDER_R);
+      pos.push(a.x, a.y, a.z, b.x, b.y, b.z);
+    };
+    for (let lon = -180; lon < 180; lon += 2) seg(0, lon, 0, lon + 2); // equator
+    const arm = 4; // degrees of latitude each arm reaches from the pole
+    for (const pole of [90, -90]) {
+      const edge = pole > 0 ? pole - arm : pole + arm;
+      for (const lon of [0, 90]) for (let t = 0; t < 8; t++) { // through the pole, across to the far side
+        const k0 = t / 8, k1 = (t + 1) / 8;
+        // Walk from `edge` on meridian `lon` up through the pole and down meridian `lon + 180`.
+        const latAt = (k) => (k <= 0.5 ? edge + (pole - edge) * (k * 2) : pole - (pole - edge) * ((k - 0.5) * 2));
+        const lonAt = (k) => (k <= 0.5 ? lon : lon + 180);
+        seg(latAt(k0), lonAt(k0), latAt(k1), lonAt(k1));
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: COLORS.border, transparent: true, opacity: 0.45 }));
   }
 
   buildBorders() {
