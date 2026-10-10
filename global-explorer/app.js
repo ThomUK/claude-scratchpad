@@ -151,8 +151,15 @@ function applyView() {
     paintGlobe();
     state.globe.setNamesVisible(r.names);
   }
-  state.globe.setOutline(sel, ink);
-  state.globe.setNamePin(sel);
+  if (view === 'round' && state.game) {
+    // The start country wears the same teal ring as a selection, and keeps
+    // its name just above the start dot.
+    state.globe.setOutline(state.game.startCode, COLORS.browse);
+    state.globe.setNamePin(state.game.startCode, true);
+  } else {
+    state.globe.setOutline(sel, ink);
+    state.globe.setNamePin(sel);
+  }
   const canClick = view !== 'round' || (r.click && state.phase === 'guessing');
   state.globe.pickEnabled = canClick;
   sp.classList.toggle('clickable', canClick);
@@ -290,6 +297,7 @@ function fitGlobeToSheet() {
   const view = viewKind();
   const bar = view === 'explore' ? $('explore-bar') : view === 'start' ? $('start-bar') : null;
   state.globe.topInset = bar && !bar.hidden ? bar.offsetTop + bar.offsetHeight : 0;
+  state.globe.refHeight = $('screen-play').clientHeight; // the full-height canvas the zoom fit is tuned for
   if (window.matchMedia('(min-width: 900px)').matches) { $('globe-wrap').style.bottom = ''; state.globe.resize(); return; }
   $('globe-wrap').style.bottom = `${$('sheet').offsetHeight}px`;
   state.globe.resize();
@@ -444,7 +452,6 @@ function paintGlobe() {
   const g = state.game, hl = new Map(), ll = (code) => state.byCode.get(code).latlng;
   if (!g) { state.globe.setHighlights(hl); state.globe.setPath([], []); state.globe.setNameExclusions([]); return; }
   for (const x of g.guesses) hl.set(x.code, COLORS.guessed);
-  hl.set(g.startCode, COLORS.start);
   if (g.status === 'won') hl.set(g.targetCode, COLORS.correct);
   if (g.status === 'gaveup') hl.set(g.targetCode, COLORS.target);
   state.globe.setHighlights(hl);
@@ -457,7 +464,7 @@ function paintGlobe() {
   });
   if (g.status === 'gaveup') labels.push({ latlng: ll(g.targetCode), text: '?', color: COLORS.target });
   state.globe.setPath(segments, labels);
-  state.globe.setNameExclusions([g.startCode, ...g.guesses.map((x) => x.code)]);
+  state.globe.setNameExclusions(g.guesses.map((x) => x.code)); // their numbered markers stand in for names
 }
 
 // ------------------------------------------------------------------ render --

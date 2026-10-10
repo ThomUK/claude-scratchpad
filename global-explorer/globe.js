@@ -458,8 +458,9 @@ export class Globe {
   }
 
   setNamesVisible(on) {
-    if (on) this.buildNames();
-    this.nameGroup.visible = !!on;
+    this.buildNames();
+    this.nameGroup.visible = true; // individual labels decide in updateNames()
+    this.namesOn = !!on; // a pinned name still shows when names are off
   }
 
   /** Codes whose name label should be hidden (they carry a path marker instead). */
@@ -467,9 +468,14 @@ export class Globe {
     this.nameExclude = new Set(codes);
   }
 
-  /** Always label this country (the selected one), whatever the zoom or overlaps; null to unpin. */
-  setNamePin(code) {
+  /**
+   * Always label this country, whatever the zoom, overlaps or the names
+   * setting; null to unpin. With `above`, the label sits just above the
+   * country's centre point so a marker there stays clear of it.
+   */
+  setNamePin(code, above = false) {
     this.namePin = code || null;
+    this.namePinAbove = !!above;
   }
 
   /**
@@ -493,7 +499,7 @@ export class Globe {
   }
 
   updateNames() {
-    if (!this.nameGroup.visible) return;
+    if (!this.nameGroup.children.length) return;
     const d = this.camera.position.length() - 1;
     const camDir = this.camera.position.clone().normalize();
     const w = this.container.clientWidth, h = this.container.clientHeight;
@@ -507,8 +513,10 @@ export class Globe {
     for (const sp of pinned ? [pinned, ...sprites.filter((x) => x !== pinned)] : sprites) {
       const { span, dir, wfrac, code } = sp.userData;
       sp.visible = false;
+      sp.center.y = sp === pinned && this.namePinAbove ? -0.2 : 0.5;
       if (dir.dot(camDir) <= 0.25) continue; // over the horizon
       if (sp !== pinned) {
+        if (!this.namesOn) continue;
         if (span < d * 7 && d > 0.12) continue; // too small at this zoom (zoomed right in, show everything)
         if (this.nameExclude && this.nameExclude.has(code)) continue;
       }
@@ -644,10 +652,12 @@ export class Globe {
     // Places with no outline at this map scale (a few specks of island) get a
     // wide view: zooming right in would show nothing but ocean and a label.
     const span = c.hasShape && c.span > 0 ? c.span : 12;
-    // The fit is tuned for a tall (portrait) view. In a wide one, such as the
-    // strip above the game sheet, the width is the roomy axis, so come closer
-    // by the aspect ratio to show the country at the same size.
-    const dist = Math.max(this.controls.minDistance, 1 + (cameraDistanceForSpan(span) - 1) / Math.max(1, this.camera.aspect));
+    // The fit is tuned for the full-height view. A shorter canvas (the strip
+    // above the game sheet) renders everything smaller for the same distance,
+    // since the vertical field of view is fixed, so scale the height above the
+    // surface by the height ratio: the map keeps the same size on screen.
+    const ratio = this.refHeight ? Math.min(1, this.container.clientHeight / this.refHeight) : 1;
+    const dist = Math.max(this.controls.minDistance, 1 + (cameraDistanceForSpan(span) - 1) * ratio);
     // Ground spans about 2(d−1)·tan(fov/2) radians per viewport height, so aim
     // that far south of the country to show it higher on screen.
     const latShift = THREE.MathUtils.radToDeg(lift * 2 * (dist - 1) * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)));
