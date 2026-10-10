@@ -633,7 +633,7 @@ function jitter(seed) {
 function stampEl(level, got, size = '', count = 0, seed = '') {
   const s = el('span', `stamp ${level} ${got ? 'got inked' : 'missing'} ${size}`.trim());
   s.style.setProperty('--rot', `${(jitter(seed + level) * 12).toFixed(1)}deg`);
-  s.textContent = level === 'visited' ? (size === 'sm' ? 'Been' : 'Been\nhere') : size === 'sm' ? LEVEL_LABEL(level)[0] : level === 'intermediate' ? 'Inter\nmediate' : LEVEL_LABEL(level);
+  s.textContent = level === 'visited' ? (size === 'sm' ? 'Been here' : 'Been\nhere') : size === 'sm' ? LEVEL_LABEL(level)[0] : level === 'intermediate' ? 'Inter\nmediate' : LEVEL_LABEL(level);
   if (level === 'visited') s.title = got ? 'Been here for real' : 'Not visited for real yet';
   if (got && count > 1) s.append(el('small', null, `×${count}`));
   s.title = got ? `${LEVEL_LABEL(level)} stamp${count > 1 ? ` ×${count}` : ''}` : `No ${LEVEL_LABEL(level)} stamp yet`;
@@ -645,6 +645,14 @@ function miniStamps(code) {
   for (const l of STAMP_LEVELS) w.append(el('i', `${l} ${sf[l] > 0 ? 'got' : ''}`, LEVEL_LABEL(l)[0]));
   w.append(el('i', `visited ${state.visited.has(code) ? 'got' : ''}`, '✈'));
   return w;
+}
+/** Can this country earn a stamp at this level? (Easy and Intermediate draw from smaller pools.) */
+function inPool(level, code) {
+  const key = DIFFICULTY[level].pool;
+  const pool = key && state.pools[key];
+  if (!pool) return true;
+  if (!pool.set) pool.set = new Set(pool.codes);
+  return pool.set.has(code);
 }
 function totalStamps() {
   const f = (state.stats && state.stats.found) || {};
@@ -678,7 +686,7 @@ function renderPassport() {
     const open = () => enterExplore({ source: 'passport', mode: l, back: 'passport' });
     d.addEventListener('click', open); d.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
     const bar = el('div', 'bar'); const fill = el('i'); fill.style.width = `${(100 * pool.stamped) / pool.total}%`; bar.append(fill);
-    d.append(stampEl(l, pool.stamped > 0, 'sm', 0, 'summary'), el('div', 'ln', `${LEVEL_LABEL(l)} · ${poolLabel(l)}`), el('div', 'lc', `${pool.stamped} / ${pool.total}`), bar);
+    d.append(stampEl(l, true, 'sm', 0, 'summary'), el('div', 'ln', `${LEVEL_LABEL(l)} · ${poolLabel(l)}`), el('div', 'lc', `${pool.stamped} / ${pool.total}`), bar);
     levels.append(d);
   }
   {
@@ -686,7 +694,7 @@ function renderPassport() {
     d.title = 'Explore the globe shaded by where you have really been'; d.tabIndex = 0; d.setAttribute('role', 'button');
     const open = () => enterExplore({ source: 'passport', mode: 'visited', back: 'passport' });
     d.addEventListener('click', open); d.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
-    d.append(stampEl('visited', state.visited.size > 0, 'sm', 0, 'summary'), el('div', 'ln', 'Been here for real · places you have actually visited'), el('div', 'lc', String(state.visited.size)));
+    d.append(stampEl('visited', true, 'sm', 0, 'summary'), el('div', 'ln', 'Been here for real · places you have actually visited'), el('div', 'lc', String(state.visited.size)));
     levels.append(d);
   }
   const chips = $('passport-filter');
@@ -712,7 +720,8 @@ function renderPassport() {
     flag.style.setProperty('--frot', `${(jitter(c.code + 'flag') * 7).toFixed(1)}deg`);
     const row = el('div', 'erow'); row.append(flag);
     const sf = stampsFor(state.stats, c.code);
-    for (const l of STAMP_LEVELS) row.append(stampEl(l, sf[l] > 0, 'sm', sf[l], c.code));
+    // One slot per level, spread across the box; a level this country cannot earn leaves its slot empty.
+    for (const l of STAMP_LEVELS) row.append(inPool(l, c.code) ? stampEl(l, sf[l] > 0, 'sm', sf[l], c.code) : el('span', 'slot-empty'));
     row.append(stampEl('visited', state.visited.has(c.code), 'sm', 0, c.code));
     card.append(el('div', 'ename', c.name), row);
     const open = () => showCountry(c.code);
