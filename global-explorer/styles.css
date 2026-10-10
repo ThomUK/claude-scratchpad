@@ -36,6 +36,12 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .appbar .back { min-height: 36px; width: 36px; padding: 0; font-size: 1.5rem; line-height: 1; border-radius: 50%; }
 .page { padding: 12px 16px 24px; max-width: 760px; width: 100%; margin: 0 auto; }
 .page-actions { padding: 0 16px 20px; max-width: 760px; width: 100%; margin: 0 auto; }
+.page-actions.top { padding: 12px 16px 0; flex-wrap: nowrap; }
+.page-actions.top button { flex: 1 1 0; min-width: 0; }
+.country-head .ctitle { display: grid; line-height: 1.2; min-width: 0; }
+.country-head .ctitle p { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.country-head .bigflag { font-size: 2.2rem; }
+.stamps-wide { display: grid; grid-template-columns: repeat(4, 1fr); justify-items: center; align-items: center; margin: 12px 0 0; }
 
 .tabbar { display: flex; height: calc(var(--tabbar-h) + var(--safe-b)); padding-bottom: var(--safe-b); background: var(--surface); border-top: 1px solid var(--border); flex: none; }
 .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 0; border-radius: 0; background: none; color: var(--muted); font-size: 0.72rem; font-weight: 600; padding: 6px 0; }
@@ -223,8 +229,8 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .ministamps i.got.hard { border-color: #b3261e; color: #b3261e; background: #fbe5e3; }
 .ministamps i.visited { border-radius: 3px; }
 .ministamps i.got.visited { border-color: #6b3fa0; color: #6b3fa0; background: #efe6f8; }
-button.visit { border-color: #6b3fa0; color: #6b3fa0; }
-button.visit.on { background: #6b3fa0; color: #fff; }
+button.visit { border: 2px solid #6b3fa0; color: #6b3fa0; }
+button.visit.on { background: #efe6f8; }
 .confirm { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); padding: 0; width: min(420px, calc(100vw - 32px)); }
 .confirm::backdrop { background: rgba(5, 8, 12, 0.55); }
 .confirm-inner { padding: 20px; }

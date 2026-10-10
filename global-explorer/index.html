@@ -138,13 +138,16 @@
 
       <!-- Country page (from the Atlas) -->
       <section class="screen" id="screen-country" hidden>
-        <header class="appbar"><button type="button" class="back" id="country-back" aria-label="Back">‹</button><h1 id="country-title">Country</h1></header>
-        <div class="page" id="country-body"></div>
-        <div class="btnrow page-actions">
+        <header class="appbar country-head">
+          <button type="button" class="back" id="country-back" aria-label="Back">‹</button>
+          <span class="bigflag" id="country-flag"></span>
+          <div class="ctitle"><h1 id="country-title">Country</h1><p class="muted small" id="country-official"></p></div>
+        </header>
+        <div class="btnrow page-actions top">
           <button type="button" class="primary" id="btn-show-globe">Show on globe</button>
-          <button type="button" id="btn-start-here">Start a round here</button>
-          <button type="button" class="visit" id="btn-visited">✈️ I've been here for real</button>
+          <button type="button" class="visit" id="btn-visited">I've been here for real</button>
         </div>
+        <div class="page" id="country-body"></div>
       </section>
 
       <!-- ============================= SETTINGS =========================== -->

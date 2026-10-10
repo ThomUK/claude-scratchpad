@@ -268,7 +268,9 @@ export class Globe {
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: COLORS.border, transparent: true, opacity: 0.45 }));
+    const line = new THREE.LineSegments(geo, new THREE.LineDashedMaterial({ color: COLORS.border, transparent: true, opacity: 0.55, dashSize: 0.0012, gapSize: 0.0018 }));
+    line.computeLineDistances(); // dotted
+    return line;
   }
 
   buildBorders() {

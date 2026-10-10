@@ -259,7 +259,6 @@ function wireTabs() {
   for (const b of document.querySelectorAll('.tab')) b.addEventListener('click', () => { state.explore = null; state.selected = null; showScreen(b.dataset.screen); });
   $('country-back').addEventListener('click', () => showScreen(state.countryFrom || 'atlas'));
   $('btn-show-globe').addEventListener('click', () => showOnGlobe(state.countryPage));
-  $('btn-start-here').addEventListener('click', () => { state.explore = null; showScreen('play'); startRound(state.countryPage); });
   $('btn-visited').addEventListener('click', () => askVisited(state.countryPage));
   $('explore-back').addEventListener('click', () => exitExplore(state.explore ? state.explore.back : 'passport'));
   $('explore-close').addEventListener('click', deselect);
@@ -558,14 +557,16 @@ function renderOver() {
 }
 
 /** The country card: header, key facts, neighbours and "Did you know?". Shared by the reveal, the country page and the atlas. */
-function countryCard(c, startCode) {
+function countryCard(c, startCode, { head = true } = {}) {
   const frag = document.createDocumentFragment();
-  const head = el('div', 'rhead');
-  head.append(el('span', 'bigflag', c.flag));
-  const t = el('div');
-  t.append(el('h2', null, c.name), el('p', 'muted small', c.official));
-  head.append(t);
-  frag.append(head);
+  if (head) { // the country page carries the name and flag in its banner instead
+    const h = el('div', 'rhead');
+    h.append(el('span', 'bigflag', c.flag));
+    const t = el('div');
+    t.append(el('h2', null, c.name), el('p', 'muted small', c.official));
+    h.append(t);
+    frag.append(h);
+  }
 
   const dl = el('dl', 'facts-grid');
   const add = (k, v) => { dl.append(el('dt', null, k), el('dd', null, v)); };
@@ -581,7 +582,7 @@ function countryCard(c, startCode) {
   add('Currency', c.currencies.length ? c.currencies.join(', ') : '—');
   if (c.dependentOf) add('Administered by', name(c.dependentOf));
   frag.append(dl);
-  const ps = el('div', 'ps'); ps.style.margin = '12px 0 0'; ps.style.justifyContent = 'flex-start'; ps.style.gap = '10px';
+  const ps = el('div', 'stamps-wide'); // one column per stamp across the full width
   const sf = stampsFor(state.stats, c.code);
   for (const l of STAMP_LEVELS) ps.append(stampEl(l, sf[l] > 0, '', sf[l]));
   ps.append(stampEl('visited', state.visited.has(c.code), '', 0, c.code));
@@ -809,10 +810,11 @@ function showCountry(code) {
   state.countryFrom = state.screen === 'country' ? state.countryFrom : state.screen;
   const c = state.byCode.get(code);
   $('country-title').textContent = c.name;
-  $('country-body').replaceChildren(countryCard(c, state.game ? state.game.startCode : null));
-  $('btn-start-here').hidden = state.phase === 'guessing';
+  $('country-flag').textContent = c.flag;
+  $('country-official').textContent = c.official;
+  $('country-body').replaceChildren(countryCard(c, state.game ? state.game.startCode : null, { head: false }));
   const vb = $('btn-visited'), on = state.visited.has(code);
-  vb.textContent = on ? '✈️ Been here for real · remove stamp' : "✈️ I've been here for real";
+  vb.textContent = on ? 'Been here for real · remove stamp' : "I've been here for real";
   vb.classList.toggle('on', on);
   showScreen('country');
   $('screen-country').scrollTop = 0;
