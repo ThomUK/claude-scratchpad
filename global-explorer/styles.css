@@ -68,6 +68,20 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .toast { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); max-width: calc(100% - 32px); padding: 10px 14px; border-radius: 12px; background: #1f2933; color: #fff; font-size: 0.9rem; box-shadow: 0 6px 20px rgba(0,0,0,0.25); z-index: 3; pointer-events: none; }
 .toast.warmer { background: var(--warm); } .toast.cooler { background: var(--cool); } .toast.warn { background: #b45309; }
 
+/* ------------------------------------------------------- explorer mode -- */
+#screen-play.exploring .sheet { display: none; }
+#screen-play.exploring .globe-wrap { bottom: 0 !important; }
+.explore-bar { position: absolute; left: 10px; right: 84px; top: calc(10px + var(--safe-t)); z-index: 3; display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 6px; background: rgba(255,255,255,0.92); border: 1px solid var(--border); border-radius: 14px; }
+.explore-bar .back { min-height: 36px; width: 36px; padding: 0; font-size: 1.5rem; line-height: 1; border-radius: 50%; flex: none; }
+.explore-title { display: grid; line-height: 1.2; min-width: 0; }
+.explore-title strong { font-size: 0.95rem; }
+.explore-pop { position: absolute; left: 10px; right: 10px; bottom: 12px; z-index: 4; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 14px 12px; box-shadow: 0 10px 30px rgba(31,41,51,0.2); animation: menuUp .2s ease-out; }
+.explore-pop .close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; min-height: 0; padding: 0; border-radius: 50%; font-size: 1.2rem; line-height: 1; }
+.explore-pop .rhead h2 { font-size: 1.15rem; }
+.explore-pop .facts-grid { margin-top: 8px; font-size: 0.86rem; }
+.explore-pop .btnrow { margin-top: 10px; }
+@media (min-width: 900px) { .explore-pop { left: auto; width: 380px; right: 16px; } .explore-bar { right: 100px; } }
+
 /* ----------------------------------------------------------- play: sheet -- */
 .sheet { position: absolute; left: 0; right: 0; bottom: 0; height: auto; max-height: var(--sheet-h, var(--sheet-half)); background: var(--surface); border-radius: 18px 18px 0 0; box-shadow: 0 -6px 24px rgba(31,41,51,0.12); display: flex; flex-direction: column; z-index: 4; }
 .sheet[data-state="collapsed"] { --sheet-h: var(--sheet-collapsed); }
@@ -184,7 +198,9 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 
 /* Travel summary: one compact line per level, just above the collection. */
 .travel { display: grid; gap: 6px; margin: 4px 0 14px; padding: 10px 12px; border: 1px dashed #c9bda0; border-radius: 10px; background: rgba(255,255,255,0.35); }
-.travel .lvl { display: grid; grid-template-columns: 34px 1fr auto; grid-template-rows: auto auto; column-gap: 10px; align-items: center; }
+.travel .lvl { display: grid; grid-template-columns: 34px 1fr auto; grid-template-rows: auto auto; column-gap: 10px; align-items: center; cursor: pointer; border-radius: 8px; padding: 4px 6px; margin: -4px -6px; }
+.travel .lvl:hover, .travel .lvl:focus-visible { background: rgba(255,255,255,0.55); outline: none; }
+.travel .lvl .lc::after { content: ' ›'; color: #9a8f78; font-weight: 400; }
 .travel .lvl .stamp { grid-column: 1; grid-row: 1 / 3; }
 .travel .ln { grid-column: 2; grid-row: 1; font-family: Georgia, "Times New Roman", serif; font-size: 0.86rem; color: #3b3a36; line-height: 1.25; }
 .travel .bar { grid-column: 2; grid-row: 2; height: 4px; border-radius: 2px; background: rgba(60,50,30,0.12); overflow: hidden; margin-top: 3px; }

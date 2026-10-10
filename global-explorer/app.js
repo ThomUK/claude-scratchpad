@@ -32,6 +32,7 @@ const state = {
   screen: 'play',
   phase: 'pick-start', // pick-start | guessing | over
   game: null, clue: null, browse: null, startMode: null,
+  explore: null, // { mode: 'easy'|'intermediate'|'hard'|'visited' } while exploring the globe from the passport
   settings: { ...DEFAULT_SETTINGS },
   stats: null,
   atlas: { key: 'name', dir: 'asc', filter: '' },
@@ -63,7 +64,10 @@ async function main() {
   for (const c of state.countries) c.visited = state.visited.has(c.code);
 
   state.globe = new Globe($('globe'), state.features, state.countries);
-  state.globe.onPick = (code) => (code ? choose(code) : toast('No country there. Zoom in closer, or type its name.', 'warn'));
+  state.globe.onPick = (code) => {
+    if (state.explore) { if (code) showExplorePop(code); else $('explore-pop').hidden = true; return; }
+    if (code) choose(code); else toast('No country there. Zoom in closer, or type its name.', 'warn');
+  };
   $('loading').remove();
   $('data-note').textContent = `Data: ${cJson.sources.countries}; ${cJson.sources.geometry}. Built ${cJson.generated}.`;
   window.globalExplorer = { state }; // debug handle (used by the browser tests)
@@ -105,6 +109,68 @@ function setStartMode(mode) {
   render();
 }
 
+// -------------------------------------------------------------- explorer --
+const EXPLORE_INK = {
+  easy: ['#2f7d4f', '#bfe0cc'], intermediate: ['#3b63a8', '#c5d5ee'], hard: ['#a3352f', '#efc9c4'], visited: ['#6b3fa0', null],
+};
+/** Open the globe full-screen shaded by one level's progress (or real travel). */
+function enterExplore(mode) {
+  state.explore = { mode };
+  $('explore-pop').hidden = true;
+  const [dark, light] = EXPLORE_INK[mode];
+  const hl = new Map();
+  if (mode === 'visited') {
+    for (const code of state.visited) hl.set(code, dark);
+    const n = state.visited.size;
+    $('explore-title').textContent = 'Been here for real';
+    $('explore-sub').textContent = `${n} ${n === 1 ? 'country' : 'countries'} visited · tap any country`;
+  } else {
+    const pool = remainingPool(state.countries, state.pools, resolveRules({ preset: mode }), state.stats);
+    const key = DIFFICULTY[mode].pool;
+    const base = key && state.pools[key] ? state.pools[key].codes : state.countries.map((c) => c.code);
+    for (const code of base) hl.set(code, stampsFor(state.stats, code)[mode] > 0 ? dark : light);
+    $('explore-title').textContent = `${LEVEL_LABEL(mode)} stamps`;
+    $('explore-sub').textContent = `${pool.stamped} of ${pool.total} collected · tap any country`;
+  }
+  $('screen-play').classList.add('exploring', 'clickable');
+  $('explore-bar').hidden = false;
+  state.globe.setHighlights(hl);
+  state.globe.setPath([], []);
+  state.globe.setNameExclusions([]);
+  state.globe.setNamesVisible(true);
+  state.globe.pickEnabled = true;
+  state.globe.controls.autoRotate = false;
+  showScreen('play');
+  fitGlobeToSheet();
+}
+/** Leave explorer mode, restoring the game's own view; `to` is the screen to show (null = stay). */
+function exitExplore(to) {
+  if (!state.explore) return;
+  state.explore = null;
+  $('screen-play').classList.remove('exploring');
+  $('explore-bar').hidden = true;
+  $('explore-pop').hidden = true;
+  paintGlobe();
+  applyRulesToGlobe();
+  fitGlobeToSheet();
+  if (to) showScreen(to);
+}
+/** Lightweight info card for a tapped country while exploring. */
+function showExplorePop(code) {
+  const c = state.byCode.get(code);
+  $('pop-flag').textContent = c.flag; $('pop-name').textContent = c.name; $('pop-status').textContent = `${c.continent} · ${c.designation}`;
+  const dl = $('pop-facts'); dl.replaceChildren();
+  const add = (k, v) => { dl.append(el('dt', null, k), el('dd', null, v)); };
+  add('Area', `${fmtN(c.area)} km²`);
+  add('Population', c.population == null ? 'unknown' : fmtN(c.population));
+  add('Density', c.density == null ? '—' : `${fmtDensity(c.density)} people per km²`);
+  add('Coastline', c.coastline == null ? 'unknown' : c.coastline === 0 ? 'none (landlocked)' : `${fmtN(c.coastline)} km`);
+  const dd = el('dd'); dd.append(miniStamps(code)); dl.append(el('dt', null, 'Stamps'), dd);
+  $('explore-pop').dataset.code = code;
+  $('explore-pop').hidden = false;
+  state.globe.flyTo(code);
+}
+
 // ------------------------------------------------------------ real travel --
 /** Ask before adding or removing the "been here for real" stamp. */
 function askVisited(code) {
@@ -135,19 +201,24 @@ function recentre() {
 
 // ------------------------------------------------------------- navigation --
 function wireTabs() {
-  for (const b of document.querySelectorAll('.tab')) b.addEventListener('click', () => showScreen(b.dataset.screen));
+  for (const b of document.querySelectorAll('.tab')) b.addEventListener('click', () => { exitExplore(null); showScreen(b.dataset.screen); });
   $('country-back').addEventListener('click', () => showScreen(state.countryFrom || 'atlas'));
-  $('btn-show-globe').addEventListener('click', () => { browseCountry(state.countryPage); showScreen('play'); });
-  $('btn-start-here').addEventListener('click', () => { startRound(state.countryPage); showScreen('play'); });
+  $('btn-show-globe').addEventListener('click', () => { exitExplore(null); browseCountry(state.countryPage); showScreen('play'); });
+  $('btn-start-here').addEventListener('click', () => { exitExplore(null); startRound(state.countryPage); showScreen('play'); });
   $('btn-visited').addEventListener('click', () => askVisited(state.countryPage));
+  $('explore-back').addEventListener('click', () => exitExplore('passport'));
+  $('explore-close').addEventListener('click', () => { $('explore-pop').hidden = true; });
+  $('pop-more').addEventListener('click', () => { const c = $('explore-pop').dataset.code; if (c) showCountry(c); });
   $('confirm-cancel').addEventListener('click', () => $('confirm').close());
   $('confirm').addEventListener('click', (e) => { if (e.target === $('confirm')) $('confirm').close(); });
 }
 
 function showScreen(which) {
+  if (state.explore && which !== 'play' && which !== 'country') exitExplore(null);
   state.screen = which;
   for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== `screen-${which}`;
-  for (const b of document.querySelectorAll('.tab')) b.classList.toggle('on', b.dataset.screen === (which === 'country' ? (state.countryFrom || 'atlas') : which));
+  const tabFor = which === 'country' ? (state.countryFrom === 'play' && state.explore ? 'passport' : state.countryFrom || 'atlas') : which === 'play' && state.explore ? 'passport' : which;
+  for (const b of document.querySelectorAll('.tab')) b.classList.toggle('on', b.dataset.screen === tabFor);
   if (which === 'atlas') renderAtlas();
   if (which === 'passport') renderPassport();
   if (which === 'settings') renderSettings();
@@ -248,6 +319,7 @@ function onLocate() {
 
 // -------------------------------------------------------------------- game --
 function applyRulesToGlobe() {
+  if (state.explore) return;
   const r = rules();
   state.globe.setNamesVisible(r.names);
   const canClick = state.phase === 'pick-start' ? state.startMode === 'map' : r.click && state.phase === 'guessing';
@@ -256,6 +328,7 @@ function applyRulesToGlobe() {
 }
 
 function startRound(startCode) {
+  exitExplore(null);
   state.clue = null; state.browse = null; state.startMode = null;
   $('begin-menu').hidden = true;
   flash('');
@@ -578,13 +651,16 @@ function renderPassport() {
   for (const l of STAMP_LEVELS) {
     const pool = remainingPool(state.countries, state.pools, resolveRules({ preset: l }), state.stats);
     const d = el('div', 'lvl'); d.style.setProperty('--ink', l === 'easy' ? '#2f7d4f' : l === 'intermediate' ? '#3b63a8' : '#a3352f');
-    d.title = poolLabel(l);
+    d.title = `Explore the globe shaded by your ${LEVEL_LABEL(l)} stamps`; d.tabIndex = 0; d.setAttribute('role', 'button');
+    d.addEventListener('click', () => enterExplore(l)); d.addEventListener('keydown', (e) => { if (e.key === 'Enter') enterExplore(l); });
     const bar = el('div', 'bar'); const fill = el('i'); fill.style.width = `${(100 * pool.stamped) / pool.total}%`; bar.append(fill);
     d.append(stampEl(l, pool.stamped > 0, 'sm', 0, 'summary'), el('div', 'ln', `${LEVEL_LABEL(l)} · ${poolLabel(l)}`), el('div', 'lc', `${pool.stamped} / ${pool.total}`), bar);
     levels.append(d);
   }
   {
     const d = el('div', 'lvl'); d.style.setProperty('--ink', '#6b3fa0');
+    d.title = 'Explore the globe shaded by where you have really been'; d.tabIndex = 0; d.setAttribute('role', 'button');
+    d.addEventListener('click', () => enterExplore('visited')); d.addEventListener('keydown', (e) => { if (e.key === 'Enter') enterExplore('visited'); });
     d.append(stampEl('visited', state.visited.size > 0, 'sm', 0, 'summary'), el('div', 'ln', 'Been here for real · places you have actually visited'), el('div', 'lc', String(state.visited.size)));
     levels.append(d);
   }

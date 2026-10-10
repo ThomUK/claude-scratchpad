@@ -25,6 +25,11 @@ country is always drawn from the countries you have not yet stamped at that
 level. Shows rounds, streaks, best scores,
 progress bars per level and the stamp book.
 
+Tapping a level in the passport summary opens the globe shaded by your
+progress on that level (dark for stamped, light for still to collect, beige for
+places outside the level's pool), with names on; tap any country for a quick
+card with area, population, density and coastline, and a link to its page.
+
 Countries you have really been to get a violet "been here for real" visa
 stamp: open the country in the Atlas and tap the button (with a confirmation
 to add or remove). Real travel is stored separately and survives a reset.

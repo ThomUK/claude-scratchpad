@@ -26,6 +26,16 @@
         <div class="globe-wrap" id="globe-wrap">
           <div id="globe"></div>
           <div class="loading" id="loading"><div class="spin"></div>Loading the world…</div>
+          <div class="explore-bar" id="explore-bar" hidden>
+            <button type="button" class="back" id="explore-back" aria-label="Back to passport">‹</button>
+            <div class="explore-title"><strong id="explore-title"></strong><span class="muted small" id="explore-sub"></span></div>
+          </div>
+          <div class="explore-pop" id="explore-pop" hidden>
+            <button type="button" class="close" id="explore-close" aria-label="Close">×</button>
+            <div class="rhead"><span class="bigflag" id="pop-flag"></span><div><h2 id="pop-name"></h2><p class="muted small" id="pop-status"></p></div></div>
+            <dl class="facts-grid" id="pop-facts"></dl>
+            <div class="btnrow"><button type="button" class="primary" id="pop-more">Full details</button></div>
+          </div>
           <button type="button" class="compass" id="compass" title="North is up. Tap to re-centre." aria-label="Compass: north is up. Tap to re-centre the globe.">
             <svg viewBox="0 0 100 100" aria-hidden="true">
               <circle cx="50" cy="50" r="46" class="c-bg"/>
