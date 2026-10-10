@@ -113,10 +113,9 @@ function setStartMode(mode) {
 const EXPLORE_INK = {
   easy: ['#2f7d4f', '#bfe0cc'], intermediate: ['#3b63a8', '#c5d5ee'], hard: ['#a3352f', '#efc9c4'], visited: ['#6b3fa0', null],
 };
-/** Open the globe full-screen shaded by one level's progress (or real travel). */
-function enterExplore(mode) {
-  state.explore = { mode };
-  $('explore-pop').hidden = true;
+/** Shade the globe and header for the current explorer mode, from live progress. */
+function paintExplore() {
+  const mode = state.explore.mode;
   const [dark, light] = EXPLORE_INK[mode];
   const hl = new Map();
   if (mode === 'visited') {
@@ -132,9 +131,19 @@ function enterExplore(mode) {
     $('explore-title').textContent = `${LEVEL_LABEL(mode)} stamps`;
     $('explore-sub').textContent = `${pool.stamped} of ${pool.total} collected · tap any country`;
   }
+  state.globe.setHighlights(hl);
+  // Keep an open quick card's stamp markers current too.
+  const pop = $('explore-pop');
+  if (!pop.hidden && pop.dataset.code) { const dd = pop.querySelector('#pop-facts dd:last-child'); if (dd) dd.replaceChildren(miniStamps(pop.dataset.code)); }
+}
+
+/** Open the globe full-screen shaded by one level's progress (or real travel). */
+function enterExplore(mode) {
+  state.explore = { mode };
+  $('explore-pop').hidden = true;
   $('screen-play').classList.add('exploring', 'clickable');
   $('explore-bar').hidden = false;
-  state.globe.setHighlights(hl);
+  paintExplore();
   state.globe.setPath([], []);
   state.globe.setNameExclusions([]);
   state.globe.setNamesVisible(true);
@@ -189,6 +198,7 @@ function setVisited(code, on) {
   state.byCode.get(code).visited = on;
   save(KEYS.visited, [...state.visited]);
   toast(on ? `✈️ ${name(code)} stamped: been here for real.` : `Stamp removed from ${name(code)}.`);
+  if (state.explore) paintExplore();
   if (state.countryPage === code) showCountry(code);
 }
 
