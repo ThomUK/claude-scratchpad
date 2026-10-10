@@ -19,8 +19,8 @@ const BORDER_R = 1.0016;    // borders above fills
 // Momentum. OrbitControls applies dampingFactor of the pending rotation each
 // frame: a high factor keeps the globe glued to the finger, a low one glides.
 const DRAG_DAMPING = 0.2;    // while a pointer is down
-const GLIDE_DAMPING = 0.1;   // after release: ~0.75 s to run down
-const GLIDE_BOOST = 2;       // stretch the leftover motion at release
+const GLIDE_DAMPING = 0.09;  // after release: ~0.8 s to run down
+const GLIDE_BOOST = 3;       // stretch the leftover motion at release
 const ZOOM_GLIDE_DECAY = 0.85;   // per 60 fps frame: ~0.5 s to run down
 const ZOOM_GLIDE_CARRY = 0.4;    // share of the pinch rate carried past release
 const ZOOM_GLIDE_MAX = 0.01;     // ln(altitude factor) per ms
