@@ -240,8 +240,10 @@ button.visit.on { background: #6b3fa0; color: #fff; }
 .passport .stat { background: rgba(255,255,255,0.45); }
 
 /* ----------------------------------------------------------------- atlas -- */
-.atlas-tools { padding: 10px 16px; display: grid; gap: 8px; position: sticky; top: 0; background: var(--bg); z-index: 1; }
-#screen-atlas .appbar + .atlas-tools { top: 0; }
+/* Title, search and sort chips stay pinned together while the list scrolls. */
+.atlas-head { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--border); }
+.atlas-head .appbar { position: static; border-bottom: 0; }
+.atlas-tools { padding: 0 16px 10px; display: grid; gap: 8px; }
 .chips.sort { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; scrollbar-width: none; }
 .chips.sort::-webkit-scrollbar { display: none; }
 .sortchip { flex: none; min-height: 34px; padding: 4px 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; background: var(--surface); }
