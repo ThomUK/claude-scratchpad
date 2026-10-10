@@ -63,6 +63,7 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .compass { position: absolute; right: 10px; top: calc(10px + var(--safe-t)); width: 64px; height: 64px; padding: 0; min-height: 0; border: 0; border-radius: 50%; background: none; z-index: 3; cursor: pointer; }
 .compass:hover { border: 0; }
 .compass svg { width: 100%; height: 100%; display: block; }
+.compass[hidden] { display: none; } /* until the world has loaded */
 .compass .c-bg { fill: rgba(255,255,255,0.88); stroke: var(--border); stroke-width: 1.5; }
 .compass .c-ring { fill: none; stroke: #c9c2b4; stroke-width: 1; }
 .compass .c-minor { fill: #c9c2b4; }

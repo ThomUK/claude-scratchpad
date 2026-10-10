@@ -22,10 +22,10 @@
     <main id="screens">
 
       <!-- ============================== PLAY ============================== -->
-      <section class="screen" id="screen-play">
+      <section class="screen picking" id="screen-play"><!-- picking: the globe fills the screen until a round starts, so nothing else shows while loading -->
         <div class="globe-wrap" id="globe-wrap">
           <div id="globe"></div>
-          <div class="loading" id="loading"><div class="spin"></div>Loading the world…</div>
+          <div class="loading" id="loading"><div class="spin"></div>Loading Global Exploration</div>
           <div class="explore-bar" id="explore-bar" hidden>
             <button type="button" class="back" id="explore-back" aria-label="Back to passport">‹</button>
             <div class="explore-title"><strong id="explore-title"></strong><span class="muted small" id="explore-sub"></span></div>
@@ -49,7 +49,7 @@
             <dl class="facts-grid" id="pop-facts"></dl>
             <div class="btnrow"><button type="button" class="primary" id="pop-more">Full details</button></div>
           </div>
-          <button type="button" class="compass" id="compass" title="North is up. Tap to re-centre." aria-label="Compass: north is up. Tap to re-centre the globe.">
+          <button type="button" class="compass" id="compass" hidden title="North is up. Tap to re-centre." aria-label="Compass: north is up. Tap to re-centre the globe.">
             <svg viewBox="0 0 100 100" aria-hidden="true">
               <circle cx="50" cy="50" r="46" class="c-bg"/>
               <g transform="translate(50 50) scale(0.8) translate(-50 -50)"><!-- the star sits in from the letters -->

@@ -73,6 +73,7 @@ async function main() {
     if (code) choose(code); else toast('No country there. Zoom in closer, or type its name.', 'warn');
   };
   $('loading').remove();
+  $('compass').hidden = false;
   $('data-note').textContent = `Data: ${cJson.sources.countries}; ${cJson.sources.geometry}. Built ${cJson.generated}.`;
   window.globalExplorer = { state }; // debug handle (used by the browser tests)
 
