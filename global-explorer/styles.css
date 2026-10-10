@@ -212,9 +212,9 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .book { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; margin-top: 12px; }
 .entry { display: grid; gap: 2px; padding: 5px 10px 7px; cursor: pointer; border: 1px solid #cdbf9f; box-shadow: inset 0 0 0 3px rgba(255,255,255,0.35); border-radius: 10px; background: rgba(255,255,255,0.28); transform: rotate(var(--rot, 0deg)); }
 .entry:hover, .entry:focus-visible { background: rgba(255,255,255,0.5); outline: none; }
-.entry .ename { font-family: Georgia, "Times New Roman", serif; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: #6b6253; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entry .ename { font-family: Georgia, "Times New Roman", serif; font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; color: #2b2a27; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .entry .erow { display: grid; grid-template-columns: 1.2fr repeat(4, 1fr); align-items: center; justify-items: center; min-height: 40px; }
-.entry .eflag { font-size: 1.9rem; line-height: 1; width: 1.3em; text-align: center; filter: sepia(0.35) saturate(0.75) contrast(0.85) brightness(0.95); opacity: 0.85; mix-blend-mode: multiply; transform: rotate(var(--frot, -4deg)); }
+.entry .eflag { font-size: 1.9rem; line-height: 1; width: 1.3em; text-align: center; } /* a plain flag, as elsewhere in the app */
 .entry .slot-empty { width: 34px; height: 34px; }
 .ministamps { display: inline-flex; gap: 3px; vertical-align: middle; }
 .ministamps i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #d6dbe0; font-style: normal; font-size: 7px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; color: #c5cbd2; }

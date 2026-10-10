@@ -723,8 +723,7 @@ function renderPassport() {
   for (const c of cards) {
     const card = el('div', 'entry'); card.tabIndex = 0;
     card.style.setProperty('--rot', `${(jitter(c.code) * 1.5).toFixed(2)}deg`);
-    const flag = el('span', 'eflag inked', c.flag);
-    flag.style.setProperty('--frot', `${(jitter(c.code + 'flag') * 7).toFixed(1)}deg`);
+    const flag = el('span', 'eflag', c.flag);
     const row = el('div', 'erow'); row.append(flag);
     const sf = stampsFor(state.stats, c.code);
     // One slot per level, spread across the box; a level this country cannot earn leaves its slot empty.
