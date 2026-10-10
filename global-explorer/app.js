@@ -791,7 +791,6 @@ function renderAtlas() {
     li.classList.toggle('selected', state.selected === c.code);
     const nm = el('div');
     const n = el('div', 'name', c.name);
-    n.append(miniStamps(c.code));
     nm.append(n, el('div', 'sub', `${c.continent} · ${c.designation}`));
     const [v, l] = valueFor(c, key);
     const val = el('div', 'val', v); if (l) val.append(el('span', 'l', l));
