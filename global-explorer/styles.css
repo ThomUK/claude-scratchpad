@@ -72,6 +72,7 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 #screen-play.exploring .sheet, #screen-play.picking .sheet { display: none; }
 #screen-play.exploring .globe-wrap, #screen-play.picking .globe-wrap { bottom: 0 !important; }
 .explore-bar { position: absolute; left: 10px; right: 84px; top: calc(10px + var(--safe-t)); z-index: 3; display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 6px; background: rgba(255,255,255,0.92); border: 1px solid var(--border); border-radius: 14px; }
+.explore-bar[hidden], .explore-pop[hidden] { display: none; }
 .explore-bar .back { min-height: 36px; width: 36px; padding: 0; font-size: 1.5rem; line-height: 1; border-radius: 50%; flex: none; }
 .explore-title { display: grid; line-height: 1.2; min-width: 0; }
 .explore-title strong { font-size: 0.95rem; }
