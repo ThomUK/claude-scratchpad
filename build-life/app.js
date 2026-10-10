@@ -24,7 +24,7 @@ function toast(msg, ms = 2600) { toastEl.textContent = msg; toastEl.classList.ad
 function openModal(html) { modalBox.innerHTML = html; modal.hidden = false; }
 function closeModal() { modal.hidden = true; modalBox.innerHTML = ''; }
 
-const TIMED = { furniture: 1, gadget: 1, garden: 1, pets: 1, hospital: 1, estate: 1, neighbours: 0.5 };
+const TIMED = { furniture: 1, gadget: 1, garden: 1, pets: 1, hospital: 1, estate: 1, bank: 1, neighbours: 0.5 };
 function go(where, a = null) {
   if (S && TIMED[where] && screen !== where) E.advanceTime(S, TIMED[where]);
   screen = where; ui = { a };
@@ -36,7 +36,7 @@ function go(where, a = null) {
 function render() {
   if (S) save();
   hud.hidden = !S || screen === 'start';
-  if (S && screen !== 'start') hud.innerHTML = `<a class="home" href="../" title="All toy models">⌂</a><span class="name">${esc(S.name)}</span><span class="pill coins">🪙 ${S.coins}</span><span class="pill">Day ${S.day}</span><span class="pill">${night() ? '🌙' : evening() ? '🌇' : '☀️'} ${E.clockText(S)}</span><span class="spacer"></span><button data-act="help">? Help</button><button data-act="switch">Players</button>`;
+  if (S && screen !== 'start') hud.innerHTML = `<a class="home" href="../" title="All toy models">⌂</a><span class="name">${esc(S.name)}</span><span class="pill coins">🪙 ${S.coins}</span>${S.bank ? `<span class="pill">🏦 ${S.bank}</span>` : ''}<span class="pill">Day ${S.day}</span><span class="pill">${night() ? '🌙' : evening() ? '🌇' : '☀️'} ${E.clockText(S)}</span><span class="spacer"></span><button data-act="help">? Help</button><button data-act="switch">Players</button>`;
   const fn = SCREENS[screen] || SCREENS.start;
   app.innerHTML = fn();
 }
@@ -91,6 +91,7 @@ const SCREENS = {
         ${d('Gadget Shop', '📺', 'gadget', shopsOpen, shopsOpen ? 'screens & cameras' : 'open 8am – 6pm')}
         ${d('Pet Shop', '🐶', 'pets', shopsOpen, shopsOpen ? 'pets & pet food' : 'open 8am – 6pm')}
         ${d('Garden Centre', '🌳', 'garden', shopsOpen, shopsOpen ? 'trees, ponds, trampolines' : 'open 8am – 6pm')}
+        ${d('Bank', '🏦', 'bank', E.bankOpen(S) && !late, E.bankOpen(S) ? `${S.bank} coins saved · 5% a night` : 'open 8am – 6pm')}
         ${d('Hospital', '🏥', 'hospital', !late, 'new babies come from here')}
         ${d('Estate Agent', '🏡', 'estate', shopsOpen, shopsOpen ? 'buy & sell houses' : 'open 8am – 6pm')}
         ${d('Neighbours', '🏘', 'neighbours', !late, 'visit nearby families')}
@@ -106,6 +107,18 @@ const SCREENS = {
     return `<div class="screen"><div class="panel"><h2>🐶 Pet Shop</h2><p class="muted">${open ? 'Every pet needs feeding and playing with. Dogs, parrots and dragons also guard the house.' : '<b>Closed.</b> Open 8am – 6pm.'} You have <b>${E.mealsLeft(S)}</b> pet meals.</p></div>
       <div class="grid">${E.PETS.map(p => `<div class="card ${S.coins < p.price ? 'off' : ''}"><div class="art">${A.petSvg(p.id, 66)}</div><div class="nm">${p.name}</div><div class="muted" style="font-size:13px">${p.security ? `🔒 ${p.security} security` : 'cuddly'}</div><div class="pr">🪙 ${p.price}</div><button class="small" data-act="buyPet" data-arg='${arg(p.id)}' ${!open || S.coins < p.price ? 'disabled' : ''}>Choose</button></div>`).join('')}
       ${itemCard('petfood', open)}</div>
+      ${nav(navTown(), navHome())}</div>`;
+  },
+  bank() {
+    const open = E.bankOpen(S);
+    const tonight = E.nightlyInterest(S.bank);
+    const amounts = [10, 50, 100, 500];
+    const btns = (act, max) => amounts.filter(a => a <= max).map(a => `<button class="small" data-act="${act}" data-arg='${arg(a)}'>${a}</button>`).join('') + (max > 0 ? `<button class="small warm" data-act="${act}" data-arg='${arg(max)}'>All (${max})</button>` : '<span class="muted">nothing to move</span>');
+    return `<div class="screen"><div class="panel"><h2>🏦 Bank</h2>
+      <div class="speech">${open ? `Welcome! Coins in the bank earn <b>5% interest every night at midnight</b> (rounded down, at least 1 coin, up to ${E.BANK_MAX_INTEREST} a night). Burglars can never touch them — but they can pinch up to ${E.POCKET_THEFT[1]}% of the coins you keep at home. The catch: getting here takes an hour each way.` : '<b>Closed.</b> The bank is open 8am – 6pm.'}</div>
+      <div class="row" style="margin-top:14px;gap:24px"><div><div class="muted">In your pocket</div><div class="big" style="text-align:left">🪙 ${S.coins}</div></div><div><div class="muted">In the bank</div><div class="big" style="text-align:left">🏦 ${S.bank}</div></div><div><div class="muted">Interest tonight</div><div class="big" style="text-align:left;color:var(--ok)">+${tonight}</div></div></div>
+      ${open ? `<h3 style="margin-top:14px">Pay in</h3><div class="row">${btns('deposit', S.coins)}</div><h3 style="margin-top:14px">Take out</h3><div class="row">${btns('withdraw', S.bank)}</div>` : ''}
+      <p class="muted" style="margin-top:12px">Interest earned so far: 🪙 ${S.stats.interest || 0} · Pinched by burglars so far: 🪙 ${S.stats.stolen || 0}</p></div>
       ${nav(navTown(), navHome())}</div>`;
   },
   hospital() {
@@ -153,6 +166,8 @@ const SCREENS = {
     const r = ui.a;
     return `<div class="screen"><div class="panel"><h2>☀️ Good morning! It is day ${S.day}.</h2>
       ${(r.burglars || []).length ? r.burglars.map(b => `<div class="speech burglar ${b.outcome}"><div>${A.burglarSvg(b.outcome)}</div><div>${b.outcome === 'robbed' ? '🥷' : b.outcome === 'caught' ? '👮' : b.outcome === 'trapped' ? '🪤' : b.outcome === 'slipped' ? '🍌' : '😮'} ${esc(b.msg)}${b.clip !== undefined ? `<div style="margin-top:8px"><button class="small" data-act="watch" data-arg='${arg(['footage', b.clip])}'>📹 Watch the ${esc(S.footage[b.clip].cam.toLowerCase())} footage</button></div>` : `<div class="muted" style="margin-top:6px;font-size:13px">No camera saw this. A security camera in the ${esc(S.house.rooms[b.room].name)}, or a doorbell camera outside, would have recorded it.</div>`}</div></div>`).join('') : '<p>🌙 Everyone slept soundly.</p>'}
+      ${r.interest ? `<p>🏦 The bank paid <b>🪙 ${r.interest}</b> interest at midnight. You now have ${S.bank} coins saved.</p>` : ''}
+      ${r.stolenCoins ? `<p>💸 Burglars pinched <b>🪙 ${r.stolenCoins}</b> from the coins you kept at home. Coins in the bank are safe.</p>` : ''}
       ${r.collected ? `<p>👮 The police came for the ${r.collected === 1 ? 'burglar' : r.collected + ' burglars'} still in your traps and paid 🪙 ${r.collected * E.TRAP_REWARD}.</p>` : ''}
       ${r.happyBonus ? `<p>😊 Your happy pets and family found <b>🪙 ${r.happyBonus}</b> for you.</p>` : ''}
       ${r.grown.map(n => `<p>🎉 <b>${esc(n)}</b> has grown from a baby into a child!</p>`).join('')}
@@ -290,6 +305,7 @@ function helpModal() {
     <li><b>Pets</b> from the pet shop need feeding (buy pet food) and playing with. Happy pets do tricks and find coins. <b>Babies</b> come from the hospital once you own a cot; feed them and in a few days they grow up.</li>
     <li><b>Burglars</b> come every night, and posh houses attract two at once. Each one sneaks into one room. <b>Traps</b> from the gadget shop catch a burglar who enters that room: a Drop Cage falls from the ceiling, a Net Trap scoops them up, and a Banana Skin makes them slip and drop coins. In the morning tap the trapped burglar to call the police for a bigger reward. More traps in more rooms means more burglars caught.</li>
     <li><b>Camera footage.</b> A security camera in the room the burglar entered (or a doorbell or outdoor camera) records a video of what happened. Watch it from the morning report and save your best captures to the 🎞 Criminal Gallery at home to relive them whenever you like. Security cameras, alarms, doorbell cameras, dogs, parrots and dragons add security points. 3 or more catches the burglar (and the police pay a reward). 1–2 scares them away. None… and something goes missing.</li>
+    <li><b>The bank</b> in town pays 5% interest every night on the coins you leave there (at least 1, at most 25 a night), and burglars can never touch them. Burglars who get in unhindered pinch 10–25% of the coins you keep at home. Going to the bank takes an hour each way.</li>
     <li><b>Move house.</b> The estate agent buys your decorated house for more than you paid. Your furniture, pets and family move with you.</li>
     <li><b>Day and night.</b> Everything you do takes time. Shops shut at 6pm, school at 3pm. Go to bed in the evening to start a new day. Nobody in Build Life ever dies.</li></ul>
     <div class="row"><button data-act="closeModal">Got it</button></div>`);
@@ -356,6 +372,8 @@ const ACT = {
   watch([list, i]) { footageModal(list, i); },
   saveClip(i) { const r = E.saveClip(S, i); toast(r.msg || 'Saved!'); render(); if (!modal.hidden) footageModal('footage', i); },
   deleteClip(i) { E.deleteClip(S, i); render(); },
+  deposit(a) { const r = E.deposit(S, a); toast(r.msg); render(); },
+  withdraw(a) { const r = E.withdraw(S, a); toast(r.msg); render(); },
   callPolice(i) { const r = E.callPolice(S, i); if (r.ok) toast(r.msg, 4000); closeModal(); render(); },
   sleep() {
     if (!E.canSleep(S)) { toast('It is too early for bed!'); return; }

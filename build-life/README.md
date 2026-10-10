@@ -42,6 +42,10 @@ gold coins, and fill your home with pets and family.
   parrots and dragons add security points: three or more catches the burglar
   and the police pay a reward, one or two scares them off, none and something
   goes missing.
+- **The bank** in town pays 5% interest a night on savings (rounded down, at
+  least 1 coin, capped at 25) and burglars cannot touch them, but every trip
+  takes an hour and a burglar who gets in unhindered pinches 10–25% of the
+  coins you keep at home.
 - **Day and night.** Everything takes time. Shops close at 6pm, school at 3pm.
   Go to bed in the evening to start the next day; the morning report tells you
   what happened overnight.

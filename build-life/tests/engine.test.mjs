@@ -3,7 +3,7 @@ import {
   HOUSES, ITEMS, ITEM, PETS, PET, WALLPAPERS, FLOORS, PAINTS, NEIGHBOURS, SUBJECTS, LEVELS, HOURS, START_COINS, LESSONS_PER_DAY, QUESTIONS_PER_LESSON, PERFECT_BONUS, BABY_GROWS_AT, CHILD_SCHOOL_AGE, BURGLAR_GRACE_DAYS,
   makeRng, newGame, buildHouse, houseWidth, moveHouse, houseSalePrice, buyItem, sellFromVan, vanItems, vanCount, placeItem, removeItem, placedList, setWallpaper, setFlooring, setPaint,
   securityScore, buyPet, feedPet, playWithPet, mealsLeft, canHaveBaby, newBaby, feedPerson, lessonsLeft, canStartLesson, makeQuestion, startLesson, checkAnswer, answerQuestion, finishLesson,
-  neighbourHouse, visitNeighbour, trapInRoom, trapCount, callPolice, TRAP_REWARD, cameraFor, saveClip, deleteClip, GALLERY_MAX, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
+  neighbourHouse, visitNeighbour, trapInRoom, trapCount, callPolice, TRAP_REWARD, cameraFor, saveClip, deleteClip, GALLERY_MAX, bankOpen, nightlyInterest, deposit, withdraw, BANK_MAX_INTEREST, POCKET_THEFT, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
 } from '../engine.js';
 
 let fails = 0;
@@ -183,7 +183,7 @@ console.log('— night —');
   // burglary: find a seed that produces a burglar with no security
   const u = newGame('U'); moveHouse(u, 'flat'); u.day = BURGLAR_GRACE_DAYS; u.coins += 500; buyItem(u, 'bed'); placeItem(u, 2, 'floor', 0, 'bed');
   let seed = 1; let rep;
-  for (; seed < 200; seed++) { const c = JSON.parse(serialize(u)); rep = sleep(c, makeRng(seed)).report; if (rep.burglar && rep.burglar.outcome === 'robbed') break; }
+  for (; seed < 200; seed++) { const c = JSON.parse(serialize(u)); rep = sleep(c, makeRng(seed)).report; if (rep.burglar && rep.burglar.outcome === 'robbed' && rep.burglar.item) break; }
   ok(seed < 200 && rep.burglar.item === 'bed', 'with no security a burglar steals your only item');
   const v = JSON.parse(serialize(u)); buyItem(v, 'camera'); buyItem(v, 'alarm'); placeItem(v, 0, 'wall', 0, 'camera'); placeItem(v, 0, 'wall', 1, 'alarm');
   const coinsBefore = v.coins;
@@ -228,7 +228,7 @@ console.log('— burglar traps —');
     ok(!callPolice(c, 99).ok, 'no burglar, no reward');
     const d = JSON.parse(serialize(trapped.c)); d.hour = 20; const coins2 = d.coins; d.caged.push({ room: 0, trap: 'cage' }); const left = d.caged.length;
     const rep = sleep(d, makeRng(999)).report;
-    ok(rep.collected === left && d.coins >= coins2 + left * TRAP_REWARD, 'burglars left in traps overnight are collected and paid for');
+    ok(rep.collected === left && d.coins + (rep.stolenCoins || 0) >= coins2 + left * TRAP_REWARD, 'burglars left in traps overnight are collected and paid for');
     const e = JSON.parse(serialize(trapped.c)); e.coins += 5000; e.caged.push({ room: 1, trap: 'net' }); const coins3 = e.coins, left2 = e.caged.length;
     moveHouse(e, 'terrace');
     ok(e.caged.length === 0 && e.coins === coins3 - (HOUSES[1].price - houseSalePrice(trapped.c.house)) + left2 * TRAP_REWARD, 'moving house hands trapped burglars to the police first');
@@ -262,6 +262,35 @@ console.log('— camera footage and the criminal gallery —');
   for (let i = 0; i < GALLERY_MAX + 2; i++) { c.footage = [{ id: 'x' + i, day: 1, outcome: 'scared' }]; saveClip(c, 0); }
   ok(c.gallery.length === GALLERY_MAX, 'the gallery has a limit');
   ok(deleteClip(c, 0).ok && c.gallery.length === GALLERY_MAX - 1 && !deleteClip(c, 99).ok, 'clips can be deleted');
+}
+
+console.log('— bank —');
+{
+  ok(nightlyInterest(0) === 0 && nightlyInterest(5) === 1 && nightlyInterest(19) === 1 && nightlyInterest(20) === 1 && nightlyInterest(39) === 1 && nightlyInterest(40) === 2 && nightlyInterest(199) === 9, '5% a night, rounded down, never below 1 coin');
+  ok(nightlyInterest(500) === BANK_MAX_INTEREST && nightlyInterest(100000) === BANK_MAX_INTEREST, `interest is capped at ${BANK_MAX_INTEREST} coins a night`);
+  const t = newGame('B'); moveHouse(t, 'flat'); t.coins = 300;
+  ok(bankOpen(t) && (t.hour = 19, !bankOpen(t)), 'the bank keeps shop hours'); t.hour = 10;
+  ok(!deposit(t, 0).ok && !deposit(t, 301).ok && !deposit(t, 'x').ok, 'cannot pay in nothing or more than you have');
+  ok(deposit(t, 120).ok && t.coins === 180 && t.bank === 120, 'paid in 120');
+  ok(!withdraw(t, 121).ok && withdraw(t, 20).ok && t.coins === 200 && t.bank === 100, 'took out 20');
+  t.day = 1; t.hour = 20;
+  let r = sleep(t, makeRng(1));
+  ok(r.report.interest === 5 && t.bank === 105 && t.stats.interest === 5, 'overnight: 5% interest on 100 coins');
+  t.bank = 7; t.hour = 20; r = sleep(t, makeRng(1));
+  ok(r.report.interest === 1 && t.bank === 8, 'tiny balances still earn 1 coin');
+  t.bank = 0; t.hour = 20; r = sleep(t, makeRng(1));
+  ok(r.report.interest === 0, 'an empty account earns nothing');
+  // pocket theft: unhindered burglar takes 10–25% of coins at home, never from the bank
+  const u = newGame('U'); moveHouse(u, 'flat'); u.day = BURGLAR_GRACE_DAYS; u.coins = 200; u.bank = 1000;
+  let hit = null;
+  for (let sd = 1; sd < 100 && !hit; sd++) { const c = JSON.parse(serialize(u)); const rep = sleep(c, makeRng(sd)).report; if (rep.stolenCoins) hit = { c, rep }; }
+  ok(hit && hit.rep.stolenCoins >= Math.floor(200 * POCKET_THEFT[0] / 100) && hit.rep.stolenCoins <= Math.floor(200 * POCKET_THEFT[1] / 100 * 2), `an unhindered burglar pinches coins at home (${hit && hit.rep.stolenCoins} of 200)`);
+  ok(hit && hit.c.bank === 1000 + BANK_MAX_INTEREST && hit.rep.burglars.some(b => b.outcome === 'robbed' && b.stolen > 0), 'the bank balance is untouched and still earns interest');
+  const v = JSON.parse(serialize(u)); v.coins += 500; buyItem(v, 'camera'); buyItem(v, 'alarm'); placeItem(v, 0, 'wall', 0, 'camera'); placeItem(v, 0, 'wall', 1, 'alarm'); const before = v.coins;
+  const rep2 = sleep(v, makeRng(3)).report;
+  ok(!rep2.stolenCoins && v.coins >= before, 'burglars that are caught take no coins');
+  const w = deserialize(serialize(hit.c));
+  ok(w.bank === hit.c.bank && typeof w.stats.stolen === 'number', 'bank balance survives a save');
 }
 
 console.log('— save / load —');

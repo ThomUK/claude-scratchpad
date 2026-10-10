@@ -8,6 +8,9 @@ export const BABY_GROWS_AT = 5;      // days old when a baby becomes a child
 export const CHILD_SCHOOL_AGE = 7;   // days old when a child can go to school
 export const BURGLAR_GRACE_DAYS = 2; // the very first night is safe
 export const BURGLAR_CHANCE = 1;     // a burglar every single night
+export const BANK_RATE = 0.05;        // interest per night on coins in the bank
+export const BANK_MAX_INTEREST = 25;  // cap per night
+export const POCKET_THEFT = [10, 25]; // % of coins at home a burglar can pinch
 export const GALLERY_MAX = 40;        // clips the criminal gallery can hold
 export const TRAP_REWARD = 40;       // police reward for a burglar caught in a trap
 export const SECOND_BURGLAR_CHANCE = { flat: 0.15, terrace: 0.3, detached: 0.5, castle: 0.7 }; // posh houses attract more
@@ -154,8 +157,8 @@ export function houseWidth(h) { return Math.max(...houseType(h).floors.map(f => 
 export function newGame(name, rng = makeRng(7)) {
   const s = {
     name: String(name || 'Player').trim().slice(0, 16) || 'Player', coins: START_COINS, day: 1, hour: HOURS.START,
-    house: null, van: {}, pets: [], family: [], caged: [], footage: [], gallery: [], lessonsToday: 0, extraLessonsToday: 0,
-    visitedToday: [], log: [], stats: { lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0 },
+    house: null, bank: 0, van: {}, pets: [], family: [], caged: [], footage: [], gallery: [], lessonsToday: 0, extraLessonsToday: 0,
+    visitedToday: [], log: [], stats: { lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0, interest: 0, stolen: 0 },
     seed: rng.int(1, 1e9),
   };
   return s;
@@ -274,6 +277,24 @@ export function setPaint(s, part, color) { if (PAINTS[part] && PAINTS[part].incl
 export function countPlaced(house, pred) { return placedItems(house).filter(p => pred(ITEM[p.id])).length; }
 export function bedCount(house) { return placedItems(house).reduce((a, p) => a + (ITEM[p.id].bed ? (ITEM[p.id].beds || 1) : 0), 0); }
 export function cotCount(house) { return countPlaced(house, i => i.cot); }
+
+// ───────────────────────── bank ─────────────────────────
+export function bankOpen(s) { return s.hour >= HOURS.SCHOOL_OPEN && s.hour < HOURS.SHOPS_CLOSE; }
+export function nightlyInterest(bank) { if (bank <= 0) return 0; return Math.max(1, Math.min(BANK_MAX_INTEREST, Math.floor(bank * BANK_RATE))); }
+export function deposit(s, amount) {
+  amount = Math.floor(Number(amount) || 0);
+  if (amount <= 0) return { ok: false, msg: 'Pay in at least 1 coin.' };
+  if (amount > s.coins) return { ok: false, msg: `You only have ${s.coins} coins on you.` };
+  s.coins -= amount; s.bank += amount;
+  return { ok: true, msg: `Paid ${amount} coins into the bank.` };
+}
+export function withdraw(s, amount) {
+  amount = Math.floor(Number(amount) || 0);
+  if (amount <= 0) return { ok: false, msg: 'Take out at least 1 coin.' };
+  if (amount > s.bank) return { ok: false, msg: `You only have ${s.bank} coins in the bank.` };
+  s.bank -= amount; s.coins += amount;
+  return { ok: true, msg: `Took ${amount} coins out of the bank.` };
+}
 
 // ───────────────────────── security ─────────────────────────
 export function securityScore(s) {
@@ -666,12 +687,16 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
     else if (sec >= 1) b = { outcome: 'scared', room: roomIdx, msg: say(s, `${who} crept up to the house, got spooked and ran away. Phew! More cameras would catch them next time.`) };
     else {
       const here = items.filter(p => p.room === roomIdx && !ITEM[p.id].trap);
+      const pct = rng.int(POCKET_THEFT[0], POCKET_THEFT[1]);
+      const stolen = Math.floor(s.coins * pct / 100);
+      if (stolen > 0) { s.coins -= stolen; s.stats.stolen += stolen; report.stolenCoins = (report.stolenCoins || 0) + stolen; }
+      const coinMsg = stolen > 0 ? ` They also pinched ${stolen} coins (${pct}% of what you had at home) — coins in the bank are safe!` : '';
       if (here.length) {
         const taken = rng.pick(here);
         removeItem(s, taken.room, taken.kind, taken.slot);
         s.van[taken.id]--; if (!s.van[taken.id]) delete s.van[taken.id];
-        b = { outcome: 'robbed', room: roomIdx, item: taken.id, msg: say(s, `Oh no! ${who} crept into the ${roomName} while everyone slept and took your ${ITEM[taken.id].name}. Buy cameras, an alarm or a trap at the gadget shop!`) };
-      } else b = { outcome: 'nothing', room: roomIdx, msg: say(s, `${who} crept into the ${roomName}, found nothing worth taking, and left.`) };
+        b = { outcome: 'robbed', room: roomIdx, item: taken.id, stolen, msg: say(s, `Oh no! ${who} crept into the ${roomName} while everyone slept and took your ${ITEM[taken.id].name}.${coinMsg} Buy cameras, an alarm or a trap at the gadget shop!`) };
+      } else b = { outcome: stolen > 0 ? 'robbed' : 'nothing', room: roomIdx, item: null, stolen, msg: say(s, stolen > 0 ? `${who} crept into the ${roomName}, found no furniture worth taking, but pinched ${stolen} coins (${pct}% of what you had at home). Coins in the bank are safe!` : `${who} crept into the ${roomName}, found nothing worth taking, and left.`) };
     }
     if (cam) {
       const clip = { id: `${s.day}-${n}-${s.seed % 1000}`, day: s.day, hour: rng.int(0, 4), minute: rng.int(0, 59), room: roomIdx, roomName, cam, who, outcome: b.outcome, trap: b.trap || null, item: b.item || null, coins: b.coins || b.reward || 0, wallpaper: s.house.rooms[roomIdx].wallpaper, flooring: s.house.rooms[roomIdx].flooring, saved: false };
@@ -680,6 +705,9 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
     report.burglars.push(b);
   }
   report.burglar = report.burglars[0] || null;
+  // the bank pays interest at midnight
+  report.interest = nightlyInterest(s.bank);
+  if (report.interest) { s.bank += report.interest; s.stats.interest += report.interest; }
   // pets
   for (const pet of s.pets) { pet.hunger = Math.min(3, pet.hunger + 1); pet.fun = Math.max(0, pet.fun - 1); pet.tricksToday = 0; pet.room = rng.int(0, s.house.rooms.length - 1); if (pet.hunger >= 2) report.hungryPets.push(pet.name); }
   // family
@@ -697,7 +725,7 @@ export function serialize(s) { return JSON.stringify(s); }
 export function deserialize(json) {
   const s = JSON.parse(json);
   if (!s || typeof s !== 'object' || !s.name) throw new Error('bad save');
-  s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.caged = s.caged || []; s.footage = s.footage || []; s.gallery = s.gallery || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
-  s.stats = Object.assign({ lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0 }, s.stats || {});
+  s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.bank = s.bank || 0; s.caged = s.caged || []; s.footage = s.footage || []; s.gallery = s.gallery || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
+  s.stats = Object.assign({ lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0, interest: 0, stolen: 0 }, s.stats || {});
   return s;
 }
