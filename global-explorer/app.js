@@ -770,7 +770,7 @@ function valueFor(c, key) {
     case 'continent': return [c.continent, ''];
     case 'designation': return [c.designation, ''];
     case 'difficulty': return [TIER_LABEL[c.tier], TIER_NOTE[c.tier]];
-    case 'visited': return [c.visited ? '✈️ yes' : '–', 'been here for real'];
+    case 'visited': return [c.visited ? '' : '–', ''];
     default: return [fmtN(c.population), 'people'];
   }
 }
@@ -795,6 +795,7 @@ function renderAtlas() {
     nm.append(n, el('div', 'sub', `${c.continent} · ${c.designation}`));
     const [v, l] = valueFor(c, key);
     const val = el('div', 'val', v); if (l) val.append(el('span', 'l', l));
+    if (key === 'visited' && c.visited) val.append(stampEl('visited', true, 'sm', 0, c.code)); // the passport's own stamp
     li.append(el('span', 'flag', c.flag), nm, val);
     const open = () => showCountry(c.code);
     li.addEventListener('click', open);
