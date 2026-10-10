@@ -51,9 +51,10 @@ mix is possible; kilometres or miles; data credits.
 
 On Easy the mystery country is drawn only from the 80 countries UK residents
 visit most (ONS *Travel trends*, UK residents' visits abroad by main country
-visited). The top 10 are the published 2024 figures; ranks 11–80 are a
-reconstruction of the ONS country table and live in `build_data.mjs`
-(`EASY_POOL`) for correction. The start country can still be anywhere.
+visited). The top 10 are the published 2024 figures; ranks 11–79 are a
+reconstruction of the ONS country table, and the United Kingdom itself takes
+the 80th place. The list lives in `build_data.mjs` (`EASY_POOL`) for
+correction. The start country can still be anywhere.
 
 Live: https://thomuk.github.io/claude-scratchpad/global-explorer/
 

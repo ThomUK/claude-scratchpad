@@ -745,6 +745,7 @@ const SORTS = [
   { key: 'designation', label: 'Status' }, { key: 'difficulty', label: 'Difficulty' }, { key: 'visited', label: 'Been here' },
 ];
 const TIER_LABEL = ['', 'Easy', 'Intermediate', 'Advanced'];
+const TIER_NOTE = ['', '80 commonly visited countries', 'all UN countries', 'all countries'];
 function wireAtlas() {
   const chips = $('sort-chips');
   chips.classList.add('sort');
@@ -769,7 +770,7 @@ function valueFor(c, key) {
     case 'neighbours': return [String(c.borders.length), c.borders.length === 1 ? 'neighbour' : 'neighbours'];
     case 'continent': return [c.continent, ''];
     case 'designation': return [c.designation, ''];
-    case 'difficulty': return [TIER_LABEL[c.tier], 'lowest level'];
+    case 'difficulty': return [TIER_LABEL[c.tier], TIER_NOTE[c.tier]];
     case 'visited': return [c.visited ? '✈️ yes' : '–', 'been here for real'];
     default: return [fmtN(c.population), 'people'];
   }

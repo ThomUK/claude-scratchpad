@@ -155,7 +155,8 @@ const EASY_POOL = [
   'LVA', 'BRB', 'SVK', 'SGP', 'CHN', 'HKG', 'NGA', 'DOM', 'SAU', 'SVN',
   'LUX', 'EST', 'BRA', 'NZL', 'MYS', 'LKA', 'VNM', 'IDN', 'QAT', 'CUB',
   'KEN', 'ISR', 'MUS', 'BGD', 'ARG', 'PHL', 'KOR', 'GHA', 'TTO', 'BHS',
-  'ATG', 'LCA', 'GIB', 'MNE', 'ALB', 'SRB', 'GEO', 'KHM', 'PER', 'OMN',
+  'ATG', 'LCA', 'GIB', 'MNE', 'ALB', 'SRB', 'GEO', 'KHM', 'PER',
+  'GBR', // the home country itself takes the 80th place (Oman in the ONS ranking)
 ];
 const EASY_POOL_SIZE = 80;
 
@@ -334,7 +335,7 @@ writeFileSync('data/countries.json', JSON.stringify({
   pools: {
     easy: {
       label: '80 commonly visited countries',
-      source: "ONS Travel trends 2024, UK residents' visits abroad by main country visited (top 10 as published; 11-80 reconstructed)",
+      source: "ONS Travel trends 2024, UK residents' visits abroad by main country visited (top 10 as published; 11-79 reconstructed; the UK itself added as the 80th)",
       codes: EASY_POOL,
     },
     un: {
