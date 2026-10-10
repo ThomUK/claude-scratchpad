@@ -126,6 +126,7 @@ function enterExplore(mode) {
   closeExplorePop();
   $('screen-play').classList.add('exploring', 'clickable');
   $('explore-bar').hidden = false;
+  $('start-bar').hidden = true; // the explorer bar takes its place
   paintExplore();
   state.globe.setPath([], []);
   state.globe.setNameExclusions([]);
@@ -141,6 +142,7 @@ function exitExplore(to) {
   state.explore = null;
   $('screen-play').classList.remove('exploring');
   $('explore-bar').hidden = true;
+  $('start-bar').hidden = state.phase !== 'pick-start';
   closeExplorePop();
   paintGlobe();
   applyRulesToGlobe();

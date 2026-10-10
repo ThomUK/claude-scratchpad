@@ -135,7 +135,7 @@ export class Globe {
     const dotTex = Globe.dotTexture();
     for (const c of countries) {
       if (c.hasShape) continue;
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, transparent: true, depthWrite: false, sizeAttenuation: false }));
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex, transparent: true, depthWrite: false, depthTest: false, sizeAttenuation: false }));
       sp.scale.setScalar(0.016);
       sp.position.copy(latLonToVec3(c.latlng[0], c.latlng[1], MARK_R));
       sp.userData.code = c.code;
@@ -287,7 +287,7 @@ export class Globe {
       if (!c || (c.hasShape && c.span > 2.5)) { const s = this.markers.get(code); if (s) { this.markerGroup.remove(s); this.markers.delete(code); } continue; }
       let s = this.markers.get(code);
       if (!s) {
-        s = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.markerTexture, sizeAttenuation: false, transparent: true, depthWrite: false }));
+        s = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.markerTexture, sizeAttenuation: false, transparent: true, depthWrite: false, depthTest: false }));
         s.scale.setScalar(0.03);
         s.position.copy(latLonToVec3(c.latlng[0], c.latlng[1], MARK_R));
         this.markerGroup.add(s); this.markers.set(code, s);
@@ -471,6 +471,22 @@ export class Globe {
    * Show a label only when its country is big enough at this zoom, faces the
    * camera, and its on-screen box does not overlap a bigger country's label.
    */
+  /**
+   * Ring markers, speck dots and path numbers are flat sprites just above the
+   * surface, so with depth testing the globe would clip their lower half near
+   * the horizon. They render without it instead, and are hidden here once
+   * their anchor point rolls over the horizon (dot with the camera direction
+   * below 1/d) so they never show through the globe from the far side.
+   */
+  cullHorizonSprites() {
+    const camDir = this.camera.position.clone().normalize();
+    const limit = 1 / this.camera.position.length();
+    const v = new THREE.Vector3();
+    for (const g of [this.markerGroup, this.speckGroup, this.labelGroup]) {
+      for (const sp of g.children) sp.visible = v.copy(sp.position).normalize().dot(camDir) > limit;
+    }
+  }
+
   updateNames() {
     if (!this.nameGroup.visible) return;
     const d = this.camera.position.length() - 1;
@@ -534,7 +550,7 @@ export class Globe {
       this.pathGroup.add(tube);
     }
     for (const l of labels) {
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: Globe.labelTexture(l.text, l.color), sizeAttenuation: false, transparent: true, depthWrite: false }));
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: Globe.labelTexture(l.text, l.color), sizeAttenuation: false, transparent: true, depthWrite: false, depthTest: false }));
       sp.scale.setScalar(0.042);
       sp.position.copy(latLonToVec3(l.latlng[0], l.latlng[1], MARK_R + radius * 2.5)); // above the tube ends
       this.labelGroup.add(sp);
@@ -661,6 +677,7 @@ export class Globe {
       if (Math.abs(Math.log((d - 1) / (this.outlineBuiltAt - 1))) > 0.2) this.buildOutline();
     }
     this.updateNames();
+    this.cullHorizonSprites();
     this.renderer.render(this.scene, this.camera);
   }
 
