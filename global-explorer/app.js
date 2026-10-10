@@ -345,10 +345,10 @@ function startRound(startCode) {
   state.game = createGame(state.countries, startCode, { rules: r, pool: codes });
   state.phase = 'guessing';
   applyRulesToGlobe();
-  state.globe.flyTo(startCode);
   paintGlobe();
   setSheet('half');
   render();
+  state.globe.flyTo(startCode); // after the sheet is laid out, so the fit knows the canvas shape
   const left = pool.complete ? `Your ${r.label} passport is complete, so any of them can come up.` : '';
   toast(`Starting from ${name(startCode)}. ${r.distances ? `The mystery country is ${km(state.game.startDistanceKm)} away.` : ''} ${left}`.replace(/\s+/g, ' ').trim());
 }
@@ -412,7 +412,7 @@ function paintGlobe() {
   if (g.status === 'won') hl.set(g.targetCode, COLORS.correct);
   if (g.status === 'gaveup') hl.set(g.targetCode, COLORS.target);
   state.globe.setHighlights(hl);
-  const segments = [], labels = [{ latlng: ll(g.startCode), text: 'S', color: COLORS.start }];
+  const segments = [], labels = [{ latlng: ll(g.startCode), dot: true, color: COLORS.startDot }];
   let prev = g.startCode;
   g.guesses.forEach((x, i) => {
     segments.push({ from: ll(prev), to: ll(x.code), color: verdictColor(x.verdict) });
@@ -497,6 +497,7 @@ function render(lastResult) {
     toast(v === 'warmer' ? `🔥 Closer · ${who}` : v === 'cooler' ? `❄️ Further · ${who}` : `Same distance · ${who}`, v);
   }
   if (state.phase === 'over') { flash(''); renderOver(); }
+  fitGlobeToSheet(); // last, once the sheet holds its final content, so the canvas shape is right for any fly-to that follows
 }
 
 function flash(text, cls = '') {

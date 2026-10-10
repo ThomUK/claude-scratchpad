@@ -10,7 +10,7 @@ import { cameraDistanceForSpan, pickCountry } from './engine.js?v=dev';
 // Light "atlas" palette: pale ocean, sand land, soft grey borders.
 export const COLORS = {
   ocean: '#cfe3f2', land: '#e9e0c7', border: '#7c8794', guessed: '#cfc2a0',
-  start: '#f4b63a', warmer: '#f26a1b', cooler: '#3b82d6', same: '#8a94a0', correct: '#22a55b', target: '#d6409f', browse: '#0f766e',
+  start: '#f4b63a', startDot: '#1f8f4e', warmer: '#f26a1b', cooler: '#3b82d6', same: '#8a94a0', correct: '#22a55b', target: '#d6409f', browse: '#0f766e',
 };
 
 const SURFACE = 1.0;        // sphere radius
@@ -175,10 +175,10 @@ export class Globe {
   }
 
   /** A small filled dot with a dark rim, in the land colour. */
-  static dotTexture() {
+  static dotTexture(fill = COLORS.land, stroke = COLORS.border) {
     const s = 64, c = document.createElement('canvas'); c.width = c.height = s;
     const g = c.getContext('2d');
-    g.fillStyle = COLORS.land; g.strokeStyle = COLORS.border; g.lineWidth = 6;
+    g.fillStyle = fill; g.strokeStyle = stroke; g.lineWidth = 6;
     g.beginPath(); g.arc(s / 2, s / 2, s / 2 - 6, 0, Math.PI * 2); g.fill(); g.stroke();
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
   }
@@ -550,8 +550,10 @@ export class Globe {
       this.pathGroup.add(tube);
     }
     for (const l of labels) {
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: Globe.labelTexture(l.text, l.color), sizeAttenuation: false, transparent: true, depthWrite: false, depthTest: false }));
-      sp.scale.setScalar(0.042);
+      // A label is a numbered disc, or with `dot` a small plain dot in its colour.
+      const map = l.dot ? Globe.dotTexture(l.color, '#ffffff') : Globe.labelTexture(l.text, l.color);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map, sizeAttenuation: false, transparent: true, depthWrite: false, depthTest: false }));
+      sp.scale.setScalar(l.dot ? 0.022 : 0.042);
       sp.position.copy(latLonToVec3(l.latlng[0], l.latlng[1], MARK_R + radius * 2.5)); // above the tube ends
       this.labelGroup.add(sp);
     }
@@ -629,7 +631,10 @@ export class Globe {
     this.controls.autoRotate = false;
     const from = this.camera.position.clone();
     const span = c.hasShape && c.span > 0 ? c.span : 0.5;
-    const dist = cameraDistanceForSpan(span);
+    // The fit is tuned for a tall (portrait) view. In a wide one, such as the
+    // strip above the game sheet, the width is the roomy axis, so come closer
+    // by the aspect ratio to show the country at the same size.
+    const dist = Math.max(this.controls.minDistance, 1 + (cameraDistanceForSpan(span) - 1) / Math.max(1, this.camera.aspect));
     // Ground spans about 2(d−1)·tan(fov/2) radians per viewport height, so aim
     // that far south of the country to show it higher on screen.
     const latShift = THREE.MathUtils.radToDeg(lift * 2 * (dist - 1) * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)));
