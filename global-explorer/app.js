@@ -233,9 +233,13 @@ function setSheet(stateName) {
 }
 /** The sheet is as tall as its content (up to its state's limit); the globe fills whatever is left above it. */
 function fitGlobeToSheet() {
-  if (window.matchMedia('(min-width: 900px)').matches) { $('globe-wrap').style.bottom = ''; state.globe && state.globe.resize(); return; }
+  if (!state.globe) return;
+  // Centre the globe below the card that floats over the top of the full-screen views.
+  const bar = state.explore ? $('explore-bar') : state.phase === 'pick-start' ? $('start-bar') : null;
+  state.globe.topInset = bar && !bar.hidden ? bar.offsetTop + bar.offsetHeight : 0;
+  if (window.matchMedia('(min-width: 900px)').matches) { $('globe-wrap').style.bottom = ''; state.globe.resize(); return; }
   $('globe-wrap').style.bottom = `${$('sheet').offsetHeight}px`;
-  state.globe && state.globe.resize();
+  state.globe.resize();
 }
 function wireSheet() {
   const grip = $('grip');

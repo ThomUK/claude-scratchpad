@@ -681,6 +681,10 @@ export class Globe {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     if (!w || !h) return;
     this.camera.aspect = w / h;
+    // A card over the top of the canvas hides that much of the view, so shift
+    // the view centre down by half the inset to centre the globe in what is left.
+    const inset = this.topInset || 0;
+    if (inset) this.camera.setViewOffset(w, h, 0, -inset / 2, w, h); else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
     if (this.nameGroup) this.applyLabelScale();
