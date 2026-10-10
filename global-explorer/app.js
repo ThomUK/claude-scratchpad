@@ -65,7 +65,7 @@ async function main() {
 
   state.globe = new Globe($('globe'), state.features, state.countries);
   state.globe.onPick = (code) => {
-    if (state.explore) { if (code) showExplorePop(code); else $('explore-pop').hidden = true; return; }
+    if (state.explore) { if (code) showExplorePop(code); else closeExplorePop(); return; }
     if (code) choose(code); else toast('No country there. Zoom in closer, or type its name.', 'warn');
   };
   $('loading').remove();
@@ -140,7 +140,7 @@ function paintExplore() {
 /** Open the globe full-screen shaded by one level's progress (or real travel). */
 function enterExplore(mode) {
   state.explore = { mode };
-  $('explore-pop').hidden = true;
+  closeExplorePop();
   $('screen-play').classList.add('exploring', 'clickable');
   $('explore-bar').hidden = false;
   paintExplore();
@@ -158,7 +158,7 @@ function exitExplore(to) {
   state.explore = null;
   $('screen-play').classList.remove('exploring');
   $('explore-bar').hidden = true;
-  $('explore-pop').hidden = true;
+  closeExplorePop();
   paintGlobe();
   applyRulesToGlobe();
   fitGlobeToSheet();
@@ -177,7 +177,14 @@ function showExplorePop(code) {
   const dd = el('dd'); dd.append(miniStamps(code)); dl.append(el('dt', null, 'Stamps'), dd);
   $('explore-pop').dataset.code = code;
   $('explore-pop').hidden = false;
-  state.globe.flyTo(code);
+  state.globe.setOutline(code, EXPLORE_INK[state.explore.mode][0]); // ring it in the view's own ink
+  // Centre the country in the strip of globe left clear above the card.
+  const canvasH = $('globe').clientHeight || 1;
+  state.globe.flyTo(code, { lift: Math.min(0.25, $('explore-pop').offsetHeight / (2 * canvasH)) });
+}
+function closeExplorePop() {
+  $('explore-pop').hidden = true;
+  state.globe.setOutline(null);
 }
 
 // ------------------------------------------------------------ real travel --
@@ -217,7 +224,7 @@ function wireTabs() {
   $('btn-start-here').addEventListener('click', () => { exitExplore(null); startRound(state.countryPage); showScreen('play'); });
   $('btn-visited').addEventListener('click', () => askVisited(state.countryPage));
   $('explore-back').addEventListener('click', () => exitExplore('passport'));
-  $('explore-close').addEventListener('click', () => { $('explore-pop').hidden = true; });
+  $('explore-close').addEventListener('click', closeExplorePop);
   $('pop-more').addEventListener('click', () => { const c = $('explore-pop').dataset.code; if (c) showCountry(c); });
   $('confirm-cancel').addEventListener('click', () => $('confirm').close());
   $('confirm').addEventListener('click', (e) => { if (e.target === $('confirm')) $('confirm').close(); });

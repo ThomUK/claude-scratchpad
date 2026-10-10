@@ -25,6 +25,7 @@ const ZOOM_GLIDE_DECAY = 0.85;   // per 60 fps frame: ~0.5 s to run down
 const ZOOM_GLIDE_CARRY = 0.4;    // share of the pinch rate carried past release
 const ZOOM_GLIDE_MAX = 0.01;     // ln(altitude factor) per ms
 const WHEEL_ZOOM_SPEED = 2.5; // altitude factor per 100 units of wheel delta is 0.95^2.5
+const OUTLINE_R = 1.0026;   // selected-country outline: halo below, ink just above
 const MARK_R = 1.004;       // sprites close to the surface so they do not drift when zoomed in
 const SUBDIV_DEG = 3;       // bisect fill triangles with an edge longer than this
 
@@ -145,6 +146,9 @@ export class Globe {
     this.scene.add(this.pathGroup);
     this.labelGroup = new THREE.Group();
     this.scene.add(this.labelGroup);
+    this.outlineGroup = new THREE.Group();
+    this.scene.add(this.outlineGroup);
+    this.outline = null;
     this.nameGroup = new THREE.Group();
     this.nameGroup.visible = false;
     this.scene.add(this.nameGroup);
@@ -537,14 +541,84 @@ export class Globe {
     }
   }
 
-  /** Animate the camera to look straight down on a country. */
-  flyTo(code, { duration = 1400 } = {}) {
+  /**
+   * Outline one country in `color` (null clears), drawn as a ribbon on the
+   * surface with a pale halo beneath so it reads on dark fills too. The
+   * width follows the zoom, so frame() rebuilds it as the camera moves.
+   */
+  setOutline(code, color) {
+    this.outline = code ? { code, color } : null;
+    this.buildOutline();
+  }
+
+  buildOutline() {
+    for (const child of [...this.outlineGroup.children]) { child.geometry.dispose(); child.material.dispose(); this.outlineGroup.remove(child); }
+    if (!this.outline) return;
+    const d = this.camera.position.length();
+    this.outlineBuiltAt = d;
+    const w = THREE.MathUtils.clamp(0.0011 * (d - 1), 0.00008, 0.0025); // half-width, ~3 px on a phone
+    const rings = [];
+    for (const f of this.features) if (f.code === this.outline.code && !f.hatch) for (const poly of f.polygons) rings.push(...poly);
+    const layer = (halfWidth, radius, color, opacity) => {
+      const pos = [];
+      for (const ring of rings) Globe.ribbon(ring, halfWidth, radius, pos);
+      if (!pos.length) return;
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      this.outlineGroup.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity, side: THREE.DoubleSide })));
+    };
+    layer(w * 2.2, OUTLINE_R, '#ffffff', 0.9);
+    layer(w, OUTLINE_R + 0.0004, this.outline.color, 1);
+  }
+
+  /** Append a mitred ribbon of half-width `w` along a closed [lon, lat] ring to `out`. */
+  static ribbon(ring, w, radius, out) {
+    const pts = [];
+    for (let i = 0; i < ring.length - 1; i++) { // the ring repeats its first point last
+      const p = latLonToVec3(ring[i][1], ring[i][0], radius);
+      if (!pts.length || pts[pts.length - 1].distanceToSquared(p) > 1e-14) pts.push(p);
+    }
+    const n = pts.length;
+    if (n < 3) return;
+    const perp = pts.map((p, i) => { // tangent-plane normal to each segment i -> i+1
+      const q = pts[(i + 1) % n];
+      return p.clone().normalize().cross(q.clone().sub(p)).normalize();
+    });
+    const off = pts.map((p, i) => { // per-vertex mitre from the two adjacent segments
+      const a = perp[(i + n - 1) % n], b = perp[i];
+      const m = a.clone().add(b);
+      if (m.lengthSq() < 1e-12) return b.clone().multiplyScalar(w);
+      m.normalize();
+      return m.multiplyScalar(w / Math.max(0.4, m.dot(b)));
+    });
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const [lon1, lat1] = ring[i], [lon2, lat2] = ring[j];
+      if (Math.abs(lon1) > 179.99 && Math.abs(lon2) > 179.99) continue; // antimeridian seam
+      if (lat1 < -89.99 && lat2 < -89.99) continue; // south pole seam
+      const a1 = pts[i].clone().add(off[i]), a2 = pts[i].clone().sub(off[i]);
+      const b1 = pts[j].clone().add(off[j]), b2 = pts[j].clone().sub(off[j]);
+      out.push(a1.x, a1.y, a1.z, a2.x, a2.y, a2.z, b1.x, b1.y, b1.z, a2.x, a2.y, a2.z, b2.x, b2.y, b2.z, b1.x, b1.y, b1.z);
+    }
+  }
+
+  /**
+   * Animate the camera to look straight down on a country. `lift` is a
+   * fraction of the viewport height to place the country above centre, for
+   * when a card covers the bottom of the view.
+   */
+  flyTo(code, { duration = 1400, lift = 0 } = {}) {
     const c = this.countries.get(code);
     if (!c) return;
     this.controls.autoRotate = false;
     const from = this.camera.position.clone();
     const span = c.hasShape && c.span > 0 ? c.span : 0.5;
-    const to = latLonToVec3(c.latlng[0], c.latlng[1], cameraDistanceForSpan(span));
+    const dist = cameraDistanceForSpan(span);
+    // Ground spans about 2(d−1)·tan(fov/2) radians per viewport height, so aim
+    // that far south of the country to show it higher on screen.
+    const latShift = THREE.MathUtils.radToDeg(lift * 2 * (dist - 1) * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)));
+    const lat = THREE.MathUtils.clamp(c.latlng[0] - latShift, -89, 89);
+    const to = latLonToVec3(lat, c.latlng[1], dist);
     this.flight = { from, to, start: performance.now(), duration, fromDir: from.clone().normalize(), toDir: to.clone().normalize() };
   }
 
@@ -581,6 +655,10 @@ export class Globe {
     if (this.pathSegments && this.pathSegments.length) {
       const d = this.camera.position.length();
       if (Math.abs(Math.log((d - 1) / (this.pathBuiltAt - 1))) > 0.2) this.setPath(this.pathSegments, this.pathLabels);
+    }
+    if (this.outline) {
+      const d = this.camera.position.length();
+      if (Math.abs(Math.log((d - 1) / (this.outlineBuiltAt - 1))) > 0.2) this.buildOutline();
     }
     this.updateNames();
     this.renderer.render(this.scene, this.camera);
