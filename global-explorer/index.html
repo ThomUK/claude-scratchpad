@@ -30,6 +30,19 @@
             <button type="button" class="back" id="explore-back" aria-label="Back to passport">‹</button>
             <div class="explore-title"><strong id="explore-title"></strong><span class="muted small" id="explore-sub"></span></div>
           </div>
+          <div class="explore-bar start-bar" id="start-bar" hidden>
+            <h1>Global Explorer</h1>
+            <p>Explore the globe while you search for a mystery country. Where do you want your exploration to begin?</p>
+          </div>
+          <div class="explore-pop start-pop" id="start-pop" hidden>
+            <button type="button" class="close" id="start-close" aria-label="Close">×</button>
+            <div class="rhead"><span class="bigflag" id="start-flag"></span><div><h2 id="start-pop-name"></h2><p class="muted small" id="start-pop-status"></p></div></div>
+            <div class="btnrow">
+              <button type="button" class="primary" id="start-here">Start exploring from here</button>
+              <button type="button" id="start-locate">📍 Start from where I am</button>
+              <button type="button" id="start-random">🎲 Start from a random location</button>
+            </div>
+          </div>
           <div class="explore-pop" id="explore-pop" hidden>
             <button type="button" class="close" id="explore-close" aria-label="Close">×</button>
             <div class="rhead"><span class="bigflag" id="pop-flag"></span><div><h2 id="pop-name"></h2><p class="muted small" id="pop-status"></p></div></div>
@@ -53,37 +66,10 @@
           <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
         </div>
 
-        <div class="menu-backdrop" id="begin-menu" hidden>
-          <div class="menu" role="dialog" aria-modal="true" aria-labelledby="begin-title">
-            <h2 id="begin-title">Where do you want to begin?</h2>
-            <button type="button" class="opt" data-mode="locate"><span class="ico">📍</span><span><b>Where I am</b><span class="d">Use your location to start from the country you are in.</span></span></button>
-            <button type="button" class="opt" data-mode="random"><span class="ico">🎲</span><span><b>Somewhere random</b><span class="d">Start from a random country anywhere on Earth.</span></span></button>
-            <button type="button" class="opt" data-mode="map"><span class="ico">🌍</span><span><b>Choose on the map</b><span class="d">Tap any country on the globe.</span></span></button>
-            <button type="button" class="opt" data-mode="search"><span class="ico">🔎</span><span><b>Search for a country</b><span class="d">Type the name of the country to start from.</span></span></button>
-            <button type="button" class="ghost" id="begin-cancel">Cancel</button>
-          </div>
-        </div>
         <div class="sheet" id="sheet" data-state="half">
           <button class="grip" id="grip" type="button" aria-label="Expand or collapse the panel"><span></span></button>
           <div class="sheet-body" id="sheet-body">
 
-            <!-- New round -->
-            <div id="panel-start">
-              <div class="titlerow">
-                <h1>Global Explorer</h1>
-              </div>
-              <p class="intro">Explore the globe while you search for a mystery country.</p>
-              <div class="picker" id="picker-start" hidden>
-                <label for="search" class="sr-only">Country</label>
-                <input id="search" type="search" autocomplete="off" spellcheck="false" enterkeyhint="go" placeholder="Type a country to start from…" />
-                <div id="results" class="results" hidden></div>
-              </div>
-              <p class="cluebox" id="start-map-hint" hidden>🌍 Tap any country on the globe to start there.</p>
-              <div class="btnrow">
-                <button type="button" class="primary" id="btn-begin">Choose where to begin</button>
-                <button type="button" class="ghost" id="btn-start-cancel" hidden>Other ways to begin</button>
-              </div>
-            </div>
 
             <!-- In a round -->
             <div id="panel-game" hidden>

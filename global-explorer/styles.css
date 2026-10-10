@@ -69,8 +69,8 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .toast.warmer { background: var(--warm); } .toast.cooler { background: var(--cool); } .toast.warn { background: #b45309; }
 
 /* ------------------------------------------------------- explorer mode -- */
-#screen-play.exploring .sheet { display: none; }
-#screen-play.exploring .globe-wrap { bottom: 0 !important; }
+#screen-play.exploring .sheet, #screen-play.picking .sheet { display: none; }
+#screen-play.exploring .globe-wrap, #screen-play.picking .globe-wrap { bottom: 0 !important; }
 .explore-bar { position: absolute; left: 10px; right: 84px; top: calc(10px + var(--safe-t)); z-index: 3; display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 6px; background: rgba(255,255,255,0.92); border: 1px solid var(--border); border-radius: 14px; }
 .explore-bar .back { min-height: 36px; width: 36px; padding: 0; font-size: 1.5rem; line-height: 1; border-radius: 50%; flex: none; }
 .explore-title { display: grid; line-height: 1.2; min-width: 0; }
@@ -81,6 +81,11 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .explore-pop .facts-grid { margin-top: 8px; font-size: 0.86rem; }
 .explore-pop .btnrow { margin-top: 10px; }
 @media (min-width: 900px) { .explore-pop { left: auto; width: 380px; right: 16px; } .explore-bar { right: 100px; } }
+/* New-round screen: the globe fills the view, with the title floating over it. */
+.start-bar { flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 14px; }
+.start-bar h1 { font-size: 1.1rem; }
+.start-bar p { margin: 0; font-size: 0.9rem; line-height: 1.3; color: var(--muted); }
+.start-pop .btnrow { flex-direction: column; }
 
 /* ----------------------------------------------------------- play: sheet -- */
 .sheet { position: absolute; left: 0; right: 0; bottom: 0; height: auto; max-height: var(--sheet-h, var(--sheet-half)); background: var(--surface); border-radius: 18px 18px 0 0; box-shadow: 0 -6px 24px rgba(31,41,51,0.12); display: flex; flex-direction: column; z-index: 4; }
@@ -93,16 +98,7 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .sheet-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 16px 16px; -webkit-overflow-scrolling: touch; }
 .titlerow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 0 4px; }
 .intro { margin: 0 0 4px; font-size: 1.02rem; }
-.menu-backdrop { position: absolute; inset: 0; z-index: 8; background: rgba(31, 41, 51, 0.35); display: flex; align-items: flex-end; }
-.menu-backdrop[hidden] { display: none; }
-.menu { width: 100%; max-height: 85%; overflow-y: auto; background: var(--surface); border-radius: 18px 18px 0 0; padding: 16px 16px 16px; box-shadow: 0 -8px 30px rgba(31,41,51,0.2); display: grid; gap: 8px; animation: menuUp .22s ease-out; }
 @keyframes menuUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
-.menu h2 { margin: 0 0 4px; font-size: 1.05rem; color: var(--text); text-transform: none; letter-spacing: 0; }
-.opt { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 14px; min-height: 60px; border-radius: 14px; }
-.opt .ico { font-size: 1.5rem; width: 1.6em; text-align: center; flex: none; }
-.opt b { display: block; font-size: 0.98rem; }
-.opt .d { display: block; color: var(--muted); font-size: 0.82rem; line-height: 1.3; }
-@media (min-width: 900px) { .menu-backdrop { left: auto; width: 420px; } }
 .chip { min-height: 32px; padding: 4px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; background: var(--accent-soft); color: var(--accent); border-color: transparent; }
 .picker { position: relative; margin: 10px 0 10px; }
 .results { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 6; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(31,41,51,0.18); max-height: 40vh; overflow-y: auto; }
@@ -284,6 +280,7 @@ button.visit.on { background: #6b3fa0; color: #fff; }
   #screens { flex: 1; }
   #screen-play { flex-direction: row; }
   .globe-wrap, #screen-play[data-sheet] .globe-wrap { position: absolute; top: 0; left: 0; bottom: 0 !important; right: 420px; transition: none; }
+  #screen-play.exploring .globe-wrap, #screen-play.picking .globe-wrap { right: 0; }
   .sheet { left: auto; width: 420px; top: 0; height: 100% !important; border-radius: 0; border-left: 1px solid var(--border); box-shadow: none; }
   .grip { display: none; }
   .sheet-body { padding: 16px 20px 24px; }

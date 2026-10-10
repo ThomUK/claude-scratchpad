@@ -31,7 +31,7 @@ const state = {
   countries: [], byCode: new Map(), features: [], pools: {}, globe: null,
   screen: 'play',
   phase: 'pick-start', // pick-start | guessing | over
-  game: null, clue: null, browse: null, startMode: null,
+  game: null, clue: null, browse: null,
   explore: null, // { mode: 'easy'|'intermediate'|'hard'|'visited' } while exploring the globe from the passport
   settings: { ...DEFAULT_SETTINGS },
   stats: null,
@@ -66,6 +66,7 @@ async function main() {
   state.globe = new Globe($('globe'), state.features, state.countries);
   state.globe.onPick = (code) => {
     if (state.explore) { if (code) showExplorePop(code); else closeExplorePop(); return; }
+    if (state.phase === 'pick-start') { if (code) browseCountry(code); else closeStartPop(); return; }
     if (code) choose(code); else toast('No country there. Zoom in closer, or type its name.', 'warn');
   };
   $('loading').remove();
@@ -74,40 +75,22 @@ async function main() {
 
   wireTabs();
   wireSheet();
-  wirePicker($('search'), $('results'));
   wirePicker($('search-guess'), $('results-guess'));
   wireAtlas();
   wireSettings();
   $('btn-giveup').addEventListener('click', onGiveUp);
   $('btn-clue').addEventListener('click', onClue);
   $('btn-newstart').addEventListener('click', () => resetToPickStart());
-  $('btn-begin').addEventListener('click', () => { $('begin-menu').hidden = false; });
-  $('begin-cancel').addEventListener('click', () => { $('begin-menu').hidden = true; });
-  $('begin-menu').addEventListener('click', (e) => { if (e.target === $('begin-menu')) $('begin-menu').hidden = true; });
-  $('btn-start-cancel').addEventListener('click', () => setStartMode(null));
-  for (const b of document.querySelectorAll('#begin-menu .opt')) b.addEventListener('click', () => beginWith(b.dataset.mode));
+  $('start-close').addEventListener('click', closeStartPop);
+  $('start-here').addEventListener('click', () => { if (state.browse) startRound(state.browse); });
+  $('start-locate').addEventListener('click', onLocate);
+  $('start-random').addEventListener('click', () => startRound(state.countries[Math.floor(Math.random() * state.countries.length)].code));
   $('compass').addEventListener('click', recentre);
   applyRulesToGlobe();
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js?v=dev').catch(() => {});
 }
 
-/** One of the four ways to begin a round, chosen from the Begin menu. */
-function beginWith(mode) {
-  $('begin-menu').hidden = true;
-  if (mode === 'locate') { setStartMode(null); onLocate(); return; }
-  if (mode === 'random') { setStartMode(null); startRound(state.countries[Math.floor(Math.random() * state.countries.length)].code); return; }
-  setStartMode(mode);
-  if (mode === 'map') { setSheet('collapsed'); toast('Tap any country on the globe to start there.'); }
-  if (mode === 'search') { setSheet('half'); setTimeout(() => $('search').focus({ preventScroll: true }), 50); }
-}
-
-/** How the start country is being chosen on the new-round screen: null | 'map' | 'search'. */
-function setStartMode(mode) {
-  state.startMode = mode;
-  applyRulesToGlobe();
-  render();
-}
 
 // -------------------------------------------------------------- explorer --
 const EXPLORE_INK = {
@@ -220,7 +203,7 @@ function recentre() {
 function wireTabs() {
   for (const b of document.querySelectorAll('.tab')) b.addEventListener('click', () => { exitExplore(null); showScreen(b.dataset.screen); });
   $('country-back').addEventListener('click', () => showScreen(state.countryFrom || 'atlas'));
-  $('btn-show-globe').addEventListener('click', () => { exitExplore(null); browseCountry(state.countryPage); showScreen('play'); });
+  $('btn-show-globe').addEventListener('click', () => { exitExplore(null); showScreen('play'); browseCountry(state.countryPage); });
   $('btn-start-here').addEventListener('click', () => { exitExplore(null); startRound(state.countryPage); showScreen('play'); });
   $('btn-visited').addEventListener('click', () => askVisited(state.countryPage));
   $('explore-back').addEventListener('click', () => exitExplore('passport'));
@@ -317,9 +300,9 @@ function tagFor(code) {
 }
 
 function choose(code) {
-  for (const id of ['search', 'search-guess']) $(id).value = '';
-  for (const id of ['results', 'results-guess']) $(id).hidden = true;
-  if (state.phase === 'pick-start') startRound(code);
+  $('search-guess').value = '';
+  $('results-guess').hidden = true;
+  if (state.phase === 'pick-start') browseCountry(code);
   else if (state.phase === 'guessing') onGuess(code);
   else return;
   if (!rules().click && state.phase === 'guessing') $('search-guess').focus({ preventScroll: true });
@@ -339,15 +322,15 @@ function applyRulesToGlobe() {
   if (state.explore) return;
   const r = rules();
   state.globe.setNamesVisible(r.names);
-  const canClick = state.phase === 'pick-start' ? state.startMode === 'map' : r.click && state.phase === 'guessing';
+  const canClick = state.phase === 'pick-start' || (r.click && state.phase === 'guessing');
   state.globe.pickEnabled = canClick;
   $('screen-play').classList.toggle('clickable', canClick);
 }
 
 function startRound(startCode) {
   exitExplore(null);
-  state.clue = null; state.browse = null; state.startMode = null;
-  $('begin-menu').hidden = true;
+  state.clue = null;
+  closeStartPop();
   flash('');
   const r = rules();
   const pool = remainingPool(state.countries, state.pools, r, state.stats);
@@ -403,7 +386,7 @@ function finishRound() {
 }
 
 function resetToPickStart() {
-  state.phase = 'pick-start'; state.game = null; state.clue = null; state.startMode = null;
+  state.phase = 'pick-start'; state.game = null; state.clue = null;
   flash('');
   paintGlobe();
   state.globe.controls.autoRotate = true;
@@ -416,7 +399,7 @@ const verdictColor = (v) => (v === 'warmer' ? COLORS.warmer : v === 'cooler' ? C
 
 function paintGlobe() {
   const g = state.game, hl = new Map(), ll = (code) => state.byCode.get(code).latlng;
-  if (state.browse) hl.set(state.browse, COLORS.browse);
+  state.globe.setOutline(state.browse, COLORS.browse); // atlas / start selection ring
   if (!g) { state.globe.setHighlights(hl); state.globe.setPath([], []); state.globe.setNameExclusions([]); return; }
   for (const x of g.guesses) hl.set(x.code, COLORS.guessed);
   hl.set(g.startCode, COLORS.start);
@@ -435,32 +418,40 @@ function paintGlobe() {
   state.globe.setNameExclusions([g.startCode, ...g.guesses.map((x) => x.code)]);
 }
 
-/** Highlight a country from the atlas and fly to it. */
+/** Ring a country (from the atlas or a tap on the new-round globe) and fly to it. */
 function browseCountry(code) {
   state.browse = code;
-  state.globe.flyTo(code);
   paintGlobe();
+  if (state.phase === 'pick-start') { showStartPop(code); return; }
+  state.globe.flyTo(code);
   setSheet('collapsed');
+}
+/** The new-round card: the tapped country's name and the ways to begin. */
+function showStartPop(code) {
+  const c = state.byCode.get(code);
+  $('start-flag').textContent = c.flag; $('start-pop-name').textContent = c.name; $('start-pop-status').textContent = `${c.continent} · ${c.designation}`;
+  $('start-pop').hidden = false;
+  state.globe.controls.autoRotate = false;
+  const canvasH = $('globe').clientHeight || 1;
+  state.globe.flyTo(code, { lift: Math.min(0.25, $('start-pop').offsetHeight / (2 * canvasH)) });
+}
+function closeStartPop() {
+  $('start-pop').hidden = true;
+  if (state.browse) { state.browse = null; paintGlobe(); }
 }
 
 // ------------------------------------------------------------------ render --
 function render(lastResult) {
   const g = state.game, r = rules();
-  $('panel-start').hidden = state.phase !== 'pick-start';
+  $('screen-play').classList.toggle('picking', state.phase === 'pick-start');
+  $('start-bar').hidden = state.phase !== 'pick-start';
   $('panel-game').hidden = state.phase !== 'guessing';
   $('panel-over').hidden = state.phase !== 'over';
   $('sheet-footer').hidden = state.phase !== 'over';
   const click = r.click ? ' or tap the map' : '';
   $('search-guess').placeholder = `Type your guess${click}…`;
 
-  if (state.phase === 'pick-start') {
-    const m = state.startMode;
-    $('picker-start').hidden = m !== 'search';
-    $('start-map-hint').hidden = m !== 'map';
-    $('btn-begin').hidden = !!m;
-    $('btn-start-cancel').hidden = !m;
-    return;
-  }
+  if (state.phase === 'pick-start') { fitGlobeToSheet(); return; }
 
   const start = state.byCode.get(g.startCode), gr = g.rules;
   $('start-name').textContent = `${start.flag} ${start.name}`;
