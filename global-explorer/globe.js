@@ -16,6 +16,14 @@ export const COLORS = {
 const SURFACE = 1.0;        // sphere radius
 const FILL_R = 1.0008;      // fills sit just above the ocean sphere
 const BORDER_R = 1.0016;    // borders above fills
+// Momentum. OrbitControls applies dampingFactor of the pending rotation each
+// frame: a high factor keeps the globe glued to the finger, a low one glides.
+const DRAG_DAMPING = 0.2;    // while a pointer is down
+const GLIDE_DAMPING = 0.1;   // after release: ~0.75 s to run down
+const GLIDE_BOOST = 2;       // stretch the leftover motion at release
+const ZOOM_GLIDE_DECAY = 0.85;   // per 60 fps frame: ~0.5 s to run down
+const ZOOM_GLIDE_CARRY = 0.4;    // share of the pinch rate carried past release
+const ZOOM_GLIDE_MAX = 0.01;     // ln(altitude factor) per ms
 const WHEEL_ZOOM_SPEED = 2.5; // altitude factor per 100 units of wheel delta is 0.95^2.5
 const MARK_R = 1.004;       // sprites close to the surface so they do not drift when zoomed in
 const SUBDIV_DEG = 3;       // bisect fill triangles with an edge longer than this
@@ -59,7 +67,7 @@ export class Globe {
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.2; // responsive: the globe follows the finger, with a short glide
+    this.controls.dampingFactor = DRAG_DAMPING;
     this.controls.enablePan = false;
     this.controls.minDistance = 1.04; // close enough to click the smallest islands
     this.controls.maxDistance = 4.5;
@@ -76,7 +84,19 @@ export class Globe {
     this.wireZoomSteering();
     this.controls.autoRotate = true;
     this.controls.autoRotateSpeed = 0.5;
-    this.controls.addEventListener('start', () => { this.flight = null; this.controls.autoRotate = false; });
+    this.controls.addEventListener('start', () => {
+      this.flight = null;
+      this.controls.autoRotate = false;
+      this.controls.dampingFactor = DRAG_DAMPING;
+    });
+    // Momentum: while a finger is down the globe tracks it closely, and on
+    // release the motion left in the pipe is stretched and let run down slowly.
+    this.controls.addEventListener('end', () => {
+      const d = this.controls._sphericalDelta;
+      d.theta *= GLIDE_BOOST;
+      d.phi *= GLIDE_BOOST;
+      this.controls.dampingFactor = GLIDE_DAMPING;
+    });
     // OrbitControls spins about the pole, so a sideways drag moves mid-latitude
     // ground by only cos(latitude). Scale the azimuth so the ground under the
     // pointer keeps up with it wherever the view is centred (capped near the poles).
@@ -327,11 +347,23 @@ export class Globe {
       const scale = this.controls._getZoomScale(e.deltaY);
       if (e.deltaY < 0) this.steerTowards(this.surfaceDirAt(e.clientX, e.clientY), scale);
     }, { passive: true });
-    // Touch pinch: steer toward the midpoint as the fingers spread.
+    // Touch pinch: steer toward the midpoint as the fingers spread, and keep
+    // a smoothed zoom rate so the zoom can glide on after the fingers lift.
     const pointers = new Map();
-    let lastDist = 0;
-    dom.addEventListener('pointerdown', (e) => { pointers.set(e.pointerId, [e.clientX, e.clientY]); lastDist = 0; });
-    const end = (e) => { pointers.delete(e.pointerId); lastDist = 0; };
+    let lastDist = 0, lastT = 0, rate = 0, lastMid = null;
+    dom.addEventListener('pointerdown', (e) => {
+      pointers.set(e.pointerId, [e.clientX, e.clientY]);
+      lastDist = 0; rate = 0; lastT = performance.now();
+      this.zoomGlide = null; // a new touch stops the glide (OrbitControls' own
+      // 'start' also fires when one of two fingers lifts, so do not hook that)
+    });
+    const end = (e) => {
+      if (pointers.size === 2 && rate && performance.now() - lastT < 120) {
+        this.zoomGlide = { rate: rate * ZOOM_GLIDE_CARRY, dir: lastMid, t: performance.now() };
+      }
+      pointers.delete(e.pointerId);
+      lastDist = 0; rate = 0;
+    };
     dom.addEventListener('pointerup', end); dom.addEventListener('pointercancel', end);
     dom.addEventListener('pointermove', (e) => {
       if (!pointers.has(e.pointerId)) return;
@@ -339,12 +371,31 @@ export class Globe {
       if (pointers.size !== 2) return;
       const [a, b] = [...pointers.values()];
       const dist = Math.hypot(a[0] - b[0], a[1] - b[1]);
-      if (lastDist && dist > lastDist) {
+      const now = performance.now();
+      if (lastDist) {
         const scale = Math.pow(lastDist / dist, this.controls.zoomSpeed); // OrbitControls dollies by this ratio
-        this.steerTowards(this.surfaceDirAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), Math.max(0.5, scale));
+        const inst = THREE.MathUtils.clamp(Math.log(scale) / Math.max(1, now - lastT), -ZOOM_GLIDE_MAX, ZOOM_GLIDE_MAX);
+        rate = rate ? 0.6 * rate + 0.4 * inst : inst;
+        lastMid = this.surfaceDirAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+        if (dist > lastDist) this.steerTowards(lastMid, Math.max(0.5, scale));
       }
-      lastDist = dist;
+      lastDist = dist; lastT = now;
     });
+  }
+
+  /** Carry a pinch on after release: apply the decaying zoom rate once per frame. */
+  stepZoomGlide() {
+    const g = this.zoomGlide;
+    if (!g) return;
+    const now = performance.now();
+    const dt = Math.min(50, now - g.t);
+    g.t = now;
+    const factor = Math.exp(g.rate * dt);
+    this.controls._dollyIn(factor); // altitude-mapped by wireAltitudeZoom
+    if (factor < 1) this.steerTowards(g.dir, factor);
+    g.rate *= Math.pow(ZOOM_GLIDE_DECAY, dt / 16.7);
+    const r = this.camera.position.length();
+    if (Math.abs(g.rate) < 1e-5 || r <= this.controls.minDistance + 1e-4 || r >= this.controls.maxDistance - 1e-4) this.zoomGlide = null;
   }
 
   /** Country code under a client-space pixel, or null. */
@@ -521,6 +572,7 @@ export class Globe {
       this.camera.lookAt(0, 0, 0);
       if (t >= 1) this.flight = null;
     }
+    this.stepZoomGlide();
     this.controls.update();
     // Hard floor: never let the camera dip into the globe, whatever the controls did.
     const floor = this.controls.minDistance;
