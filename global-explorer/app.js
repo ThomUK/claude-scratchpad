@@ -152,6 +152,7 @@ function applyView() {
     state.globe.setNamesVisible(r.names);
   }
   state.globe.setOutline(sel, ink);
+  state.globe.setNamePin(sel);
   const canClick = view !== 'round' || (r.click && state.phase === 'guessing');
   state.globe.pickEnabled = canClick;
   sp.classList.toggle('clickable', canClick);

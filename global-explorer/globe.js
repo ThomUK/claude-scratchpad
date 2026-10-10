@@ -467,6 +467,11 @@ export class Globe {
     this.nameExclude = new Set(codes);
   }
 
+  /** Always label this country (the selected one), whatever the zoom or overlaps; null to unpin. */
+  setNamePin(code) {
+    this.namePin = code || null;
+  }
+
   /**
    * Show a label only when its country is big enough at this zoom, faces the
    * camera, and its on-screen box does not overlap a bigger country's label.
@@ -496,11 +501,17 @@ export class Globe {
     const px = this.camera.projectionMatrix.elements[5] / 2 * h; // pixels per unit of sprite scale
     const kept = [];
     const v = new THREE.Vector3();
-    for (const sp of this.nameGroup.children) {
+    // The pinned label goes first so it wins any overlap.
+    const sprites = this.nameGroup.children;
+    const pinned = this.namePin ? sprites.find((sp) => sp.userData.code === this.namePin) : null;
+    for (const sp of pinned ? [pinned, ...sprites.filter((x) => x !== pinned)] : sprites) {
       const { span, dir, wfrac, code } = sp.userData;
       sp.visible = false;
-      if ((span < d * 7 && d > 0.12) || dir.dot(camDir) <= 0.25) continue; // zoomed right in, show everything
-      if (this.nameExclude && this.nameExclude.has(code)) continue;
+      if (dir.dot(camDir) <= 0.25) continue; // over the horizon
+      if (sp !== pinned) {
+        if (span < d * 7 && d > 0.12) continue; // too small at this zoom (zoomed right in, show everything)
+        if (this.nameExclude && this.nameExclude.has(code)) continue;
+      }
       v.copy(sp.position).project(this.camera);
       const cx = (v.x + 1) / 2 * w, cy = (1 - v.y) / 2 * h;
       const hw = sp.scale.x * px * wfrac / 2, hh = sp.scale.y * px * 0.42;
@@ -630,7 +641,9 @@ export class Globe {
     if (!c) return;
     this.controls.autoRotate = false;
     const from = this.camera.position.clone();
-    const span = c.hasShape && c.span > 0 ? c.span : 0.5;
+    // Places with no outline at this map scale (a few specks of island) get a
+    // wide view: zooming right in would show nothing but ocean and a label.
+    const span = c.hasShape && c.span > 0 ? c.span : 12;
     // The fit is tuned for a tall (portrait) view. In a wide one, such as the
     // strip above the game sheet, the width is the roomy axis, so come closer
     // by the aspect ratio to show the country at the same size.

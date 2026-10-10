@@ -78,6 +78,7 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .explore-title strong { font-size: 0.95rem; }
 .explore-pop { position: absolute; left: 10px; right: 10px; bottom: 12px; z-index: 4; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 14px 12px; box-shadow: 0 10px 30px rgba(31,41,51,0.2); animation: menuUp .2s ease-out; }
 .explore-pop .close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; min-height: 0; padding: 0; border-radius: 50%; font-size: 1.2rem; line-height: 1; }
+.explore-pop .rhead { padding-right: 36px; } /* clear of the close button */
 .explore-pop .rhead h2 { font-size: 1.15rem; }
 .explore-pop .facts-grid { margin-top: 8px; font-size: 0.86rem; }
 .explore-pop .btnrow { margin-top: 10px; }
