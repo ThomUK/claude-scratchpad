@@ -16,6 +16,7 @@ export const COLORS = {
 const SURFACE = 1.0;        // sphere radius
 const FILL_R = 1.0008;      // fills sit just above the ocean sphere
 const BORDER_R = 1.0016;    // borders above fills
+const WHEEL_ZOOM_SPEED = 2.5; // altitude factor per 100 units of wheel delta is 0.95^2.5
 const MARK_R = 1.004;       // sprites close to the surface so they do not drift when zoomed in
 const SUBDIV_DEG = 3;       // bisect fill triangles with an edge longer than this
 
@@ -63,7 +64,10 @@ export class Globe {
     this.controls.minDistance = 1.04; // close enough to click the smallest islands
     this.controls.maxDistance = 4.5;
     this.controls.rotateSpeed = 0.3; // overridden every frame by updateRotateSpeed()
-    this.controls.zoomSpeed = 0.8;
+    // Pinch factor applies to the height above the surface (see wireAltitudeZoom),
+    // so a 2x finger spread shows the ground 2x bigger at every zoom level.
+    this.controls.zoomSpeed = 1;
+    this.wireAltitudeZoom();
     // Not OrbitControls' zoomToCursor: that moves the orbit centre off the globe's
     // centre, so minDistance stops protecting the surface and the camera can dive
     // through the land. Instead the orbit centre stays put and steerTowards()
@@ -292,12 +296,35 @@ export class Globe {
     this.camera.lookAt(0, 0, 0);
   }
 
+  /**
+   * OrbitControls dollies by scaling the camera's distance from the globe's
+   * centre, but what fills the screen scales with the height above the
+   * surface. Close in that makes a small pinch an enormous jump: at radius
+   * 1.1 a 10% spread takes the altitude from 0.1 to 0, a tenfold zoom, which
+   * is how a pinch overshoots into a screenful of sea. Re-map every dolly so
+   * the factor applies to the altitude instead; the frame() floor and
+   * minDistance still cap how close the camera can get.
+   */
+  wireAltitudeZoom() {
+    const c = this.controls;
+    const applyToAltitude = (factor) => {
+      const r = this.camera.position.length() * c._scale; // radius after pending dollies
+      const h = Math.max(r - 1, 1e-4);
+      c._scale *= (1 + h * factor) / r;
+    };
+    c._dollyIn = (ds) => applyToAltitude(ds);
+    c._dollyOut = (ds) => applyToAltitude(1 / ds);
+    // Altitude spans a wider range than radius, so give the mouse wheel and
+    // trackpad a brisker step than the pinch (which stays true to the fingers).
+    c._getZoomScale = (delta) => Math.pow(0.95, WHEEL_ZOOM_SPEED * Math.abs(delta * 0.01));
+  }
+
   wireZoomSteering() {
     const dom = this.renderer.domElement;
     // Mouse wheel: mirror OrbitControls' own zoom scale for this event.
     dom.addEventListener('wheel', (e) => {
       if (!this.controls.enableZoom) return;
-      const scale = Math.pow(0.95, this.controls.zoomSpeed * Math.abs(e.deltaY * 0.01));
+      const scale = this.controls._getZoomScale(e.deltaY);
       if (e.deltaY < 0) this.steerTowards(this.surfaceDirAt(e.clientX, e.clientY), scale);
     }, { passive: true });
     // Touch pinch: steer toward the midpoint as the fingers spread.
@@ -313,7 +340,7 @@ export class Globe {
       const [a, b] = [...pointers.values()];
       const dist = Math.hypot(a[0] - b[0], a[1] - b[1]);
       if (lastDist && dist > lastDist) {
-        const scale = lastDist / dist; // OrbitControls dollies by this ratio
+        const scale = Math.pow(lastDist / dist, this.controls.zoomSpeed); // OrbitControls dollies by this ratio
         this.steerTowards(this.surfaceDirAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), Math.max(0.5, scale));
       }
       lastDist = dist;
