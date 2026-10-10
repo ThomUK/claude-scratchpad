@@ -294,6 +294,9 @@ function fitGlobeToSheet() {
   const view = viewKind();
   const bar = view === 'explore' ? $('explore-bar') : view === 'start' ? $('start-bar') : null;
   state.globe.topInset = bar && !bar.hidden ? bar.offsetTop + bar.offsetHeight : 0;
+  // The compass sits level with the floating card's centreline when there is one.
+  const comp = $('compass');
+  comp.style.top = bar && !bar.hidden ? `${bar.offsetTop + (bar.offsetHeight - comp.offsetHeight) / 2}px` : '';
   const pop = [$('start-pop'), $('explore-pop')].find((p) => !p.hidden);
   state.globe.bottomInset = pop ? $('globe').clientHeight - pop.offsetTop : 0; // the card over the bottom of the canvas
   state.globe.refHeight = $('screen-play').clientHeight; // the full-height canvas the zoom fit is tuned for
