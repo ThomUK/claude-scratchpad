@@ -106,6 +106,9 @@ representative lat/lon from the dataset.
   polygon at this scale (Bouvet Island, Gibraltar, US Minor Outlying Islands)
   and are shown as markers.
 - three.js is vendored under `vendor/three/`.
+- Flag emoji come from a small web font under `vendor/fonts/`: Twemoji's
+  country flags (CC-BY 4.0) as subset by TalkJS's country-flag-emoji-polyfill
+  (MIT), so flags render on Windows too, where no system font has them.
 
 ## Ideas for later
 

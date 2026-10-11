@@ -7,6 +7,7 @@ const ASSETS = [
   './manifest.webmanifest?v=dev', './icons/icon.svg?v=dev', './icons/icon-192.png?v=dev', './icons/icon-512.png?v=dev',
   './data/countries.json?v=dev', './data/world.json?v=dev',
   './vendor/three/three.module.js?v=dev', './vendor/three/three.core.js', './vendor/three/OrbitControls.js?v=dev',
+  './vendor/fonts/TwemojiCountryFlags.woff2',
 ];
 
 self.addEventListener('install', (e) => {
