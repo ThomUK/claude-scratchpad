@@ -305,9 +305,11 @@ function fitGlobeToSheet() {
   const view = viewKind();
   const bar = view === 'explore' ? $('explore-bar') : view === 'start' ? $('start-bar') : null;
   state.globe.topInset = bar && !bar.hidden ? bar.offsetTop + bar.offsetHeight : 0;
-  // The compass sits level with the floating card's centreline, just to its right, when there is one.
+  // On a phone the compass sits level with the floating card's centreline, just to
+  // its right, when there is one; on the desktop it stays in the top right corner.
   const comp = $('compass');
-  if (bar && !bar.hidden) {
+  const desktop = window.matchMedia('(min-width: 900px)').matches;
+  if (bar && !bar.hidden && !desktop) {
     comp.style.top = `${bar.offsetTop + (bar.offsetHeight - comp.offsetHeight) / 2}px`;
     comp.style.left = `${bar.offsetLeft + bar.offsetWidth + 10}px`;
     comp.style.right = 'auto';

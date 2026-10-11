@@ -105,7 +105,7 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .credits .lic { display: block; color: var(--muted); font-size: 0.8rem; }
 .facts-grid { margin-top: 8px; font-size: 0.86rem; }
 .explore-pop .btnrow { margin-top: 10px; }
-@media (min-width: 900px) { .explore-pop { left: auto; width: 380px; right: 16px; } .explore-bar { right: auto; width: 440px; } } /* the compass follows the bar's right edge */
+@media (min-width: 900px) { .explore-pop { left: auto; width: 380px; right: 16px; } .explore-bar { right: auto; width: 440px; } } /* on a phone the compass follows the bar's right edge; on the desktop it keeps the corner */
 /* New-round screen: the globe fills the view, with the title floating over it. */
 .start-bar { flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 14px; }
 .start-bar h1 { font-size: 1.1rem; }
