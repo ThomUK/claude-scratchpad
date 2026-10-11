@@ -2,7 +2,7 @@
 // live in engine.js, rendering in globe.js.
 import {
   decodeTopology, createGame, makeGuess, giveUp, formatDistance, guessCount, haversineKm, initialBearing,
-  compassPoint, clueText, useClue, MAX_CLUES, DIFFICULTY, sortCountries, NUMERIC_KEYS, countryAt, resolveRules, difficultyTier,
+  compassPoint, clueText, useClue, MAX_CLUES, DIFFICULTY, sortCountries, NUMERIC_KEYS, resolveRules, difficultyTier,
   score, recordRound, normalizeStats, stampsFor, clueMarksFor, remainingPool, STAMP_LEVELS,
 } from './engine.js?v=dev';
 import { Globe, COLORS } from './globe.js?v=dev';
@@ -90,8 +90,7 @@ async function main() {
   $('btn-clue').addEventListener('click', onClue);
   $('start-close').addEventListener('click', deselect);
   $('start-here').addEventListener('click', () => { if (state.selected) startRound(state.selected); });
-  $('start-locate').addEventListener('click', onLocate);
-  $('start-random').addEventListener('click', () => startRound(state.countries[Math.floor(Math.random() * state.countries.length)].code));
+  $('start-info').addEventListener('click', () => { if (state.selected) showCountry(state.selected); });
   $('compass').addEventListener('click', recentre);
   render();
   applyView();
@@ -386,14 +385,6 @@ function choose(code) {
   if (state.game.rules.type && state.phase === 'guessing') $('search-guess').focus({ preventScroll: true });
 }
 
-function onLocate() {
-  if (!navigator.geolocation) { toast('Location is not available on this device.', 'warn'); return; }
-  toast('Finding where you are…');
-  navigator.geolocation.getCurrentPosition((pos) => {
-    const code = countryAt(state.features, state.countries, pos.coords.latitude, pos.coords.longitude);
-    if (code) startRound(code); else toast('Could not match your location to a country.', 'warn');
-  }, () => toast('Location was not available.', 'warn'), { timeout: 10000, maximumAge: 600000 });
-}
 
 // -------------------------------------------------------------------- game --
 function startRound(startCode) {
@@ -602,8 +593,8 @@ function countryCard(c, startCode, { head = true } = {}) {
   frag.append(dl);
   const ps = el('div', 'stamps-wide'); // one column per stamp across the full width
   const sf = stampsFor(state.stats, c.code), cm = clueMarksFor(state.stats, c.code);
+  ps.append(stampEl('visited', state.visited.has(c.code), '', 0, c.code)); // been here first
   for (const l of STAMP_LEVELS) ps.append(stampEl(l, sf[l] > 0, '', sf[l], c.code, cm[l]));
-  ps.append(stampEl('visited', state.visited.has(c.code), '', 0, c.code));
   frag.append(el('h3', null, 'Passport stamps'), ps);
 
   frag.append(el('h3', null, 'Bordering countries'));
@@ -672,8 +663,8 @@ function stampEl(level, got, size = '', count = 0, seed = '', clues = null) {
 function miniStamps(code) {
   const sf = stampsFor(state.stats, code);
   const w = el('span', 'ministamps');
+  w.append(el('i', `visited ${state.visited.has(code) ? 'got' : ''}`, '✈')); // been here first
   for (const l of STAMP_LEVELS) w.append(el('i', `${l} ${sf[l] > 0 ? 'got' : ''}`, LEVEL_LABEL(l)[0]));
-  w.append(el('i', `visited ${state.visited.has(code) ? 'got' : ''}`, '✈'));
   return w;
 }
 /** Can this country earn a stamp at this level? (Easy and Intermediate draw from smaller pools.) */
@@ -722,15 +713,15 @@ function renderPassport() {
     const go = el('div', 'tgo'); go.innerHTML = GLOBE_ICON; go.append(el('span', null, 'Explore globe')); d.append(go);
     return d;
   };
+  levels.append(tile('visited', 'Been here', state.visited.size, null, '#6b3fa0', () => enterExplore({ source: 'passport', mode: 'visited', back: 'passport' }), 'Explore the globe shaded by where you have really been'));
   for (const l of STAMP_LEVELS) {
     const pool = remainingPool(state.countries, state.pools, resolveRules({ preset: l }), state.stats);
     const ink = l === 'easy' ? '#2f7d4f' : l === 'intermediate' ? '#3b63a8' : '#a3352f';
     levels.append(tile(l, LEVEL_LABEL(l), pool.stamped, pool.total, ink, () => enterExplore({ source: 'passport', mode: l, back: 'passport' }), `Explore the globe shaded by your ${LEVEL_LABEL(l)} stamps`));
   }
-  levels.append(tile('visited', 'Been here', state.visited.size, null, '#6b3fa0', () => enterExplore({ source: 'passport', mode: 'visited', back: 'passport' }), 'Explore the globe shaded by where you have really been'));
   const chips = $('passport-filter');
   if (!chips.children.length) {
-    for (const [k, label] of [['all', 'All'], ...STAMP_LEVELS.map((l) => [l, LEVEL_LABEL(l)]), ['visited', 'Been here']]) {
+    for (const [k, label] of [['all', 'All'], ['visited', 'Been here'], ...STAMP_LEVELS.map((l) => [l, LEVEL_LABEL(l)])]) {
       const b = el('button', 'sortchip', label); b.type = 'button'; b.dataset.key = k;
       b.addEventListener('click', () => { state.passportFilter = k; renderPassport(); });
       chips.append(b);
@@ -751,8 +742,8 @@ function renderPassport() {
     const row = el('div', 'erow'); row.append(flag);
     const sf = stampsFor(state.stats, c.code), cm = clueMarksFor(state.stats, c.code);
     // One slot per level, spread across the box; a level this country cannot earn leaves its slot empty.
+    row.append(stampEl('visited', state.visited.has(c.code), 'sm', 0, c.code)); // been here first
     for (const l of STAMP_LEVELS) row.append(inPool(l, c.code) ? stampEl(l, sf[l] > 0, 'sm', sf[l], c.code, cm[l]) : el('span', 'slot-empty'));
-    row.append(stampEl('visited', state.visited.has(c.code), 'sm', 0, c.code));
     card.append(el('div', 'ename', c.name), row);
     const open = () => showCountry(c.code);
     card.addEventListener('click', open); card.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });

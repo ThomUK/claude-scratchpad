@@ -423,6 +423,21 @@ export class Globe {
     });
   }
 
+  /** Ease the view offset toward its target, then apply it to the camera. */
+  stepViewOffset() {
+    if (this.viewDy == null || this.viewDy === this.viewDyTo) return;
+    if (this.viewDyStart == null) this.viewDyStart = performance.now();
+    const t = Math.min(1, (performance.now() - this.viewDyStart) / 450);
+    const e = t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2; // ease in-out, as flyTo
+    this.viewDy = t >= 1 ? this.viewDyTo : this.viewDyFrom + (this.viewDyTo - this.viewDyFrom) * e;
+    this.applyViewOffset();
+    this.camera.updateProjectionMatrix();
+  }
+  applyViewOffset() {
+    const { w, h } = this.size || { w: this.container.clientWidth, h: this.container.clientHeight };
+    if (this.viewDy) this.camera.setViewOffset(w, h, 0, -this.viewDy, w, h); else this.camera.clearViewOffset();
+  }
+
   /** Carry a pinch on after release: apply the decaying zoom rate once per frame. */
   stepZoomGlide() {
     const g = this.zoomGlide;
@@ -742,6 +757,7 @@ export class Globe {
       if (t >= 1) this.flight = null;
     }
     this.stepZoomGlide();
+    this.stepViewOffset();
     this.controls.update();
     // Hard floor: never let the camera dip into the globe, whatever the controls did.
     const floor = this.controls.minDistance;
@@ -779,8 +795,13 @@ export class Globe {
     this.camera.aspect = w / h;
     // Cards over the top or bottom of the canvas hide that much of the view, so
     // shift the view centre to the middle of the strip left clear between them.
+    // The shift eases in over a few frames (see stepViewOffset) so a card
+    // opening does not jolt the globe; the first layout snaps.
+    this.size = { w, h };
     const dy = ((this.topInset || 0) - (this.bottomInset || 0)) / 2;
-    if (dy) this.camera.setViewOffset(w, h, 0, -dy, w, h); else this.camera.clearViewOffset();
+    if (this.viewDy == null) this.viewDy = dy;
+    if (dy !== this.viewDyTo) { this.viewDyTo = dy; this.viewDyFrom = this.viewDy; this.viewDyStart = null; } // the clock starts on the first frame
+    this.applyViewOffset();
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
     if (this.nameGroup) this.applyLabelScale();
