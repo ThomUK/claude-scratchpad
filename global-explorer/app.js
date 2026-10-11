@@ -406,8 +406,8 @@ function startRound(startCode) {
   render();
   applyView();
   state.globe.flyTo(startCode); // after the sheet is laid out, so the fit knows the canvas shape
-  const left = pool.complete ? `Your ${r.label} passport is complete, so any of them can come up.` : '';
-  toast(`Starting from ${name(startCode)}. The mystery country is ${km(state.game.startDistanceKm)} away. ${left}`.replace(/\s+/g, ' ').trim());
+  // The sheet already says where you start and how far the mystery country is; only a full passport needs a word.
+  if (pool.complete) flash(`Your ${r.label} passport is complete, so any of its countries can come up.`);
 }
 
 function onGuess(code) {
@@ -529,7 +529,6 @@ function render(lastResult) {
     const lead = v === 'warmer' ? 'You got closer!' : v === 'cooler' ? 'Further away.' : 'Same distance as before.';
     const where = `The mystery country is ${km(lastResult.distanceKm)} to the ${DIR[lastResult.compass]} of ${who}.`;
     flash(`${lead} ${where}`, v);
-    toast(v === 'warmer' ? `🔥 Closer · ${who}` : v === 'cooler' ? `❄️ Further · ${who}` : `Same distance · ${who}`, v);
   }
   if (state.phase === 'over') { flash(''); renderOver(); }
 }
