@@ -3,7 +3,7 @@ import {
   HOUSES, ITEMS, ITEM, PETS, PET, WALLPAPERS, FLOORS, PAINTS, NEIGHBOURS, SUBJECTS, LEVELS, HOURS, START_COINS, LESSONS_PER_DAY, QUESTIONS_PER_LESSON, PERFECT_BONUS, BABY_GROWS_AT, CHILD_SCHOOL_AGE, BURGLAR_GRACE_DAYS,
   makeRng, newGame, buildHouse, houseWidth, moveHouse, houseSalePrice, buyItem, sellFromVan, vanItems, vanCount, placeItem, removeItem, placedList, setWallpaper, setFlooring, setPaint,
   securityScore, buyPet, feedPet, playWithPet, mealsLeft, canHaveBaby, newBaby, feedPerson, lessonsLeft, canStartLesson, makeQuestion, startLesson, checkAnswer, answerQuestion, finishLesson,
-  neighbourHouse, visitNeighbour, trapInRoom, trapCount, callPolice, TRAP_REWARD, cameraFor, saveClip, deleteClip, GALLERY_MAX, bankOpen, nightlyInterest, deposit, withdraw, BANK_MAX_INTEREST, POCKET_THEFT, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
+  neighbourHouse, visitNeighbour, trapInRoom, trapCount, callPolice, TRAP_REWARD, cameraFor, saveClip, deleteClip, GALLERY_MAX, bankOpen, nightlyInterest, deposit, withdraw, BANK_MAX_INTEREST, POCKET_THEFT, travel, nightlyBill, policePays, BUS_FARE, BILL_GADGET, BILL_MOUTH, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
 } from '../engine.js';
 
 let fails = 0;
@@ -185,8 +185,8 @@ console.log('— night —');
   let seed = 1; let rep;
   for (; seed < 200; seed++) { const c = JSON.parse(serialize(u)); rep = sleep(c, makeRng(seed)).report; if (rep.burglar && rep.burglar.outcome === 'robbed' && rep.burglar.item) break; }
   ok(seed < 200 && rep.burglar.item === 'bed', 'with no security a burglar steals your only item');
-  const v = JSON.parse(serialize(u)); buyItem(v, 'camera'); buyItem(v, 'alarm'); placeItem(v, 0, 'wall', 0, 'camera'); placeItem(v, 0, 'wall', 1, 'alarm');
-  const coinsBefore = v.coins;
+  const v = JSON.parse(serialize(u)); buyItem(v, 'camera'); buyItem(v, 'alarm'); placeItem(v, 0, 'wall', 0, 'camera'); placeItem(v, 0, 'wall', 1, 'alarm'); v.lessonsToday = 1;
+  const coinsBefore = v.coins - nightlyBill(v);
   rep = sleep(v, makeRng(seed)).report;
   ok(rep.burglars.length >= 1 && rep.burglars.every(b => b.outcome === 'caught') && v.coins === coinsBefore + (20 + 5 * 2) * rep.burglars.length && v.house.rooms[2].floorSlots[0] === 'bed', `camera + alarm catch the same night's burglar${rep.burglars.length > 1 ? 's' : ''} and earn a reward each`);
   const w = JSON.parse(serialize(u)); buyItem(w, 'doorbell'); placeItem(w, -1, 'garden', 0, 'doorbell');
@@ -222,13 +222,13 @@ console.log('— burglar traps —');
   ok(slipped && slipped.b.coins >= 5 && slipped.b.room === 3, 'the banana skin makes them slip and drop coins');
   ok(robbed && robbed.b.room === 2, 'the only room without a trap is where you get robbed');
   if (trapped) {
-    const c = trapped.c; const n = c.caged.length; const coins = c.coins;
+    const c = trapped.c; const n = c.caged.length; const coins = c.coins; c.lessonsToday = 1;
     const r = callPolice(c, 0);
     ok(r.ok && c.coins === coins + TRAP_REWARD && c.caged.length === n - 1 && c.stats.burglarsCaught >= 1, 'calling the police pays the reward and empties the trap');
     ok(!callPolice(c, 99).ok, 'no burglar, no reward');
-    const d = JSON.parse(serialize(trapped.c)); d.hour = 20; const coins2 = d.coins; d.caged.push({ room: 0, trap: 'cage' }); const left = d.caged.length;
+    const d = JSON.parse(serialize(trapped.c)); d.hour = 20; d.lessonsToday = 1; const coins2 = d.coins - nightlyBill(d); d.caged.push({ room: 0, trap: 'cage' }); const left = d.caged.length;
     const rep = sleep(d, makeRng(999)).report;
-    ok(rep.collected === left && d.coins + (rep.stolenCoins || 0) >= coins2 + left * TRAP_REWARD, 'burglars left in traps overnight are collected and paid for');
+    ok(rep.collected === left && rep.collectedReward === left * TRAP_REWARD && d.coins + (rep.stolenCoins || 0) >= coins2 + left * TRAP_REWARD, 'burglars left in traps overnight are collected and paid for');
     const e = JSON.parse(serialize(trapped.c)); e.coins += 5000; e.caged.push({ room: 1, trap: 'net' }); const coins3 = e.coins, left2 = e.caged.length;
     moveHouse(e, 'terrace');
     ok(e.caged.length === 0 && e.coins === coins3 - (HOUSES[1].price - houseSalePrice(trapped.c.house)) + left2 * TRAP_REWARD, 'moving house hands trapped burglars to the police first');
@@ -286,11 +286,47 @@ console.log('— bank —');
   for (let sd = 1; sd < 100 && !hit; sd++) { const c = JSON.parse(serialize(u)); const rep = sleep(c, makeRng(sd)).report; if (rep.stolenCoins) hit = { c, rep }; }
   ok(hit && hit.rep.stolenCoins >= Math.floor(200 * POCKET_THEFT[0] / 100) && hit.rep.stolenCoins <= Math.floor(200 * POCKET_THEFT[1] / 100 * 2), `an unhindered burglar pinches coins at home (${hit && hit.rep.stolenCoins} of 200)`);
   ok(hit && hit.c.bank === 1000 + BANK_MAX_INTEREST && hit.rep.burglars.some(b => b.outcome === 'robbed' && b.stolen > 0), 'the bank balance is untouched and still earns interest');
-  const v = JSON.parse(serialize(u)); v.coins += 500; buyItem(v, 'camera'); buyItem(v, 'alarm'); placeItem(v, 0, 'wall', 0, 'camera'); placeItem(v, 0, 'wall', 1, 'alarm'); const before = v.coins;
+  const v = JSON.parse(serialize(u)); v.coins += 500; buyItem(v, 'camera'); buyItem(v, 'alarm'); placeItem(v, 0, 'wall', 0, 'camera'); placeItem(v, 0, 'wall', 1, 'alarm'); const before = v.coins - nightlyBill(v);
   const rep2 = sleep(v, makeRng(3)).report;
   ok(!rep2.stolenCoins && v.coins >= before, 'burglars that are caught take no coins');
   const w = deserialize(serialize(hit.c));
   ok(w.bank === hit.c.bank && typeof w.stats.stolen === 'number', 'bank balance survives a save');
+}
+
+console.log('— no school, no reward · bills · bus fares —');
+{
+  const t = newGame('V'); moveHouse(t, 'flat'); t.coins = 1000; t.day = BURGLAR_GRACE_DAYS;
+  buyItem(t, 'camera'); buyItem(t, 'alarm'); placeItem(t, 0, 'wall', 0, 'camera'); placeItem(t, 0, 'wall', 1, 'alarm');
+  buyItem(t, 'cagetrap'); placeItem(t, 1, 'wall', 0, 'cagetrap'); buyPet(t, 'cat', 'Tom');
+  ok(!policePays(t) && (t.lessonsToday = 1, policePays(t)), 'the police pay only after at least one lesson today'); t.lessonsToday = 0;
+  ok(nightlyBill(t) === 3 * BILL_GADGET + 1 * BILL_MOUTH, `the nightly bill is ${BILL_GADGET} per gadget and ${BILL_MOUTH} per mouth`);
+  let caught = null;
+  for (let sd = 1; sd < 100 && !caught; sd++) { const c = JSON.parse(serialize(t)); const rep = sleep(c, makeRng(sd)).report; const b = rep.burglars.find(b => b.outcome === 'caught'); if (b) caught = { c, b, rep }; }
+  ok(caught && caught.b.reward === 0 && /skipped school/.test(caught.b.msg) && !caught.rep.policePaid, 'a burglar caught on a no-school night earns no reward');
+  ok(caught && caught.rep.bill === nightlyBill(t) && !caught.rep.powerOff && caught.c.stats.bills === nightlyBill(t), 'the bill came out of the pocket');
+  const u = JSON.parse(serialize(t)); u.lessonsToday = 1; let paid = null;
+  for (let sd = 1; sd < 100 && !paid; sd++) { const d = JSON.parse(serialize(u)); const rep = sleep(d, makeRng(sd)).report; const b = rep.burglars.find(b => b.outcome === 'caught'); if (b) paid = { d, b }; }
+  ok(paid && paid.b.reward === 20 + securityScore(t) * 2, 'the same catch after a school day pays the full reward');
+  const v = JSON.parse(serialize(t)); v.caged = [{ room: 1, trap: 'cage' }]; const coinsV = v.coins;
+  let r = callPolice(v, 0);
+  ok(r.ok && r.reward === 0 && v.coins === coinsV && v.caged.length === 0 && v.stats.burglarsCaught === 1, 'calling the police on a no-school day takes the burglar away but pays nothing');
+  v.caged = [{ room: 1, trap: 'cage' }]; v.lessonsToday = 2; r = callPolice(v, 0);
+  ok(r.reward === TRAP_REWARD && v.coins === coinsV + TRAP_REWARD, 'after school the trap reward is paid');
+  const w = JSON.parse(serialize(t)); w.coins = 2; w.bank = 100; const bill = nightlyBill(w);
+  let rep = sleep(w, makeRng(7)).report;
+  ok(rep.bill === bill && rep.billFromBank === bill - 2 - rep.happyBonus && !rep.powerOff, 'a bill the pocket cannot cover is paid from the bank');
+  const x = JSON.parse(serialize(t)); x.coins = 0; x.bank = 0; x.lessonsToday = 1;
+  let off = null;
+  for (let sd = 1; sd < 100 && !off; sd++) { const d = JSON.parse(serialize(x)); const rp = sleep(d, makeRng(sd)).report; if (rp.powerOff && rp.burglars.some(b => b.room === 0 || b.room === 1)) off = { d, rp }; }
+  ok(off && off.rp.unpaid === nightlyBill(x) - off.rp.happyBonus && off.rp.burglars.every(b => b.outcome !== 'caught' && b.outcome !== 'trapped'), 'with the bill unpaid, cameras, alarm and cage trap all fail that night');
+  const y = newGame('Y'); moveHouse(y, 'flat'); y.coins = 5; y.hour = 9;
+  r = travel(y, 'furniture');
+  ok(r.fare === BUS_FARE && y.coins === 3 && y.hour === 10 && y.stats.fares === BUS_FARE, 'a trip to the shops costs the bus fare and an hour');
+  r = travel(y, 'school');
+  ok(r.free && y.coins === 3 && y.hour === 10, 'the school bus is free');
+  y.coins = 1; r = travel(y, 'bank');
+  ok(r.walked && y.coins === 1 && y.hour === 12, 'with no fare you walk, which takes an extra hour');
+  r = travel(y, 'home'); ok(r.fare === 0 && y.hour === 12, 'going home costs nothing');
 }
 
 console.log('— save / load —');

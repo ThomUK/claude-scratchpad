@@ -24,9 +24,13 @@ function toast(msg, ms = 2600) { toastEl.textContent = msg; toastEl.classList.ad
 function openModal(html) { modalBox.innerHTML = html; modal.hidden = false; }
 function closeModal() { modal.hidden = true; modalBox.innerHTML = ''; }
 
-const TIMED = { furniture: 1, gadget: 1, garden: 1, pets: 1, hospital: 1, estate: 1, bank: 1, neighbours: 0.5 };
 function go(where, a = null) {
-  if (S && TIMED[where] && screen !== where) E.advanceTime(S, TIMED[where]);
+  if (S && E.TRAVEL[where] !== undefined && screen !== where) {
+    const r = E.travel(S, where);
+    if (r.walked) toast(`No coins for the bus, so you walked. It took ages.`, 3000);
+    else if (r.fare) toast(`🚌 Bus fare: ${r.fare} coins`, 1600);
+    else if (r.free) toast('🚌 The school bus is free!', 1600);
+  }
   screen = where; ui = { a };
   closeModal(); render();
   window.scrollTo(0, 0);
@@ -64,7 +68,7 @@ const SCREENS = {
     return `<div class="screen">
       ${late ? `<div class="panel" style="background:#f7e7c4"><b>It is 10 o'clock at night.</b> Everyone is yawning. Time for bed!</div>` : ''}
       <div class="stage ${night() ? 'night' : ''}">${A.interiorSvg(S.house, { ...ctx(), interactive: true, pets: S.pets, family: S.family, caged: S.caged, player: { name: S.name, room: S.house.rooms.reduce((best, r, i) => r.w > S.house.rooms[best].w ? i : best, 0) } })}</div>
-      <div class="panel"><div class="row">${secMeter()}${S.pets.length ? meter(`🐾 ${S.pets.length} pet${S.pets.length > 1 ? 's' : ''}${S.pets.some(p => p.hunger >= 2) ? ' · hungry!' : ''}`, S.pets.every(E.petHappy) ? 'ok' : 'warn') : ''}${S.caged.length ? meter(`🥷 ${S.caged.length} burglar${S.caged.length > 1 ? 's' : ''} in a trap — tap to call the police!`, 'ok') : ''}${S.family.length ? meter(`👪 ${S.family.length} in the family${S.family.some(p => p.hunger >= 2) ? ' · hungry!' : ''}`, S.family.every(E.personHappy) ? 'ok' : 'warn') : ''}<span class="spacer" style="flex:1"></span><button class="alt small" data-act="van">🚚 Van (${E.vanItems(S).reduce((a, v) => a + v.n, 0)})</button>${S.footage.length ? `<button class="small warm" data-act="go" data-arg='"footage"'>📼 Last night's footage (${S.footage.length})</button>` : ''}<button class="alt small" data-act="go" data-arg='"gallery"'>🎞 Criminal Gallery (${S.gallery.length})</button></div>
+      <div class="panel"><div class="row">${secMeter()}${S.pets.length ? meter(`🐾 ${S.pets.length} pet${S.pets.length > 1 ? 's' : ''}${S.pets.some(p => p.hunger >= 2) ? ' · hungry!' : ''}`, S.pets.every(E.petHappy) ? 'ok' : 'warn') : ''}${S.caged.length ? meter(`🥷 ${S.caged.length} burglar${S.caged.length > 1 ? 's' : ''} in a trap — tap to call the police!`, 'ok') : ''}${S.family.length ? meter(`👪 ${S.family.length} in the family${S.family.some(p => p.hunger >= 2) ? ' · hungry!' : ''}`, S.family.every(E.personHappy) ? 'ok' : 'warn') : ''}${meter(`🧾 Tonight's bill: ${E.nightlyBill(S)}`, E.nightlyBill(S) > S.coins + S.bank ? 'bad' : 'ok')}${E.policePays(S) ? meter('🏫 Been to school: police rewards ON', 'ok') : meter('🏫 No school yet today: police pay no rewards', 'warn')}<span class="spacer" style="flex:1"></span><button class="alt small" data-act="van">🚚 Van (${E.vanItems(S).reduce((a, v) => a + v.n, 0)})</button>${S.footage.length ? `<button class="small warm" data-act="go" data-arg='"footage"'>📼 Last night's footage (${S.footage.length})</button>` : ''}<button class="alt small" data-act="go" data-arg='"gallery"'>🎞 Criminal Gallery (${S.gallery.length})</button></div>
       <p class="muted">Tap a dotted <b>+</b> to put something from the van there. Tap furniture to move or sell it. Tap a room name to change the wallpaper and floor. Tap pets and people to look after them.</p></div>
       ${nav(['🌳 Outside', 'go', 'outside'], late ? null : navTown(), bedBtn())}
       ${S.log.length ? `<div class="panel log">${S.log.slice(0, 6).map(l => `<div>Day ${l.day}: ${esc(l.msg)}</div>`).join('')}</div>` : ''}
@@ -166,9 +170,11 @@ const SCREENS = {
     const r = ui.a;
     return `<div class="screen"><div class="panel"><h2>☀️ Good morning! It is day ${S.day}.</h2>
       ${(r.burglars || []).length ? r.burglars.map(b => `<div class="speech burglar ${b.outcome}"><div>${A.burglarSvg(b.outcome)}</div><div>${b.outcome === 'robbed' ? '🥷' : b.outcome === 'caught' ? '👮' : b.outcome === 'trapped' ? '🪤' : b.outcome === 'slipped' ? '🍌' : '😮'} ${esc(b.msg)}${b.clip !== undefined ? `<div style="margin-top:8px"><button class="small" data-act="watch" data-arg='${arg(['footage', b.clip])}'>📹 Watch the ${esc(S.footage[b.clip].cam.toLowerCase())} footage</button></div>` : `<div class="muted" style="margin-top:6px;font-size:13px">No camera saw this. A security camera in the ${esc(S.house.rooms[b.room].name)}, or a doorbell camera outside, would have recorded it.</div>`}</div></div>`).join('') : '<p>🌙 Everyone slept soundly.</p>'}
+      ${r.bill ? `<p>🧾 Bills: <b>🪙 ${r.bill}</b> for batteries and food${r.billFromBank ? ` (${r.billFromBank} of it from the bank)` : ''}.${r.powerOff ? ` <b>You could not pay ${r.unpaid} of it, so the power was off all night: no cameras, alarms or traps!</b>` : ''}</p>` : ''}
+      ${!r.policePaid && r.burglars.some(b => b.outcome === 'caught' || b.outcome === 'trapped') ? `<p>👮 ${E.NO_SCHOOL_MSG} Go to a lesson before calling them.</p>` : ''}
       ${r.interest ? `<p>🏦 The bank paid <b>🪙 ${r.interest}</b> interest at midnight. You now have ${S.bank} coins saved.</p>` : ''}
       ${r.stolenCoins ? `<p>💸 Burglars pinched <b>🪙 ${r.stolenCoins}</b> from the coins you kept at home. Coins in the bank are safe.</p>` : ''}
-      ${r.collected ? `<p>👮 The police came for the ${r.collected === 1 ? 'burglar' : r.collected + ' burglars'} still in your traps and paid 🪙 ${r.collected * E.TRAP_REWARD}.</p>` : ''}
+      ${r.collected ? `<p>👮 The police came for the ${r.collected === 1 ? 'burglar' : r.collected + ' burglars'} still in your traps${r.collectedReward ? ` and paid 🪙 ${r.collectedReward}` : ', but paid nothing because you skipped school'}.</p>` : ''}
       ${r.happyBonus ? `<p>😊 Your happy pets and family found <b>🪙 ${r.happyBonus}</b> for you.</p>` : ''}
       ${r.grown.map(n => `<p>🎉 <b>${esc(n)}</b> has grown from a baby into a child!</p>`).join('')}
       ${r.cries.length ? `<p>🍼 ${r.cries.map(esc).join(' and ')} ${r.cries.length > 1 ? 'are' : 'is'} hungry. Tap them at home to feed them.</p>` : ''}
@@ -296,7 +302,7 @@ function personModal(i) {
 function cagedModal(i) {
   const c = S.caged[i]; if (!c) return;
   openModal(`<div class="row"><svg viewBox="0 0 44 56" width="88" height="112">${A.cagedInner(c.trap)}</svg><div><h3>Got one!</h3><p>A burglar is stuck in your ${c.trap === 'cage' ? 'drop cage' : 'net'} in the ${esc(S.house.rooms[c.room].name)}. They look very sorry.</p></div></div>
-    <div class="row" style="margin-top:14px"><button data-act="callPolice" data-arg='${arg(i)}'>👮 Call the police (reward 🪙 ${E.TRAP_REWARD})</button><button class="alt" data-act="closeModal">Leave them there for now</button></div>`);
+    <div class="row" style="margin-top:14px"><button data-act="callPolice" data-arg='${arg(i)}'>👮 Call the police (${E.policePays(S) ? `reward 🪙 ${E.TRAP_REWARD}` : 'no reward until you have been to school today'})</button><button class="alt" data-act="closeModal">Leave them there for now</button></div>`);
 }
 function helpModal() {
   openModal(`<h2>How to play</h2><ul class="help-list">
@@ -305,6 +311,7 @@ function helpModal() {
     <li><b>Pets</b> from the pet shop need feeding (buy pet food) and playing with. Happy pets do tricks and find coins. <b>Babies</b> come from the hospital once you own a cot; feed them and in a few days they grow up.</li>
     <li><b>Burglars</b> come every night, and posh houses attract two at once. Each one sneaks into one room. <b>Traps</b> from the gadget shop catch a burglar who enters that room: a Drop Cage falls from the ceiling, a Net Trap scoops them up, and a Banana Skin makes them slip and drop coins. In the morning tap the trapped burglar to call the police for a bigger reward. More traps in more rooms means more burglars caught.</li>
     <li><b>Camera footage.</b> A security camera in the room the burglar entered (or a doorbell or outdoor camera) records a video of what happened. Watch it from the morning report and save your best captures to the 🎞 Criminal Gallery at home to relive them whenever you like. Security cameras, alarms, doorbell cameras, dogs, parrots and dragons add security points. 3 or more catches the burglar (and the police pay a reward). 1–2 scares them away. None… and something goes missing.</li>
+    <li><b>Rules of the town.</b> The police only pay burglar rewards to children who have been to at least one lesson that day. Every night you pay a bill: 2 coins for each gadget or trap (batteries and electricity) and 3 coins of food for each pet and family member. If you cannot pay, the power is off that night and no camera, alarm or trap works. Every bus trip into town costs 2 coins, except the school bus, which is free. No coins means you walk, and that takes longer.</li>
     <li><b>The bank</b> in town pays 5% interest every night on the coins you leave there (at least 1, at most 25 a night), and burglars can never touch them. Burglars who get in unhindered pinch 10–25% of the coins you keep at home. Going to the bank takes an hour each way.</li>
     <li><b>Move house.</b> The estate agent buys your decorated house for more than you paid. Your furniture, pets and family move with you.</li>
     <li><b>Day and night.</b> Everything you do takes time. Shops shut at 6pm, school at 3pm. Go to bed in the evening to start a new day. Nobody in Build Life ever dies.</li></ul>

@@ -46,6 +46,11 @@ gold coins, and fill your home with pets and family.
   least 1 coin, capped at 25) and burglars cannot touch them, but every trip
   takes an hour and a burglar who gets in unhindered pinches 10–25% of the
   coins you keep at home.
+- **Earning needs school.** The police only pay burglar rewards on days with
+  at least one lesson. Every night there is a bill (2 coins per gadget or trap,
+  3 coins of food per pet or family member); unpaid means no power and no
+  working security that night. Bus trips into town cost 2 coins, except the
+  free school bus.
 - **Day and night.** Everything takes time. Shops close at 6pm, school at 3pm.
   Go to bed in the evening to start the next day; the morning report tells you
   what happened overnight.

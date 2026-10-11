@@ -11,6 +11,10 @@ export const BURGLAR_CHANCE = 1;     // a burglar every single night
 export const BANK_RATE = 0.05;        // interest per night on coins in the bank
 export const BANK_MAX_INTEREST = 25;  // cap per night
 export const POCKET_THEFT = [10, 25]; // % of coins at home a burglar can pinch
+export const BUS_FARE = 2;            // coins per trip into town (the school bus is free)
+export const BILL_GADGET = 2;         // nightly batteries/electricity per gadget or trap
+export const BILL_MOUTH = 3;          // nightly food per pet or family member
+export const TRAVEL = { furniture: 1, gadget: 1, garden: 1, pets: 1, hospital: 1, estate: 1, bank: 1, neighbours: 0.5, school: 0 };
 export const GALLERY_MAX = 40;        // clips the criminal gallery can hold
 export const TRAP_REWARD = 40;       // police reward for a burglar caught in a trap
 export const SECOND_BURGLAR_CHANCE = { flat: 0.15, terrace: 0.3, detached: 0.5, castle: 0.7 }; // posh houses attract more
@@ -158,7 +162,7 @@ export function newGame(name, rng = makeRng(7)) {
   const s = {
     name: String(name || 'Player').trim().slice(0, 16) || 'Player', coins: START_COINS, day: 1, hour: HOURS.START,
     house: null, bank: 0, van: {}, pets: [], family: [], caged: [], footage: [], gallery: [], lessonsToday: 0, extraLessonsToday: 0,
-    visitedToday: [], log: [], stats: { lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0, interest: 0, stolen: 0 },
+    visitedToday: [], log: [], stats: { lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0, interest: 0, stolen: 0, bills: 0, fares: 0 },
     seed: rng.int(1, 1e9),
   };
   return s;
@@ -278,6 +282,20 @@ export function countPlaced(house, pred) { return placedItems(house).filter(p =>
 export function bedCount(house) { return placedItems(house).reduce((a, p) => a + (ITEM[p.id].bed ? (ITEM[p.id].beds || 1) : 0), 0); }
 export function cotCount(house) { return countPlaced(house, i => i.cot); }
 
+// ───────────────────────── travel, bills, police ─────────────────────────
+export function travel(s, dest) {
+  const hours = TRAVEL[dest];
+  if (hours === undefined) return { ok: true, fare: 0 };
+  if (dest === 'school') { advanceTime(s, hours); return { ok: true, fare: 0, free: true }; }
+  if (s.coins >= BUS_FARE) { s.coins -= BUS_FARE; s.stats.fares += BUS_FARE; advanceTime(s, hours); return { ok: true, fare: BUS_FARE }; }
+  advanceTime(s, hours + 1);
+  return { ok: true, fare: 0, walked: true };
+}
+export function gadgetCount(house) { return countPlaced(house, i => i.cat === 'gadget'); }
+export function nightlyBill(s) { return (s.house ? gadgetCount(s.house) * BILL_GADGET : 0) + (s.pets.length + s.family.length) * BILL_MOUTH; }
+export function policePays(s) { return s.lessonsToday >= 1; }
+export const NO_SCHOOL_MSG = 'The police do not pay rewards to children who skipped school today.';
+
 // ───────────────────────── bank ─────────────────────────
 export function bankOpen(s) { return s.hour >= HOURS.SCHOOL_OPEN && s.hour < HOURS.SHOPS_CLOSE; }
 export function nightlyInterest(bank) { if (bank <= 0) return 0; return Math.max(1, Math.min(BANK_MAX_INTEREST, Math.floor(bank * BANK_RATE))); }
@@ -330,8 +348,10 @@ export function trapCount(house) { return countPlaced(house, i => i.trap && i.tr
 export function callPolice(s, idx) {
   const c = s.caged[idx]; if (!c) return { ok: false };
   s.caged.splice(idx, 1);
-  s.coins += TRAP_REWARD; s.stats.burglarsCaught++;
-  return { ok: true, reward: TRAP_REWARD, msg: say(s, `The police took the burglar away from the ${s.house.rooms[c.room].name} and paid you a ${TRAP_REWARD} coin reward.`) };
+  s.stats.burglarsCaught++;
+  const pays = policePays(s);
+  if (pays) s.coins += TRAP_REWARD;
+  return { ok: true, reward: pays ? TRAP_REWARD : 0, msg: say(s, pays ? `The police took the burglar away from the ${s.house.rooms[c.room].name} and paid you a ${TRAP_REWARD} coin reward.` : `The police took the burglar away from the ${s.house.rooms[c.room].name} — but no reward. ${NO_SCHOOL_MSG}`) };
 }
 
 // ───────────────────────── pets ─────────────────────────
@@ -665,25 +685,36 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
   // happiness bonus
   const happy = s.pets.filter(petHappy).length + s.family.filter(personHappy).length;
   if (happy) { report.happyBonus = happy * 2; s.coins += report.happyBonus; s.stats.coinsEarned += report.happyBonus; }
+  // bills: batteries for gadgets and traps, food for every mouth. Unpaid = no power tonight.
+  report.bill = nightlyBill(s); report.billFromBank = 0; report.powerOff = false;
+  if (report.bill) {
+    let due = report.bill;
+    const fromPocket = Math.min(s.coins, due); s.coins -= fromPocket; due -= fromPocket;
+    const fromBank = Math.min(s.bank, due); s.bank -= fromBank; due -= fromBank; report.billFromBank = fromBank;
+    s.stats.bills += report.bill - due;
+    if (due > 0) { report.powerOff = true; report.unpaid = due; say(s, `You could not pay the ${report.bill} coin bill, so the power was off tonight: no cameras, alarms or traps.`); }
+  }
+  const powerOff = report.powerOff;
   // burglars left in traps overnight are collected by the police
-  report.collected = 0;
-  while (s.caged.length) { callPolice(s, 0); report.collected++; }
+  report.collected = 0; report.collectedReward = 0; report.policePaid = policePays(s);
+  while (s.caged.length) { const r = callPolice(s, 0); report.collected++; report.collectedReward += r.reward; }
   // burglars
   report.burglars = [];
   s.footage = [];
   const attempts = s.day < BURGLAR_GRACE_DAYS ? 0 : (BURGLAR_CHANCE >= 1 || rng() < BURGLAR_CHANCE ? 1 : 0) + (rng() < (SECOND_BURGLAR_CHANCE[s.house.type] || 0.2) ? 1 : 0);
   for (let n = 0; n < attempts; n++) {
-    const sec = securityScore(s);
+    const sec = powerOff ? s.pets.reduce((a, p) => a + PET[p.type].security, 0) : securityScore(s);
     const items = placedItems(s.house);
     const who = n === 0 ? 'A burglar' : 'A second burglar';
     const roomIdx = rng.int(0, s.house.rooms.length - 1);
     const roomName = s.house.rooms[roomIdx].name;
-    const trap = trapInRoom(s.house, roomIdx);
+    const trapHere = trapInRoom(s.house, roomIdx);
+    const trap = powerOff && trapHere !== 'banana' ? null : trapHere;
     const cam = cameraFor(s.house, roomIdx);
     let b;
     if (trap === 'cage' || trap === 'net') { s.caged.push({ room: roomIdx, trap }); b = { outcome: 'trapped', trap, room: roomIdx, msg: say(s, `${who} crept into the ${roomName} and ${trap === 'cage' ? 'CLANG! the cage dropped from the ceiling' : 'WHOOSH! the net scooped them up'}. They are still in there — tap them to call the police!`) }; }
     else if (trap === 'banana') { const dropped = rng.int(5, 12); s.coins += dropped; s.stats.coinsEarned += dropped; b = { outcome: 'slipped', coins: dropped, room: roomIdx, msg: say(s, `${who} crept into the ${roomName}, slipped on the banana skin and ran off, dropping ${dropped} coins.`) }; }
-    else if (sec >= 3) { const reward = 20 + sec * 2; s.coins += reward; s.stats.burglarsCaught++; b = { outcome: 'caught', room: roomIdx, reward, msg: say(s, `${who} tried to sneak in! Your security caught them red-handed and the police gave you a ${reward} coin reward.`) }; }
+    else if (sec >= 3) { const pays = policePays(s); const reward = pays ? 20 + sec * 2 : 0; s.coins += reward; s.stats.burglarsCaught++; b = { outcome: 'caught', room: roomIdx, reward, msg: say(s, pays ? `${who} tried to sneak in! Your security caught them red-handed and the police gave you a ${reward} coin reward.` : `${who} tried to sneak in! Your security caught them red-handed — but no reward. ${NO_SCHOOL_MSG}`) }; }
     else if (sec >= 1) b = { outcome: 'scared', room: roomIdx, msg: say(s, `${who} crept up to the house, got spooked and ran away. Phew! More cameras would catch them next time.`) };
     else {
       const here = items.filter(p => p.room === roomIdx && !ITEM[p.id].trap);
@@ -726,6 +757,6 @@ export function deserialize(json) {
   const s = JSON.parse(json);
   if (!s || typeof s !== 'object' || !s.name) throw new Error('bad save');
   s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.bank = s.bank || 0; s.caged = s.caged || []; s.footage = s.footage || []; s.gallery = s.gallery || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
-  s.stats = Object.assign({ lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0, interest: 0, stolen: 0 }, s.stats || {});
+  s.stats = Object.assign({ lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0, interest: 0, stolen: 0, bills: 0, fares: 0 }, s.stats || {});
   return s;
 }
