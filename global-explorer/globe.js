@@ -92,7 +92,12 @@ export class Globe {
     });
     // Momentum: while a finger is down the globe tracks it closely, and on
     // release the motion left in the pipe is stretched and let run down slowly.
+    // OrbitControls also raises start/end around every wheel notch; the
+    // stretch must only follow a real drag, or each notch would compound
+    // whatever rotation is still gliding (the fast spin when zooming out).
+    this.renderer.domElement.addEventListener('wheel', () => { this.wheelEnding = true; }, { capture: true, passive: true });
     this.controls.addEventListener('end', () => {
+      if (this.wheelEnding) { this.wheelEnding = false; return; }
       const d = this.controls._sphericalDelta;
       d.theta *= GLIDE_BOOST;
       d.phi *= GLIDE_BOOST;
