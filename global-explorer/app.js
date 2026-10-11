@@ -78,7 +78,7 @@ async function main() {
   };
   $('loading').remove();
   $('compass').hidden = false;
-  $('data-note').textContent = `Data: ${cJson.sources.countries}; ${cJson.sources.geometry}. Built ${cJson.generated}.`;
+  renderCredits(cJson);
   window.globalExplorer = { state }; // debug handle (used by the browser tests)
 
   wireTabs();
@@ -873,6 +873,20 @@ function saveSettings() {
   renderSettings();
   render();
   if (state.screen === 'play') applyView();
+}
+
+/** The Credits list on the Settings page: one row per source, from the data build plus the vendored libraries. */
+function renderCredits(cJson) {
+  const dl = $('credits'); dl.replaceChildren();
+  const add = (k, v) => { dl.append(el('dt', null, k), el('dd', null, v)); };
+  add('Country facts', 'mledoze/countries, the REST Countries dataset (ODbL)');
+  add('Borders', 'Natural Earth 1:50m map units (public domain), with Crimea shown in Ukraine');
+  add('Population', 'Natural Earth estimates');
+  add('Coastlines', 'CIA World Factbook');
+  add('Commonly visited', 'ONS Travel trends, UK residents\u2019 visits abroad by country');
+  add('Flags', 'Twemoji (CC-BY 4.0), as a flags-only font by TalkJS\u2019s country-flag-emoji-polyfill (MIT)');
+  add('3D globe', 'three.js (MIT)');
+  add('Data built', cJson.generated);
 }
 
 function renderSettings() {
