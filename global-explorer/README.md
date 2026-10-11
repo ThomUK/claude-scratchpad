@@ -18,7 +18,7 @@ flag); each costs a point, and on Intermediate and Advanced the stamp you
 earn is marked with the number of clues used. Find it (green) and you get
 the country card: capital, population, area, density, region, languages,
 currency, neighbours and a few facts, with dependent territories saying who
-administers them. Chain on: the next round can start from the country you found.
+administers them. **Next round** chains on from the country you found; the Game tab starts afresh.
 
 **Passport.** The scoring page. Each country has three stamps to collect, one
 per level (Easy, Intermediate, Advanced). Finding a

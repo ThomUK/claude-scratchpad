@@ -568,13 +568,9 @@ function renderOver() {
   $('reveal-card').replaceChildren(countryCard(c, g.startCode));
   const row = $('over-actions');
   row.replaceChildren();
-  const next = el('button', 'primary', `Next round: start from ${c.name}`);
+  const next = el('button', 'primary', 'Next round'); // chains on from the country just found; the Game tab offers a fresh start
   next.addEventListener('click', () => startRound(c.code));
-  const same = el('button', null, `Again from ${name(g.startCode)}`);
-  same.addEventListener('click', () => startRound(g.startCode));
-  const fresh = el('button', 'ghost', 'New start');
-  fresh.addEventListener('click', () => resetToPickStart());
-  row.append(next, same, fresh);
+  row.append(next);
   $('sheet-body').scrollTop = 0;
 }
 
