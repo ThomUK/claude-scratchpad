@@ -72,8 +72,9 @@ async function main() {
   state.globe = new Globe($('globe'), state.features, state.countries);
   state.globe.onPick = (code) => {
     if (viewKind() !== 'round') { if (code) select(code); else deselect(); return; }
-    if (!code) { toast(rules().click ? 'No country there. Zoom in closer.' : 'No country there. Zoom in closer, or type its name.', 'warn'); return; }
-    if (rules().click) choose(code); else tapShape(code);
+    const gr = state.game.rules; // the round plays by the rules it started with
+    if (!code) { toast(gr.click ? 'No country there. Zoom in closer.' : 'No country there. Zoom in closer, or type its name.', 'warn'); return; }
+    if (gr.click) choose(code); else tapShape(code);
   };
   $('loading').remove();
   $('compass').hidden = false;
@@ -132,7 +133,8 @@ function describeExplore(ex) {
 
 /** Put the globe screen in the view the state calls for. Idempotent; call after any state change. */
 function applyView() {
-  const view = viewKind(), r = rules(), sel = state.selected;
+  const view = viewKind(), sel = state.selected;
+  const r = view === 'round' && state.game ? state.game.rules : rules(); // a round keeps the rules it started with
   const sp = $('screen-play');
   sp.classList.toggle('picking', view === 'start');
   sp.classList.toggle('exploring', view === 'explore');
@@ -378,7 +380,7 @@ function choose(code) {
   $('results-guess').hidden = true;
   if (state.phase !== 'guessing') return;
   onGuess(code);
-  if (rules().type && state.phase === 'guessing') $('search-guess').focus({ preventScroll: true });
+  if (state.game.rules.type && state.phase === 'guessing') $('search-guess').focus({ preventScroll: true });
 }
 
 function onLocate() {
@@ -848,7 +850,15 @@ function wireSettings() {
   for (const [key, d] of Object.entries(DIFFICULTY)) {
     const lab = el('label', 'diff');
     const inp = el('input'); inp.type = 'radio'; inp.name = 'difficulty'; inp.value = key;
-    inp.addEventListener('change', () => { state.settings.preset = key; saveSettings(); });
+    inp.addEventListener('change', () => {
+      if (state.settings.preset === key) return;
+      state.settings.preset = key;
+      // A round plays by the level it started on, so a new level means a new start.
+      const midRound = state.phase === 'guessing';
+      if (state.game) resetToPickStart();
+      saveSettings();
+      if (midRound) toast(`Level changed to ${d.label}. Choose where to start your next round.`);
+    });
     lab.append(inp, el('span', 'dname', d.label), el('span', 'dblurb', d.blurb));
     box.append(lab);
   }
