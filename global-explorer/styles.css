@@ -105,7 +105,7 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .credits .lic { display: block; color: var(--muted); font-size: 0.8rem; }
 .facts-grid { margin-top: 8px; font-size: 0.86rem; }
 .explore-pop .btnrow { margin-top: 10px; }
-@media (min-width: 900px) { .explore-pop { left: auto; width: 380px; right: 16px; } .explore-bar { right: 100px; } }
+@media (min-width: 900px) { .explore-pop { left: auto; width: 380px; right: 16px; } .explore-bar { right: auto; width: 440px; } } /* the compass follows the bar's right edge */
 /* New-round screen: the globe fills the view, with the title floating over it. */
 .start-bar { flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 14px; }
 .start-bar h1 { font-size: 1.1rem; }
@@ -261,9 +261,9 @@ button.visit.on { background: #efe6f8; }
 
 /* ----------------------------------------------------------------- atlas -- */
 /* Title, search and sort chips stay pinned together while the list scrolls. */
-.atlas-head { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--border); }
-.atlas-head .appbar { position: static; border-bottom: 0; }
-.atlas-tools { padding: 0 16px 10px; display: grid; gap: 8px; }
+.atlas-head { position: sticky; top: 0; z-index: 2; background: var(--bg); }
+.atlas-head .appbar { position: static; } /* the title bar keeps its line; the tools sit below it in the page column */
+.atlas-tools { max-width: 760px; width: 100%; margin: 0 auto; padding: 12px 16px 8px; display: grid; gap: 8px; }
 .chips.sort { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; scrollbar-width: none; }
 .chips.sort::-webkit-scrollbar { display: none; }
 .sortchip { flex: none; min-height: 34px; padding: 4px 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; background: var(--surface); }

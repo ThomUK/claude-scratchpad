@@ -305,9 +305,13 @@ function fitGlobeToSheet() {
   const view = viewKind();
   const bar = view === 'explore' ? $('explore-bar') : view === 'start' ? $('start-bar') : null;
   state.globe.topInset = bar && !bar.hidden ? bar.offsetTop + bar.offsetHeight : 0;
-  // The compass sits level with the floating card's centreline when there is one.
+  // The compass sits level with the floating card's centreline, just to its right, when there is one.
   const comp = $('compass');
-  comp.style.top = bar && !bar.hidden ? `${bar.offsetTop + (bar.offsetHeight - comp.offsetHeight) / 2}px` : '';
+  if (bar && !bar.hidden) {
+    comp.style.top = `${bar.offsetTop + (bar.offsetHeight - comp.offsetHeight) / 2}px`;
+    comp.style.left = `${bar.offsetLeft + bar.offsetWidth + 10}px`;
+    comp.style.right = 'auto';
+  } else { comp.style.top = ''; comp.style.left = ''; comp.style.right = ''; }
   // The start and explorer views always reserve their card's space at the
   // bottom, open or not, so the globe sits in the same place from first load.
   state.globe.bottomInset = view === 'start' ? cardInset('start-pop') : view === 'explore' ? cardInset('explore-pop') : 0;
