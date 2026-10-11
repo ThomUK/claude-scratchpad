@@ -709,24 +709,25 @@ function renderPassport() {
   $('passport-count').textContent = `${totalStamps()} of ${allStamps()} stamps`;
   const levels = $('levels');
   levels.replaceChildren();
+  const GLOBE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10.5c3 .5 5 2 6 4.5s3 3 5.5 3M12 3c-1.5 2.5-1 5 .5 6.5s3.5 1.5 5 .5M9 4c-.5 2 .5 3.5 2 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  // One tile per level: stamp, name, count, progress, and an explicit "Explore globe" action.
+  const tile = (level, label, count, total, ink, open, title) => {
+    const d = el('div', 'tile'); d.style.setProperty('--ink', ink);
+    d.title = title; d.tabIndex = 0; d.setAttribute('role', 'button');
+    d.addEventListener('click', open); d.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    const head = el('div', 'thead'); head.append(stampEl(level, true, 'sm', 0, 'summary'), el('div', 'tname', label));
+    const count_ = el('div', 'tcount', total == null ? String(count) : `${count} / ${total}`);
+    d.append(head, count_);
+    if (total != null) { const bar = el('div', 'bar'); const fill = el('i'); fill.style.width = `${(100 * count) / total}%`; bar.append(fill); d.append(bar); }
+    const go = el('div', 'tgo'); go.innerHTML = GLOBE_ICON; go.append(el('span', null, 'Explore globe')); d.append(go);
+    return d;
+  };
   for (const l of STAMP_LEVELS) {
     const pool = remainingPool(state.countries, state.pools, resolveRules({ preset: l }), state.stats);
-    const d = el('div', 'lvl'); d.style.setProperty('--ink', l === 'easy' ? '#2f7d4f' : l === 'intermediate' ? '#3b63a8' : '#a3352f');
-    d.title = `Explore the globe shaded by your ${LEVEL_LABEL(l)} stamps`; d.tabIndex = 0; d.setAttribute('role', 'button');
-    const open = () => enterExplore({ source: 'passport', mode: l, back: 'passport' });
-    d.addEventListener('click', open); d.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
-    const bar = el('div', 'bar'); const fill = el('i'); fill.style.width = `${(100 * pool.stamped) / pool.total}%`; bar.append(fill);
-    d.append(stampEl(l, true, 'sm', 0, 'summary'), el('div', 'ln', `${LEVEL_LABEL(l)} · ${poolLabel(l)}`), el('div', 'lc', `${pool.stamped} / ${pool.total}`), bar);
-    levels.append(d);
+    const ink = l === 'easy' ? '#2f7d4f' : l === 'intermediate' ? '#3b63a8' : '#a3352f';
+    levels.append(tile(l, LEVEL_LABEL(l), pool.stamped, pool.total, ink, () => enterExplore({ source: 'passport', mode: l, back: 'passport' }), `Explore the globe shaded by your ${LEVEL_LABEL(l)} stamps`));
   }
-  {
-    const d = el('div', 'lvl'); d.style.setProperty('--ink', '#6b3fa0');
-    d.title = 'Explore the globe shaded by where you have really been'; d.tabIndex = 0; d.setAttribute('role', 'button');
-    const open = () => enterExplore({ source: 'passport', mode: 'visited', back: 'passport' });
-    d.addEventListener('click', open); d.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(); });
-    d.append(stampEl('visited', true, 'sm', 0, 'summary'), el('div', 'ln', 'Been here for real · places you have actually visited'), el('div', 'lc', String(state.visited.size)));
-    levels.append(d);
-  }
+  levels.append(tile('visited', 'Been here', state.visited.size, null, '#6b3fa0', () => enterExplore({ source: 'passport', mode: 'visited', back: 'passport' }), 'Explore the globe shaded by where you have really been'));
   const chips = $('passport-filter');
   if (!chips.children.length) {
     for (const [k, label] of [['all', 'All'], ...STAMP_LEVELS.map((l) => [l, LEVEL_LABEL(l)]), ['visited', 'Been here']]) {

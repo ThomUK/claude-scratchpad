@@ -212,20 +212,22 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .stamped .t { font-weight: 700; } .stamped .s { color: var(--muted); font-size: 0.82rem; }
 
 /* Travel summary: one compact line per level, just above the collection. */
-.travel { display: grid; gap: 6px; margin: 4px 0 14px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
-.travel .lvl { display: grid; grid-template-columns: 64px 1fr auto; grid-template-rows: auto auto; column-gap: 8px; align-items: center; cursor: pointer; border-radius: 8px; padding: 4px 6px; margin: -4px -6px; }
-.travel .lvl:hover, .travel .lvl:focus-visible { background: var(--surface-2); outline: none; }
-.travel .lvl .lc::after { content: ' ›'; color: var(--muted); font-weight: 400; }
-.travel .lvl .stamp { grid-column: 1; grid-row: 1 / 3; justify-self: center; }
-.travel .ln { grid-column: 2; grid-row: 1; font-size: 0.9rem; font-weight: 600; color: var(--text); line-height: 1.25; }
-.travel .bar { grid-column: 2; grid-row: 2; height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; margin-top: 3px; }
-.travel .bar i { display: block; height: 100%; background: var(--ink, var(--accent)); }
-.travel .lc { grid-column: 3; grid-row: 1 / 3; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text); white-space: nowrap; }
+.travel { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 4px 0 14px; }
+.tile { display: grid; gap: 6px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; cursor: pointer; }
+.tile:hover, .tile:focus-visible { border-color: var(--accent); outline: none; }
+.tile .thead { display: flex; align-items: center; gap: 10px; min-height: 36px; }
+.tile .tname { font-weight: 600; font-size: 0.95rem; color: var(--text); }
+.tile .tcount { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); line-height: 1.1; }
+.tile .bar { height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
+.tile .bar i { display: block; height: 100%; background: var(--ink, var(--accent)); }
+.tile .tgo { display: flex; align-items: center; gap: 5px; margin-top: 2px; color: var(--accent); font-weight: 600; font-size: 0.82rem; }
+.tile .tgo svg { width: 18px; height: 18px; }
+@media (min-width: 640px) { .travel { grid-template-columns: repeat(4, 1fr); } }
 
 /* The collection: one ruled box per country, the name as its caption and a
    slot for each stamp spread across the width. Everything sits slightly crooked. */
 .book { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; margin-top: 12px; }
-.entry { display: grid; gap: 2px; padding: 8px 12px 8px; cursor: pointer; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); transform: rotate(var(--rot, 0deg)); }
+.entry { display: grid; gap: 2px; padding: 8px 12px 8px; cursor: pointer; border: 2px dotted #c9c2b4; border-radius: 12px; background: var(--surface); transform: rotate(var(--rot, 0deg)); }
 .entry:hover, .entry:focus-visible { border-color: var(--accent); outline: none; }
 .entry .ename { font-size: 1rem; font-weight: 700; color: var(--text); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .entry .erow { display: grid; grid-template-columns: 1.2fr repeat(4, 1fr); align-items: center; justify-items: center; min-height: 40px; }
