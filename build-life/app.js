@@ -25,6 +25,7 @@ function openModal(html) { modalBox.innerHTML = html; modal.hidden = false; }
 function closeModal() { modal.hidden = true; modalBox.innerHTML = ''; }
 
 function go(where, a = null) {
+  if (S && S.jail && !['jail', 'morning', 'start', 'escape'].includes(where)) { where = 'jail'; a = null; }
   if (S && E.TRAVEL[where] !== undefined && screen !== where) {
     const r = E.travel(S, where);
     if (r.walked) toast(`No coins for the bus, so you walked. It took ages.`, 3000);
@@ -40,7 +41,7 @@ function go(where, a = null) {
 function render() {
   if (S) save();
   hud.hidden = !S || screen === 'start';
-  if (S && screen !== 'start') hud.innerHTML = `<a class="home" href="../" title="All toy models">⌂</a><span class="name">${esc(S.name)}</span><span class="pill coins">🪙 ${S.coins}</span>${S.bank ? `<span class="pill">🏦 ${S.bank}</span>` : ''}<span class="pill">Day ${S.day}</span><span class="pill">${night() ? '🌙' : evening() ? '🌇' : '☀️'} ${E.clockText(S)}</span><span class="spacer"></span><button data-act="help">? Help</button><button data-act="switch">Players</button>`;
+  if (S && screen !== 'start') hud.innerHTML = `<a class="home" href="../" title="All toy models">⌂</a><span class="name">${esc(S.name)}</span><span class="pill coins">🪙 ${S.coins}</span>${S.bank ? `<span class="pill">🏦 ${S.bank}</span>` : ''}${S.jail ? `<span class="pill" style="background:#9a3b3b">🔒 In jail</span>` : ''}<span class="pill">Day ${S.day}</span><span class="pill">${night() ? '🌙' : evening() ? '🌇' : '☀️'} ${E.clockText(S)}</span><span class="spacer"></span><button data-act="help">? Help</button><button data-act="switch">Players</button>`;
   const fn = SCREENS[screen] || SCREENS.start;
   app.innerHTML = fn();
 }
@@ -63,6 +64,7 @@ const SCREENS = {
     </div>`;
   },
   home() {
+    if (S.jail) { screen = 'jail'; return SCREENS.jail(); }
     if (!S.house) { screen = 'estate'; return SCREENS.estate(true); }
     const late = E.tooLate(S);
     return `<div class="screen">
@@ -99,6 +101,7 @@ const SCREENS = {
         ${d('Hospital', '🏥', 'hospital', !late, 'new babies come from here')}
         ${d('Estate Agent', '🏡', 'estate', shopsOpen, shopsOpen ? 'buy & sell houses' : 'open 8am – 6pm')}
         ${d('Neighbours', '🏘', 'neighbours', !late, 'visit nearby families')}
+        ${d('Back Alley', '🥷', 'alley', E.alleyOpen(S) && !late, 'shady work for robbers…')}
       </div>
       ${nav(bedBtn())}
     </div>`;
@@ -167,10 +170,52 @@ const SCREENS = {
   footage() { return clipsScreen("📼 Last night's footage", S.footage, 'footage', 'Clips from your cameras. Save the good ones to the Criminal Gallery before tonight, or they are taped over.'); },
   gallery() { return clipsScreen('🎞 Criminal Gallery', S.gallery, 'gallery', `Your greatest burglar-catching moments, kept safe. ${S.gallery.length} of ${E.GALLERY_MAX} slots used.`); },
   job() { return jobScreen(); },
+  alley() {
+    const c = E.canStartHeist(S);
+    return `<div class="screen"><div class="panel"><h2>🥷 The Back Alley</h2><div class="speech">A shifty character in a long coat: "Psst. Fancy earning some quick coins, no questions asked? Crack a code, grab the loot. But if the alarm goes off or the police spot you… it's jail, and the loot is gone."</div>
+      <p class="muted" style="margin-top:10px">${c.ok ? `A heist counts as one of your ${E.JOBS_PER_DAY} jobs a day and takes ${E.JOB_HOURS} hours. Caught so far: ${S.record || 0}. Jailed: ${S.stats.jailed || 0}. Escapes: ${S.stats.escapes || 0}.` : esc(c.msg)}</p>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">${E.HEISTS.map(h => `<div class="card" style="text-align:left;align-items:stretch"><div class="nm">${esc(h.name)}</div><p class="muted" style="font-size:13px;margin:0;flex:1">${esc(h.blurb)}</p><p class="muted" style="font-size:13px;margin:4px 0">Loot 🪙 ${h.loot[0]}–${h.loot[1]} · chance of being spotted ${Math.round(h.spotted * 100)}% · jail ${h.nights} nights</p><button class="small danger" data-act="startHeist" data-arg='${arg(h.id)}' ${c.ok ? '' : 'disabled'}>Do it</button></div>`).join('')}</div></div>
+      ${nav(navTown(), navHome())}</div>`;
+  },
+  heist() {
+    const H = ui.heist; if (!H) { screen = 'alley'; return SCREENS.alley(); }
+    if (H.result) {
+      const r = H.result;
+      return `<div class="screen lesson"><div class="panel" style="text-align:center"><h2>${r.outcome === 'loot' ? '💰 Got away with it!' : '🚔 Caught!'}</h2><p>${esc(r.msg)}</p>${r.outcome === 'loot' ? `<div class="big" style="color:var(--accent2)">🪙 ${r.coins}</div>` : `<div style="margin:10px auto;max-width:200px">${A.burglarSvg('caught')}</div>`}<p><button class="gold" data-act="heistDone">${r.outcome === 'loot' ? 'Sneak home' : 'Go to jail…'}</button></p></div></div>`;
+    }
+    const typed = ui.typed || [];
+    const fb = f => f === 'ok' ? '✔' : f === 'up' ? '▲ higher' : '▼ lower';
+    return `<div class="screen lesson"><div class="panel"><div class="row"><b>${esc(H.name)}</b><span style="flex:1"></span><span class="pill" style="background:${H.triesLeft <= 2 ? '#f3d6d6' : '#eee'};border-radius:999px;padding:4px 12px">${H.triesLeft} tries left</span></div>
+      <div class="q" style="font-size:20px">Crack the ${H.digits}-digit code. After each try the lock tells you, for every digit, whether the real digit is higher or lower.</div>
+      <div class="lockrows">${H.guesses.map(g => `<div class="lockrow">${g.guess.map((d, i) => `<span class="digit ${g.feedback[i]}">${d}<small>${fb(g.feedback[i])}</small></span>`).join('')}</div>`).join('')}
+        <div class="lockrow current">${Array.from({ length: H.digits }, (_, i) => `<span class="digit ${typed[i] !== undefined ? 'typed' : 'empty'}">${typed[i] !== undefined ? typed[i] : '·'}</span>`).join('')}</div></div>
+      <div class="keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(d => `<button class="alt" data-act="typeDigit" data-arg='${arg(d)}' ${typed.length >= H.digits ? 'disabled' : ''}>${d}</button>`).join('')}<button class="alt" data-act="delDigit">⌫</button><button class="gold" data-act="tryCode" ${typed.length === H.digits ? '' : 'disabled'}>Try it</button></div></div></div>`;
+  },
+  jail() {
+    const J = S.jail; if (!J) { screen = 'home'; return SCREENS.home(); }
+    const left = J.nights - J.served;
+    return `<div class="screen"><div class="stage night" style="padding:0">${A.jailSvg(S.name)}</div>
+      <div class="panel"><h2>🔒 Jail</h2><p>${esc(J.why)} <b>${left} night${left === 1 ? '' : 's'}</b> left to serve. Your house, pets and family carry on without you (and the burglars do too).</p>
+      <div class="row" style="margin-top:10px"><button class="warm" data-act="escape" data-arg='"climb"' ${J.triedClimb ? 'disabled' : ''}>🧗 Climb the wall${J.triedClimb ? ' (tomorrow)' : ''}</button><button class="warm" data-act="escape" data-arg='"keys"' ${J.triedKeys ? 'disabled' : ''}>🗝 Nab the jailer's keys${J.triedKeys ? ' (tomorrow)' : ''}</button><button data-act="sleep">🌙 Sleep it off (serve a night)</button></div></div></div>`;
+  },
+  escape() {
+    const T = ui.task; if (!T) { screen = 'jail'; return SCREENS.jail(); }
+    if (ui.result) return `<div class="screen lesson"><div class="panel" style="text-align:center"><h2>${ui.result.escaped ? '🎉 Escaped!' : '🚨 Caught!'}</h2><p>${esc(ui.result.msg)}</p><p><button class="gold" data-act="escapeDone">${ui.result.escaped ? 'Run home' : 'Back to the cell'}</button></p></div></div>`;
+    if (T.type === 'climb') {
+      let rows = '';
+      for (let r = T.h - 1; r >= 0; r--) { rows += '<div class="wallrow">'; for (let c = 0; c < T.w; c++) { const cell = T.cells[r][c]; const here = T.pos[0] === c && T.pos[1] === r; const reach = r === T.pos[1] + 1 && Math.abs(c - T.pos[0]) <= 1 && cell; rows += `<button class="hold ${cell === 'hold' ? 'solid' : cell || 'none'} ${here ? 'here' : ''} ${reach ? 'reach' : ''}" data-act="climb" data-arg='${arg([c, r])}' ${reach ? '' : 'disabled'}>${here ? '🧗' : cell === 'hold' ? '🪨' : cell === 'crumbly' ? '🪨' : ''}${cell === 'crumbly' ? '<i class="crack">⚡</i>' : ''}</button>`; } rows += '</div>'; }
+      return `<div class="screen lesson"><div class="panel"><h2>🧗 Climb the wall</h2><p class="muted">Tap a hold just above you (straight up or diagonal). Cracked holds ⚡ crumble and drop you back to the ground. Fall ${T.maxFalls} times and the guards hear you. Reach the top to escape!</p><div class="wall">${rows}<div class="ground">Falls: ${T.falls} / ${T.maxFalls}</div></div><div class="row" style="justify-content:center;margin-top:10px"><button class="alt small" data-act="climbDown" ${T.pos[1] === 0 ? 'disabled' : ''}>↩ Climb back down and start again</button><button class="alt small" data-act="climbGiveUp">Give up for today</button></div></div></div>`;
+    }
+    const sh = ui.shuffle || { phase: 'ready', order: [0, 1, 2], step: 0 };
+    return `<div class="screen lesson"><div class="panel"><h2>🗝 Nab the keys</h2><p class="muted">The jailer is dozing. He hides his keys under a cup and shuffles the cups about in his sleep. Keep your eye on the keys, then tap the cup they are under.</p>
+      <div class="cups">${[0, 1, 2].map(cup => { const slot = sh.order.indexOf(cup); const showKeys = (sh.phase === 'ready' && cup === T.keys) || (sh.phase === 'done' && slot === T.answer); return `<button class="cup ${sh.phase === 'done' && slot === T.answer ? 'win' : ''}" data-cup="${cup}" style="left:${slot * 34}%" data-act="pickCup" data-arg='${arg(cup)}' ${sh.phase === 'pick' ? '' : 'disabled'}>${showKeys ? '🗝' : '🥤'}</button>`; }).join('')}</div>
+      <p style="text-align:center">${sh.phase === 'ready' ? `<button class="gold" data-act="cupStart">Watch the keys go under… ▶</button>` : sh.phase === 'shuffling' ? `<span class="muted">Shuffling… (<span id="cupstep">${sh.step}</span> / ${T.swaps.length})</span>` : sh.phase === 'pick' ? '<b>Which cup?</b>' : ''}</p></div></div>`;
+  },
   morning() {
     const r = ui.a;
     return `<div class="screen"><div class="panel"><h2>☀️ Good morning! It is day ${S.day}.</h2>
       ${(r.burglars || []).length ? r.burglars.map(b => `<div class="speech burglar ${b.outcome}"><div>${A.burglarSvg(b.outcome)}</div><div>${b.outcome === 'robbed' ? '🥷' : b.outcome === 'caught' ? '👮' : b.outcome === 'trapped' ? '🪤' : b.outcome === 'slipped' ? '🍌' : '😮'} ${esc(b.msg)}${b.clip !== undefined ? `<div style="margin-top:8px"><button class="small" data-act="watch" data-arg='${arg(['footage', b.clip])}'>📹 Watch the ${esc(S.footage[b.clip].cam.toLowerCase())} footage</button></div>` : `<div class="muted" style="margin-top:6px;font-size:13px">No camera saw this. A security camera in the ${esc(S.house.rooms[b.room].name)}, or a doorbell camera outside, would have recorded it.</div>`}</div></div>`).join('') : '<p>🌙 Everyone slept soundly.</p>'}
+      ${r.jail ? `<p>🔒 Night ${r.jail.served} of ${r.jail.nights} in jail.${r.released ? ' <b>You served your time and are free!</b>' : ''}</p>` : ''}
       ${r.bill ? `<p>🍽 Food for pets and family: <b>🪙 ${r.bill}</b>${r.billFromBank ? ` (${r.billFromBank} of it from the bank)` : ''}.${r.powerOff ? ` <b>You could not pay ${r.unpaid} of it, so the power was cut off all night: no cameras, alarms or traps!</b>` : ''}</p>` : ''}
             ${r.interest ? `<p>🏦 The bank paid <b>🪙 ${r.interest}</b> interest at midnight. You now have ${S.bank} coins saved.</p>` : ''}
       ${r.stolenCoins ? `<p>💸 Burglars pinched <b>🪙 ${r.stolenCoins}</b> from the coins you kept at home. Coins in the bank are safe.</p>` : ''}
@@ -179,7 +224,7 @@ const SCREENS = {
       ${r.grown.map(n => `<p>🎉 <b>${esc(n)}</b> has grown from a baby into a child!</p>`).join('')}
       ${r.cries.length ? `<p>🍼 ${r.cries.map(esc).join(' and ')} ${r.cries.length > 1 ? 'are' : 'is'} hungry. Tap them at home to feed them.</p>` : ''}
       ${r.hungryPets.length ? `<p>🍖 ${r.hungryPets.map(esc).join(' and ')} ${r.hungryPets.length > 1 ? 'want' : 'wants'} breakfast.</p>` : ''}
-      </div>${nav(['Start the day ▶', 'go', 'home', 'gold'])}</div>`;
+      </div>${nav(['Start the day ▶', 'go', S.jail ? 'jail' : 'home', 'gold'])}</div>`;
   },
 };
 
@@ -372,6 +417,7 @@ function helpModal() {
   openModal(`<h2>How to play</h2><ul class="help-list">
     <li><b>Earn coins at school.</b> Go to town → school, pick Maths, Words or The World and a level. Right answers pay coins; a perfect lesson pays a bonus. Three lessons a day (more when your children are old enough for school).</li>
     <li><b>Work for wages.</b> Every shop, the hospital and the school have a 🧰 Work here button with two puzzle jobs each: re-cover cushions and mix paints at the furniture shop, count batteries and test screens at the gadget shop, feed the animals and put them to bed at the pet shop, mow lawns and plant flower rows at the garden centre, sort X-rays and take temperatures at the hospital, mark homework and tidy the library at the school. Three jobs a day, two hours each, up to 25 coins for a perfect one.</li>
+    <li><b>Robber.</b> The 🥷 Back Alley in town offers crooked work: crack a door or vault code (the lock tells you higher or lower for each digit) and run off with the loot. Run out of tries or get spotted and it's jail. From jail you can climb the wall (plan a route up the holds, cracked ones crumble), nab the keys from the dozing jailer (follow the cup), or just sleep off your sentence.</li>
     <li><b>Decorate.</b> Buy things in the shops. They go in your 🚚 van. At home, tap a dotted + to place them, tap a room name to change wallpaper and floor, and tap outside to paint the house and fill the garden.</li>
     <li><b>Pets</b> from the pet shop need feeding (buy pet food) and playing with. Happy pets do tricks and find coins. <b>Babies</b> come from the hospital once you own a cot; feed them and in a few days they grow up.</li>
     <li><b>Burglars</b> come every night, and posh houses attract two at once. Each one sneaks into one room. <b>Traps</b> from the gadget shop catch a burglar who enters that room: a Drop Cage falls from the ceiling, a Net Trap scoops them up, and a Banana Skin makes them slip and drop coins. In the morning tap the trapped burglar to call the police for a bigger reward. More traps in more rooms means more burglars caught.</li>
@@ -445,6 +491,23 @@ const ACT = {
   saveClip(i) { const r = E.saveClip(S, i); toast(r.msg || 'Saved!'); render(); if (!modal.hidden) footageModal('footage', i); },
   deleteClip(i) { E.deleteClip(S, i); render(); },
   jobs(employer) { jobsModal(employer); },
+  startHeist(id) { const r = E.startHeist(S, id, E.makeRng(Date.now() % 1e9)); if (!r.ok) { toast(r.msg); return; } ui = { heist: r.heist, typed: [] }; screen = 'heist'; render(); window.scrollTo(0, 0); },
+  typeDigit(d) { ui.typed = ui.typed || []; if (ui.typed.length < ui.heist.digits) ui.typed.push(d); render(); },
+  delDigit() { ui.typed?.pop(); render(); },
+  tryCode() { const r = E.heistGuess(ui.heist, ui.typed); if (!r.ok) { toast(r.msg); return; } ui.typed = []; if (r.solved || r.failed) { ui.heist.result = E.finishHeist(S, ui.heist); if (r.solved) toast('Click! The lock opens…', 1500); } render(); },
+  heistDone() { const r = ui.heist.result; ui = {}; if (S.jail) { screen = 'jail'; render(); } else go('home'); },
+  escape(how) { const r = E.tryEscape(S, how, E.makeRng(Date.now() % 1e9)); if (!r.ok) { toast(r.msg); return; } ui = { task: r.task, how, shuffle: how === 'keys' ? { phase: 'ready', order: [0, 1, 2], step: 0 } : null }; screen = 'escape'; render(); window.scrollTo(0, 0); },
+  climb([c, r]) { const res = E.climbStep(ui.task, c, r); if (!res.ok) { toast(res.msg); return; } if (res.fell) toast('Crack! The hold crumbled and you slid back down.', 1800); if (res.done) ui.result = E.escapeResult(S, 'climb', !!res.escaped); render(); },
+  climbDown() { E.climbDown(ui.task); render(); },
+  climbGiveUp() { E.climbGiveUp(ui.task); ui.result = E.escapeResult(S, 'climb', false); ui.result.msg = 'You climbed back down quietly. Maybe tomorrow.'; render(); },
+  cupStart() {
+    const T = ui.task; ui.shuffle = { phase: 'shuffling', order: [0, 1, 2], step: 0 }; render();
+    const place = () => { document.querySelectorAll('.cup').forEach(el => { const cup = Number(el.dataset.cup); el.style.left = `${ui.shuffle.order.indexOf(cup) * 34}%`; }); const st = document.getElementById('cupstep'); if (st) st.textContent = ui.shuffle.step; };
+    T.swaps.forEach(([a, b], i) => setTimeout(() => { if (screen !== 'escape' || !ui.shuffle) return; const o = ui.shuffle.order; [o[a], o[b]] = [o[b], o[a]]; ui.shuffle.step = i + 1; place(); }, 900 + i * 800));
+    setTimeout(() => { if (screen !== 'escape' || !ui.shuffle) return; ui.shuffle.phase = 'pick'; render(); }, 900 + T.swaps.length * 800 + 400);
+  },
+  pickCup(cup) { if (!ui.shuffle || ui.shuffle.phase !== 'pick') return; const T = ui.task; const slot = ui.shuffle.order.indexOf(cup); const win = slot === T.answer; ui.shuffle.phase = 'done'; ui.result = E.escapeResult(S, 'keys', win); render(); },
+  escapeDone() { ui = {}; if (S.jail) { screen = 'jail'; render(); } else go('home'); },
   startJob(id) { const r = E.startJob(S, id, E.makeRng(Date.now() % 1e9)); if (!r.ok) { toast(r.msg); return; } const back = screen; ui = { job: r.job, answer: [], seq: [], simon: null, employerBack: back }; closeModal(); screen = 'job'; render(); window.scrollTo(0, 0); },
   pickOpt([i, id]) { ui.answer[i] = id; render(); },
   countAdj([i, d]) { ui.answer[i] = Math.max(0, Math.min(ui.job.tasks[ui.job.index].max || 99, (ui.answer[i] || 0) + d)); render(); },

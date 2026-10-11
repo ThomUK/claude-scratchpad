@@ -14,7 +14,7 @@ export const POCKET_THEFT = [10, 25]; // % of coins at home a burglar can pinch
 export const BUS_FARE = 2;            // coins per trip into town (the school bus is free)
 export const BILL_GADGET = 0;         // gadgets and traps cost nothing to run (players' choice)
 export const BILL_MOUTH = 3;          // nightly food per pet or family member
-export const TRAVEL = { furniture: 1, gadget: 1, garden: 1, pets: 1, hospital: 1, estate: 1, bank: 1, neighbours: 0.5, school: 0 };
+export const TRAVEL = { furniture: 1, gadget: 1, garden: 1, pets: 1, hospital: 1, estate: 1, bank: 1, neighbours: 0.5, school: 0, alley: 0.5 };
 export const GALLERY_MAX = 40;        // clips the criminal gallery can hold
 export const TRAP_REWARD = 40;       // police reward for a burglar caught in a trap
 export const SECOND_BURGLAR_CHANCE = { flat: 0.15, terrace: 0.3, detached: 0.5, castle: 0.7 }; // posh houses attract more
@@ -684,7 +684,7 @@ export function visitNeighbour(s, id, rng = makeRng(s.seed + s.day * 13)) {
 }
 
 // ───────────────────────── night ─────────────────────────
-export function canSleep(s) { return s.hour >= HOURS.NIGHT - 1; }
+export function canSleep(s) { return !!s.jail || s.hour >= HOURS.NIGHT - 1; }
 export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
   if (!s.house) return { ok: false, msg: 'You need a home to sleep in.' };
   const report = { day: s.day, happyBonus: 0, grown: [], burglar: null, cries: [], hungryPets: [] };
@@ -754,6 +754,7 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
     if (p.hunger >= 2) report.cries.push(p.name);
   }
   s.day++; s.hour = HOURS.START; s.lessonsYesterday = s.lessonsToday; s.lessonsToday = 0; s.jobsToday = 0; s.visitedToday = [];
+  if (s.jail) { s.jail.served++; s.jail.triedClimb = false; s.jail.triedKeys = false; report.jail = { served: s.jail.served, nights: s.jail.nights }; if (s.jail.served >= s.jail.nights) { report.released = true; releaseFromJail(s, 'You served your time. The jailer let you out at dawn.'); } }
   return { ok: true, report };
 }
 
@@ -762,7 +763,7 @@ export function serialize(s) { return JSON.stringify(s); }
 export function deserialize(json) {
   const s = JSON.parse(json);
   if (!s || typeof s !== 'object' || !s.name) throw new Error('bad save');
-  s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.bank = s.bank || 0; if (s.lessonsYesterday === undefined) s.lessonsYesterday = 1; delete s.policeBudget; s.caged = s.caged || []; s.footage = s.footage || []; s.gallery = s.gallery || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
+  s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.bank = s.bank || 0; s.jail = s.jail || null; if (s.lessonsYesterday === undefined) s.lessonsYesterday = 1; delete s.policeBudget; s.caged = s.caged || []; s.footage = s.footage || []; s.gallery = s.gallery || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
   s.stats = Object.assign({ lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0, interest: 0, stolen: 0, bills: 0, fares: 0 }, s.stats || {});
   return s;
 }
@@ -961,4 +962,99 @@ export function finishJob(s, job) {
   s.stats.jobs = (s.stats.jobs || 0) + 1; s.stats.wages = (s.stats.wages || 0) + pay.coins; s.stats.coinsEarned += pay.coins;
   advanceTime(s, JOB_HOURS);
   return { ok: true, ...pay, msg: say(s, `${job.name} at the ${EMPLOYERS[job.employer]}: ${pay.correct}/${pay.total} right, paid ${pay.coins} coins${pay.perfect ? ' (perfect bonus!)' : ''}.`) };
+}
+
+// ───────────────────────── robber "jobs" and jail ─────────────────────────
+export const HEISTS = [
+  { id: 'house', name: 'Burgle a house', blurb: 'Crack the door code of a house across town and grab what you can. 3 digits, 6 tries.', digits: 3, tries: 6, loot: [30, 60], spotted: 0.3, nights: 2 },
+  { id: 'bank', name: 'Rob the bank', blurb: 'The big one. Crack the vault code before the alarm goes off. 4 digits, 8 tries.', digits: 4, tries: 8, loot: [100, 160], spotted: 0.55, nights: 3 },
+];
+export const HEIST = Object.fromEntries(HEISTS.map(h => [h.id, h]));
+export const ALLEY_OPEN = [HOURS.SCHOOL_OPEN, HOURS.LATEST];
+export function alleyOpen(s) { return s.hour >= ALLEY_OPEN[0] && s.hour < ALLEY_OPEN[1]; }
+export function canStartHeist(s) {
+  if (s.jail) return { ok: false, msg: 'You are in jail!' };
+  if (!alleyOpen(s)) return { ok: false, msg: 'The back alley is empty right now.' };
+  if (jobsLeft(s) <= 0) return { ok: false, msg: `You have done ${JOBS_PER_DAY} jobs today — even robbers need a rest.` };
+  return { ok: true };
+}
+export function startHeist(s, id, rng = makeRng(s.seed + s.day * 61 + (s.jobsToday || 0) * 17)) {
+  const h = HEIST[id]; if (!h) return { ok: false, msg: 'No such heist.' };
+  const c = canStartHeist(s); if (!c.ok) return c;
+  const code = Array.from({ length: h.digits }, () => rng.int(0, 9));
+  return { ok: true, heist: { id, name: h.name, code, digits: h.digits, triesLeft: h.tries, guesses: [], solved: false, failed: false, loot: rng.int(h.loot[0], h.loot[1]), spotRoll: rng() } };
+}
+// A guess is an array of digits. Feedback per digit: 'ok' right, 'up' the code digit is higher, 'down' it is lower.
+export function heistGuess(heist, guess) {
+  if (heist.solved || heist.failed) return { ok: false };
+  if (!Array.isArray(guess) || guess.length !== heist.digits || guess.some(d => !Number.isInteger(d) || d < 0 || d > 9)) return { ok: false, msg: `Enter ${heist.digits} digits.` };
+  const feedback = guess.map((d, i) => d === heist.code[i] ? 'ok' : d < heist.code[i] ? 'up' : 'down');
+  heist.guesses.push({ guess: guess.slice(), feedback });
+  heist.triesLeft--;
+  if (feedback.every(f => f === 'ok')) heist.solved = true;
+  else if (heist.triesLeft <= 0) heist.failed = true;
+  return { ok: true, feedback, solved: heist.solved, failed: heist.failed, triesLeft: heist.triesLeft };
+}
+export function sendToJail(s, nights, why) {
+  s.record = (s.record || 0) + 1;
+  s.jail = { nights, served: 0, why, day: s.day, triedClimb: false, triedKeys: false };
+  s.stats.jailed = (s.stats.jailed || 0) + 1;
+  return say(s, `${why} You were marched off to jail for ${nights} night${nights === 1 ? '' : 's'}.`);
+}
+export function finishHeist(s, heist) {
+  if (heist.paid) return { ok: false };
+  heist.paid = true;
+  const h = HEIST[heist.id];
+  s.jobsToday = (s.jobsToday || 0) + 1;
+  advanceTime(s, JOB_HOURS);
+  if (heist.failed) return { ok: true, outcome: 'caught', coins: 0, msg: sendToJail(s, h.nights, `The alarm went off before you cracked the ${heist.id === 'bank' ? 'vault' : 'door'} code!`) };
+  if (heist.spotRoll < h.spotted) return { ok: true, outcome: 'caught', coins: 0, msg: sendToJail(s, h.nights, `You cracked the code — but a police officer spotted you sneaking out with the loot!`) };
+  s.coins += heist.loot; s.stats.loot = (s.stats.loot || 0) + heist.loot; s.stats.coinsEarned += heist.loot;
+  return { ok: true, outcome: 'loot', coins: heist.loot, msg: say(s, `${heist.name}: you got away with ${heist.loot} coins. Naughty!`) };
+}
+
+// Jail. Escape by climbing the wall or nabbing the jailer's keys (one go at each per day), or serve the nights.
+export function inJail(s) { return !!s.jail; }
+export function releaseFromJail(s, how) { s.jail = null; return say(s, how); }
+export function makeWall(rng) {
+  const w = 5, h = 7;              // row 0 is the ground, row h-1 is the top of the wall
+  const cells = Array.from({ length: h }, () => Array(w).fill(null));
+  let col = rng.int(0, w - 1);
+  const start = col;
+  cells[0][col] = 'hold';
+  for (let r = 1; r < h; r++) { col = Math.max(0, Math.min(w - 1, col + rng.int(-1, 1))); cells[r][col] = 'hold'; }
+  // extra holds (some crumbly), never touching the path cells themselves
+  for (let r = 1; r < h; r++) for (let c = 0; c < w; c++) if (!cells[r][c] && rng() < 0.45) cells[r][c] = rng() < 0.4 ? 'crumbly' : 'hold';
+  return { type: 'climb', w, h, cells, start, pos: [start, 0], falls: 0, maxFalls: 3, done: false, escaped: false };
+}
+export function climbStep(task, col, row) {
+  if (task.done) return { ok: false };
+  const [pc, pr] = task.pos;
+  if (row !== pr + 1 || Math.abs(col - pc) > 1 || col < 0 || col >= task.w) return { ok: false, msg: 'You can only reach the holds just above you.' };
+  const cell = task.cells[row][col];
+  if (!cell) return { ok: false, msg: 'Nothing to hold on to there.' };
+  if (cell === 'crumbly') { task.falls++; task.cells[row][col] = null; task.pos = [task.start, 0]; if (task.falls >= task.maxFalls) task.done = true; return { ok: true, fell: true, done: task.done }; }
+  task.pos = [col, row];
+  if (row === task.h - 1) { task.done = true; task.escaped = true; }
+  return { ok: true, fell: false, escaped: task.escaped, done: task.done };
+}
+export function climbDown(task) { if (task.done) return { ok: false }; task.pos = [task.start, 0]; return { ok: true }; }
+export function climbGiveUp(task) { task.done = true; task.escaped = false; return { ok: true }; }
+export function makeShuffle(rng) {
+  const cups = 3; const keys = rng.int(0, cups - 1);
+  const swaps = Array.from({ length: rng.int(5, 7) }, () => { const a = rng.int(0, cups - 1); let b = rng.int(0, cups - 2); if (b >= a) b++; return [a, b]; });
+  let pos = keys; for (const [a, b] of swaps) { if (pos === a) pos = b; else if (pos === b) pos = a; }
+  return { type: 'shuffle', cups, keys, swaps, answer: pos };
+}
+export function tryEscape(s, how, rng = makeRng(s.seed + s.day * 7 + (how === 'climb' ? 1 : 2))) {
+  if (!s.jail) return { ok: false, msg: 'You are not in jail.' };
+  if (how === 'climb') { if (s.jail.triedClimb) return { ok: false, msg: 'The guards are watching the wall now. Try again tomorrow.' }; s.jail.triedClimb = true; return { ok: true, task: makeWall(rng) }; }
+  if (how === 'keys') { if (s.jail.triedKeys) return { ok: false, msg: 'The jailer is wide awake now. Try again tomorrow.' }; s.jail.triedKeys = true; return { ok: true, task: makeShuffle(rng) }; }
+  return { ok: false };
+}
+export function escapeResult(s, how, success) {
+  if (!s.jail) return { ok: false };
+  if (!success) return { ok: true, escaped: false, msg: how === 'climb' ? 'You fell one time too many and the guards heard. Back in the cell!' : 'Wrong cup! The jailer woke up and grabbed the keys back.' };
+  s.stats.escapes = (s.stats.escapes || 0) + 1;
+  return { ok: true, escaped: true, msg: releaseFromJail(s, how === 'climb' ? 'You climbed the prison wall and dropped down the other side. Free!' : 'You nabbed the keys from the snoring jailer and tiptoed out. Free!') };
 }

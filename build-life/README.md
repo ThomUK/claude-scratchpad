@@ -30,6 +30,11 @@ gold coins, and fill your home with pets and family.
   bed, mowing lawns (a sliding-mower puzzle) and planting flower patterns,
   sorting X-rays and reading thermometers, marking homework and shelving
   library books alphabetically. Three jobs a day, paid by how well you do.
+- **Robber.** The Back Alley offers crooked work: crack a house or vault code
+  (higher/lower feedback per digit, limited tries) and keep the loot, or get
+  caught and go to jail. Escape by climbing the wall (plan a route, cracked
+  holds crumble), nabbing the keys from a dozing jailer (follow the cup), or
+  serve the nights.
 - **Shops.** A furniture shop, a gadget shop (screens, computers, consoles,
   cameras and alarms), a pet shop and a garden centre.
 - **Pets.** Dog, cat, rabbit, hamster, goldfish, parrot and a dragon. They get

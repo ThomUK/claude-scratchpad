@@ -373,3 +373,13 @@ export function thermometerSvg(temp) {
   const t = Math.max(35, Math.min(41, temp)); const h = (t - 35) / 6 * 100; const fever = temp >= 38;
   return `<svg viewBox="0 0 50 150" width="50" height="150"><rect x="14" y="6" width="12" height="118" rx="6" fill="#eef1f3" stroke="#888"/><circle cx="20" cy="132" r="12" fill="${fever ? '#d9444a' : '#d9444a'}"/><rect x="17" y="${120 - h}" width="6" height="${h + 4}" fill="#d9444a"/>${[35, 36, 37, 38, 39, 40, 41].map(v => `<line x1="26" y1="${120 - (v - 35) / 6 * 100}" x2="${v === 38 ? 36 : 31}" y2="${120 - (v - 35) / 6 * 100}" stroke="${v === 38 ? '#9a3b3b' : '#666'}" stroke-width="${v === 38 ? 2 : 1}"/><text x="${v === 38 ? 37 : 32}" y="${123 - (v - 35) / 6 * 100}" font-size="7" fill="#444" font-family="sans-serif">${v}</text>`).join('')}</svg>`;
 }
+
+export function jailSvg(name) {
+  return `<svg class="house" viewBox="0 0 520 240" preserveAspectRatio="xMidYMid meet">${DEFS}<rect width="520" height="240" fill="#5a5a60"/><rect width="520" height="240" fill="url(#pStone)" opacity=".8"/><rect y="200" width="520" height="40" fill="#3a3a40"/>
+    <rect x="330" y="30" width="150" height="90" fill="#1b2340"/><circle cx="440" cy="55" r="12" fill="#f4f0d8"/>${[345, 375, 405, 435, 465].map(x => `<rect x="${x}" y="26" width="8" height="98" fill="#2a2a30"/>`).join('')}<rect x="326" y="118" width="158" height="8" fill="#2a2a30"/>
+    <rect x="30" y="130" width="120" height="14" fill="#6b4a2a"/><rect x="36" y="144" width="8" height="56" fill="#4a3a2a"/><rect x="136" y="144" width="8" height="56" fill="#4a3a2a"/><rect x="34" y="118" width="112" height="14" rx="4" fill="#8a8a90"/><rect x="40" y="110" width="30" height="10" rx="3" fill="#ddd"/>
+    <g transform="translate(200 136)">${personInner('adult', name)}</g>
+    <path d="M60 60L70 50M80 60L90 50M100 60L110 50M120 60L130 50" stroke="#ddd" stroke-width="3"/><path d="M55 70L135 40" stroke="#ddd" stroke-width="3"/>
+    <rect x="250" y="120" width="30" height="80" fill="#8a7a4a"/><circle cx="265" cy="160" r="4" fill="#333"/>
+    <text x="20" y="226" font-size="12" fill="#bbb" font-family="monospace">CELL 7 · NO BURGLING</text></svg>`;
+}

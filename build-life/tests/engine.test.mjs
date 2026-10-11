@@ -3,7 +3,7 @@ import {
   HOUSES, ITEMS, ITEM, PETS, PET, WALLPAPERS, FLOORS, PAINTS, NEIGHBOURS, SUBJECTS, LEVELS, HOURS, START_COINS, LESSONS_PER_DAY, QUESTIONS_PER_LESSON, PERFECT_BONUS, BABY_GROWS_AT, CHILD_SCHOOL_AGE, BURGLAR_GRACE_DAYS,
   makeRng, newGame, buildHouse, houseWidth, moveHouse, houseSalePrice, buyItem, sellFromVan, vanItems, vanCount, placeItem, removeItem, placedList, setWallpaper, setFlooring, setPaint,
   securityScore, buyPet, feedPet, playWithPet, mealsLeft, canHaveBaby, newBaby, feedPerson, lessonsLeft, canStartLesson, makeQuestion, startLesson, checkAnswer, answerQuestion, finishLesson,
-  neighbourHouse, visitNeighbour, trapInRoom, trapCount, callPolice, TRAP_REWARD, cameraFor, saveClip, deleteClip, GALLERY_MAX, bankOpen, nightlyInterest, deposit, withdraw, BANK_MAX_INTEREST, POCKET_THEFT, travel, nightlyBill, payReward, BUS_FARE, BILL_GADGET, BILL_MOUTH, JOBS, JOB, EMPLOYERS, jobsFor, jobsLeft, canStartJob, makeJob, makeLawn, mowStep, scoreTask, startJob, submitTask, jobPay, finishJob, JOBS_PER_DAY, JOB_PAY, JOB_BONUS, JOB_MIN_PAY, JOB_HOURS, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
+  neighbourHouse, visitNeighbour, trapInRoom, trapCount, callPolice, TRAP_REWARD, cameraFor, saveClip, deleteClip, GALLERY_MAX, bankOpen, nightlyInterest, deposit, withdraw, BANK_MAX_INTEREST, POCKET_THEFT, travel, nightlyBill, payReward, BUS_FARE, BILL_GADGET, BILL_MOUTH, JOBS, JOB, EMPLOYERS, jobsFor, jobsLeft, canStartJob, makeJob, makeLawn, mowStep, scoreTask, startJob, submitTask, jobPay, finishJob, JOBS_PER_DAY, JOB_PAY, JOB_BONUS, JOB_MIN_PAY, JOB_HOURS, HEISTS, HEIST, canStartHeist, startHeist, heistGuess, finishHeist, sendToJail, inJail, makeWall, climbStep, makeShuffle, tryEscape, escapeResult, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
 } from '../engine.js';
 
 let fails = 0;
@@ -411,6 +411,65 @@ console.log('— jobs —');
   ok(lawnTask.type === 'mow' && submitTask(m, null).correct === 1, 'an unmown lawn scores just the starting square');
   t.hour = 20; sleep(t, makeRng(1));
   ok(t.jobsToday === 0, 'a new day resets the jobs');
+}
+
+console.log('— robber and jail —');
+{
+  const t = newGame('R'); moveHouse(t, 'flat'); t.hour = 10; t.coins = 0;
+  ok(HEISTS.length === 2 && canStartHeist(t).ok, 'two heists on offer');
+  let r = startHeist(t, 'house', makeRng(3)); const h = r.heist;
+  ok(r.ok && h.code.length === 3 && h.triesLeft === 6 && h.loot >= 30 && h.loot <= 60, 'a house job has a 3-digit code and modest loot');
+  ok(!heistGuess(h, [1, 2]).ok && !heistGuess(h, [1, 2, 11]).ok, 'guesses must be the right number of digits');
+  const low = h.code.map(d => Math.max(0, d - 1));
+  r = heistGuess(h, low);
+  ok(r.ok && r.feedback.every((f, i) => f === (h.code[i] === 0 ? 'ok' : 'up')) && h.triesLeft === 5, 'feedback says which digits must go up');
+  r = heistGuess(h, h.code.slice());
+  ok(r.solved && h.solved, 'the right code cracks the lock');
+  // getting away vs being spotted
+  const lucky = JSON.parse(JSON.stringify(h)); lucky.spotRoll = 0.99; const t1 = JSON.parse(serialize(t));
+  r = finishHeist(t1, lucky);
+  ok(r.outcome === 'loot' && t1.coins === lucky.loot && t1.jobsToday === 1 && t1.hour === 12 && !t1.jail, 'a lucky robber keeps the loot; it counts as a job');
+  const unlucky = JSON.parse(JSON.stringify(h)); unlucky.spotRoll = 0.01; const t2 = JSON.parse(serialize(t));
+  r = finishHeist(t2, unlucky);
+  ok(r.outcome === 'caught' && t2.coins === 0 && inJail(t2) && t2.jail.nights === HEIST.house.nights && t2.record === 1, 'a spotted robber goes to jail with no loot');
+  ok(!finishHeist(t2, unlucky).ok, 'a heist is settled once');
+  // running out of tries
+  const t3 = JSON.parse(serialize(t)); const h3 = startHeist(t3, 'bank', makeRng(4)).heist;
+  for (let i = 0; i < 8; i++) heistGuess(h3, [0, 0, 0, 0].map((_, k) => (h3.code[k] + 5) % 10));
+  ok(h3.failed && !h3.solved && finishHeist(t3, h3).outcome === 'caught' && t3.jail.nights === HEIST.bank.nights, 'failing to crack the vault means jail for 3 nights');
+  ok(!canStartHeist(t3).ok && canSleep(t3), 'no heists from jail, but you can always sleep there');
+  // serving time
+  const t4 = JSON.parse(serialize(t3)); t4.hour = 20;
+  let rep = sleep(t4, makeRng(1)).report; ok(rep.jail && rep.jail.served === 1 && inJail(t4), 'one night served');
+  sleep(t4, makeRng(1)); rep = sleep(t4, makeRng(1)).report;
+  ok(rep.released && !inJail(t4), 'released after three nights');
+  // climbing
+  for (let sd = 1; sd <= 30; sd++) {
+    const wall = makeWall(makeRng(sd));
+    // follow the guaranteed path: from each position there is a safe hold above within one column
+    // depth-first search for a route of solid holds, then climb it for real
+    const route = (col, row) => { if (row === wall.h - 1) return [[col, row]]; for (const c of [col - 1, col, col + 1]) { if (c < 0 || c >= wall.w || wall.cells[row + 1][c] !== 'hold') continue; const rest = route(c, row + 1); if (rest) return [[col, row], ...rest]; } return null; };
+    const path = route(wall.start, 0); let fine = !!path;
+    if (path) for (const [c, row] of path.slice(1)) { const r2 = climbStep(wall, c, row); if (!r2.ok || r2.fell) { fine = false; break; } }
+    if (!fine || !wall.escaped) { ok(false, `wall ${sd} can be climbed`); break; }
+    if (sd === 30) ok(true, '30 walls can all be climbed by a careful climber');
+  }
+  const wall = makeWall(makeRng(2));
+  ok(!climbStep(wall, wall.start, 3).ok && !climbStep(wall, wall.start + 3, 1).ok, 'you can only reach the holds just above you');
+  const wall2 = makeWall(makeRng(2)); let crumb = null;
+  for (let row = 1; row < wall2.h && !crumb; row++) for (let c = 0; c < wall2.w; c++) if (wall2.cells[row][c] === 'crumbly') { crumb = [c, row]; break; }
+  if (crumb) { wall2.pos = [crumb[0], crumb[1] - 1]; const r3 = climbStep(wall2, crumb[0], crumb[1]); ok(r3.fell && wall2.pos[1] === 0 && wall2.falls === 1 && wall2.cells[crumb[1]][crumb[0]] === null, 'a crumbly hold breaks and drops you to the ground'); }
+  // keys
+  const sh = makeShuffle(makeRng(5));
+  let pos = sh.keys; for (const [a, b] of sh.swaps) { if (pos === a) pos = b; else if (pos === b) pos = a; }
+  ok(sh.cups === 3 && sh.swaps.length >= 5 && sh.answer === pos && sh.swaps.every(([a, b]) => a !== b), 'the cup shuffle tracks where the keys end up');
+  // one go at each per day, and escaping
+  const t5 = JSON.parse(serialize(t3)); t5.hour = 20;
+  ok(tryEscape(t5, 'climb').ok && !tryEscape(t5, 'climb').ok && tryEscape(t5, 'keys').ok && !tryEscape(t5, 'keys').ok, 'one climb and one key attempt per day');
+  sleep(t5, makeRng(1)); ok(tryEscape(t5, 'climb').ok, 'a new day allows another go');
+  r = escapeResult(t5, 'climb', false); ok(r.ok && !r.escaped && inJail(t5), 'a failed escape keeps you inside');
+  r = escapeResult(t5, 'keys', true); ok(r.ok && r.escaped && !inJail(t5) && t5.stats.escapes === 1, 'a successful escape sets you free');
+  ok(deserialize(serialize(t3)).jail.nights === 3, 'jail survives a save');
 }
 
 console.log('— save / load —');
