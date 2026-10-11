@@ -261,7 +261,12 @@ function recentre() {
 
 // ------------------------------------------------------------- navigation --
 function wireTabs() {
-  for (const b of document.querySelectorAll('.tab')) b.addEventListener('click', () => { state.explore = null; state.selected = null; showScreen(b.dataset.screen); });
+  for (const b of document.querySelectorAll('.tab')) b.addEventListener('click', () => {
+    state.explore = null; state.selected = null;
+    // A finished round is done with: the Game tab goes back to the new-round screen.
+    if (b.dataset.screen === 'play' && state.phase === 'over') resetToPickStart();
+    showScreen(b.dataset.screen);
+  });
   $('country-back').addEventListener('click', () => showScreen(state.countryFrom || 'atlas'));
   $('btn-show-globe').addEventListener('click', () => showOnGlobe(state.countryPage));
   $('btn-visited').addEventListener('click', () => askVisited(state.countryPage));
