@@ -118,6 +118,11 @@ export const ITEMS = [
   { id: 'fountain', name: 'Fountain', cat: 'garden', kind: 'garden', price: 250 },
   { id: 'gnome', name: 'Garden Gnome', cat: 'garden', kind: 'garden', price: 10 },
   { id: 'lantern', name: 'Garden Lantern', cat: 'garden', kind: 'garden', price: 25, light: true },
+  // home-made gifts from neighbours — nice to have, worth nothing to sell
+  { id: 'jam', name: 'Jar of Home-made Jam', cat: 'gift', kind: 'wall', price: 0, gift: true },
+  { id: 'drawing', name: "Child's Drawing", cat: 'gift', kind: 'wall', price: 0, gift: true },
+  { id: 'cushion', name: 'Knitted Cushion', cat: 'gift', kind: 'floor', price: 0, size: 1, gift: true },
+  { id: 'cake', name: 'Home-made Cake', cat: 'gift', kind: 'floor', price: 0, size: 1, gift: true },
   // pet supplies
   { id: 'petfood', name: 'Bag of Pet Food (5 meals)', cat: 'petshop', kind: 'supply', price: 10, meals: 5 },
 ];
@@ -161,7 +166,7 @@ export function houseWidth(h) { return Math.max(...houseType(h).floors.map(f => 
 export function newGame(name, rng = makeRng(7)) {
   const s = {
     name: String(name || 'Player').trim().slice(0, 16) || 'Player', coins: START_COINS, day: 1, hour: HOURS.START,
-    house: null, bank: 0, van: {}, pets: [], family: [], caged: [], footage: [], gallery: [], lessonsToday: 0, extraLessonsToday: 0,
+    house: null, bank: 0, van: {}, pets: [], family: [], caged: [], footage: [], gallery: [], lessonsToday: 0, lessonsYesterday: 1, extraLessonsToday: 0,
     visitedToday: [], log: [], stats: { lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0, interest: 0, stolen: 0, bills: 0, fares: 0 },
     seed: rng.int(1, 1e9),
   };
@@ -232,6 +237,7 @@ export function buyItem(s, id) {
 }
 export function sellFromVan(s, id) {
   if (!vanCount(s, id)) return { ok: false, msg: 'Not in the van.' };
+  if (ITEM[id].gift) return { ok: false, msg: `Nobody would buy a ${ITEM[id].name.toLowerCase()} — it was made with love. Put it in your house instead.` };
   const price = Math.floor(ITEM[id].price / 2);
   s.van[id]--; if (!s.van[id]) delete s.van[id];
   s.coins += price;
@@ -286,7 +292,7 @@ export function cotCount(house) { return countPlaced(house, i => i.cot); }
 export function travel(s, dest) {
   const hours = TRAVEL[dest];
   if (hours === undefined) return { ok: true, fare: 0 };
-  if (dest === 'school') { advanceTime(s, hours); return { ok: true, fare: 0, free: true }; }
+  if (dest === 'school' && s.lessonsYesterday >= 1) { advanceTime(s, hours); return { ok: true, fare: 0, free: true }; }
   if (s.coins >= BUS_FARE) { s.coins -= BUS_FARE; s.stats.fares += BUS_FARE; advanceTime(s, hours); return { ok: true, fare: BUS_FARE }; }
   advanceTime(s, hours + 1);
   return { ok: true, fare: 0, walked: true };
@@ -294,6 +300,7 @@ export function travel(s, dest) {
 export function gadgetCount(house) { return countPlaced(house, i => i.cat === 'gadget'); }
 export function nightlyBill(s) { return (s.house ? gadgetCount(s.house) * BILL_GADGET : 0) + (s.pets.length + s.family.length) * BILL_MOUTH; }
 export function policePays(s) { return s.lessonsToday >= 1; }
+export function schoolBusFree(s) { return s.lessonsYesterday >= 1; }
 export const NO_SCHOOL_MSG = 'The police do not pay rewards to children who skipped school today.';
 
 // ───────────────────────── bank ─────────────────────────
@@ -652,6 +659,7 @@ export const NEIGHBOURS = [
     rooms: { 0: { wallpaper: 'charcoal', flooring: 'walnut', floor: ['doublebed', null, 'wardrobe', 'lamp'], wall: ['abstract', 'window'] }, 1: { wallpaper: 'stars', floor: ['bed', 'desk'], wall: ['shelf'] }, 2: { wallpaper: 'blush', floor: ['cot', 'armchair'], wall: ['picture'] }, 3: { floor: ['bed', 'bookcase'], wall: ['camera'] }, 4: { floor: ['bath', null], wall: ['mirror'] }, 5: { wallpaper: 'cream', flooring: 'oak', floor: ['sofa', null, 'fireplace', 'robot'], wall: ['tv', 'alarm'] }, 6: { floor: ['diningtable', null], wall: ['chandelier'] }, 7: { wallpaper: 'tiles', floor: ['fridge', 'cooker', 'sink', 'plant'], wall: ['window', 'clock'] }, 8: { floor: ['computer', 'console'], wall: ['shelf'] } },
     garden: ['car', 'trampoline', 'tree', 'pond', 'outcam', 'lantern'], pets: [['parrot', 'Captain'], ['fish', 'Bubbles']] },
 ];
+export const GIFTS = ['jam', 'drawing', 'cushion', 'cake'];
 export function neighbourHouse(n) {
   const h = buildHouse(n.house);
   h.paint = { ...n.paint };
@@ -669,12 +677,10 @@ export function visitNeighbour(s, id, rng = makeRng(s.seed + s.day * 13)) {
   const n = NEIGHBOURS.find(x => x.id === id); if (!n) return { ok: false };
   advanceTime(s, 1);
   if (s.visitedToday.includes(id)) return { ok: true, gift: null, msg: `${n.name}: "Lovely to see you again! Come back tomorrow."` };
+  if (s.lessonsToday < 1) return { ok: true, gift: null, noSchool: true, msg: `${n.name}: "Have you been to school today? No? Off you go then — come back after a lesson and I might have something for you."` };
   s.visitedToday.push(id);
-  const roll = rng();
-  let gift;
-  if (roll < 0.5) { const c = rng.int(5, 15); s.coins += c; gift = { coins: c }; }
-  else { const id2 = rng.pick(['plant', 'picture', 'gnome', 'flowers', 'petfood', 'clock', 'lamp']); addToVan(s, id2); gift = { item: id2 }; }
-  return { ok: true, gift, msg: say(s, `${n.name} gave you ${gift.coins ? gift.coins + ' coins' : 'a ' + ITEM[gift.item].name} for helping out.`) };
+  const id2 = rng.pick(GIFTS); addToVan(s, id2); const gift = { item: id2 };
+  return { ok: true, gift, msg: say(s, `${n.name} gave you a ${ITEM[id2].name} for helping out. Home-made, so it is not for selling!`) };
 }
 
 // ───────────────────────── night ─────────────────────────
@@ -747,7 +753,7 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
     if (p.stage === 'baby' && p.age >= BABY_GROWS_AT) { p.stage = 'child'; report.grown.push(p.name); say(s, `${p.name} is not a baby any more — they are a child now! In a few days they can go to school.`); }
     if (p.hunger >= 2) report.cries.push(p.name);
   }
-  s.day++; s.hour = HOURS.START; s.lessonsToday = 0; s.visitedToday = [];
+  s.day++; s.hour = HOURS.START; s.lessonsYesterday = s.lessonsToday; s.lessonsToday = 0; s.visitedToday = [];
   return { ok: true, report };
 }
 
@@ -756,7 +762,7 @@ export function serialize(s) { return JSON.stringify(s); }
 export function deserialize(json) {
   const s = JSON.parse(json);
   if (!s || typeof s !== 'object' || !s.name) throw new Error('bad save');
-  s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.bank = s.bank || 0; s.caged = s.caged || []; s.footage = s.footage || []; s.gallery = s.gallery || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
+  s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.bank = s.bank || 0; if (s.lessonsYesterday === undefined) s.lessonsYesterday = 1; s.caged = s.caged || []; s.footage = s.footage || []; s.gallery = s.gallery || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
   s.stats = Object.assign({ lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0, interest: 0, stolen: 0, bills: 0, fares: 0 }, s.stats || {});
   return s;
 }

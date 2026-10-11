@@ -13,7 +13,7 @@ console.log('— catalogue —');
 ok(HOUSES.length === 4 && HOUSES.every((h, i) => i === 0 || h.price > HOUSES[i - 1].price), 'four houses, each dearer than the last');
 ok(HOUSES[0].price < START_COINS && HOUSES[1].price > START_COINS, 'only the flat is affordable at the start');
 ok(new Set(ITEMS.map(i => i.id)).size === ITEMS.length, 'item ids are unique');
-ok(ITEMS.every(i => ['floor', 'wall', 'garden', 'supply'].includes(i.kind) && i.price > 0), 'every item has a kind and a price');
+ok(ITEMS.every(i => ['floor', 'wall', 'garden', 'supply'].includes(i.kind) && (i.price > 0 || i.gift)), 'every item has a kind and a price (gifts are free)');
 ok(ITEMS.filter(i => i.security).length >= 4, 'several security gadgets exist');
 ok(PETS.length === 7 && PET.dragon.security > PET.dog.security, 'seven pets; the dragon guards best');
 ok(WALLPAPERS.length >= 10 && FLOORS.length >= 6, 'plenty of wallpapers and floors');
@@ -160,9 +160,14 @@ console.log('— neighbours —');
   const t = newGame('N'); moveHouse(t, 'flat');
   const before = t.coins;
   r = visitNeighbour(t, 'patel', makeRng(1));
-  ok(r.ok && r.gift && (r.gift.coins ? t.coins > before : vanItems(t).length === 1), 'first visit of the day brings a gift');
+  ok(r.ok && r.gift === null && r.noSchool && t.coins === before, 'no gift before a lesson today');
+  t.lessonsToday = 1;
   r = visitNeighbour(t, 'patel', makeRng(1));
-  ok(r.ok && r.gift === null, 'second visit the same day: no gift');
+  ok(r.ok && r.gift && ITEM[r.gift.item].gift && vanItems(t).length === 1 && t.coins === before, 'after school the first visit brings a home-made gift, never coins');
+  ok(!sellFromVan(t, r.gift.item).ok && vanCount(t, r.gift.item) === 1, 'home-made gifts cannot be sold');
+  ok(placeItem(t, 0, ITEM[r.gift.item].kind, 0, r.gift.item).ok, 'but they can be placed in the house');
+  r = visitNeighbour(t, 'patel', makeRng(1));
+  ok(r.ok && r.gift === null && !r.noSchool, 'second visit the same day: no gift');
 }
 
 console.log('— night —');
@@ -323,10 +328,15 @@ console.log('— no school, no reward · bills · bus fares —');
   r = travel(y, 'furniture');
   ok(r.fare === BUS_FARE && y.coins === 3 && y.hour === 10 && y.stats.fares === BUS_FARE, 'a trip to the shops costs the bus fare and an hour');
   r = travel(y, 'school');
-  ok(r.free && y.coins === 3 && y.hour === 10, 'the school bus is free');
+  ok(r.free && y.coins === 3 && y.hour === 10, 'the school bus is free on day one');
+
   y.coins = 1; r = travel(y, 'bank');
   ok(r.walked && y.coins === 1 && y.hour === 12, 'with no fare you walk, which takes an extra hour');
   r = travel(y, 'home'); ok(r.fare === 0 && y.hour === 12, 'going home costs nothing');
+  y.coins = 3; y.lessonsYesterday = 0; r = travel(y, 'school');
+  ok(!r.free && r.fare === BUS_FARE && y.coins === 1, 'skip school one day and the school bus charges the next');
+  y.hour = 20; y.lessonsToday = 2; sleep(y, makeRng(1)); y.coins = 5;
+  ok(y.lessonsYesterday === 2 && travel(y, 'school').free, 'a lesson today makes tomorrow\'s school bus free again');
 }
 
 console.log('— save / load —');

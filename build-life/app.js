@@ -29,7 +29,7 @@ function go(where, a = null) {
     const r = E.travel(S, where);
     if (r.walked) toast(`No coins for the bus, so you walked. It took ages.`, 3000);
     else if (r.fare) toast(`🚌 Bus fare: ${r.fare} coins`, 1600);
-    else if (r.free) toast('🚌 The school bus is free!', 1600);
+    else if (r.free) toast('🚌 The school bus is free because you went to school yesterday!', 2200);
   }
   screen = where; ui = { a };
   closeModal(); render();
@@ -90,7 +90,7 @@ const SCREENS = {
       <div class="panel"><h2>Town</h2><p class="muted">Where would you like to go? ${late ? '<b>Everything is shut — it is bedtime.</b>' : ''}</p></div>
       <div class="dest">
         ${d('Home', '🏠', 'home', true, S.house ? E.houseType(S.house).name : 'no home yet')}
-        ${d('School', '🏫', 'school', E.schoolOpen(S) && !late, E.schoolOpen(S) ? `${E.lessonsLeft(S)} lesson${E.lessonsLeft(S) === 1 ? '' : 's'} left today` : 'open 8am – 3pm')}
+        ${d('School', '🏫', 'school', E.schoolOpen(S) && !late, (E.schoolOpen(S) ? `${E.lessonsLeft(S)} lesson${E.lessonsLeft(S) === 1 ? '' : 's'} left today` : 'open 8am – 3pm') + (E.schoolBusFree(S) ? ' · free bus' : ` · bus ${E.BUS_FARE} coins`))}
         ${d('Furniture Shop', '🛋', 'furniture', shopsOpen, shopsOpen ? 'beds, sofas, pianos…' : 'open 8am – 6pm')}
         ${d('Gadget Shop', '📺', 'gadget', shopsOpen, shopsOpen ? 'screens & cameras' : 'open 8am – 6pm')}
         ${d('Pet Shop', '🐶', 'pets', shopsOpen, shopsOpen ? 'pets & pet food' : 'open 8am – 6pm')}
@@ -142,7 +142,7 @@ const SCREENS = {
       ${S.house ? nav(navTown(), navHome()) : ''}</div>`;
   },
   neighbours() {
-    return `<div class="screen"><div class="panel"><h2>🏘 Neighbours</h2><p class="muted">Pop round to see how other families have decorated. Helping out usually earns a little thank-you (once a day).</p></div>
+    return `<div class="screen"><div class="panel"><h2>🏘 Neighbours</h2><p class="muted">Pop round to see how other families have decorated. If you have been to school today, helping out earns a home-made thank-you (once a day) — nice to have, but not for selling.</p></div>
       <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">${E.NEIGHBOURS.map(n => `<div class="card"><div class="art">${A.houseThumb(n.house, n.paint)}</div><div class="nm">${n.name}</div><div class="muted" style="font-size:13px">${E.HOUSES.find(h => h.id === n.house).name} · ${n.pets.map(p => E.PET[p[0]].name.toLowerCase()).join(' & ')}</div><button class="small" data-act="visit" data-arg='${arg(n.id)}'>Visit ${S.visitedToday.includes(n.id) ? '(again)' : ''}</button></div>`).join('')}</div>
       ${nav(navTown(), navHome())}</div>`;
   },
@@ -269,8 +269,8 @@ function placedModal(kind, room, slot) {
   if (kind === 'garden') id = S.house.garden[slot];
   else { const slots = kind === 'floor' ? S.house.rooms[room].floorSlots : S.house.rooms[room].wallSlots; id = slots[slot]; if (id && id.startsWith('@')) id = slots[Number(id.slice(1))]; }
   const it = E.ITEM[id];
-  openModal(`<div class="row"><div class="art">${A.itemSvg(id, ctx())}</div><div><h3>${it.name}</h3><p class="muted">${it.trap ? 'Catches any burglar who sneaks into this room. ' : ''}${it.security ? `Adds ${it.security} security. ` : ''}${it.light ? 'Lights up at night. ' : ''}Worth 🪙 ${Math.floor(it.price / 2)} if you sell it.</p></div></div>
-    <div class="row" style="margin-top:14px"><button data-act="remove" data-arg='${arg([room, kind, slot])}'>🚚 Put in the van</button><button class="danger" data-act="sellPlaced" data-arg='${arg([room, kind, slot, id])}'>Sell for 🪙 ${Math.floor(it.price / 2)}</button><button class="alt" data-act="closeModal">Close</button></div>`);
+  openModal(`<div class="row"><div class="art">${A.itemSvg(id, ctx())}</div><div><h3>${it.name}</h3><p class="muted">${it.trap ? 'Catches any burglar who sneaks into this room. ' : ''}${it.security ? `Adds ${it.security} security. ` : ''}${it.light ? 'Lights up at night. ' : ''}${it.gift ? 'A home-made present from a neighbour. Not for sale!' : `Worth 🪙 ${Math.floor(it.price / 2)} if you sell it.`}</p></div></div>
+    <div class="row" style="margin-top:14px"><button data-act="remove" data-arg='${arg([room, kind, slot])}'>🚚 Put in the van</button>${it.gift ? '' : `<button class="danger" data-act="sellPlaced" data-arg='${arg([room, kind, slot, id])}'>Sell for 🪙 ${Math.floor(it.price / 2)}</button>`}<button class="alt" data-act="closeModal">Close</button></div>`);
 }
 function roomModal(room) {
   const r = S.house.rooms[room];
@@ -284,7 +284,7 @@ function paintModal(part) {
 function vanModal() {
   const items = E.vanItems(S);
   openModal(`<h3>🚚 Your van</h3><p class="muted">Things you own that are not placed yet. Tap a dotted + at home to place them, or sell them here for half price.</p>
-    ${items.length ? `<div class="grid">${items.map(v => `<div class="card"><div class="art">${A.itemSvg(v.id, ctx())}</div><div class="nm">${v.item.name}${v.n > 1 ? ` ×${v.n}` : ''}</div><div class="muted" style="font-size:13px">${v.item.kind === 'supply' ? 'feeds your pets' : `goes ${v.item.kind === 'garden' ? 'outside' : v.item.kind === 'wall' ? 'on a wall' : 'on the floor'}`}</div><button class="alt small" data-act="sellVan" data-arg='${arg(v.id)}'>Sell 🪙 ${Math.floor(v.item.price / 2)}</button></div>`).join('')}</div>` : '<div class="speech">The van is empty.</div>'}
+    ${items.length ? `<div class="grid">${items.map(v => `<div class="card"><div class="art">${A.itemSvg(v.id, ctx())}</div><div class="nm">${v.item.name}${v.n > 1 ? ` ×${v.n}` : ''}</div><div class="muted" style="font-size:13px">${v.item.kind === 'supply' ? 'feeds your pets' : `goes ${v.item.kind === 'garden' ? 'outside' : v.item.kind === 'wall' ? 'on a wall' : 'on the floor'}`}</div>${v.item.gift ? '<span class="muted" style="font-size:13px">home-made · not for sale</span>' : `<button class="alt small" data-act="sellVan" data-arg='${arg(v.id)}'>Sell 🪙 ${Math.floor(v.item.price / 2)}</button>`}</div>`).join('')}</div>` : '<div class="speech">The van is empty.</div>'}
     <div class="row" style="margin-top:14px"><button class="alt" data-act="closeModal">Close</button></div>`);
 }
 function petModal(i) {
@@ -311,7 +311,7 @@ function helpModal() {
     <li><b>Pets</b> from the pet shop need feeding (buy pet food) and playing with. Happy pets do tricks and find coins. <b>Babies</b> come from the hospital once you own a cot; feed them and in a few days they grow up.</li>
     <li><b>Burglars</b> come every night, and posh houses attract two at once. Each one sneaks into one room. <b>Traps</b> from the gadget shop catch a burglar who enters that room: a Drop Cage falls from the ceiling, a Net Trap scoops them up, and a Banana Skin makes them slip and drop coins. In the morning tap the trapped burglar to call the police for a bigger reward. More traps in more rooms means more burglars caught.</li>
     <li><b>Camera footage.</b> A security camera in the room the burglar entered (or a doorbell or outdoor camera) records a video of what happened. Watch it from the morning report and save your best captures to the 🎞 Criminal Gallery at home to relive them whenever you like. Security cameras, alarms, doorbell cameras, dogs, parrots and dragons add security points. 3 or more catches the burglar (and the police pay a reward). 1–2 scares them away. None… and something goes missing.</li>
-    <li><b>Rules of the town.</b> The police only pay burglar rewards to children who have been to at least one lesson that day. Every night you pay a bill: 2 coins for each gadget or trap (batteries and electricity) and 3 coins of food for each pet and family member. If you cannot pay, the power is off that night and no camera, alarm or trap works. Every bus trip into town costs 2 coins, except the school bus, which is free. No coins means you walk, and that takes longer.</li>
+    <li><b>Rules of the town.</b> The police only pay burglar rewards to children who have been to at least one lesson that day. Every night you pay a bill: 2 coins for each gadget or trap (batteries and electricity) and 3 coins of food for each pet and family member. If you cannot pay, the power is off that night and no camera, alarm or trap works. Every bus trip into town costs 2 coins. The school bus is free only if you went to a lesson yesterday. No coins means you walk, and that takes longer. Neighbours only give presents to children who have been to school that day, and the presents are home-made things to put in your house, not to sell.</li>
     <li><b>The bank</b> in town pays 5% interest every night on the coins you leave there (at least 1, at most 25 a night), and burglars can never touch them. Burglars who get in unhindered pinch 10–25% of the coins you keep at home. Going to the bank takes an hour each way.</li>
     <li><b>Move house.</b> The estate agent buys your decorated house for more than you paid. Your furniture, pets and family move with you.</li>
     <li><b>Day and night.</b> Everything you do takes time. Shops shut at 6pm, school at 3pm. Go to bed in the evening to start a new day. Nobody in Build Life ever dies.</li></ul>

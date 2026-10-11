@@ -49,8 +49,9 @@ gold coins, and fill your home with pets and family.
 - **Earning needs school.** The police only pay burglar rewards on days with
   at least one lesson. Every night there is a bill (2 coins per gadget or trap,
   3 coins of food per pet or family member); unpaid means no power and no
-  working security that night. Bus trips into town cost 2 coins, except the
-  free school bus.
+  working security that night. Bus trips into town cost 2 coins, and the
+  school bus is free only after a lesson the day before. Neighbours give
+  home-made, unsellable presents, and only on school days.
 - **Day and night.** Everything takes time. Shops close at 6pm, school at 3pm.
   Go to bed in the evening to start the next day; the morning report tells you
   what happened overnight.
