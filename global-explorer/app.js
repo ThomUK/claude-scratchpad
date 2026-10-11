@@ -4,8 +4,9 @@ import {
   decodeTopology, createGame, makeGuess, giveUp, formatDistance, guessCount, haversineKm, initialBearing,
   compassPoint, clueText, useClue, MAX_CLUES, DIFFICULTY, sortCountries, NUMERIC_KEYS, resolveRules, difficultyTier,
   score, recordRound, normalizeStats, stampsFor, clueMarksFor, remainingPool, STAMP_LEVELS,
-} from './engine.js?v=dev';
-import { Globe, COLORS } from './globe.js?v=dev';
+} from './engine.js?v=0fb72dc8';
+import { Globe, COLORS } from './globe.js?v=0fb72dc8';
+import { isNative, initNative } from './native.js?v=0fb72dc8';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -51,8 +52,8 @@ const name = (code) => state.byCode.get(code).name;
 // ------------------------------------------------------------------ boot --
 async function main() {
   const [cJson, topo] = await Promise.all([
-    fetch('data/countries.json?v=dev').then((r) => r.json()),
-    fetch('data/world.json?v=dev').then((r) => r.json()),
+    fetch('data/countries.json?v=0fb72dc8').then((r) => r.json()),
+    fetch('data/world.json?v=0fb72dc8').then((r) => r.json()),
   ]);
   state.countries = cJson.countries;
   state.pools = cJson.pools || {};
@@ -79,7 +80,7 @@ async function main() {
   $('loading').remove();
   $('compass').hidden = false;
   renderCredits(cJson);
-  window.globalExplorer = { state }; // debug handle (used by the browser tests)
+  window.globalExplorer = { state, goBack }; // debug handle (used by the browser tests)
 
   wireTabs();
   wireSheet();
@@ -94,7 +95,9 @@ async function main() {
   $('compass').addEventListener('click', recentre);
   render();
   applyView();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js?v=dev').catch(() => {});
+  // Inside the Android app the files are already on the phone: no service worker.
+  if ('serviceWorker' in navigator && !isNative()) navigator.serviceWorker.register('sw.js?v=0fb72dc8').catch(() => {});
+  initNative({ back: goBack }).catch(() => {});
 }
 
 
@@ -275,6 +278,23 @@ function wireTabs() {
   $('pop-more').addEventListener('click', () => { if (state.selected) showCountry(state.selected); });
   $('confirm-cancel').addEventListener('click', () => $('confirm').close());
   $('confirm').addEventListener('click', (e) => { if (e.target === $('confirm')) $('confirm').close(); });
+}
+
+/**
+ * One step back, for the Android back button: closes whatever is on top
+ * first, then works back towards the globe's new-round view. Returns false
+ * when there is nothing left to go back from, so the caller can leave the app.
+ */
+function goBack() {
+  if ($('confirm').open) { $('confirm').close(); return true; }
+  if (!$('results-guess').hidden) { $('results-guess').hidden = true; $('search-guess').blur(); return true; }
+  if (state.screen === 'country') { showScreen(state.countryFrom || 'atlas'); return true; }
+  if (state.screen !== 'play') { showScreen('play'); return true; }
+  if (state.selected) { deselect(); return true; }
+  if (state.explore) { exitExplore(state.explore.back); return true; }
+  if (state.phase === 'over') { resetToPickStart(); return true; }
+  if ($('sheet').dataset.state === 'full') { setSheet('half'); return true; }
+  return false;
 }
 
 function showScreen(which) {
