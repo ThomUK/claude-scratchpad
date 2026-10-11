@@ -86,29 +86,30 @@ representative lat/lon from the dataset.
 
 ## Data
 
-- Country facts: [mledoze/countries](https://github.com/mledoze/countries)
-  (the dataset behind REST Countries), ODbL. The dependency relationships and
-  a handful of corrections (e.g. Vatican City is a UN observer, not a member)
-  are in `build_data.mjs`.
-- Coastline lengths: the CIA World Factbook, fetched from the
-  [factbook/factbook.json](https://github.com/factbook/factbook.json) mirror
-  into `data/coastline.json`; Western Sahara and the French overseas
-  departments use the Factbook's earlier editions. Four territories have no
-  published figure.
-- Boundaries and population estimates: [Natural Earth](https://www.naturalearthdata.com/)
-  1:50m admin-0 map units, public domain. Natural Earth draws de facto
-  control; the build script moves Crimea into Ukraine, the Golan Heights into
-  Syria and the Moroccan-administered part of Western Sahara into Western
-  Sahara, so borders are the internationally recognised ones. Areas under
-  someone else's long-standing administration (western Western Sahara, the
-  Golan Heights, Northern Cyprus) are hatched; Ukraine is drawn whole and
-  unhatched. Three territories have no
-  polygon at this scale (Bouvet Island, Gibraltar, US Minor Outlying Islands)
-  and are shown as markers.
-- three.js is vendored under `vendor/three/`.
-- Flag emoji come from a small web font under `vendor/fonts/`: Twemoji's
-  country flags (CC-BY 4.0) as subset by TalkJS's country-flag-emoji-polyfill
-  (MIT), so flags render on Windows too, where no system font has them.
+| Item | Source | Licence |
+|---|---|---|
+| Country facts | [mledoze/countries](https://github.com/mledoze/countries), the dataset behind REST Countries | ODbL |
+| Borders and population | [Natural Earth](https://www.naturalearthdata.com/) 1:50m admin-0 map units and population estimates | Public domain |
+| Coastlines | CIA World Factbook, via the [factbook.json](https://github.com/factbook/factbook.json) mirror | Public domain |
+| Commonly visited | [ONS, Travel trends 2024](https://www.ons.gov.uk/peoplepopulationandcommunity/leisureandtourism/articles/traveltrends/2024), UK residents' visits abroad | Open Government Licence v3.0 |
+| Flags | [Twemoji](https://github.com/jdecked/twemoji) flag graphics, as the flags-only font from [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (TalkJS, MIT), under `vendor/fonts/` | CC BY 4.0 |
+| 3D globe | [three.js](https://threejs.org/), vendored under `vendor/three/` | MIT |
+
+Notes on the build (`build_data.mjs`):
+
+- The dependency relationships and a handful of corrections to the country
+  facts (e.g. Vatican City is a UN observer, not a member) are applied there.
+- Coastline lengths go into `data/coastline.json`; Western Sahara and the
+  French overseas departments use the Factbook's earlier editions, and four
+  territories have no published figure.
+- Natural Earth draws some areas by de facto control; the build applies the
+  internationally recognised borders instead (the `MOVES` list). Areas under
+  someone else's long-standing administration (the Moroccan-administered part
+  of Western Sahara, the Golan Heights, Northern Cyprus) are hatched. Three
+  territories have no polygon at this scale (Bouvet Island, Gibraltar,
+  US Minor Outlying Islands) and are shown as markers.
+- The flags-only font exists because Windows has no system font with flag
+  emoji.
 
 ## Ideas for later
 

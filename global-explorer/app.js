@@ -875,18 +875,24 @@ function saveSettings() {
   if (state.screen === 'play') applyView();
 }
 
-/** The Credits list on the Settings page: one row per source, from the data build plus the vendored libraries. */
+/** The Credits list on the Settings page: item, source (linked), licence. */
 function renderCredits(cJson) {
   const dl = $('credits'); dl.replaceChildren();
-  const add = (k, v) => { dl.append(el('dt', null, k), el('dd', null, v)); };
-  add('Country facts', 'mledoze/countries, the REST Countries dataset (ODbL)');
-  add('Borders', 'Natural Earth 1:50m map units (public domain), with Crimea shown in Ukraine');
-  add('Population', 'Natural Earth estimates');
-  add('Coastlines', 'CIA World Factbook');
-  add('Commonly visited', 'ONS Travel trends, UK residents\u2019 visits abroad by country');
-  add('Flags', 'Twemoji (CC-BY 4.0), as a flags-only font by TalkJS\u2019s country-flag-emoji-polyfill (MIT)');
-  add('3D globe', 'three.js (MIT)');
-  add('Data built', cJson.generated);
+  const add = (item, source, url, licence) => {
+    const dd = el('dd');
+    if (url) { const a = el('a', null, source); a.href = url; a.target = '_blank'; a.rel = 'noopener'; dd.append(a); } else dd.append(source);
+    if (licence) dd.append(el('span', 'lic', licence));
+    dl.append(el('dt', null, item), dd);
+  };
+  add('Country facts', 'mledoze/countries (the REST Countries dataset)', 'https://github.com/mledoze/countries', 'Open Database License (ODbL)');
+  add('Borders', 'Natural Earth, 1:50m map units', 'https://www.naturalearthdata.com/', 'Public domain');
+  add('Population', 'Natural Earth estimates', 'https://www.naturalearthdata.com/', 'Public domain');
+  add('Coastlines', 'CIA World Factbook, via the factbook.json mirror', 'https://github.com/factbook/factbook.json', 'Public domain');
+  add('Commonly visited', 'ONS, Travel trends 2024: UK residents\u2019 visits abroad', 'https://www.ons.gov.uk/peoplepopulationandcommunity/leisureandtourism/articles/traveltrends/2024', 'Open Government Licence v3.0');
+  add('Flags', 'Twemoji flag graphics', 'https://github.com/jdecked/twemoji', 'CC BY 4.0');
+  add('Flag font', 'country-flag-emoji-polyfill by TalkJS', 'https://github.com/talkjs/country-flag-emoji-polyfill', 'MIT');
+  add('3D globe', 'three.js', 'https://threejs.org/', 'MIT');
+  add('Data built', cJson.generated, null, null);
 }
 
 function renderSettings() {

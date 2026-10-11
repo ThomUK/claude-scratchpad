@@ -96,8 +96,9 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .explore-pop .close { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; min-height: 0; padding: 0; border-radius: 50%; font-size: 1.2rem; line-height: 1; }
 .explore-pop .rhead { padding-right: 36px; } /* clear of the close button */
 .explore-pop .rhead h2 { font-size: 1.15rem; }
-.explore-pop .credits { font-size: 0.86rem; }
-.credits dd { color: var(--muted); }
+.explore-pop .credits { font-size: 0.86rem; row-gap: 8px; }
+.credits dd a { color: var(--text); text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 2px; }
+.credits .lic { display: block; color: var(--muted); font-size: 0.8rem; }
 .facts-grid { margin-top: 8px; font-size: 0.86rem; }
 .explore-pop .btnrow { margin-top: 10px; }
 @media (min-width: 900px) { .explore-pop { left: auto; width: 380px; right: 16px; } .explore-bar { right: 100px; } }
