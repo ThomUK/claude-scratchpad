@@ -88,7 +88,6 @@ async function main() {
   wireSettings();
   $('btn-giveup').addEventListener('click', onGiveUp);
   $('btn-clue').addEventListener('click', onClue);
-  $('btn-newstart').addEventListener('click', () => resetToPickStart());
   $('start-close').addEventListener('click', deselect);
   $('start-here').addEventListener('click', () => { if (state.selected) startRound(state.selected); });
   $('start-locate').addEventListener('click', onLocate);
