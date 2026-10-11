@@ -197,6 +197,11 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .stamp.hard:not(.sm) { font-size: 0.5rem; letter-spacing: 0.03em; }
 .stamp.hard.lg { font-size: 0.68rem; }
 .stamp small { display: block; font-weight: 600; font-size: 0.55em; letter-spacing: 0.04em; opacity: 0.9; }
+/* Clue mark: how many clues the best round at this level needed. */
+/* It sits in the box's top-right corner, inside the inked mask (which clips to the box), clear of the ring. */
+.stamp .cm { position: absolute; top: -1px; right: -1px; width: 17px; height: 17px; border-radius: 50%; background: #fff; border: 1.5px solid var(--ink); color: var(--ink); font: 700 10px/1 system-ui, sans-serif; font-style: normal; display: flex; align-items: center; justify-content: center; transform: rotate(calc(-1 * var(--rot, -9deg))); }
+.stamp.sm .cm { width: 14px; height: 14px; font-size: 9px; }
+.stamp.lg .cm { width: 20px; height: 20px; font-size: 11px; top: 2px; right: 2px; }
 .stamped { display: flex; align-items: center; gap: 14px; margin: 0 0 12px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); animation: stampIn .5s cubic-bezier(.2,1.4,.4,1) both; }
 @keyframes stampIn { from { transform: scale(1.6) rotate(-14deg); opacity: 0; } to { transform: none; opacity: 1; } }
 .stamped .t { font-weight: 700; } .stamped .s { color: var(--muted); font-size: 0.82rem; }
@@ -274,12 +279,7 @@ button.visit.on { background: #efe6f8; }
 .diff input { grid-row: 1 / 3; accent-color: var(--accent); width: 18px; height: 18px; margin: 0; }
 .diff .dname { font-weight: 600; font-size: 0.95rem; }
 .diff .dblurb { grid-column: 2; color: var(--muted); font-size: 0.8rem; line-height: 1.35; }
-.switches { display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-.switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; min-height: 48px; border-bottom: 1px solid var(--border); cursor: pointer; }
-.switch:last-child { border-bottom: 0; }
-.switch .sl { font-size: 0.95rem; }
 .switch .sh { display: block; color: var(--muted); font-size: 0.78rem; }
-.switch input { width: 22px; height: 22px; accent-color: var(--accent); margin: 0; flex: none; }
 .seg { display: flex; gap: 8px; }
 .seg label { flex: 1; display: flex; align-items: center; gap: 8px; padding: 10px 12px; min-height: 46px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); cursor: pointer; }
 .seg label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }

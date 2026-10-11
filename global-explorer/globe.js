@@ -10,7 +10,7 @@ import { cameraDistanceForSpan, pickCountry } from './engine.js?v=dev';
 // Light "atlas" palette: pale ocean, sand land, soft grey borders.
 export const COLORS = {
   ocean: '#cfe3f2', land: '#e9e0c7', border: '#7c8794', guessed: '#cfc2a0',
-  start: '#f4b63a', startDot: '#1f8f4e', warmer: '#f26a1b', cooler: '#3b82d6', same: '#8a94a0', correct: '#22a55b', target: '#d6409f', browse: '#0f766e',
+  start: '#f4b63a', startDot: '#1f8f4e', warmer: '#f26a1b', cooler: '#3b82d6', same: '#8a94a0', correct: '#22a55b', target: '#d6409f', browse: '#0f766e', tapped: '#1f2933',
 };
 
 const SURFACE = 1.0;        // sphere radius
@@ -500,6 +500,15 @@ export class Globe {
   }
 
   /**
+   * Codes whose name shows even when names are off (Advanced reveals each
+   * country as it is guessed). Like the pin, they skip the zoom culling and
+   * sit just above their marker.
+   */
+  setNameReveals(codes) {
+    this.nameReveal = new Set(codes);
+  }
+
+  /**
    * Always label this country, whatever the zoom, overlaps or the names
    * setting; null to unpin. With `above`, the label sits just above the
    * country's centre point so a marker there stays clear of it.
@@ -541,12 +550,16 @@ export class Globe {
     // The pinned label goes first so it wins any overlap.
     const sprites = this.nameGroup.children;
     const pinned = this.namePin ? sprites.find((sp) => sp.userData.code === this.namePin) : null;
-    for (const sp of pinned ? [pinned, ...sprites.filter((x) => x !== pinned)] : sprites) {
+    const isRevealed = (sp) => !!(this.nameReveal && this.nameReveal.has(sp.userData.code));
+    // Pinned first, then revealed names, then the rest, so the important ones win overlaps.
+    const ordered = [...(pinned ? [pinned] : []), ...sprites.filter((x) => x !== pinned && isRevealed(x)), ...sprites.filter((x) => x !== pinned && !isRevealed(x))];
+    for (const sp of ordered) {
       const { span, dir, wfrac, code } = sp.userData;
+      const revealed = isRevealed(sp);
       sp.visible = false;
-      sp.center.y = sp === pinned && this.namePinAbove ? -0.2 : 0.5;
+      sp.center.y = (sp === pinned && this.namePinAbove) || revealed ? -0.2 : 0.5;
       if (dir.dot(camDir) <= 0.25) continue; // over the horizon
-      if (sp !== pinned) {
+      if (sp !== pinned && !revealed) {
         if (!this.namesOn) continue;
         if (span < d * 7 && d > 0.12) continue; // too small at this zoom (zoomed right in, show everything)
         if (this.nameExclude && this.nameExclude.has(code)) continue;
@@ -614,8 +627,10 @@ export class Globe {
    * surface with a pale halo beneath so it reads on dark fills too. The
    * width follows the zoom, so frame() rebuilds it as the camera moves.
    */
-  setOutline(code, color) {
-    this.outline = code ? { code, color } : null;
+  setOutline(code, color, slot = 0) {
+    if (!this.outlines) this.outlines = new Map();
+    if (code) this.outlines.set(slot, { code, color }); else this.outlines.delete(slot);
+    this.outline = this.outlines.size ? [...this.outlines.values()] : null; // frame() rebuilds while this is set
     this.buildOutline();
   }
 
@@ -625,18 +640,20 @@ export class Globe {
     const d = this.camera.position.length();
     this.outlineBuiltAt = d;
     const w = THREE.MathUtils.clamp(0.0011 * (d - 1), 0.00008, 0.0025); // half-width, ~3 px on a phone
-    const rings = [];
-    for (const f of this.features) if (f.code === this.outline.code && !f.hatch) for (const poly of f.polygons) rings.push(...poly);
-    const layer = (halfWidth, radius, color, opacity) => {
-      const pos = [];
-      for (const ring of rings) Globe.ribbon(ring, halfWidth, radius, pos);
-      if (!pos.length) return;
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      this.outlineGroup.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity, side: THREE.DoubleSide })));
-    };
-    layer(w * 2.2, OUTLINE_R, '#ffffff', 0.9);
-    layer(w, OUTLINE_R + 0.0004, this.outline.color, 1);
+    for (const { code, color } of this.outline) {
+      const rings = [];
+      for (const f of this.features) if (f.code === code && !f.hatch) for (const poly of f.polygons) rings.push(...poly);
+      const layer = (halfWidth, radius, col, opacity) => {
+        const pos = [];
+        for (const ring of rings) Globe.ribbon(ring, halfWidth, radius, pos);
+        if (!pos.length) return;
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        this.outlineGroup.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col, transparent: opacity < 1, opacity, side: THREE.DoubleSide })));
+      };
+      layer(w * 2.2, OUTLINE_R, '#ffffff', 0.9);
+      layer(w, OUTLINE_R + 0.0004, color, 1);
+    }
   }
 
   /** Append a mitred ribbon of half-width `w` along a closed [lon, lat] ring to `out`. */

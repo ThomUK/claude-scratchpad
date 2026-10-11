@@ -6,6 +6,7 @@ import {
   createGame, makeGuess, giveUp, referenceDistance, guessCount, cameraDistanceForSpan,
   rhumbBearing, directionClue, useClue, countryAt, pickCountry, DIFFICULTY, targetPool, sortCountries, difficultyTier,
   formatDistance, resolveRules, score, recordRound, normalizeStats, stampsFor, remainingPool, STAMP_LEVELS,
+  clueText, clueMarksFor, MAX_CLUES,
 } from '../engine.js';
 
 let n = 0;
@@ -48,6 +49,20 @@ check('directionClue / useClue: from start and latest guess; clue count is recor
   assert.equal(g.cluesUsed, 0);
   g = useClue(useClue(g));
   assert.equal(g.cluesUsed, 2);
+  for (let i = 0; i < 10; i++) g = useClue(g);
+  assert.equal(g.cluesUsed, MAX_CLUES, 'the ladder has a top');
+});
+
+check('clueText: continent, first letter, a neighbour or no borders, then the flag, then nothing', () => {
+  const g = createGame(countries, 'GBR', { rng: () => 0, pool: ['FRA'] });
+  assert.equal(clueText(g, countries, 1), 'The mystery country is in Europe.');
+  assert.equal(clueText(g, countries, 2), 'Its name starts with "F".');
+  const n = clueText(g, countries, 3);
+  assert.ok(n.startsWith('It shares a border with ') && C('FRA').borders.some((b) => n.includes(C(b).name)), n);
+  assert.equal(clueText(g, countries, 4), `Its flag is ${C('FRA').flag}.`);
+  assert.equal(clueText(g, countries, 5), null);
+  const island = createGame(countries, 'GBR', { rng: () => 0, pool: ['ISL'] });
+  assert.ok(clueText(island, countries, 3).startsWith('It has no land borders'));
 });
 
 check('formatKm rounds and groups thousands', () => {
@@ -57,21 +72,19 @@ check('formatKm rounds and groups thousands', () => {
   assert.equal(formatDistance(1609.344), '1,609 km');
 });
 
-check('resolveRules: presets pass through, custom uses the switches, clue button when something is hidden', () => {
+check('resolveRules: the three levels, Easy when unknown; no custom level any more', () => {
   const easy = resolveRules({ preset: 'easy' });
-  assert.equal(easy.label, 'Easy'); assert.equal(easy.pool, 'easy'); assert.equal(easy.clueButton, false);
-  const hard = resolveRules({});
-  assert.equal(hard.preset, 'hard'); assert.equal(hard.clueButton, true); assert.equal(hard.pool, null);
-  const custom = resolveRules({ preset: 'custom', names: true, click: false, distances: false, bearings: false, pool: 'easy' });
-  assert.equal(custom.label, 'Custom'); assert.equal(custom.names, true); assert.equal(custom.click, false);
-  assert.equal(custom.pool, 'easy'); assert.equal(custom.clueButton, true);
-  const all = resolveRules({ preset: 'custom', names: true, click: true, distances: true, bearings: true, pool: 'all' });
-  assert.equal(all.clueButton, false); assert.equal(all.pool, null);
-  // createGame honours custom rules and their pool.
-  const poolSet = new Set(data.pools.easy.codes);
+  assert.equal(easy.label, 'Easy'); assert.equal(easy.pool, 'easy'); assert.equal(easy.click, true); assert.equal(easy.type, false); assert.equal(easy.clueMark, false);
+  const inter = resolveRules({ preset: 'intermediate' });
+  assert.equal(inter.pool, 'un'); assert.equal(inter.names, true); assert.equal(inter.click, true); assert.equal(inter.clueMark, true);
+  const hard = resolveRules({ preset: 'hard' });
+  assert.equal(hard.pool, null); assert.equal(hard.names, false); assert.equal(hard.click, false); assert.equal(hard.type, true); assert.equal(hard.clueMark, true);
+  assert.equal(resolveRules({}).preset, 'easy'); assert.equal(resolveRules({ preset: 'custom' }).preset, 'easy');
+  assert.equal(resolveRules({ preset: 'hard' }).blurb, undefined, 'blurb is for the settings page, not the rules');
+  const unSet = new Set(data.pools.un.codes);
   for (let i = 0; i < 100; i++) {
-    const g = createGame(countries, 'GBR', { rng: () => i / 100, rules: custom, pools: data.pools });
-    assert.ok(poolSet.has(g.targetCode)); assert.equal(g.difficulty, 'custom'); assert.equal(g.rules.names, true);
+    const g = createGame(countries, 'GBR', { rng: () => i / 100, rules: inter, pools: data.pools });
+    assert.ok(unSet.has(g.targetCode)); assert.equal(g.difficulty, 'intermediate'); assert.equal(g.rules.names, true);
   }
   assert.equal(createGame(countries, 'GBR', { rng: () => 0, difficulty: 'easy', pools: data.pools }).rules.label, 'Easy');
 });
@@ -91,13 +104,20 @@ check('score and recordRound: wins count, streaks, best per level, stamps per le
   g2 = makeGuess(g2, countries, 'FRA').game;
   s = recordRound(s, g2);
   assert.equal(s.best.easy, 1); assert.deepEqual(stampsFor(s, 'FRA'), { easy: 1, intermediate: 0, hard: 1 });
-  // Custom rounds count as wins but never stamp.
-  let g3 = createGame(countries, 'GBR', { rng: () => 0, pool: ['DEU'], rules: resolveRules({ preset: 'custom', distances: true }) });
-  g3 = makeGuess(g3, countries, 'DEU').game;
+  // Clue marks: the fewest clues used on a winning round, only on levels that mark them.
+  assert.deepEqual(clueMarksFor(s, 'FRA'), { easy: null, intermediate: null, hard: 1 }, 'the hard win used one clue');
+  let g3 = createGame(countries, 'GBR', { rng: () => 0, pool: ['FRA'], difficulty: 'hard' });
+  g3 = makeGuess(g3, countries, 'FRA').game;
   s = recordRound(s, g3);
-  assert.equal(s.wins, 3); assert.deepEqual(stampsFor(s, 'DEU'), { easy: 0, intermediate: 0, hard: 0 });
-  // Old-format stats (plain counts) are read as hard stamps.
+  assert.deepEqual(clueMarksFor(s, 'FRA'), { easy: null, intermediate: null, hard: 0 }, 'a clean repeat clears the mark');
+  assert.equal(stampsFor(s, 'FRA').hard, 2);
+  let g4 = createGame(countries, 'GBR', { rng: () => 0, pool: ['DEU'], difficulty: 'easy' });
+  g4 = useClue(useClue(g4)); g4 = makeGuess(g4, countries, 'DEU').game;
+  s = recordRound(s, g4);
+  assert.deepEqual(clueMarksFor(s, 'DEU'), { easy: null, intermediate: null, hard: null }, 'Easy never marks clues');
+  // Old-format stats (plain counts) are read as hard stamps, without marks.
   assert.deepEqual(stampsFor(normalizeStats({ found: { ITA: 2 } }), 'ITA'), { easy: 0, intermediate: 0, hard: 2 });
+  assert.deepEqual(clueMarksFor(normalizeStats({ found: { ITA: 2 } }), 'ITA'), { easy: null, intermediate: null, hard: null });
   assert.deepEqual(STAMP_LEVELS, ['easy', 'intermediate', 'hard']);
 });
 
@@ -117,9 +137,6 @@ check('remainingPool: stamped countries drop out of the pool until it is complet
   s.found = Object.fromEntries(data.pools.easy.codes.map((c) => [c, { easy: 1 }]));
   const done = remainingPool(countries, data.pools, easy, s);
   assert.equal(done.complete, true); assert.equal(done.codes.length, 80); assert.equal(done.stamped, 80);
-  // Custom never excludes.
-  const custom = remainingPool(countries, data.pools, resolveRules({ preset: 'custom', pool: 'easy' }), s);
-  assert.equal(custom.codes.length, 80); assert.equal(custom.complete, false);
   // The game draws from the remaining pool.
   for (let i = 0; i < 60; i++) {
     const g = createGame(countries, 'GBR', { rng: () => i / 60, rules: easy, pool: r.codes });
@@ -251,12 +268,12 @@ check('pickCountry: tolerant clicks snap to small countries and nearby coasts', 
 
 check('DIFFICULTY: three levels; createGame records it and rejects unknown ones', () => {
   assert.deepEqual(Object.keys(DIFFICULTY), ['easy', 'intermediate', 'hard']);
-  assert.equal(DIFFICULTY.easy.names && DIFFICULTY.easy.click && DIFFICULTY.easy.distances && DIFFICULTY.easy.bearings, true);
-  assert.equal(DIFFICULTY.intermediate.names && DIFFICULTY.intermediate.distances && !DIFFICULTY.intermediate.bearings && DIFFICULTY.intermediate.clueButton, true);
-  assert.equal(!DIFFICULTY.hard.names && DIFFICULTY.hard.distances && !DIFFICULTY.hard.bearings, true);
+  assert.equal(DIFFICULTY.easy.names && DIFFICULTY.easy.click && !DIFFICULTY.easy.type, true);
+  assert.equal(DIFFICULTY.intermediate.names && DIFFICULTY.intermediate.click && !DIFFICULTY.intermediate.type && DIFFICULTY.intermediate.clueMark, true);
+  assert.equal(!DIFFICULTY.hard.names && !DIFFICULTY.hard.click && DIFFICULTY.hard.type && DIFFICULTY.hard.clueMark, true);
   const g = createGame(countries, 'GBR', { rng: () => 0, pool: ['AUS'], difficulty: 'easy' });
   assert.equal(g.difficulty, 'easy'); assert.equal(g.startCompass, 'SE');
-  assert.equal(createGame(countries, 'GBR', { rng: () => 0 }).difficulty, 'hard');
+  assert.equal(createGame(countries, 'GBR', { rng: () => 0 }).difficulty, 'easy');
   assert.throws(() => createGame(countries, 'GBR', { difficulty: 'brutal' }));
   const r = makeGuess(g, countries, 'JPN').result;
   assert.equal(r.compass, 'S');
@@ -273,7 +290,6 @@ check('pools: Easy = 80 most visited, Intermediate = 193 UN members, Advanced = 
   assert.equal(targetPool('intermediate', data.pools), un);
   const unSet = new Set(un);
   for (let i = 0; i < 100; i++) assert.ok(unSet.has(createGame(countries, 'GBR', { rng: () => i / 100, difficulty: 'intermediate', pools: data.pools }).targetCode));
-  assert.equal(resolveRules({ preset: 'custom', pool: 'un' }).pool, 'un');
   for (const code of pool) assert.ok(C(code), `pool code ${code}`);
   assert.deepEqual(pool.slice(0, 10), ['ESP', 'FRA', 'ITA', 'TUR', 'USA', 'GRC', 'PRT', 'IRL', 'DEU', 'POL']);
   assert.equal(targetPool('easy', data.pools), pool);

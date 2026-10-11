@@ -12,15 +12,16 @@ The game hides a second country and tells you how far it is. Guess a country:
 a line is drawn from your previous guess (or the start) to it, **orange** if
 that hop took you closer, **blue** if further away, and the feedback tells
 you how far, and in which direction, the mystery country lies from that
-guess. Points are numbered so the path reads in order. **Give me a clue** reveals the compass
-direction (and, when distances are hidden, the distance) from your start and
-your latest guess; clues count against your score. Find it (green) and you get
+guess. Points are numbered so the path reads in order. **Give me a clue**
+climbs a ladder of four hints (continent, first letter, a neighbour, the
+flag); each costs a point, and on Intermediate and Advanced the stamp you
+earn is marked with the number of clues used. Find it (green) and you get
 the country card: capital, population, area, density, region, languages,
 currency, neighbours and a few facts, with dependent territories saying who
 administers them. Chain on: the next round can start from the country you found.
 
 **Passport.** The scoring page. Each country has three stamps to collect, one
-per level (Easy, Intermediate, Advanced; Custom rounds don't stamp). Finding a
+per level (Easy, Intermediate, Advanced). Finding a
 country stamps it, and until a level's passport is complete the mystery
 country is always drawn from the countries you have not yet stamped at that
 level. Shows rounds, streaks, best scores,
@@ -40,14 +41,16 @@ population, area, density, coastline, neighbours, continent, status, difficulty)
 filter and mini stamps. Each country has its own page with the full card,
 stamps, "Show on globe" (highlights it in teal) and "Start a round here".
 
-**Settings.** Difficulty presets plus the individual rules they set, so a custom
-mix is possible; kilometres or miles; data credits.
+**Settings.** The level; kilometres or miles; data credits.
 
-| Level | Names on map | Tap map to guess | Per guess | Mystery pool | Clue button |
-|---|---|---|---|---|---|
-| Easy | yes | yes | warmer/cooler, distance and compass direction | 80 most visited | not needed |
-| Intermediate | yes | no | warmer/cooler and distance | 193 UN member states | direction |
-| Advanced | no | no | warmer/cooler and distance | all 250, dependencies and disputed places included | direction |
+Every level shows the distance and compass direction for every guess. The
+levels differ in the pool, the names on the map and how you guess:
+
+| Level | Mystery pool | Names on map | How you guess | Clues |
+|---|---|---|---|---|
+| Easy | 80 commonly visited countries | yes | tap the globe | free |
+| Intermediate | 193 UN countries | yes | tap the globe | marked on the stamp |
+| Advanced | all 250, dependencies and disputed places included | no: each appears as you guess it | type the name (a tap rings the shape without naming it) | marked on the stamp |
 
 On Easy the mystery country is drawn only from the 80 countries UK residents
 visit most (ONS *Travel trends*, UK residents' visits abroad by main country

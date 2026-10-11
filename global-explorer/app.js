@@ -2,8 +2,8 @@
 // live in engine.js, rendering in globe.js.
 import {
   decodeTopology, createGame, makeGuess, giveUp, formatDistance, guessCount, haversineKm, initialBearing,
-  compassPoint, directionClue, useClue, DIFFICULTY, sortCountries, NUMERIC_KEYS, countryAt, resolveRules, difficultyTier,
-  score, recordRound, normalizeStats, stampsFor, remainingPool, STAMP_LEVELS,
+  compassPoint, clueText, useClue, MAX_CLUES, DIFFICULTY, sortCountries, NUMERIC_KEYS, countryAt, resolveRules, difficultyTier,
+  score, recordRound, normalizeStats, stampsFor, clueMarksFor, remainingPool, STAMP_LEVELS,
 } from './engine.js?v=dev';
 import { Globe, COLORS } from './globe.js?v=dev';
 
@@ -25,13 +25,14 @@ const load = (k, fallback) => {
 };
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage unavailable */ } };
 
-const DEFAULT_SETTINGS = { preset: 'hard', names: false, click: false, distances: true, bearings: false, pool: 'all', units: 'km' };
+const DEFAULT_SETTINGS = { preset: 'easy', units: 'km' };
 
 const state = {
   countries: [], byCode: new Map(), features: [], pools: {}, globe: null,
   screen: 'play',
   phase: 'pick-start', // the game: pick-start | guessing | over
-  game: null, clue: null,
+  game: null, clue: null, // clue: the clue texts given this round
+  tapped: null, // Advanced: a country tapped during a round, ringed while you type its name
   // The globe screen shows exactly one view (see applyView): 'start' before a
   // round, 'round' during/after one, or 'explore' when the passport or atlas
   // takes the globe over. `explore` holds that view's context, or null.
@@ -63,6 +64,7 @@ async function main() {
   const legacy = (() => { try { return localStorage.getItem('world-borders.difficulty'); } catch { return null; } })();
   state.settings = { ...DEFAULT_SETTINGS, ...load(KEYS.settings, {}) };
   if (legacy && DIFFICULTY[legacy] && !localStorage.getItem(KEYS.settings) && !localStorage.getItem('world-borders.settings')) state.settings.preset = legacy;
+  if (!DIFFICULTY[state.settings.preset]) state.settings.preset = 'easy'; // earlier builds had a Custom level
   state.stats = normalizeStats(load(KEYS.stats, null));
   state.visited = new Set(Array.isArray(load(KEYS.visited, [])) ? load(KEYS.visited, []) : []);
   for (const c of state.countries) c.visited = state.visited.has(c.code);
@@ -70,7 +72,8 @@ async function main() {
   state.globe = new Globe($('globe'), state.features, state.countries);
   state.globe.onPick = (code) => {
     if (viewKind() !== 'round') { if (code) select(code); else deselect(); return; }
-    if (code) choose(code); else toast('No country there. Zoom in closer, or type its name.', 'warn');
+    if (!code) { toast(rules().click ? 'No country there. Zoom in closer.' : 'No country there. Zoom in closer, or type its name.', 'warn'); return; }
+    if (rules().click) choose(code); else tapShape(code);
   };
   $('loading').remove();
   $('compass').hidden = false;
@@ -150,18 +153,21 @@ function applyView() {
     state.globe.setNamesVisible(true);
   } else {
     paintGlobe();
-    state.globe.setNamesVisible(r.names);
+    state.globe.setNamesVisible(view !== 'round' || r.names); // Advanced hides names only during a round
   }
   if (view === 'round' && state.game) {
     // The start country wears the same teal ring as a selection, and keeps
-    // its name just above the start dot.
+    // its name just above the start dot. On Advanced a tapped country is
+    // ringed in grey while you type its name.
     state.globe.setOutline(state.game.startCode, COLORS.browse);
+    state.globe.setOutline(state.phase === 'guessing' ? state.tapped : null, COLORS.tapped, 1);
     state.globe.setNamePin(state.game.startCode, true);
   } else {
     state.globe.setOutline(sel, ink);
+    state.globe.setOutline(null, null, 1);
     state.globe.setNamePin(sel);
   }
-  const canClick = view !== 'round' || (r.click && state.phase === 'guessing');
+  const canClick = view !== 'round' || state.phase === 'guessing'; // on Advanced a tap rings the shape instead of guessing
   state.globe.pickEnabled = canClick;
   sp.classList.toggle('clickable', canClick);
   if (view !== 'start' || sel) state.globe.controls.autoRotate = false;
@@ -372,7 +378,7 @@ function choose(code) {
   $('results-guess').hidden = true;
   if (state.phase !== 'guessing') return;
   onGuess(code);
-  if (!rules().click && state.phase === 'guessing') $('search-guess').focus({ preventScroll: true });
+  if (rules().type && state.phase === 'guessing') $('search-guess').focus({ preventScroll: true });
 }
 
 function onLocate() {
@@ -386,7 +392,7 @@ function onLocate() {
 
 // -------------------------------------------------------------------- game --
 function startRound(startCode) {
-  state.explore = null; state.selected = null; state.clue = null;
+  state.explore = null; state.selected = null; state.clue = null; state.tapped = null;
   flash('');
   const r = rules();
   const pool = remainingPool(state.countries, state.pools, r, state.stats);
@@ -399,12 +405,14 @@ function startRound(startCode) {
   applyView();
   state.globe.flyTo(startCode); // after the sheet is laid out, so the fit knows the canvas shape
   const left = pool.complete ? `Your ${r.label} passport is complete, so any of them can come up.` : '';
-  toast(`Starting from ${name(startCode)}. ${r.distances ? `The mystery country is ${km(state.game.startDistanceKm)} away.` : ''} ${left}`.replace(/\s+/g, ' ').trim());
+  toast(`Starting from ${name(startCode)}. The mystery country is ${km(state.game.startDistanceKm)} away. ${left}`.replace(/\s+/g, ' ').trim());
 }
 
 function onGuess(code) {
   const { game, result } = makeGuess(state.game, state.countries, code);
   state.game = game;
+  state.tapped = null;
+  $('search-guess').placeholder = "Type the country's name…";
   state.globe.flyTo(code);
   if (result.verdict === 'repeat') { toast(`You have already used ${name(code)}.`, 'warn'); return; }
   if (game.status === 'won') finishRound();
@@ -412,16 +420,23 @@ function onGuess(code) {
   applyView();
 }
 
+/** Each clue climbs the ladder (continent, first letter, a neighbour, the flag) and costs a point. */
 function onClue() {
   const g = state.game;
-  const c = directionClue(g, state.countries);
+  const text = clueText(g, state.countries, (g.cluesUsed || 0) + 1);
+  if (!text) return;
   state.game = useClue(g);
-  const r = g.rules;
-  const where = (x) => (r.distances ? `to the ${DIR[x.compass]}` : `${km(x.distanceKm)} away to the ${DIR[x.compass]}`);
-  const parts = [`From ${name(c.fromStart.code)} (your start) the mystery country lies ${where(c.fromStart)}.`];
-  if (c.fromLast && c.fromLast.code !== c.fromStart.code) parts.push(`From ${name(c.fromLast.code)} (your latest guess) it lies ${where(c.fromLast)}.`);
-  state.clue = parts.join(' ');
+  state.clue = [...(state.clue || []), text];
   render();
+}
+
+/** Advanced: a tap rings the country without naming it, and invites you to type its name. */
+function tapShape(code) {
+  state.tapped = code;
+  applyView();
+  $('search-guess').placeholder = 'What is this country called?';
+  $('search-guess').focus({ preventScroll: true });
+  toast('Type its name to guess.');
 }
 
 function onGiveUp() {
@@ -440,7 +455,7 @@ function finishRound() {
 }
 
 function resetToPickStart() {
-  state.phase = 'pick-start'; state.game = null; state.clue = null; state.explore = null; state.selected = null;
+  state.phase = 'pick-start'; state.game = null; state.clue = null; state.tapped = null; state.explore = null; state.selected = null;
   flash('');
   state.globe.controls.autoRotate = true;
   setSheet('half');
@@ -453,7 +468,7 @@ const verdictColor = (v) => (v === 'warmer' ? COLORS.warmer : v === 'cooler' ? C
 /** Shade and draw the current round (or clear the globe when there is none). */
 function paintGlobe() {
   const g = state.game, hl = new Map(), ll = (code) => state.byCode.get(code).latlng;
-  if (!g) { state.globe.setHighlights(hl); state.globe.setPath([], []); state.globe.setNameExclusions([]); return; }
+  if (!g) { state.globe.setHighlights(hl); state.globe.setPath([], []); state.globe.setNameExclusions([]); state.globe.setNameReveals([]); return; }
   for (const x of g.guesses) hl.set(x.code, COLORS.guessed);
   if (g.status === 'won') hl.set(g.targetCode, COLORS.correct);
   if (g.status === 'gaveup') hl.set(g.targetCode, COLORS.target);
@@ -467,27 +482,29 @@ function paintGlobe() {
   });
   if (g.status === 'gaveup') labels.push({ latlng: ll(g.targetCode), text: '?', color: COLORS.target });
   state.globe.setPath(segments, labels);
-  state.globe.setNameExclusions(g.guesses.map((x) => x.code)); // their numbered markers stand in for names
+  const guessed = g.guesses.map((x) => x.code);
+  if (g.rules.names) { state.globe.setNameExclusions(guessed); state.globe.setNameReveals([]); } // numbered markers stand in for names
+  else { state.globe.setNameExclusions([]); state.globe.setNameReveals(guessed); } // Advanced: names appear as you guess them
 }
 
 // ------------------------------------------------------------------ render --
 /** Fill the sheet for the current round. Which panels show, and the globe itself, are applyView's job. */
 function render(lastResult) {
-  const g = state.game, r = rules();
-  const click = r.click ? ' or tap the map' : '';
-  $('search-guess').placeholder = `Type your guess${click}…`;
+  const g = state.game;
   if (state.phase === 'pick-start') return;
 
   const start = state.byCode.get(g.startCode), gr = g.rules;
   $('start-name').textContent = `${start.flag} ${start.name}`;
   $('guess-count').textContent = String(guessCount(g));
-  $('clue').textContent = gr.distances
-    ? (gr.bearings ? `The mystery country is ${km(g.startDistanceKm)} to the ${DIR[g.startCompass]} of ${start.name}.` : `The mystery country is ${km(g.startDistanceKm)} from ${start.name}.`)
-    : 'The mystery country is hidden somewhere. Guess, and each hop tells you whether you got closer.';
-  $('clue-text').textContent = state.clue || '';
-  $('clue-box').hidden = !state.clue;
+  $('clue').textContent = `The mystery country is ${km(g.startDistanceKm)} to the ${DIR[g.startCompass]} of ${start.name}.`;
+  $('clue-text').textContent = (state.clue || []).join(' ');
+  $('clue-box').hidden = !(state.clue && state.clue.length);
   $('clues-used').textContent = g.cluesUsed ? `· ${g.cluesUsed} ${g.cluesUsed === 1 ? 'clue' : 'clues'}` : '';
-  $('btn-clue').hidden = state.phase !== 'guessing' || !gr.clueButton;
+  $('picker-guess').hidden = !gr.type; // Easy and Intermediate guess by tapping the globe
+  const bc = $('btn-clue');
+  bc.hidden = state.phase !== 'guessing';
+  bc.disabled = (g.cluesUsed || 0) >= MAX_CLUES;
+  bc.textContent = bc.disabled ? 'No more clues' : `💡 Give me a clue${g.cluesUsed ? ` (${MAX_CLUES - g.cluesUsed} left)` : ''}`;
 
   const log = $('log');
   log.replaceChildren();
@@ -497,10 +514,10 @@ function render(lastResult) {
     const num = el('span', 'gnum', String(i + 1));
     num.style.background = x.verdict === 'correct' ? COLORS.correct : '#ffffff';
     const line = el('span', 'gline'); line.style.background = verdictColor(x.verdict);
-    const dist = gr.distances ? `${km(x.distanceKm)}${gr.bearings && x.verdict !== 'correct' ? ` ${x.compass}` : ''}` : '';
+    const dist = `${km(x.distanceKm)}${x.verdict !== 'correct' ? ` ${x.compass}` : ''}`;
     row.append(num, line, el('span', 'gname', name(x.code)), el('span', 'gdist', dist));
     row.append(el('span', 'gverdict', x.verdict === 'correct' ? 'Found it!' : x.verdict === 'warmer' ? 'Closer' : x.verdict === 'cooler' ? 'Further' : 'Same'));
-    row.title = gr.distances ? `${from} → ${name(x.code)}: ${km(x.referenceKm)} → ${km(x.distanceKm)} from the mystery country` : `${from} → ${name(x.code)}`;
+    row.title = `${from} → ${name(x.code)}: ${km(x.referenceKm)} → ${km(x.distanceKm)} from the mystery country`;
     log.prepend(row);
   });
   $('log-empty').hidden = g.guesses.length > 0;
@@ -508,10 +525,7 @@ function render(lastResult) {
   if (lastResult && state.phase === 'guessing') {
     const v = lastResult.verdict, who = name(lastResult.code);
     const lead = v === 'warmer' ? 'You got closer!' : v === 'cooler' ? 'Further away.' : 'Same distance as before.';
-    let where;
-    if (gr.distances && gr.bearings) where = `The mystery country is ${km(lastResult.distanceKm)} to the ${DIR[lastResult.compass]} of ${who}.`;
-    else if (gr.distances) where = `The mystery country is ${km(lastResult.distanceKm)} from ${who}.`;
-    else where = v === 'warmer' ? `${who} is nearer to the mystery country.` : v === 'cooler' ? `${who} is further from the mystery country.` : `${who} is exactly as far from the mystery country.`;
+    const where = `The mystery country is ${km(lastResult.distanceKm)} to the ${DIR[lastResult.compass]} of ${who}.`;
     flash(`${lead} ${where}`, v);
     toast(v === 'warmer' ? `🔥 Closer · ${who}` : v === 'cooler' ? `❄️ Further · ${who}` : `Same distance · ${who}`, v);
   }
@@ -540,7 +554,7 @@ function renderOver() {
   st.replaceChildren();
   if (g.status === 'won' && STAMP_LEVELS.includes(g.difficulty)) {
     const n = stampsFor(state.stats, c.code)[g.difficulty];
-    st.append(stampEl(g.difficulty, true, 'lg'));
+    st.append(stampEl(g.difficulty, true, 'lg', 0, c.code, clueMarksFor(state.stats, c.code)[g.difficulty]));
     const t = el('div'); t.append(el('div', 't', n === 1 ? `${g.rules.label} stamp earned!` : `${g.rules.label} stamp again (${n} times)`));
     const pool = remainingPool(state.countries, state.pools, g.rules, state.stats);
     t.append(el('div', 's', pool.complete ? `Your ${g.rules.label} passport is complete: all ${pool.total} stamps!` : `${pool.stamped} of ${pool.total} ${g.rules.label} stamps collected.`));
@@ -587,8 +601,8 @@ function countryCard(c, startCode, { head = true } = {}) {
   if (c.dependentOf) add('Administered by', name(c.dependentOf));
   frag.append(dl);
   const ps = el('div', 'stamps-wide'); // one column per stamp across the full width
-  const sf = stampsFor(state.stats, c.code);
-  for (const l of STAMP_LEVELS) ps.append(stampEl(l, sf[l] > 0, '', sf[l]));
+  const sf = stampsFor(state.stats, c.code), cm = clueMarksFor(state.stats, c.code);
+  for (const l of STAMP_LEVELS) ps.append(stampEl(l, sf[l] > 0, '', sf[l], c.code, cm[l]));
   ps.append(stampEl('visited', state.visited.has(c.code), '', 0, c.code));
   frag.append(el('h3', null, 'Passport stamps'), ps);
 
@@ -642,13 +656,17 @@ function jitter(seed) {
 }
 
 /** A rubber-stamp element for a level; `got` renders it inked, otherwise a faint outline. */
-function stampEl(level, got, size = '', count = 0, seed = '') {
+function stampEl(level, got, size = '', count = 0, seed = '', clues = null) {
   const s = el('span', `stamp ${level} ${got ? 'got inked' : 'missing'} ${size}`.trim());
   s.style.setProperty('--rot', `${(jitter(seed + level) * 12).toFixed(1)}deg`);
   s.textContent = level === 'visited' ? (size === 'sm' ? 'Been here' : 'Been\nhere') : size === 'sm' ? LEVEL_LABEL(level)[0] : level === 'intermediate' ? 'Inter\nmediate' : LEVEL_LABEL(level);
   if (level === 'visited') s.title = got ? 'Been here for real' : 'Not visited for real yet';
   if (got && count > 1) s.append(el('small', null, `×${count}`));
   s.title = got ? `${LEVEL_LABEL(level)} stamp${count > 1 ? ` ×${count}` : ''}` : `No ${LEVEL_LABEL(level)} stamp yet`;
+  if (got && clues) { // the fewest clues a winning round at this level needed
+    const m = el('i', 'cm', String(clues)); m.title = `${clues} ${clues === 1 ? 'clue' : 'clues'} used on your best ${LEVEL_LABEL(level)} round`;
+    s.append(m); s.title += ` · ${clues} ${clues === 1 ? 'clue' : 'clues'}`;
+  }
   return s;
 }
 function miniStamps(code) {
@@ -730,9 +748,9 @@ function renderPassport() {
     card.style.setProperty('--rot', `${(jitter(c.code) * 1.5).toFixed(2)}deg`);
     const flag = el('span', 'eflag', c.flag);
     const row = el('div', 'erow'); row.append(flag);
-    const sf = stampsFor(state.stats, c.code);
+    const sf = stampsFor(state.stats, c.code), cm = clueMarksFor(state.stats, c.code);
     // One slot per level, spread across the box; a level this country cannot earn leaves its slot empty.
-    for (const l of STAMP_LEVELS) row.append(inPool(l, c.code) ? stampEl(l, sf[l] > 0, 'sm', sf[l], c.code) : el('span', 'slot-empty'));
+    for (const l of STAMP_LEVELS) row.append(inPool(l, c.code) ? stampEl(l, sf[l] > 0, 'sm', sf[l], c.code, cm[l]) : el('span', 'slot-empty'));
     row.append(stampEl('visited', state.visited.has(c.code), 'sm', 0, c.code));
     card.append(el('div', 'ename', c.name), row);
     const open = () => showCountry(c.code);
@@ -825,61 +843,17 @@ function showCountry(code) {
 }
 
 // ---------------------------------------------------------------- settings --
-const SWITCHES = [
-  { key: 'names', label: 'Country names on the map', hint: 'Labels appear as you zoom in.' },
-  { key: 'click', label: 'Tap the map to guess', hint: 'Otherwise type the name.' },
-  { key: 'distances', label: 'Show distance for each guess', hint: 'How far each guess is from the mystery country.' },
-  { key: 'bearings', label: 'Show compass direction', hint: 'Which way the mystery country lies from each guess.' },
-];
-const POOLS = [
-  { key: 'easy', label: '80 most visited', hint: 'Easy' },
-  { key: 'un', label: '193 UN members', hint: 'Intermediate' },
-  { key: 'all', label: 'All 250', hint: 'Advanced' },
-];
-
 function wireSettings() {
   const box = $('difficulty');
-  for (const [key, d] of [...Object.entries(DIFFICULTY), ['custom', { label: 'Custom', blurb: 'Your own mix of the rules below.' }]]) {
+  for (const [key, d] of Object.entries(DIFFICULTY)) {
     const lab = el('label', 'diff');
     const inp = el('input'); inp.type = 'radio'; inp.name = 'difficulty'; inp.value = key;
-    inp.addEventListener('change', () => applyPreset(key));
+    inp.addEventListener('change', () => { state.settings.preset = key; saveSettings(); });
     lab.append(inp, el('span', 'dname', d.label), el('span', 'dblurb', d.blurb));
     box.append(lab);
   }
-  const sw = $('switches');
-  for (const s of SWITCHES) {
-    const lab = el('label', 'switch');
-    const txt = el('span', 'sl', s.label); txt.append(el('span', 'sh', s.hint));
-    const inp = el('input'); inp.type = 'checkbox'; inp.dataset.key = s.key;
-    inp.addEventListener('change', () => {
-      // Editing a switch makes the preset Custom, seeded from the current rules.
-      const r = rules();
-      state.settings = { ...state.settings, preset: 'custom', names: r.names, click: r.click, distances: r.distances, bearings: r.bearings, pool: r.pool || 'all' };
-      state.settings[s.key] = inp.checked;
-      saveSettings();
-    });
-    lab.append(txt, inp);
-    sw.append(lab);
-  }
-  const pb = $('pool');
-  for (const p of POOLS) {
-    const lab = el('label'); const inp = el('input'); inp.type = 'radio'; inp.name = 'pool'; inp.value = p.key;
-    inp.addEventListener('change', () => {
-      const r = rules();
-      state.settings = { ...state.settings, preset: 'custom', names: r.names, click: r.click, distances: r.distances, bearings: r.bearings, pool: p.key };
-      saveSettings();
-    });
-    lab.append(inp, ` ${p.label}`);
-    pb.append(lab);
-  }
   for (const inp of document.querySelectorAll('#units input')) inp.addEventListener('change', () => { state.settings.units = inp.value; saveSettings(); });
   $('btn-reset-stats').addEventListener('click', () => { if (confirm('Reset rounds, streaks and all passport stamps?')) { state.stats = normalizeStats(null); save(KEYS.stats, null); renderPassport(); } });
-}
-
-function applyPreset(key) {
-  if (key === 'custom') { const r = rules(); state.settings = { ...state.settings, preset: 'custom', names: r.names, click: r.click, distances: r.distances, bearings: r.bearings, pool: r.pool || 'all' }; }
-  else state.settings.preset = key;
-  saveSettings();
 }
 
 function saveSettings() {
@@ -892,8 +866,6 @@ function saveSettings() {
 function renderSettings() {
   const r = rules();
   for (const inp of document.querySelectorAll('#difficulty input')) inp.checked = inp.value === r.preset;
-  for (const inp of document.querySelectorAll('#switches input')) inp.checked = !!r[inp.dataset.key];
-  for (const inp of document.querySelectorAll('#pool input')) inp.checked = inp.value === (r.pool || 'all');
   for (const inp of document.querySelectorAll('#units input')) inp.checked = inp.value === state.settings.units;
 }
 

@@ -84,13 +84,13 @@
               <p class="flash" id="flash" aria-live="polite" hidden></p>
               <div class="picker" id="picker-guess">
                 <label for="search-guess" class="sr-only">Guess</label>
-                <input id="search-guess" type="search" autocomplete="off" spellcheck="false" enterkeyhint="go" placeholder="Type your guess…" />
+                <input id="search-guess" type="search" autocomplete="off" spellcheck="false" enterkeyhint="go" placeholder="Type the country's name…" />
                 <div id="results-guess" class="results" hidden></div>
               </div>
               <ol class="log" id="log"></ol>
               <p class="muted small" id="log-empty" hidden>No guesses yet. Each guess is compared with the one before it: an orange line means that hop took you closer, a blue one further away.</p>
               <div class="btnrow">
-                <button type="button" id="btn-clue" hidden>🧭 Give me a clue</button>
+                <button type="button" id="btn-clue" hidden>💡 Give me a clue</button>
                 <button type="button" id="btn-giveup">Give up and reveal</button>
                 <button type="button" class="ghost" id="btn-newstart">Start again</button>
               </div>
@@ -156,13 +156,8 @@
       <section class="screen" id="screen-settings" hidden>
         <header class="appbar"><h1>Settings</h1></header>
         <div class="page">
-          <h2>Difficulty</h2>
-          <div class="difficulty" id="difficulty" role="radiogroup" aria-label="Difficulty"></div>
-
-          <h2>Rules <span class="muted small">(editing one switches to Custom)</span></h2>
-          <div class="switches" id="switches"></div>
-          <h2>Mystery country drawn from</h2>
-          <div class="seg" id="pool"></div>
+          <h2>Level</h2>
+          <div class="difficulty" id="difficulty" role="radiogroup" aria-label="Level"></div>
 
           <h2>Units</h2>
           <div class="seg" id="units">

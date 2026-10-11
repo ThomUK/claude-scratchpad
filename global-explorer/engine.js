@@ -188,19 +188,27 @@ export function sortCountries(countries, key, dir = 'asc') {
 }
 
 // -------------------------------------------------------------------- game --
-/** What each difficulty reveals. */
+/**
+ * The three levels. Every level shows distance and direction for every guess;
+ * what changes is the pool, whether names are on the map, and how you guess:
+ *   names    – country names on the globe during a round (Advanced reveals
+ *              each one as it is guessed)
+ *   click    – tap the globe to guess (Advanced taps only ring the shape)
+ *   type     – type the name to guess
+ *   clueMark – clues used are marked on the stamp earned
+ */
 export const DIFFICULTY = {
   easy: {
-    label: 'Easy', names: true, click: true, distances: true, bearings: true, clueButton: false, pool: 'easy',
-    blurb: 'Names on the map, tap the map to guess, every guess shows distance and direction. The mystery country is one of the 80 countries UK residents visit most.',
+    label: 'Easy', names: true, click: true, type: false, clueMark: false, pool: 'easy',
+    blurb: 'Names on the map; tap a country to guess. The mystery country is one of the 80 commonly visited countries. Clues are free.',
   },
   intermediate: {
-    label: 'Intermediate', names: true, click: false, distances: true, bearings: false, clueButton: true, pool: 'un',
-    blurb: 'Names on the map. Guesses show distance; a clue reveals the direction. The mystery country is one of the 193 UN member states.',
+    label: 'Intermediate', names: true, click: true, type: false, clueMark: true, pool: 'un',
+    blurb: 'Names on the map; tap a country to guess. The mystery country is one of the 193 United Nations countries. Clues you use are marked on your stamp.',
   },
   hard: {
-    label: 'Advanced', names: false, click: false, distances: true, bearings: false, clueButton: true, pool: null,
-    blurb: 'No names on the map. Guesses show distance; a clue reveals the direction. The mystery country can be any of the 250 countries and territories, dependencies and disputed places included.',
+    label: 'Advanced', names: false, click: false, type: true, clueMark: true, pool: null,
+    blurb: 'No names on the map; type your guesses, and each name appears as you guess it. The mystery country can be any of the 250 countries and territories. Clues you use are marked on your stamp.',
   },
 };
 
@@ -217,25 +225,42 @@ export function targetPool(difficulty, pools) {
   return p.codes;
 }
 
-/**
- * Turn saved settings into the rules a round plays by. A preset name uses
- * DIFFICULTY as-is; 'custom' takes the individual switches. The clue button
- * is offered whenever the round does not already show everything.
- */
+/** The rules a round plays by, from saved settings: the chosen level, or Easy when the setting is missing or unknown. */
 export function resolveRules(settings = {}) {
-  const preset = settings.preset || 'hard';
-  const base = DIFFICULTY[preset] || DIFFICULTY.hard;
-  const r = preset === 'custom'
-    ? { label: 'Custom', names: !!settings.names, click: !!settings.click, distances: !!settings.distances, bearings: !!settings.bearings, pool: settings.pool === 'easy' || settings.pool === 'un' ? settings.pool : null }
-    : { label: base.label, names: base.names, click: base.click, distances: base.distances, bearings: base.bearings, pool: base.pool };
-  r.clueButton = !(r.distances && r.bearings);
-  r.preset = preset;
-  return r;
+  const preset = DIFFICULTY[settings.preset] ? settings.preset : 'easy';
+  const { blurb, ...rules } = DIFFICULTY[preset];
+  return { ...rules, preset };
 }
 
-export function createGame(countries, startCode, { rng = Math.random, pool = null, difficulty = 'hard', pools = null, rules = null } = {}) {
+/** How many clues a round can give: one per rung of the clue ladder. */
+export const MAX_CLUES = 4;
+
+/**
+ * The n-th clue (1-based) about the mystery country, as text: its continent,
+ * the first letter of its name, a neighbour (or that it has none), then its
+ * flag. Null once the ladder is used up.
+ */
+export function clueText(game, countries, n) {
+  const byCode = new Map(countries.map((c) => [c.code, c]));
+  const t = byCode.get(game.targetCode);
+  if (!t) return null;
+  switch (n) {
+    case 1: return `The mystery country is in ${t.continent}.`;
+    case 2: return `Its name starts with "${t.name[0]}".`;
+    case 3: {
+      const others = (t.borders || []).map((b) => byCode.get(b)).filter(Boolean);
+      if (!others.length) return t.landlocked ? 'It has no land borders.' : 'It has no land borders: it is an island, or a group of them.';
+      const pick = others[Math.floor(((game.startDistanceKm || 0) * 7) % others.length)]; // fixed per round, different between rounds
+      return `It shares a border with ${pick.name}.`;
+    }
+    case 4: return `Its flag is ${t.flag}.`;
+    default: return null;
+  }
+}
+
+export function createGame(countries, startCode, { rng = Math.random, pool = null, difficulty = 'easy', pools = null, rules = null } = {}) {
   if (!rules && !DIFFICULTY[difficulty]) throw new Error(`unknown difficulty ${difficulty}`);
-  if (rules) difficulty = rules.preset || 'custom';
+  if (rules) difficulty = rules.preset;
   if (pool == null && pools) {
     if (rules) { const p = rules.pool && pools[rules.pool]; pool = p ? p.codes : null; }
     else pool = targetPool(difficulty, pools);
@@ -247,7 +272,7 @@ export function createGame(countries, startCode, { rng = Math.random, pool = nul
   if (!candidates.length) throw new Error('no candidate targets');
   const target = candidates[Math.min(candidates.length - 1, Math.floor(rng() * candidates.length))];
   return {
-    startCode, targetCode: target.code, difficulty, rules: rules || { ...DIFFICULTY[difficulty], preset: difficulty, clueButton: DIFFICULTY[difficulty].clueButton },
+    startCode, targetCode: target.code, difficulty, rules: rules || resolveRules({ preset: difficulty }),
     startDistanceKm: haversineKm(start.latlng, target.latlng),
     startCompass: compassPoint(rhumbBearing(start.latlng, target.latlng)),
     guesses: [], status: 'playing', cluesUsed: 0,
@@ -303,6 +328,7 @@ export function directionClue(game, countries) {
 }
 
 export function useClue(game) {
+  if ((game.cluesUsed || 0) >= MAX_CLUES) return game;
   return { ...game, cluesUsed: (game.cluesUsed || 0) + 1 };
 }
 
@@ -327,7 +353,7 @@ export const STAMP_LEVELS = ['easy', 'intermediate', 'hard'];
 export function normalizeStats(stats) {
   const s = { rounds: 0, wins: 0, streak: 0, bestStreak: 0, best: {}, found: {}, ...(stats || {}) };
   s.best = { ...s.best };
-  s.found = Object.fromEntries(Object.entries(s.found || {}).map(([code, v]) => [code, typeof v === 'number' ? { hard: v } : { ...v }]));
+  s.found = Object.fromEntries(Object.entries(s.found || {}).map(([code, v]) => [code, typeof v === 'number' ? { hard: v } : { ...v, clues: { ...(v.clues || {}) } }]));
   return s;
 }
 
@@ -338,10 +364,22 @@ export function stampsFor(stats, code) {
 }
 
 /**
+ * Clue marks on a country's stamps: the fewest clues used on any winning
+ * round at that level, for levels that mark clues (Intermediate, Advanced).
+ * Null where there is no stamp or the level does not mark clues.
+ */
+export function clueMarksFor(stats, code) {
+  const f = (stats && stats.found && stats.found[code]) || {};
+  const clues = f.clues || {};
+  return Object.fromEntries(STAMP_LEVELS.map((l) => [l, DIFFICULTY[l].clueMark && f[l] > 0 && clues[l] != null ? clues[l] : null]));
+}
+
+/**
  * Fold a finished round into persistent stats. `stats` shape:
- * { rounds, wins, streak, bestStreak, best: { [preset]: score },
- *   found: { [code]: { easy: n, intermediate: n, hard: n } } }.
- * A win on a preset level stamps the passport; Custom rounds count but do not stamp.
+ * { rounds, wins, streak, bestStreak, best: { [level]: score },
+ *   found: { [code]: { easy: n, intermediate: n, hard: n, clues: { intermediate: fewest, hard: fewest } } } }.
+ * A win stamps the passport at the round's level; on levels that mark clues
+ * the stamp remembers the fewest clues used to earn it.
  */
 export function recordRound(stats, game) {
   const s = normalizeStats(stats);
@@ -350,13 +388,15 @@ export function recordRound(stats, game) {
     s.wins += 1;
     s.streak += 1;
     s.bestStreak = Math.max(s.bestStreak, s.streak);
-    const sc = score(game), key = game.difficulty || 'hard';
+    const sc = score(game), key = STAMP_LEVELS.includes(game.difficulty) ? game.difficulty : 'easy';
     if (s.best[key] == null || sc < s.best[key]) s.best[key] = sc;
-    if (STAMP_LEVELS.includes(key)) {
-      const f = { ...(s.found[game.targetCode] || {}) };
-      f[key] = (f[key] || 0) + 1;
-      s.found[game.targetCode] = f;
+    const f = { ...(s.found[game.targetCode] || {}), clues: { ...((s.found[game.targetCode] || {}).clues || {}) } };
+    f[key] = (f[key] || 0) + 1;
+    if (DIFFICULTY[key].clueMark) {
+      const used = game.cluesUsed || 0;
+      f.clues[key] = f.clues[key] == null ? used : Math.min(f.clues[key], used);
     }
+    s.found[game.targetCode] = f;
   } else {
     s.streak = 0;
   }
@@ -364,10 +404,9 @@ export function recordRound(stats, game) {
 }
 
 /**
- * Which countries a level can still stamp: the level's base pool (Easy's 50,
- * otherwise everyone) minus those already stamped at that level. When the
- * whole pool is stamped the base pool is returned with `complete: true`.
- * Custom rounds have no stamps, so they draw from their configured pool.
+ * Which countries a level can still stamp: the level's base pool minus those
+ * already stamped at that level. When the whole pool is stamped the base pool
+ * is returned with `complete: true`.
  */
 export function remainingPool(countries, pools, rules, stats) {
   const base = rules.pool && pools && pools[rules.pool] ? pools[rules.pool].codes : countries.map((c) => c.code);
