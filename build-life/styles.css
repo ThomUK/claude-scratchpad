@@ -107,3 +107,30 @@ svg.house .slot:hover rect { fill: rgba(255,255,255,.4); }
 .help-list { padding-left: 20px; } .help-list li { margin: 6px 0; }
 @media (max-width: 760px) { svg.house { min-width: 680px; max-height: 50vh; } .stage.sky svg.house { min-width: 0; } }
 @media (max-width: 600px) { body { font-size: 16px; } .q { font-size: 20px; } .opts button { font-size: 19px; } .nav button { min-width: 0; flex: 1 1 40%; } }
+
+/* jobs */
+.matchrows { display: flex; flex-direction: column; gap: 10px; }
+.matchrow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px; }
+.mlabel { display: flex; align-items: center; gap: 10px; min-width: 200px; flex: 1; }
+.mopts { display: flex; flex-wrap: wrap; gap: 6px; }
+.swatchdot { display: inline-block; width: 18px; height: 18px; border-radius: 50%; vertical-align: middle; margin-right: 6px; border: 1.5px solid rgba(0,0,0,.2); }
+.counter { display: flex; align-items: center; gap: 8px; }
+.counter .cval { min-width: 90px; text-align: center; font-weight: 700; font-size: 20px; }
+.pickgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.pickcard { background: #fff; color: var(--ink); border: 2px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 80px; position: relative; font-size: 18px; }
+.pickcard.sel { border-color: var(--danger); background: #fbe9e9; }
+.pickcard .tick { position: absolute; top: 6px; right: 10px; color: var(--danger); font-weight: 800; }
+.simon { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 320px; margin: 10px auto; }
+.simon .pad { aspect-ratio: 1; border-radius: 16px; opacity: .45; transition: opacity .1s, transform .1s; min-height: 120px; }
+.simon .pad.lit { opacity: 1; transform: scale(1.05); box-shadow: 0 0 24px rgba(255,255,255,.8); }
+.simon .pad:not([disabled]) { opacity: .7; }
+.lawnwrap { display: flex; gap: 20px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.lawn { display: grid; gap: 3px; background: #5a3b25; padding: 6px; border-radius: 10px; }
+.lawn .cell { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; font-size: 28px; border-radius: 4px; }
+.lawn .grass { background: #4f7a3b; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,.08) 0 4px, transparent 4px 8px); }
+.lawn .mown { background: #9bc47a; }
+.lawn .bed { background: #7a4a2a; }
+.dpad { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.dpad div { display: flex; gap: 60px; }
+.dpad button { width: 60px; height: 60px; font-size: 24px; padding: 0; }
+@media (max-width: 600px) { .lawn .cell { width: 42px; height: 42px; font-size: 22px; } }

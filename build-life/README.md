@@ -24,6 +24,12 @@ gold coins, and fill your home with pets and family.
   pay 3, 5 or 8 coins, a perfect lesson earns a bonus, and you get three
   lessons a day, plus one more for every child in the family who is old enough
   for school.
+- **Jobs.** Every shop, the hospital and the school offer two puzzle jobs
+  that match the work: re-covering cushions and mixing paint colours, counting
+  batteries and repeating screen patterns, feeding animals and putting them to
+  bed, mowing lawns (a sliding-mower puzzle) and planting flower patterns,
+  sorting X-rays and reading thermometers, marking homework and shelving
+  library books alphabetically. Three jobs a day, paid by how well you do.
 - **Shops.** A furniture shop, a gadget shop (screens, computers, consoles,
   cameras and alarms), a pet shop and a garden centre.
 - **Pets.** Dog, cat, rabbit, hamster, goldfish, parrot and a dragon. They get

@@ -355,3 +355,21 @@ export function footageSvg(clip, room = null) {
     <text x="${W0 - 8}" y="15" font-size="11" fill="#fff" text-anchor="end" font-family="monospace">DAY ${clip.day}  ${stamp}</text>
   </svg>`;
 }
+
+// ───────────────────────── job art ─────────────────────────
+export function xraySvg(part) {
+  const bone = 'fill="#e8eef3"';
+  const body = {
+    skull: `<ellipse cx="50" cy="42" rx="30" ry="34" ${bone}/><ellipse cx="38" cy="40" rx="8" ry="10" fill="#1a2430"/><ellipse cx="62" cy="40" rx="8" ry="10" fill="#1a2430"/><path d="M46 56L50 50L54 56Z" fill="#1a2430"/><rect x="34" y="66" width="32" height="14" rx="4" ${bone}/><path d="M38 66V80M44 66V80M50 66V80M56 66V80M62 66V80" stroke="#1a2430" stroke-width="1.5"/>`,
+    hand: `<rect x="34" y="52" width="32" height="34" rx="8" ${bone}/>${[26, 38, 50, 62].map((x, i) => `<rect x="${x - 4}" y="${i === 1 || i === 2 ? 8 : 16}" width="9" height="${i === 1 || i === 2 ? 48 : 40}" rx="4" ${bone}/>`).join('')}<rect x="66" y="46" width="22" height="9" rx="4" transform="rotate(-40 66 50)" ${bone}/>`,
+    foot: `<path d="M22 70Q20 40 40 40Q60 40 62 60L86 64Q92 72 84 78L30 86Q22 84 22 70Z" ${bone}/>${[70, 78, 86].map((x, i) => `<rect x="${x - 2}" y="${56 + i * 2}" width="8" height="10" rx="3" ${bone}/>`).join('')}<path d="M40 48Q50 60 60 62" stroke="#1a2430" stroke-width="1.5" fill="none"/>`,
+    ribs: `<rect x="47" y="8" width="6" height="84" rx="3" ${bone}/>${[20, 32, 44, 56, 68].map(y => `<path d="M47 ${y}Q20 ${y + 2} 24 ${y + 14}M53 ${y}Q80 ${y + 2} 76 ${y + 14}" stroke="#e8eef3" stroke-width="5" fill="none" stroke-linecap="round"/>`).join('')}`,
+    spine: `${[0, 1, 2, 3, 4, 5, 6].map(i => `<rect x="40" y="${8 + i * 12}" width="20" height="9" rx="3" ${bone}/><rect x="62" y="${10 + i * 12}" width="10" height="5" rx="2" ${bone}/>`).join('')}`,
+    leg: `<rect x="44" y="12" width="12" height="76" rx="5" ${bone}/><ellipse cx="50" cy="12" rx="12" ry="8" ${bone}/><ellipse cx="50" cy="88" rx="13" ry="7" ${bone}/><path d="M48 30V70" stroke="#1a2430" stroke-width="1" opacity=".5"/>`,
+  }[part] || '';
+  return `<svg viewBox="0 0 100 100" width="90" height="90"><rect width="100" height="100" rx="6" fill="#1a2430"/><rect x="3" y="3" width="94" height="94" rx="5" fill="none" stroke="#3a4a5a"/>${body}</svg>`;
+}
+export function thermometerSvg(temp) {
+  const t = Math.max(35, Math.min(41, temp)); const h = (t - 35) / 6 * 100; const fever = temp >= 38;
+  return `<svg viewBox="0 0 50 150" width="50" height="150"><rect x="14" y="6" width="12" height="118" rx="6" fill="#eef1f3" stroke="#888"/><circle cx="20" cy="132" r="12" fill="${fever ? '#d9444a' : '#d9444a'}"/><rect x="17" y="${120 - h}" width="6" height="${h + 4}" fill="#d9444a"/>${[35, 36, 37, 38, 39, 40, 41].map(v => `<line x1="26" y1="${120 - (v - 35) / 6 * 100}" x2="${v === 38 ? 36 : 31}" y2="${120 - (v - 35) / 6 * 100}" stroke="${v === 38 ? '#9a3b3b' : '#666'}" stroke-width="${v === 38 ? 2 : 1}"/><text x="${v === 38 ? 37 : 32}" y="${123 - (v - 35) / 6 * 100}" font-size="7" fill="#444" font-family="sans-serif">${v}</text>`).join('')}</svg>`;
+}

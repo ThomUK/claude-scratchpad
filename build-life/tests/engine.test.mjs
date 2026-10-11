@@ -3,7 +3,7 @@ import {
   HOUSES, ITEMS, ITEM, PETS, PET, WALLPAPERS, FLOORS, PAINTS, NEIGHBOURS, SUBJECTS, LEVELS, HOURS, START_COINS, LESSONS_PER_DAY, QUESTIONS_PER_LESSON, PERFECT_BONUS, BABY_GROWS_AT, CHILD_SCHOOL_AGE, BURGLAR_GRACE_DAYS,
   makeRng, newGame, buildHouse, houseWidth, moveHouse, houseSalePrice, buyItem, sellFromVan, vanItems, vanCount, placeItem, removeItem, placedList, setWallpaper, setFlooring, setPaint,
   securityScore, buyPet, feedPet, playWithPet, mealsLeft, canHaveBaby, newBaby, feedPerson, lessonsLeft, canStartLesson, makeQuestion, startLesson, checkAnswer, answerQuestion, finishLesson,
-  neighbourHouse, visitNeighbour, trapInRoom, trapCount, callPolice, TRAP_REWARD, cameraFor, saveClip, deleteClip, GALLERY_MAX, bankOpen, nightlyInterest, deposit, withdraw, BANK_MAX_INTEREST, POCKET_THEFT, travel, nightlyBill, payReward, BUS_FARE, BILL_GADGET, BILL_MOUTH, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
+  neighbourHouse, visitNeighbour, trapInRoom, trapCount, callPolice, TRAP_REWARD, cameraFor, saveClip, deleteClip, GALLERY_MAX, bankOpen, nightlyInterest, deposit, withdraw, BANK_MAX_INTEREST, POCKET_THEFT, travel, nightlyBill, payReward, BUS_FARE, BILL_GADGET, BILL_MOUTH, JOBS, JOB, EMPLOYERS, jobsFor, jobsLeft, canStartJob, makeJob, makeLawn, mowStep, scoreTask, startJob, submitTask, jobPay, finishJob, JOBS_PER_DAY, JOB_PAY, JOB_BONUS, JOB_MIN_PAY, JOB_HOURS, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
 } from '../engine.js';
 
 let fails = 0;
@@ -332,6 +332,85 @@ console.log('— police always pay · food bills · bus fares —');
   ok(!r.free && r.fare === BUS_FARE && y.coins === 1, 'skip school one day and the school bus charges the next');
   y.hour = 20; y.lessonsToday = 2; sleep(y, makeRng(1)); y.coins = 5;
   ok(y.lessonsYesterday === 2 && travel(y, 'school').free, 'a lesson today makes tomorrow\'s school bus free again');
+}
+
+console.log('— jobs —');
+{
+  ok(Object.keys(EMPLOYERS).every(e => jobsFor(e).length >= 2), 'every employer offers at least two jobs');
+  ok(JOBS.every(j => JOB[j.id] === j && EMPLOYERS[j.employer]), 'every job has a known employer');
+  // every job generates well-formed tasks and a perfect answer scores full marks
+  const perfectAnswer = task => task.type === 'match' ? task.rows.map(r => r.answer) : task.type === 'count' ? task.rows.map(r => r.answer) : task.type === 'pick' ? task.items.map((it, i) => it.pick ? i : -1).filter(i => i >= 0) : task.type === 'order' ? task.answer : task.type === 'choice' ? task.answer : task.type === 'simon' ? task.seq : null;
+  for (const j of JOBS) {
+    let fine = true, kinds = new Set();
+    for (let sd = 1; sd <= 40; sd++) {
+      const job = makeJob(j.id, makeRng(sd));
+      if (!job.tasks.length) fine = false;
+      for (const task of job.tasks) {
+        kinds.add(task.type);
+        if (task.type === 'match' && !(task.rows.length >= 4 && task.rows.every(r => task.options.some(o => o.id === r.answer)))) fine = false;
+        if (task.type === 'count' && !(task.rows.length === 4 && task.rows.every(r => r.answer >= 1 && r.answer <= task.max))) fine = false;
+        if (task.type === 'pick' && !(task.items.length >= 6 && task.items.some(i => i.pick) && task.items.some(i => !i.pick))) fine = false;
+        if (task.type === 'order' && !(task.tiles.length === 5 && [...task.answer].sort().join() === task.answer.join())) fine = false;
+        if (task.type === 'choice' && !(task.options.length === 4 && task.options[task.answer] === task.answerValue)) fine = false;
+        if (task.type === 'simon' && !(task.seq.length >= 3 && task.seq.every(v => v >= 0 && v <= 3))) fine = false;
+        if (task.type !== 'mow') { const sc = scoreTask(task, perfectAnswer(task)); if (sc.correct !== sc.total) fine = false; }
+      }
+    }
+    ok(fine, `${j.name} (${EMPLOYERS[j.employer]}): 40 well-formed puzzles of type ${[...kinds].join('+')}`);
+  }
+  // scoring partial answers
+  const feed = makeJob('feed', makeRng(3)).tasks[0];
+  const half = feed.rows.map((r, i) => i % 2 ? r.answer : 'wrong');
+  ok(scoreTask(feed, half).correct === Math.floor(feed.rows.length / 2), 'match tasks score each row');
+  const fever = makeJob('fever', makeRng(3)).tasks[0];
+  ok(scoreTask(fever, []).correct === fever.items.filter(i => !i.pick).length && scoreTask(fever, fever.items.map((_, i) => i)).correct === fever.items.filter(i => i.pick).length, 'pick tasks count both the ones you tapped and the ones you left');
+  // lawn mower
+  for (let sd = 1; sd <= 30; sd++) {
+    const lawn = makeLawn(makeRng(sd));
+    const beds = new Set(lawn.beds);
+    const okCells = lawn.grass.length + lawn.beds.length === lawn.w * lawn.h && lawn.grass.length >= 8 && !beds.has(lawn.start.join(','));
+    // brute-force a solution to prove the level can be mown
+    let solved = false; const seen = new Set();
+    const queue = [[lawn.start.slice(), [lawn.start.join(',')]]];
+    while (queue.length && !solved) {
+      const [pos, mown] = queue.shift();
+      if (mown.length >= lawn.grass.length) { solved = true; break; }
+      for (const d of ['up', 'down', 'left', 'right']) {
+        const task = { ...lawn, pos: pos.slice(), mown: mown.slice(), moves: 0 };
+        const r = mowStep(task, d);
+        if (!r.moved) continue;
+        const key = task.pos.join(',') + '|' + [...task.mown].sort().join(';');
+        if (seen.has(key)) continue; seen.add(key);
+        if (r.complete) { solved = true; break; }
+        if (seen.size < 20000) queue.push([task.pos, task.mown]);
+      }
+    }
+    if (!(okCells && solved)) { ok(false, `lawn ${sd} is well-formed and solvable`); break; }
+    if (sd === 30) ok(true, '30 lawns are well-formed and solvable');
+  }
+  const lawn = makeLawn(makeRng(4)); const before = lawn.mown.length;
+  let any = false; for (const d of ['up', 'down', 'left', 'right']) { const r = mowStep(lawn, d); if (r.moved) { any = true; break; } }
+  ok(any && lawn.mown.length > before && lawn.moves === 1, 'the mower slides and mows as it goes');
+  // doing a job
+  const t = newGame('J'); moveHouse(t, 'flat'); t.hour = 10; t.coins = 0;
+  ok(jobsLeft(t) === JOBS_PER_DAY && canStartJob(t, 'furniture').ok, 'three jobs a day');
+  t.hour = 16; ok(!canStartJob(t, 'school').ok && canStartJob(t, 'furniture').ok && canStartJob(t, 'hospital').ok, 'school shuts at 3pm for work too; the hospital stays open'); t.hour = 10;
+  let r = startJob(t, 'library', makeRng(5)); const job = r.job;
+  ok(r.ok && job.tasks.length === 1, 'started the library job');
+  r = submitTask(job, job.tasks[0].answer);
+  ok(r.ok && r.done && r.correct === 5, 'submitting the right order completes the job');
+  r = finishJob(t, job);
+  ok(r.ok && r.perfect && r.coins === JOB_PAY + JOB_BONUS && t.coins === JOB_PAY + JOB_BONUS && t.jobsToday === 1 && t.hour === 10 + JOB_HOURS && t.stats.jobs === 1, 'a perfect job pays full wages plus the bonus and takes two hours');
+  ok(!finishJob(t, job).ok, 'a job is only paid once');
+  const bad = startJob(t, 'screens', makeRng(6)).job;
+  for (const task of bad.tasks) submitTask(bad, [9, 9, 9]);
+  r = finishJob(t, bad);
+  ok(r.ok && r.coins === JOB_MIN_PAY && r.correct === 0, 'getting everything wrong still pays the minimum for turning up');
+  t.jobsToday = JOBS_PER_DAY; ok(!startJob(t, 'mow').ok, 'no fourth job'); t.jobsToday = 2;
+  const m = startJob(t, 'mow', makeRng(7)).job; const lawnTask = m.tasks[0];
+  ok(lawnTask.type === 'mow' && submitTask(m, null).correct === 1, 'an unmown lawn scores just the starting square');
+  t.hour = 20; sleep(t, makeRng(1));
+  ok(t.jobsToday === 0, 'a new day resets the jobs');
 }
 
 console.log('— save / load —');

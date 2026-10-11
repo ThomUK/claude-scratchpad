@@ -87,7 +87,7 @@ const SCREENS = {
     const late = E.tooLate(S), shopsOpen = S.hour >= 8 && S.hour < E.HOURS.SHOPS_CLOSE;
     const d = (label, ico, where, open, note, a) => `<button class="${open ? '' : 'closed'}" data-act="go" data-arg='${arg(where)}' ${a ? `data-a='${arg(a)}'` : ''}><span class="ico">${ico}</span>${label}<small>${note}</small></button>`;
     return `<div class="screen">
-      <div class="panel"><h2>Town</h2><p class="muted">Where would you like to go? ${late ? '<b>Everything is shut — it is bedtime.</b>' : ''}</p></div>
+      <div class="panel"><h2>Town</h2><p class="muted">Where would you like to go? ${late ? '<b>Everything is shut — it is bedtime.</b>' : `Every shop, the hospital and the school have <b>jobs</b>: ${E.jobsLeft(S)} left today.`}</p></div>
       <div class="dest">
         ${d('Home', '🏠', 'home', true, S.house ? E.houseType(S.house).name : 'no home yet')}
         ${d('School', '🏫', 'school', E.schoolOpen(S) && !late, (E.schoolOpen(S) ? `${E.lessonsLeft(S)} lesson${E.lessonsLeft(S) === 1 ? '' : 's'} left today` : 'open 8am – 3pm') + (E.schoolBusFree(S) ? ' · free bus' : ` · bus ${E.BUS_FARE} coins`))}
@@ -108,7 +108,7 @@ const SCREENS = {
   garden() { return shopScreen('Garden Centre', '🌳', 'garden', 'Things for the garden. Place them from the Outside view.'); },
   pets() {
     const open = S.hour >= 8 && S.hour < E.HOURS.SHOPS_CLOSE;
-    return `<div class="screen"><div class="panel"><h2>🐶 Pet Shop</h2><p class="muted">${open ? 'Every pet needs feeding and playing with. Dogs, parrots and dragons also guard the house.' : '<b>Closed.</b> Open 8am – 6pm.'} You have <b>${E.mealsLeft(S)}</b> pet meals.</p></div>
+    return `<div class="screen"><div class="panel"><h2>🐶 Pet Shop</h2><p class="muted">${open ? 'Every pet needs feeding and playing with. Dogs, parrots and dragons also guard the house.' : '<b>Closed.</b> Open 8am – 6pm.'} You have <b>${E.mealsLeft(S)}</b> pet meals.</p><div class="row">${workBtn('pets')}</div></div>
       <div class="grid">${E.PETS.map(p => `<div class="card ${S.coins < p.price ? 'off' : ''}"><div class="art">${A.petSvg(p.id, 66)}</div><div class="nm">${p.name}</div><div class="muted" style="font-size:13px">${p.security ? `🔒 ${p.security} security` : 'cuddly'}</div><div class="pr">🪙 ${p.price}</div><button class="small" data-act="buyPet" data-arg='${arg(p.id)}' ${!open || S.coins < p.price ? 'disabled' : ''}>Choose</button></div>`).join('')}
       ${itemCard('petfood', open)}</div>
       ${nav(navTown(), navHome())}</div>`;
@@ -129,7 +129,7 @@ const SCREENS = {
     const c = E.canHaveBaby(S);
     return `<div class="screen"><div class="panel"><h2>🏥 Hospital</h2><div class="speech">${c.ok ? 'Hello! Would you like to take a new baby home today? Babies need a bottle every day, and after a few days they grow into children who can come to school with you.' : esc(c.msg)}</div>
       ${c.ok ? `<div class="row" style="margin-top:12px"><input type="text" id="babyName" maxlength="14" placeholder="Baby's name" autocomplete="off" /><button data-act="newBaby">Bring the baby home 🍼</button></div>` : ''}
-      <p class="muted" style="margin-top:12px">Nobody is ever poorly for long in Build Life, and people never die. The hospital is mostly for babies and the odd plaster.</p></div>
+      <p class="muted" style="margin-top:12px">Nobody is ever poorly for long in Build Life, and people never die. The hospital is mostly for babies and the odd plaster.</p><div class="row">${workBtn('hospital')}</div></div>
       ${nav(navTown(), navHome())}</div>`;
   },
   estate(intro = false) {
@@ -161,11 +161,12 @@ const SCREENS = {
         <h3>Subject</h3><div class="row">${E.SUBJECTS.map(s => `<button class="${ui.subject === s.id ? '' : 'alt'}" data-act="pick" data-arg='${arg(['subject', s.id])}'>${s.name}<br><small style="font-weight:400">${s.blurb}</small></button>`).join('')}</div>
         <h3 style="margin-top:12px">Level</h3><div class="row">${E.LEVELS.map(l => `<button class="${ui.level === l.id ? '' : 'alt'}" data-act="pick" data-arg='${arg(['level', l.id])}'>${l.name} · ${l.coins} coins each</button>`).join('')}</div>
         <div style="margin-top:16px"><button class="gold" data-act="startLesson" ${ui.subject && ui.level ? '' : 'disabled'}>Start the lesson ▶</button></div>` : `<div class="speech">${esc(c.msg)}</div>`}
-      <p class="muted" style="margin-top:10px">Lessons: ${S.stats.lessons} · Right answers: ${S.stats.correct} · Coins earned so far: ${S.stats.coinsEarned}</p></div>
+      <p class="muted" style="margin-top:10px">Lessons: ${S.stats.lessons} · Right answers: ${S.stats.correct} · Coins earned so far: ${S.stats.coinsEarned}</p><div class="row">${workBtn('school')}</div></div>
       ${nav(navTown(), navHome())}</div>`;
   },
   footage() { return clipsScreen("📼 Last night's footage", S.footage, 'footage', 'Clips from your cameras. Save the good ones to the Criminal Gallery before tonight, or they are taped over.'); },
   gallery() { return clipsScreen('🎞 Criminal Gallery', S.gallery, 'gallery', `Your greatest burglar-catching moments, kept safe. ${S.gallery.length} of ${E.GALLERY_MAX} slots used.`); },
+  job() { return jobScreen(); },
   morning() {
     const r = ui.a;
     return `<div class="screen"><div class="panel"><h2>☀️ Good morning! It is day ${S.day}.</h2>
@@ -182,6 +183,70 @@ const SCREENS = {
   },
 };
 
+function workBtn(employer) {
+  const c = E.canStartJob(S, employer);
+  return `<button class="small ${c.ok ? 'gold' : 'alt'}" data-act="jobs" data-arg='${arg(employer)}'>🧰 Work here${c.ok ? ` (${E.jobsLeft(S)} job${E.jobsLeft(S) === 1 ? '' : 's'} left today)` : ''}</button>`;
+}
+function jobsModal(employer) {
+  const c = E.canStartJob(S, employer);
+  openModal(`<h3>🧰 Jobs at the ${E.EMPLOYERS[employer]}</h3><p class="muted">${c.ok ? `Each job takes ${E.JOB_HOURS} hours and pays up to 🪙 ${E.JOB_PAY} plus a ${E.JOB_BONUS} coin bonus for a perfect job. You can do ${E.JOBS_PER_DAY} jobs a day.` : esc(c.msg)}</p>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">${E.jobsFor(employer).map(j => `<div class="card" style="text-align:left;align-items:stretch"><div class="nm">${esc(j.name)}</div><p class="muted" style="font-size:13px;margin:0;flex:1">${esc(j.blurb)}</p><button class="small" data-act="startJob" data-arg='${arg(j.id)}' ${c.ok ? '' : 'disabled'}>Start</button></div>`).join('')}</div>
+    <div class="row" style="margin-top:14px"><button class="alt" data-act="closeModal">Not now</button></div>`);
+}
+const SIMON_COLOURS = ['#d94a4a', '#4a9ad9', '#5ac05a', '#f0c040'];
+function jobScreen() {
+  const J = ui.job; if (!J) { screen = 'town'; return SCREENS.town(); }
+  if (J.done) {
+    const pay = E.jobPay(J);
+    return `<div class="screen lesson"><div class="panel" style="text-align:center"><h2>Pay day!</h2><p>${esc(J.name)} at the ${E.EMPLOYERS[J.employer]}</p><div class="big">${pay.correct} / ${pay.total}</div><p>${pay.perfect ? '🌟 Perfect! The boss is delighted and adds a bonus.' : pay.correct >= pay.total * 0.7 ? 'Good work!' : pay.correct > 0 ? 'Not bad. Practice makes perfect.' : 'Oh dear. The boss pays you for turning up, but only just.'}</p><div class="big" style="color:var(--accent2)">🪙 ${pay.coins}</div><p style="margin-top:16px"><button class="gold" data-act="collectWages">Collect your wages 🪙</button></p></div></div>`;
+  }
+  const task = J.tasks[J.index];
+  const head = `<div class="row"><b>${esc(J.name)}</b> · ${E.EMPLOYERS[J.employer]}<span style="flex:1"></span>${J.tasks.length > 1 ? `<span class="muted">Part ${J.index + 1} of ${J.tasks.length}</span>` : ''}</div><div class="q" style="font-size:20px">${esc(task.prompt)}</div>`;
+  let body = '';
+  const a = ui.answer;
+  if (task.type === 'match') {
+    body = `${task.note ? `<div class="speech" style="margin-bottom:12px">📒 <b>Order book:</b> ${esc(task.note)}</div>` : ''}<div class="matchrows">${task.rows.map((r, i) => `<div class="matchrow"><div class="mlabel">${r.pet ? A.petSvg(r.pet, 48) : r.xray ? A.xraySvg(r.xray) : r.color ? `<span class="swatchdot" style="background:${r.color}"></span>` : ''}<div><b>${esc(r.label)}</b>${r.want ? `<br><span class="muted">wants it <b>${esc(r.want)}</b></span>` : ''}</div></div><div class="mopts">${task.options.map(o => `<button class="small ${a[i] === o.id ? '' : 'alt'}" data-act="pickOpt" data-arg='${arg([i, o.id])}'>${o.color ? `<span class="swatchdot" style="background:${o.color}"></span>` : ''}${esc(o.label)}</button>`).join('')}</div></div>`).join('')}</div>
+      <p style="text-align:center;margin-top:14px"><button class="gold" data-act="submitTask" ${a.filter(x => x !== undefined && x !== null).length === task.rows.length ? '' : 'disabled'}>Done ✔</button></p>`;
+  } else if (task.type === 'count') {
+    body = `<div class="matchrows">${task.rows.map((r, i) => `<div class="matchrow"><div class="mlabel"><div><b>${esc(r.label)}</b><br><span class="muted">${esc(r.prompt)}</span></div></div><div class="counter"><button class="small alt" data-act="countAdj" data-arg='${arg([i, -1])}'>−</button><span class="cval">${a[i] || 0} ${esc(r.unit)}</span><button class="small alt" data-act="countAdj" data-arg='${arg([i, 1])}'>+</button></div></div>`).join('')}</div>
+      <p style="text-align:center;margin-top:14px"><button class="gold" data-act="submitTask">Done ✔</button></p>`;
+  } else if (task.type === 'pick') {
+    const sel = new Set(a);
+    body = `<div class="pickgrid">${task.items.map((it, i) => `<button class="pickcard ${sel.has(i) ? 'sel' : ''}" data-act="togglePick" data-arg='${arg(i)}'>${it.temp !== undefined ? A.thermometerSvg(it.temp) : ''}<div class="nm">${esc(it.label)}</div>${it.detail ? `<div class="muted">${esc(it.detail)}</div>` : ''}<div class="tick">${sel.has(i) ? '✔' : ''}</div></button>`).join('')}</div>
+      <p style="text-align:center;margin-top:14px"><button class="gold" data-act="submitTask">Done ✔</button></p>`;
+  } else if (task.type === 'order') {
+    const seq = ui.seq || [];
+    body = `<div class="answerline">${seq.length ? seq.map(i => `<span>${esc(task.tiles[i])}</span>`).join('') : '<span class="muted" style="background:none;border:0;font-size:16px;font-weight:400">Tap the books in order</span>'}</div>
+      <div class="tiles">${task.tiles.map((x, i) => `<button class="${seq.includes(i) ? 'used' : ''}" data-act="jobTile" data-arg='${arg(i)}' ${seq.includes(i) ? 'disabled' : ''} style="font-size:17px">📕 ${esc(x)}</button>`).join('')}</div>
+      <div class="row" style="justify-content:center"><button class="alt small" data-act="undo" ${seq.length ? '' : 'disabled'}>↶ Undo</button></div>`;
+  } else if (task.type === 'choice') {
+    body = `<div class="opts">${task.options.map((o, i) => `<button data-act="jobChoice" data-arg='${arg(i)}' style="font-size:36px">${esc(o)}</button>`).join('')}</div>`;
+  } else if (task.type === 'simon') {
+    const phase = ui.simon?.phase || 'ready';
+    const given = ui.simon?.given || [];
+    body = `<div class="simon">${SIMON_COLOURS.map((c, i) => `<button class="pad ${ui.simon?.lit === i ? 'lit' : ''}" style="background:${c}" data-act="simonTap" data-arg='${arg(i)}' ${phase === 'input' ? '' : 'disabled'}></button>`).join('')}</div>
+      <p style="text-align:center">${phase === 'ready' ? `<button class="gold" data-act="simonPlay">▶ Watch the screen</button>` : phase === 'showing' ? '<span class="muted">Watch carefully…</span>' : `Now tap the ${task.seq.length} flashes in order: ${given.length} / ${task.seq.length}`}</p>`;
+  } else if (task.type === 'mow') {
+    const beds = new Set(task.beds), mown = new Set(task.mown);
+    let cells = '';
+    for (let y = 0; y < task.h; y++) for (let x = 0; x < task.w; x++) { const k = `${x},${y}`; const isPos = task.pos[0] === x && task.pos[1] === y; cells += `<div class="cell ${beds.has(k) ? 'bed' : mown.has(k) ? 'mown' : 'grass'}">${isPos ? '🚜' : beds.has(k) ? '🌷' : ''}</div>`; }
+    const left = task.grass.length - task.mown.length;
+    body = `<div class="lawnwrap"><div class="lawn" style="grid-template-columns:repeat(${task.w},1fr)">${cells}</div>
+      <div class="dpad"><button data-act="mow" data-arg='"up"'>▲</button><div><button data-act="mow" data-arg='"left"'>◀</button><button data-act="mow" data-arg='"right"'>▶</button></div><button data-act="mow" data-arg='"down"'>▼</button></div></div>
+      <p style="text-align:center">${left === 0 ? '🌟 All mown!' : `${left} patch${left === 1 ? '' : 'es'} of grass left · ${task.moves} moves`} <button class="small ${left === 0 ? 'gold' : 'alt'}" data-act="submitTask">${left === 0 ? 'Finish ✔' : 'Give up and finish'}</button></p>`;
+  }
+  return `<div class="screen lesson"><div class="panel">${head}${body}</div>${J.index === 0 && !ui.started ? '' : ''}</div>`;
+}
+function startSimonShow() {
+  const task = ui.job.tasks[ui.job.index];
+  ui.simon = { phase: 'showing', lit: -1, given: [] }; render();
+  task.seq.forEach((c, i) => {
+    setTimeout(() => { if (screen !== 'job' || !ui.simon) return; ui.simon.lit = c; render(); }, 600 + i * 800);
+    setTimeout(() => { if (screen !== 'job' || !ui.simon) return; ui.simon.lit = -1; render(); }, 600 + i * 800 + 500);
+  });
+  setTimeout(() => { if (screen !== 'job' || !ui.simon) return; ui.simon.phase = 'input'; render(); }, 600 + task.seq.length * 800 + 200);
+}
+function nextTask() { ui.answer = []; ui.seq = []; ui.simon = null; render(); }
 const OUTCOME_LABEL = { trapped: 'Caught in a trap', slipped: 'Slipped on a banana', caught: 'Caught by the alarm', scared: 'Scared off', robbed: 'Got away with loot', nothing: 'Found nothing' };
 function clipCard(c, list, i) {
   return `<div class="card clip"><div class="art">${A.burglarSvg(c.outcome)}</div><div class="nm">${OUTCOME_LABEL[c.outcome] || c.outcome}</div><div class="muted" style="font-size:13px">Day ${c.day} · ${esc(c.roomName)}<br>${esc(c.cam)}</div><div class="row" style="justify-content:center"><button class="small" data-act="watch" data-arg='${arg([list, i])}'>▶ Play</button>${list === 'footage' ? `<button class="small alt" data-act="saveClip" data-arg='${arg(i)}' ${c.saved ? 'disabled' : ''}>${c.saved ? '✔ Saved' : '💾 Save'}</button>` : `<button class="small alt" data-act="deleteClip" data-arg='${arg(i)}'>🗑</button>`}</div></div>`;
@@ -205,7 +270,7 @@ function itemCard(id, open) {
 function shopScreen(title, ico, cat, blurb) {
   const open = S.hour >= 8 && S.hour < E.HOURS.SHOPS_CLOSE;
   const items = E.ITEMS.filter(i => i.cat === cat);
-  return `<div class="screen"><div class="panel"><div class="row"><h2 style="margin:0">${ico} ${title}</h2><span style="flex:1"></span><button class="alt small" data-act="van">🚚 Van (${E.vanItems(S).reduce((a, v) => a + v.n, 0)})</button></div><p class="muted">${open ? blurb : '<b>Closed.</b> Open 8am – 6pm. You can still look.'}</p></div>
+  return `<div class="screen"><div class="panel"><div class="row"><h2 style="margin:0">${ico} ${title}</h2><span style="flex:1"></span>${workBtn(cat)}<button class="alt small" data-act="van">🚚 Van (${E.vanItems(S).reduce((a, v) => a + v.n, 0)})</button></div><p class="muted">${open ? blurb : '<b>Closed.</b> Open 8am – 6pm. You can still look.'}</p></div>
     <div class="grid">${items.map(i => itemCard(i.id, open)).join('')}</div>
     ${nav(navTown(), navHome())}</div>`;
 }
@@ -306,6 +371,7 @@ function cagedModal(i) {
 function helpModal() {
   openModal(`<h2>How to play</h2><ul class="help-list">
     <li><b>Earn coins at school.</b> Go to town → school, pick Maths, Words or The World and a level. Right answers pay coins; a perfect lesson pays a bonus. Three lessons a day (more when your children are old enough for school).</li>
+    <li><b>Work for wages.</b> Every shop, the hospital and the school have a 🧰 Work here button with two puzzle jobs each: re-cover cushions and mix paints at the furniture shop, count batteries and test screens at the gadget shop, feed the animals and put them to bed at the pet shop, mow lawns and plant flower rows at the garden centre, sort X-rays and take temperatures at the hospital, mark homework and tidy the library at the school. Three jobs a day, two hours each, up to 25 coins for a perfect one.</li>
     <li><b>Decorate.</b> Buy things in the shops. They go in your 🚚 van. At home, tap a dotted + to place them, tap a room name to change wallpaper and floor, and tap outside to paint the house and fill the garden.</li>
     <li><b>Pets</b> from the pet shop need feeding (buy pet food) and playing with. Happy pets do tricks and find coins. <b>Babies</b> come from the hospital once you own a cot; feed them and in a few days they grow up.</li>
     <li><b>Burglars</b> come every night, and posh houses attract two at once. Each one sneaks into one room. <b>Traps</b> from the gadget shop catch a burglar who enters that room: a Drop Cage falls from the ceiling, a Net Trap scoops them up, and a Banana Skin makes them slip and drop coins. In the morning tap the trapped burglar to call the police for a bigger reward. More traps in more rooms means more burglars caught.</li>
@@ -378,6 +444,18 @@ const ACT = {
   watch([list, i]) { footageModal(list, i); },
   saveClip(i) { const r = E.saveClip(S, i); toast(r.msg || 'Saved!'); render(); if (!modal.hidden) footageModal('footage', i); },
   deleteClip(i) { E.deleteClip(S, i); render(); },
+  jobs(employer) { jobsModal(employer); },
+  startJob(id) { const r = E.startJob(S, id, E.makeRng(Date.now() % 1e9)); if (!r.ok) { toast(r.msg); return; } const back = screen; ui = { job: r.job, answer: [], seq: [], simon: null, employerBack: back }; closeModal(); screen = 'job'; render(); window.scrollTo(0, 0); },
+  pickOpt([i, id]) { ui.answer[i] = id; render(); },
+  countAdj([i, d]) { ui.answer[i] = Math.max(0, Math.min(ui.job.tasks[ui.job.index].max || 99, (ui.answer[i] || 0) + d)); render(); },
+  togglePick(i) { const a = ui.answer; const k = a.indexOf(i); if (k >= 0) a.splice(k, 1); else a.push(i); render(); },
+  jobTile(i) { ui.seq = ui.seq || []; if (ui.seq.includes(i)) return; ui.seq.push(i); const task = ui.job.tasks[ui.job.index]; if (ui.seq.length === task.tiles.length) { E.submitTask(ui.job, ui.seq.map(k => task.tiles[k])); nextTask(); } else render(); },
+  jobChoice(i) { E.submitTask(ui.job, i); nextTask(); },
+  simonPlay() { startSimonShow(); },
+  simonTap(i) { if (!ui.simon || ui.simon.phase !== 'input') return; ui.simon.given.push(i); ui.simon.lit = i; render(); setTimeout(() => { if (ui.simon) { ui.simon.lit = -1; render(); } }, 200); const task = ui.job.tasks[ui.job.index]; if (ui.simon.given.length === task.seq.length) { const given = ui.simon.given.slice(); setTimeout(() => { E.submitTask(ui.job, given); nextTask(); }, 350); } },
+  mow(dir) { const task = ui.job.tasks[ui.job.index]; E.mowStep(task, dir); render(); },
+  submitTask() { const task = ui.job.tasks[ui.job.index]; const given = task.type === 'match' || task.type === 'count' ? ui.answer.slice() : task.type === 'pick' ? ui.answer.slice() : null; E.submitTask(ui.job, given); nextTask(); },
+  collectWages() { const r = E.finishJob(S, ui.job); const back = ui.employerBack || 'town'; toast(r.msg, 4000); screen = back; ui = {}; render(); window.scrollTo(0, 0); },
   deposit(a) { const r = E.deposit(S, a); toast(r.msg); render(); },
   withdraw(a) { const r = E.withdraw(S, a); toast(r.msg); render(); },
   callPolice(i) { const r = E.callPolice(S, i); if (r.ok) toast(r.msg, 4000); closeModal(); render(); },

@@ -166,7 +166,7 @@ export function houseWidth(h) { return Math.max(...houseType(h).floors.map(f => 
 export function newGame(name, rng = makeRng(7)) {
   const s = {
     name: String(name || 'Player').trim().slice(0, 16) || 'Player', coins: START_COINS, day: 1, hour: HOURS.START,
-    house: null, bank: 0, van: {}, pets: [], family: [], caged: [], footage: [], gallery: [], lessonsToday: 0, lessonsYesterday: 1, extraLessonsToday: 0,
+    house: null, bank: 0, van: {}, pets: [], family: [], caged: [], footage: [], gallery: [], lessonsToday: 0, lessonsYesterday: 1, jobsToday: 0, extraLessonsToday: 0,
     visitedToday: [], log: [], stats: { lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0, interest: 0, stolen: 0, bills: 0, fares: 0 },
     seed: rng.int(1, 1e9),
   };
@@ -753,7 +753,7 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
     if (p.stage === 'baby' && p.age >= BABY_GROWS_AT) { p.stage = 'child'; report.grown.push(p.name); say(s, `${p.name} is not a baby any more — they are a child now! In a few days they can go to school.`); }
     if (p.hunger >= 2) report.cries.push(p.name);
   }
-  s.day++; s.hour = HOURS.START; s.lessonsYesterday = s.lessonsToday; s.lessonsToday = 0; s.visitedToday = [];
+  s.day++; s.hour = HOURS.START; s.lessonsYesterday = s.lessonsToday; s.lessonsToday = 0; s.jobsToday = 0; s.visitedToday = [];
   return { ok: true, report };
 }
 
@@ -765,4 +765,200 @@ export function deserialize(json) {
   s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.bank = s.bank || 0; if (s.lessonsYesterday === undefined) s.lessonsYesterday = 1; delete s.policeBudget; s.caged = s.caged || []; s.footage = s.footage || []; s.gallery = s.gallery || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
   s.stats = Object.assign({ lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0, interest: 0, stolen: 0, bills: 0, fares: 0 }, s.stats || {});
   return s;
+}
+
+// ───────────────────────── jobs ─────────────────────────
+// Each employer offers two puzzle jobs. A job is a list of tasks; every task type has a scorer below.
+export const JOBS_PER_DAY = 3;
+export const JOB_HOURS = 2;
+export const JOB_PAY = 20;        // for a perfect job, plus the bonus
+export const JOB_BONUS = 5;
+export const JOB_MIN_PAY = 2;     // for turning up
+export const JOBS = [
+  { id: 'cushions', employer: 'furniture', name: 'Re-cover the cushions', blurb: 'Customers have ordered new fabric for their chairs. Match each order.', type: 'match' },
+  { id: 'repaint', employer: 'furniture', name: 'Repaint furniture', blurb: 'Mix two paints to make the colour each customer asked for.', type: 'match' },
+  { id: 'batteries', employer: 'gadget', name: 'Fresh batteries', blurb: 'Work out how many batteries each shelf of gadgets needs.', type: 'count' },
+  { id: 'screens', employer: 'gadget', name: 'Test the screens', blurb: 'Each screen flashes a pattern. Repeat it back to prove it works.', type: 'simon' },
+  { id: 'feed', employer: 'pets', name: 'Feed the animals', blurb: 'Every animal gets the right food.', type: 'match' },
+  { id: 'bedtime', employer: 'pets', name: 'Put the pets to bed', blurb: 'Every animal goes back to the right home for the night.', type: 'match' },
+  { id: 'mow', employer: 'garden', name: 'Mow the lawn', blurb: 'Drive the mower over every patch of grass. It only stops when it hits something!', type: 'mow' },
+  { id: 'flowers', employer: 'garden', name: 'Plant the flower rows', blurb: 'Each row follows a pattern. Which flower comes next?', type: 'choice' },
+  { id: 'water', employer: 'garden', name: 'Water the plants', blurb: 'Read the sign and give each pot exactly the right number of drops.', type: 'count' },
+  { id: 'xray', employer: 'hospital', name: 'Sort the X-rays', blurb: 'The doctor needs each X-ray labelled with the right part of the body.', type: 'match' },
+  { id: 'fever', employer: 'hospital', name: 'Take temperatures', blurb: 'Read every thermometer and find the patients with a fever (38°C or more).', type: 'pick' },
+  { id: 'marking', employer: 'school', name: 'Mark the homework', blurb: 'Tick the sums that are right and find the ones that are wrong.', type: 'pick' },
+  { id: 'library', employer: 'school', name: 'Tidy the library', blurb: 'Put the books back on the shelf in alphabetical order.', type: 'order' },
+];
+export const EMPLOYERS = { furniture: 'Furniture Shop', gadget: 'Gadget Shop', pets: 'Pet Shop', garden: 'Garden Centre', hospital: 'Hospital', school: 'School' };
+export const JOB = Object.fromEntries(JOBS.map(j => [j.id, j]));
+export function jobsFor(employer) { return JOBS.filter(j => j.employer === employer); }
+export function jobsLeft(s) { return JOBS_PER_DAY - (s.jobsToday || 0); }
+export function employerOpen(s, employer) { return employer === 'hospital' ? !tooLate(s) : employer === 'school' ? schoolOpen(s) : s.hour >= HOURS.SCHOOL_OPEN && s.hour < HOURS.SHOPS_CLOSE; }
+export function canStartJob(s, employer) {
+  if (!employerOpen(s, employer)) return { ok: false, msg: `${EMPLOYERS[employer]} is closed for work right now.` };
+  if (jobsLeft(s) <= 0) return { ok: false, msg: `You have done ${JOBS_PER_DAY} jobs today — that is enough work for one day!` };
+  return { ok: true };
+}
+
+const FABRICS = [{ id: 'red', label: 'Red velvet', color: '#b03030' }, { id: 'blue', label: 'Blue stripes', color: '#3b5a8a' }, { id: 'green', label: 'Green linen', color: '#4f7a3b' }, { id: 'yellow', label: 'Yellow check', color: '#d9b24a' }, { id: 'orange', label: 'Orange wool', color: '#c75b2a' }, { id: 'purple', label: 'Purple silk', color: '#6a3d9a' }];
+const COLOUR_CLUES = { red: ['red', 'the colour of a strawberry', 'the colour of a fire engine'], blue: ['blue', 'the colour of the sky', 'the colour of the sea'], green: ['green', 'the colour of grass', 'the colour of a frog'], yellow: ['yellow', 'the colour of a banana', 'the colour of the sun'], orange: ['orange', 'the colour of a carrot', 'the colour of a pumpkin'], purple: ['purple', 'the colour of a plum', 'the colour of a grape'] };
+const CUSTOMERS = ['Mrs Patel', 'Mr Lee', 'Grandma Rose', 'Dr Okafor', 'Captain Flint', 'Miss Honey', 'Farmer Giles', 'Mr Bumble'];
+const MIXES = [{ id: 'orange', label: 'Red + Yellow', makes: 'Orange', color: '#e07a2a' }, { id: 'green', label: 'Blue + Yellow', makes: 'Green', color: '#4f9a3b' }, { id: 'purple', label: 'Red + Blue', makes: 'Purple', color: '#6a3d9a' }, { id: 'pink', label: 'Red + White', makes: 'Pink', color: '#e88ab0' }, { id: 'lightblue', label: 'Blue + White', makes: 'Light blue', color: '#8fc3e8' }, { id: 'grey', label: 'Black + White', makes: 'Grey', color: '#8a8a8a' }];
+const PAINTABLE = ['table', 'chair', 'wardrobe', 'bookcase', 'bed', 'toy box'];
+const FOODS = { dog: 'bone', cat: 'fish', rabbit: 'carrot', hamster: 'nuts', fish: 'flakes', parrot: 'seeds', dragon: 'marshmallows' };
+const FOOD_LABEL = { bone: '🦴 Bone', fish: '🐟 Fish', carrot: '🥕 Carrot', nuts: '🌰 Nuts', flakes: '🫧 Fish flakes', seeds: '🌻 Seeds', marshmallows: '🍡 Marshmallows' };
+const HOMES = { dog: 'kennel', cat: 'basket', rabbit: 'hutch', hamster: 'cage', fish: 'tank', parrot: 'perch', dragon: 'cave' };
+const HOME_LABEL = { kennel: '🏠 Kennel', basket: '🧺 Basket', hutch: '🪵 Hutch', cage: '🔲 Cage', tank: '🐠 Tank', perch: '🪵 Perch', cave: '🌋 Cave' };
+const GADGETS = [['torch', 'AA'], ['remote control', 'AAA'], ['wall clock', 'AA'], ['toy robot', 'AAA'], ['smoke alarm', '9V'], ['game controller', 'AA'], ['fairy lights', 'AAA'], ['radio', 'C']];
+const XRAYS = ['skull', 'hand', 'foot', 'ribs', 'spine', 'leg'];
+const XRAY_LABEL = { skull: 'Skull (head)', hand: 'Hand', foot: 'Foot', ribs: 'Ribs (chest)', spine: 'Spine (back)', leg: 'Leg bone' };
+const FLOWERS = ['🌷', '🌻', '🌹', '🌼', '🪻'];
+const BOOKS = ['Alice in Wonderland', 'Black Beauty', 'Charlotte\'s Web', 'Danny the Champion', 'Esio Trot', 'Fantastic Mr Fox', 'Gangsta Granny', 'Heidi', 'Iron Man', 'James and the Giant Peach', 'Kensuke\'s Kingdom', 'Little Women', 'Matilda', 'Northern Lights', 'Oliver Twist', 'Peter Pan', 'Rapunzel', 'Stig of the Dump', 'Treasure Island', 'Wind in the Willows'];
+
+function matchTask(prompt, rows, options, extra = {}) { return { type: 'match', prompt, rows, options, ...extra }; }
+export function makeJob(id, rng) {
+  const j = JOB[id]; if (!j) throw new Error('unknown job ' + id);
+  const tasks = [];
+  if (id === 'cushions') {
+    const names = rng.shuffle(CUSTOMERS).slice(0, 4);
+    const rows = names.map(n => { const f = rng.pick(FABRICS); return { label: `${n}'s chair`, clue: `${n} wants ${rng.pick(COLOUR_CLUES[f.id])}`, answer: f.id }; });
+    tasks.push(matchTask('Read the order book, then pick the right fabric for every chair.', rows, FABRICS.map(f => ({ id: f.id, label: f.label, color: f.color })), { note: rows.map(r => r.clue).join(' · ') }));
+  } else if (id === 'repaint') {
+    const picks = rng.shuffle(MIXES).slice(0, 4);
+    const rows = picks.map(m => ({ label: `${rng.pick(CUSTOMERS)} wants the ${rng.pick(PAINTABLE)} painted`, want: m.makes, color: m.color, answer: m.id }));
+    tasks.push(matchTask('Which two paints make the colour each customer wants?', rows, rng.shuffle(MIXES).map(m => ({ id: m.id, label: m.label }))));
+  } else if (id === 'batteries') {
+    const picks = rng.shuffle(GADGETS).slice(0, 4);
+    const rows = picks.map(([g, size]) => { const each = rng.int(1, 4), n = rng.int(2, 5); return { label: `${n} ${g}s`, prompt: `Each ${g} takes ${each} ${size} batter${each === 1 ? 'y' : 'ies'}. There are ${n} of them on the shelf.`, unit: size, answer: each * n }; });
+    tasks.push({ type: 'count', prompt: 'How many batteries does each shelf need?', rows, max: 20 });
+  } else if (id === 'screens') {
+    for (const len of [3, 4, 5]) tasks.push({ type: 'simon', prompt: `Screen ${tasks.length + 1}: watch the pattern, then tap it back.`, seq: Array.from({ length: len }, () => rng.int(0, 3)) });
+  } else if (id === 'feed') {
+    const pets = rng.shuffle(PETS.map(p => p.id)).slice(0, 5);
+    tasks.push(matchTask('Give every animal its favourite food.', pets.map(p => ({ label: PET[p].name, pet: p, answer: FOODS[p] })), rng.shuffle(Object.keys(FOOD_LABEL)).map(f => ({ id: f, label: FOOD_LABEL[f] }))));
+  } else if (id === 'bedtime') {
+    const pets = rng.shuffle(PETS.map(p => p.id)).slice(0, 5);
+    tasks.push(matchTask('Where does each animal sleep?', pets.map(p => ({ label: PET[p].name, pet: p, answer: HOMES[p] })), rng.shuffle(Object.keys(HOME_LABEL)).map(h => ({ id: h, label: HOME_LABEL[h] }))));
+  } else if (id === 'mow') {
+    tasks.push(makeLawn(rng));
+  } else if (id === 'flowers') {
+    for (let r = 0; r < 4; r++) {
+      const kind = rng.pick(['AB', 'ABC', 'AABB', 'ABB']);
+      const f = rng.shuffle(FLOWERS).slice(0, 3);
+      const unit = kind === 'AB' ? [f[0], f[1]] : kind === 'ABC' ? [f[0], f[1], f[2]] : kind === 'AABB' ? [f[0], f[0], f[1], f[1]] : [f[0], f[1], f[1]];
+      const shown = Array.from({ length: 6 }, (_, i) => unit[i % unit.length]);
+      const answer = unit[6 % unit.length];
+      const options = rng.shuffle([...new Set([answer, ...f, ...FLOWERS])]).slice(0, 4);
+      if (!options.includes(answer)) options[0] = answer;
+      tasks.push({ type: 'choice', prompt: `Row ${r + 1}: ${shown.join(' ')} … which flower comes next?`, options: rng.shuffle(options), answer: null, answerValue: answer });
+      tasks[tasks.length - 1].answer = tasks[tasks.length - 1].options.indexOf(answer);
+    }
+  } else if (id === 'water') {
+    const per = rng.int(2, 4);
+    const rows = Array.from({ length: 4 }, (_, i) => { const n = rng.int(1, 5); return { label: `Pot ${i + 1}: ${n} plant${n === 1 ? '' : 's'}`, prompt: `${n} plant${n === 1 ? '' : 's'} in this pot`, unit: 'drops', plants: n, answer: n * per }; });
+    tasks.push({ type: 'count', prompt: `The sign says: give every plant ${per} drops of water. How many drops for each pot?`, rows, max: 20 });
+  } else if (id === 'xray') {
+    const picks = rng.shuffle(XRAYS).slice(0, 4);
+    tasks.push(matchTask('Label each X-ray with the part of the body it shows.', picks.map(x => ({ label: 'X-ray', xray: x, answer: x })), rng.shuffle(XRAYS).map(x => ({ id: x, label: XRAY_LABEL[x] }))));
+  } else if (id === 'fever') {
+    const names = rng.shuffle(CUSTOMERS).slice(0, 6);
+    const items = names.map(n => { const temp = (rng.int(355, 402) / 10); return { label: n, temp, detail: `${temp.toFixed(1)}°C`, pick: temp >= 38 }; });
+    if (!items.some(i => i.pick)) { items[0].temp = 38.6; items[0].detail = '38.6°C'; items[0].pick = true; }
+    tasks.push({ type: 'pick', prompt: 'Tap every patient who has a fever (38°C or more).', items });
+  } else if (id === 'marking') {
+    const items = Array.from({ length: 6 }, () => {
+      const a = rng.int(2, 12), b = rng.int(2, 12), op = rng.pick(['+', '−', '×']);
+      const right = op === '+' ? a + b : op === '−' ? Math.max(a, b) - Math.min(a, b) : a * b;
+      const wrong = rng() < 0.45; const shown = wrong ? right + rng.pick([-10, -2, -1, 1, 2, 10]) : right;
+      return { label: `${op === '−' ? Math.max(a, b) : a} ${op} ${op === '−' ? Math.min(a, b) : b} = ${shown}`, pick: wrong };
+    });
+    const fix = (i, wrong) => { const a = rng.int(2, 12), b = rng.int(2, 12); items[i] = { label: `${a} + ${b} = ${a + b + (wrong ? 1 : 0)}`, pick: wrong }; };
+    if (!items.some(i => i.pick)) fix(0, true);
+    if (!items.some(i => !i.pick)) fix(1, false);
+    tasks.push({ type: 'pick', prompt: 'Tap the sums that are WRONG. Leave the right ones alone.', items });
+  } else if (id === 'library') {
+    const books = rng.shuffle(BOOKS).slice(0, 5).sort();
+    tasks.push({ type: 'order', prompt: 'Tap the books in alphabetical order (A first) to put them back on the shelf.', tiles: rng.shuffle(books), answer: books });
+  }
+  return { id, name: j.name, employer: j.employer, tasks, index: 0, scores: [], done: false };
+}
+
+// Lawn: the mower slides until it hits a flower bed or the edge. Level is built from a random walk so it is always solvable.
+export function makeLawn(rng) {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const w = rng.int(5, 6), h = rng.int(5, 6);
+    const visited = new Set(), beds = new Set();
+    let x = rng.int(0, w - 1), y = rng.int(0, h - 1);
+    const start = [x, y];
+    visited.add(`${x},${y}`);
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    const free = (tx, ty) => tx >= 0 && ty >= 0 && tx < w && ty < h && !beds.has(`${tx},${ty}`);
+    for (let step = 0; step < 16; step++) {
+      const [dx, dy] = rng.pick(dirs);
+      const len = rng.int(1, Math.max(w, h) - 1);
+      let nx = x, ny = y;
+      for (let k = 0; k < len && free(nx + dx, ny + dy); k++) { nx += dx; ny += dy; }
+      // plant a flower bed where we want the mower to stop; if we cannot, keep sliding like the real mower would
+      if (free(nx + dx, ny + dy)) {
+        if (!visited.has(`${nx + dx},${ny + dy}`)) beds.add(`${nx + dx},${ny + dy}`);
+        else while (free(nx + dx, ny + dy)) { nx += dx; ny += dy; }
+      }
+      if (nx === x && ny === y) continue;
+      let cx = x, cy = y; while (cx !== nx || cy !== ny) { cx += dx; cy += dy; visited.add(`${cx},${cy}`); }
+      x = nx; y = ny;
+    }
+    const grass = [];
+    for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) { const k = `${xx},${yy}`; if (!visited.has(k)) beds.add(k); else grass.push(k); }
+    if (grass.length < 8) continue;
+    return { type: 'mow', prompt: 'Tap an arrow to drive the mower. It keeps going until it hits a flower bed or the fence. Mow every patch of grass!', w, h, beds: [...beds], grass, start, pos: start.slice(), mown: [start.join(',')], moves: 0 };
+  }
+  // fallback: an open 5×5 lawn with one bed, always solvable
+  return { type: 'mow', prompt: 'Mow every patch of grass!', w: 5, h: 5, beds: ['2,2'], grass: Array.from({ length: 25 }, (_, i) => `${i % 5},${Math.floor(i / 5)}`).filter(k => k !== '2,2'), start: [0, 0], pos: [0, 0], mown: ['0,0'], moves: 0 };
+}
+export function mowStep(task, dir) {
+  const [dx, dy] = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir] || [0, 0];
+  let [x, y] = task.pos; let moved = false;
+  const beds = new Set(task.beds), mown = new Set(task.mown);
+  while (true) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= task.w || ny >= task.h || beds.has(`${nx},${ny}`)) break; x = nx; y = ny; mown.add(`${x},${y}`); moved = true; }
+  if (moved) { task.pos = [x, y]; task.mown = [...mown]; task.moves++; }
+  return { moved, complete: task.mown.length >= task.grass.length };
+}
+
+export function scoreTask(task, given) {
+  if (task.type === 'match') { const total = task.rows.length; const correct = task.rows.filter((r, i) => given && given[i] === r.answer).length; return { correct, total }; }
+  if (task.type === 'count') { const total = task.rows.length; const correct = task.rows.filter((r, i) => given && Number(given[i]) === r.answer).length; return { correct, total }; }
+  if (task.type === 'pick') { const total = task.items.length; const sel = new Set(given || []); const correct = task.items.filter((it, i) => sel.has(i) === it.pick).length; return { correct, total }; }
+  if (task.type === 'order') { const total = task.answer.length; const correct = task.answer.filter((a, i) => given && given[i] === a).length; return { correct, total }; }
+  if (task.type === 'choice') return { correct: given === task.answer ? 1 : 0, total: 1 };
+  if (task.type === 'simon') return { correct: Array.isArray(given) && given.length === task.seq.length && given.every((g, i) => g === task.seq[i]) ? 1 : 0, total: 1 };
+  if (task.type === 'mow') return { correct: task.mown.length, total: task.grass.length };
+  return { correct: 0, total: 1 };
+}
+export function startJob(s, id, rng = makeRng(s.seed + s.day * 97 + (s.jobsToday || 0) * 11)) {
+  const j = JOB[id]; if (!j) return { ok: false, msg: 'No such job.' };
+  const c = canStartJob(s, j.employer); if (!c.ok) return c;
+  return { ok: true, job: makeJob(id, rng) };
+}
+export function submitTask(job, given) {
+  if (job.done) return { ok: false };
+  const task = job.tasks[job.index];
+  const sc = scoreTask(task, given);
+  job.scores.push(sc);
+  job.index++;
+  if (job.index >= job.tasks.length) job.done = true;
+  return { ok: true, ...sc, done: job.done };
+}
+export function jobPay(job) {
+  const correct = job.scores.reduce((a, s) => a + s.correct, 0), total = job.scores.reduce((a, s) => a + s.total, 0);
+  const perfect = total > 0 && correct === total;
+  return { correct, total, perfect, coins: Math.max(JOB_MIN_PAY, Math.round(JOB_PAY * (total ? correct / total : 0))) + (perfect ? JOB_BONUS : 0) };
+}
+export function finishJob(s, job) {
+  if (!job.done || job.paid) return { ok: false };
+  job.paid = true;
+  const pay = jobPay(job);
+  s.coins += pay.coins; s.jobsToday = (s.jobsToday || 0) + 1;
+  s.stats.jobs = (s.stats.jobs || 0) + 1; s.stats.wages = (s.stats.wages || 0) + pay.coins; s.stats.coinsEarned += pay.coins;
+  advanceTime(s, JOB_HOURS);
+  return { ok: true, ...pay, msg: say(s, `${job.name} at the ${EMPLOYERS[job.employer]}: ${pay.correct}/${pay.total} right, paid ${pay.coins} coins${pay.perfect ? ' (perfect bonus!)' : ''}.`) };
 }
