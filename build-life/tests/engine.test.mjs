@@ -3,7 +3,7 @@ import {
   HOUSES, ITEMS, ITEM, PETS, PET, WALLPAPERS, FLOORS, PAINTS, NEIGHBOURS, SUBJECTS, LEVELS, HOURS, START_COINS, LESSONS_PER_DAY, QUESTIONS_PER_LESSON, PERFECT_BONUS, BABY_GROWS_AT, CHILD_SCHOOL_AGE, BURGLAR_GRACE_DAYS,
   makeRng, newGame, buildHouse, houseWidth, moveHouse, houseSalePrice, buyItem, sellFromVan, vanItems, vanCount, placeItem, removeItem, placedList, setWallpaper, setFlooring, setPaint,
   securityScore, buyPet, feedPet, playWithPet, mealsLeft, canHaveBaby, newBaby, feedPerson, lessonsLeft, canStartLesson, makeQuestion, startLesson, checkAnswer, answerQuestion, finishLesson,
-  neighbourHouse, visitNeighbour, trapInRoom, trapCount, callPolice, TRAP_REWARD, cameraFor, saveClip, deleteClip, GALLERY_MAX, bankOpen, nightlyInterest, deposit, withdraw, BANK_MAX_INTEREST, POCKET_THEFT, travel, nightlyBill, policePays, BUS_FARE, BILL_GADGET, BILL_MOUTH, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
+  neighbourHouse, visitNeighbour, trapInRoom, trapCount, callPolice, TRAP_REWARD, cameraFor, saveClip, deleteClip, GALLERY_MAX, bankOpen, nightlyInterest, deposit, withdraw, BANK_MAX_INTEREST, POCKET_THEFT, travel, nightlyBill, payReward, policeWeek, nextBudgetDay, POLICE_BUDGET, BUS_FARE, BILL_GADGET, BILL_MOUTH, sleep, canSleep, advanceTime, clockText, isNight, serialize, deserialize, bedCount, cotCount,
 } from '../engine.js';
 
 let fails = 0;
@@ -298,25 +298,26 @@ console.log('— bank —');
   ok(w.bank === hit.c.bank && typeof w.stats.stolen === 'number', 'bank balance survives a save');
 }
 
-console.log('— no school, no reward · bills · bus fares —');
+console.log('— police budget · bills · bus fares —');
 {
   const t = newGame('V'); moveHouse(t, 'flat'); t.coins = 1000; t.day = BURGLAR_GRACE_DAYS;
   buyItem(t, 'camera'); buyItem(t, 'alarm'); placeItem(t, 0, 'wall', 0, 'camera'); placeItem(t, 0, 'wall', 1, 'alarm');
   buyItem(t, 'cagetrap'); placeItem(t, 1, 'wall', 0, 'cagetrap'); buyPet(t, 'cat', 'Tom');
-  ok(!policePays(t) && (t.lessonsToday = 1, policePays(t)), 'the police pay only after at least one lesson today'); t.lessonsToday = 0;
+  ok(t.policeBudget === POLICE_BUDGET && policeWeek(1) === 1 && policeWeek(7) === 1 && policeWeek(8) === 2 && nextBudgetDay({ day: 3 }) === 8, `the police start each week with ${POLICE_BUDGET} coins`);
   ok(nightlyBill(t) === 3 * BILL_GADGET + 1 * BILL_MOUTH, `the nightly bill is ${BILL_GADGET} per gadget and ${BILL_MOUTH} per mouth`);
   let caught = null;
   for (let sd = 1; sd < 100 && !caught; sd++) { const c = JSON.parse(serialize(t)); const rep = sleep(c, makeRng(sd)).report; const b = rep.burglars.find(b => b.outcome === 'caught'); if (b) caught = { c, b, rep }; }
-  ok(caught && caught.b.reward === 0 && /skipped school/.test(caught.b.msg) && !caught.rep.policePaid, 'a burglar caught on a no-school night earns no reward');
+  ok(caught && caught.b.reward === 20 + securityScore(t) * 2 && caught.c.policeBudget === POLICE_BUDGET - caught.rep.burglars.reduce((a, b) => a + (b.reward || 0), 0), 'a camera catch is paid in full from the weekly pot, without any school');
   ok(caught && caught.rep.bill === nightlyBill(t) && !caught.rep.powerOff && caught.c.stats.bills === nightlyBill(t), 'the bill came out of the pocket');
-  const u = JSON.parse(serialize(t)); u.lessonsToday = 1; let paid = null;
-  for (let sd = 1; sd < 100 && !paid; sd++) { const d = JSON.parse(serialize(u)); const rep = sleep(d, makeRng(sd)).report; const b = rep.burglars.find(b => b.outcome === 'caught'); if (b) paid = { d, b }; }
-  ok(paid && paid.b.reward === 20 + securityScore(t) * 2, 'the same catch after a school day pays the full reward');
-  const v = JSON.parse(serialize(t)); v.caged = [{ room: 1, trap: 'cage' }]; const coinsV = v.coins;
+  const v = JSON.parse(serialize(t)); v.caged = [{ room: 1, trap: 'cage' }]; v.policeBudget = 15; const coinsV = v.coins;
   let r = callPolice(v, 0);
-  ok(r.ok && r.reward === 0 && v.coins === coinsV && v.caged.length === 0 && v.stats.burglarsCaught === 1, 'calling the police on a no-school day takes the burglar away but pays nothing');
-  v.caged = [{ room: 1, trap: 'cage' }]; v.lessonsToday = 2; r = callPolice(v, 0);
-  ok(r.reward === TRAP_REWARD && v.coins === coinsV + TRAP_REWARD, 'after school the trap reward is paid');
+  ok(r.ok && r.reward === 15 && v.coins === coinsV + 15 && v.policeBudget === 0 && /could only pay 15/.test(r.msg), 'when the pot is nearly empty the police pay what is left');
+  v.caged = [{ room: 1, trap: 'cage' }]; r = callPolice(v, 0);
+  ok(r.reward === 0 && v.coins === coinsV + 15 && v.caged.length === 0 && /run out/.test(r.msg), 'with the pot empty the burglar is still taken away but nothing is paid');
+  v.day = 7; v.hour = 20; const rep0 = sleep(v, makeRng(2)).report;
+  ok(v.day === 8 && v.policeBudget === POLICE_BUDGET && rep0.newBudget, 'the pot refills on day 8');
+  const paid = payReward(v, 500);
+  ok(paid === POLICE_BUDGET && v.policeBudget === 0, 'a reward can never exceed what is in the pot');
   const w = JSON.parse(serialize(t)); w.coins = 2; w.bank = 100; const bill = nightlyBill(w);
   let rep = sleep(w, makeRng(7)).report;
   ok(rep.bill === bill && rep.billFromBank === bill - 2 - rep.happyBonus && !rep.powerOff, 'a bill the pocket cannot cover is paid from the bank');

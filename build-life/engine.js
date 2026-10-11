@@ -17,6 +17,7 @@ export const BILL_MOUTH = 3;          // nightly food per pet or family member
 export const TRAVEL = { furniture: 1, gadget: 1, garden: 1, pets: 1, hospital: 1, estate: 1, bank: 1, neighbours: 0.5, school: 0 };
 export const GALLERY_MAX = 40;        // clips the criminal gallery can hold
 export const TRAP_REWARD = 40;       // police reward for a burglar caught in a trap
+export const POLICE_BUDGET = 100;     // reward money the police can pay out per week
 export const SECOND_BURGLAR_CHANCE = { flat: 0.15, terrace: 0.3, detached: 0.5, castle: 0.7 }; // posh houses attract more
 
 // ───────────────────────── houses ─────────────────────────
@@ -166,7 +167,7 @@ export function houseWidth(h) { return Math.max(...houseType(h).floors.map(f => 
 export function newGame(name, rng = makeRng(7)) {
   const s = {
     name: String(name || 'Player').trim().slice(0, 16) || 'Player', coins: START_COINS, day: 1, hour: HOURS.START,
-    house: null, bank: 0, van: {}, pets: [], family: [], caged: [], footage: [], gallery: [], lessonsToday: 0, lessonsYesterday: 1, extraLessonsToday: 0,
+    house: null, bank: 0, policeBudget: POLICE_BUDGET, van: {}, pets: [], family: [], caged: [], footage: [], gallery: [], lessonsToday: 0, lessonsYesterday: 1, extraLessonsToday: 0,
     visitedToday: [], log: [], stats: { lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0, interest: 0, stolen: 0, bills: 0, fares: 0 },
     seed: rng.int(1, 1e9),
   };
@@ -299,9 +300,20 @@ export function travel(s, dest) {
 }
 export function gadgetCount(house) { return countPlaced(house, i => i.cat === 'gadget'); }
 export function nightlyBill(s) { return (s.house ? gadgetCount(s.house) * BILL_GADGET : 0) + (s.pets.length + s.family.length) * BILL_MOUTH; }
-export function policePays(s) { return s.lessonsToday >= 1; }
 export function schoolBusFree(s) { return s.lessonsYesterday >= 1; }
-export const NO_SCHOOL_MSG = 'The police do not pay rewards to children who skipped school today.';
+export function policeWeek(day) { return Math.ceil(day / 7); }
+export function nextBudgetDay(s) { return policeWeek(s.day) * 7 + 1; }
+// The police pay rewards from a weekly pot. Returns what they could actually pay.
+export function payReward(s, amount) {
+  const paid = Math.max(0, Math.min(amount, s.policeBudget));
+  s.policeBudget -= paid; s.coins += paid;
+  return paid;
+}
+export function rewardNote(s, asked, paid) {
+  if (paid >= asked) return `paid you a ${paid} coin reward`;
+  if (paid > 0) return `could only pay ${paid} of the ${asked} coin reward — their weekly reward money has run out until day ${nextBudgetDay(s)}`;
+  return `paid nothing — their weekly reward money has run out until day ${nextBudgetDay(s)}`;
+}
 
 // ───────────────────────── bank ─────────────────────────
 export function bankOpen(s) { return s.hour >= HOURS.SCHOOL_OPEN && s.hour < HOURS.SHOPS_CLOSE; }
@@ -356,9 +368,8 @@ export function callPolice(s, idx) {
   const c = s.caged[idx]; if (!c) return { ok: false };
   s.caged.splice(idx, 1);
   s.stats.burglarsCaught++;
-  const pays = policePays(s);
-  if (pays) s.coins += TRAP_REWARD;
-  return { ok: true, reward: pays ? TRAP_REWARD : 0, msg: say(s, pays ? `The police took the burglar away from the ${s.house.rooms[c.room].name} and paid you a ${TRAP_REWARD} coin reward.` : `The police took the burglar away from the ${s.house.rooms[c.room].name} — but no reward. ${NO_SCHOOL_MSG}`) };
+  const paid = payReward(s, TRAP_REWARD);
+  return { ok: true, reward: paid, msg: say(s, `The police took the burglar away from the ${s.house.rooms[c.room].name} and ${rewardNote(s, TRAP_REWARD, paid)}.`) };
 }
 
 // ───────────────────────── pets ─────────────────────────
@@ -702,7 +713,7 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
   }
   const powerOff = report.powerOff;
   // burglars left in traps overnight are collected by the police
-  report.collected = 0; report.collectedReward = 0; report.policePaid = policePays(s);
+  report.collected = 0; report.collectedReward = 0;
   while (s.caged.length) { const r = callPolice(s, 0); report.collected++; report.collectedReward += r.reward; }
   // burglars
   report.burglars = [];
@@ -720,7 +731,7 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
     let b;
     if (trap === 'cage' || trap === 'net') { s.caged.push({ room: roomIdx, trap }); b = { outcome: 'trapped', trap, room: roomIdx, msg: say(s, `${who} crept into the ${roomName} and ${trap === 'cage' ? 'CLANG! the cage dropped from the ceiling' : 'WHOOSH! the net scooped them up'}. They are still in there — tap them to call the police!`) }; }
     else if (trap === 'banana') { const dropped = rng.int(5, 12); s.coins += dropped; s.stats.coinsEarned += dropped; b = { outcome: 'slipped', coins: dropped, room: roomIdx, msg: say(s, `${who} crept into the ${roomName}, slipped on the banana skin and ran off, dropping ${dropped} coins.`) }; }
-    else if (sec >= 3) { const pays = policePays(s); const reward = pays ? 20 + sec * 2 : 0; s.coins += reward; s.stats.burglarsCaught++; b = { outcome: 'caught', room: roomIdx, reward, msg: say(s, pays ? `${who} tried to sneak in! Your security caught them red-handed and the police gave you a ${reward} coin reward.` : `${who} tried to sneak in! Your security caught them red-handed — but no reward. ${NO_SCHOOL_MSG}`) }; }
+    else if (sec >= 3) { const asked = 20 + sec * 2; const reward = payReward(s, asked); s.stats.burglarsCaught++; b = { outcome: 'caught', room: roomIdx, reward, msg: say(s, `${who} tried to sneak in! Your security caught them red-handed and the police ${rewardNote(s, asked, reward)}.`) }; }
     else if (sec >= 1) b = { outcome: 'scared', room: roomIdx, msg: say(s, `${who} crept up to the house, got spooked and ran away. Phew! More cameras would catch them next time.`) };
     else {
       const here = items.filter(p => p.room === roomIdx && !ITEM[p.id].trap);
@@ -753,7 +764,9 @@ export function sleep(s, rng = makeRng(s.seed + s.day * 101)) {
     if (p.stage === 'baby' && p.age >= BABY_GROWS_AT) { p.stage = 'child'; report.grown.push(p.name); say(s, `${p.name} is not a baby any more — they are a child now! In a few days they can go to school.`); }
     if (p.hunger >= 2) report.cries.push(p.name);
   }
+  const weekBefore = policeWeek(s.day);
   s.day++; s.hour = HOURS.START; s.lessonsYesterday = s.lessonsToday; s.lessonsToday = 0; s.visitedToday = [];
+  if (policeWeek(s.day) !== weekBefore) { s.policeBudget = POLICE_BUDGET; report.newBudget = true; say(s, `A new week: the police have ${POLICE_BUDGET} coins of reward money again.`); }
   return { ok: true, report };
 }
 
@@ -762,7 +775,7 @@ export function serialize(s) { return JSON.stringify(s); }
 export function deserialize(json) {
   const s = JSON.parse(json);
   if (!s || typeof s !== 'object' || !s.name) throw new Error('bad save');
-  s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.bank = s.bank || 0; if (s.lessonsYesterday === undefined) s.lessonsYesterday = 1; s.caged = s.caged || []; s.footage = s.footage || []; s.gallery = s.gallery || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
+  s.van = s.van || {}; s.pets = s.pets || []; s.family = s.family || []; s.bank = s.bank || 0; if (s.lessonsYesterday === undefined) s.lessonsYesterday = 1; if (s.policeBudget === undefined) s.policeBudget = POLICE_BUDGET; s.caged = s.caged || []; s.footage = s.footage || []; s.gallery = s.gallery || []; s.log = s.log || []; s.visitedToday = s.visitedToday || [];
   s.stats = Object.assign({ lessons: 0, correct: 0, coinsEarned: 0, burglarsCaught: 0, housesOwned: 0, interest: 0, stolen: 0, bills: 0, fares: 0 }, s.stats || {});
   return s;
 }
