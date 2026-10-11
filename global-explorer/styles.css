@@ -62,7 +62,12 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 /* ----------------------------------------------------------- play: globe -- */
 .globe-wrap { position: absolute; top: 0; left: 0; right: 0; bottom: var(--sheet-half); touch-action: none; }
 #screen-play.clickable #globe canvas { cursor: pointer; }
-#globe { position: absolute; inset: 0; }
+/* The globe is printed on the page: a soft vignette centred on it under a fine paper grain. */
+#globe { position: absolute; inset: 0;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.36 0 0 0 0 0.30 0 0 0 0 0.20 0.07 0.07 0.07 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E") repeat,
+    radial-gradient(ellipse 70% 60% at 50% var(--globe-cy, 50%), #fcfaf6 0%, var(--bg) 55%, #eee9de 100%);
+}
 #globe canvas { width: 100% !important; height: 100% !important; display: block; }
 .loading { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; background: var(--bg); color: var(--muted); font-size: 0.92rem; text-align: center; padding: 20px; }
 .loading .spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--border); border-top-color: var(--accent); animation: spin 0.9s linear infinite; }

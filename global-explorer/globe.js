@@ -128,6 +128,13 @@ export class Globe {
       new THREE.MeshBasicMaterial({ color: 0x3b82d6, transparent: true, opacity: 0.14, side: THREE.BackSide, depthWrite: false }),
     );
     this.scene.add(glow);
+    // Soft drop shadow, a camera-facing sprite through the globe's centre: the
+    // sphere hides it inside the silhouette (depth test), the fringe outside is
+    // what shows, shifted a little down so the globe sits on the page.
+    const shadow = new THREE.Sprite(new THREE.SpriteMaterial({ map: Globe.shadowTexture(), transparent: true, depthWrite: false }));
+    shadow.scale.set(3.2, 3.2, 1);
+    shadow.center.set(0.5, 0.535);
+    this.scene.add(shadow);
 
     this.scene.add(this.buildBorders());
     this.scene.add(this.buildGraticule());
@@ -195,6 +202,17 @@ export class Globe {
     g.lineWidth = 14; g.strokeStyle = '#fff';
     g.beginPath(); g.arc(s / 2, s / 2, s / 2 - 10, 0, Math.PI * 2); g.stroke();
     g.fillStyle = 'rgba(255,255,255,0.3)'; g.beginPath(); g.arc(s / 2, s / 2, s / 2 - 18, 0, Math.PI * 2); g.fill();
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+
+  /** Radial shadow: solid out to the sphere's edge, then a wide soft fringe. */
+  static shadowTexture() {
+    const s = 256, c = document.createElement('canvas'); c.width = c.height = s;
+    const g = c.getContext('2d');
+    const grad = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+    // Solid only inside the sphere's silhouette; outside it a long, light fall-off.
+    for (const [f, a] of [[0, 0.22], [0.62, 0.22], [0.7, 0.13], [0.78, 0.07], [0.86, 0.03], [0.93, 0.01], [1, 0]]) grad.addColorStop(f, `rgba(70, 60, 40, ${a})`);
+    g.fillStyle = grad; g.fillRect(0, 0, s, s);
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
   }
 
@@ -783,6 +801,7 @@ export class Globe {
     // does not move when one opens.)
     const dy = ((this.topInset || 0) - (this.bottomInset || 0)) / 2;
     if (dy) this.camera.setViewOffset(w, h, 0, -dy, w, h); else this.camera.clearViewOffset();
+    this.container.style.setProperty('--globe-cy', `calc(50% + ${dy}px)`); // the page vignette follows the globe
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
     if (this.nameGroup) this.applyLabelScale();
