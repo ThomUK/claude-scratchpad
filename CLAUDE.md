@@ -14,6 +14,12 @@ deployed to GitHub Pages from `main`.
   committer must be `Claude <noreply@anthropic.com>` (the session's default
   git identity); prefer fast-forward merges so no merge commit is created
   under another name. The owner wants unreviewed work clearly attributed.
+- **`global-explorer/` is a published copy: never edit it here.** The app is
+  developed in a private repository, and an automated publish replaces this
+  folder wholesale on every release, so any change made here is lost. If asked
+  to change Global Explorer from this repo, say so instead of editing. Its card
+  in `index.html`, its README row and the `world-borders/` redirect live here
+  and may still be edited.
 - Adding an app: create its directory, add a card to the root `index.html`
   (copy an existing block) and a row to the README table.
 - Asset URLs use `?v=dev`; the Pages workflow rewrites them to the commit SHA.
