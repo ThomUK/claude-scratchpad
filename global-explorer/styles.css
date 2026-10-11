@@ -198,10 +198,11 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .stamp.hard.lg { font-size: 0.68rem; }
 .stamp small { display: block; font-weight: 600; font-size: 0.55em; letter-spacing: 0.04em; opacity: 0.9; }
 /* Clue mark: how many clues the best round at this level needed. */
-/* It sits in the box's top-right corner, inside the inked mask (which clips to the box), clear of the ring. */
-.stamp .cm { position: absolute; top: -1px; right: -1px; width: 17px; height: 17px; border-radius: 50%; background: #fff; border: 1.5px solid var(--ink); color: var(--ink); font: 700 10px/1 system-ui, sans-serif; font-style: normal; display: flex; align-items: center; justify-content: center; transform: rotate(calc(-1 * var(--rot, -9deg))); }
-.stamp.sm .cm { width: 14px; height: 14px; font-size: 9px; }
-.stamp.lg .cm { width: 20px; height: 20px; font-size: 11px; top: 2px; right: 2px; }
+/* It sits on the ring at the top right, wholly inside the circle: the inked mask clips to the rounded border. */
+.stamp .cm { position: absolute; top: 2px; right: 2px; width: 17px; height: 17px; border-radius: 50%; background: #fff; border: 1.5px solid var(--ink); color: var(--ink); font: 700 10px/1 system-ui, sans-serif; font-style: normal; display: flex; align-items: center; justify-content: center; transform: rotate(calc(-1 * var(--rot, -9deg))); }
+.stamp.sm .cm { width: 14px; height: 14px; font-size: 9px; top: 1px; right: 1px; }
+.stamp.sm.has-cm { padding-right: 7px; } /* nudge the letter clear of the badge */
+.stamp.lg .cm { width: 22px; height: 22px; font-size: 12px; top: 6px; right: 6px; }
 .stamped { display: flex; align-items: center; gap: 14px; margin: 0 0 12px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); animation: stampIn .5s cubic-bezier(.2,1.4,.4,1) both; }
 @keyframes stampIn { from { transform: scale(1.6) rotate(-14deg); opacity: 0; } to { transform: none; opacity: 1; } }
 .stamped .t { font-weight: 700; } .stamped .s { color: var(--muted); font-size: 0.82rem; }

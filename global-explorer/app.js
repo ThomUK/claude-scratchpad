@@ -246,7 +246,6 @@ function setVisited(code, on) {
   if (on) state.visited.add(code); else state.visited.delete(code);
   state.byCode.get(code).visited = on;
   save(KEYS.visited, [...state.visited]);
-  toast(on ? `✈️ ${name(code)} stamped: been here for real.` : `Stamp removed from ${name(code)}.`);
   if (state.screen === 'play') applyView(); // refresh explorer shading and an open card
   if (state.countryPage === code) showCountry(code);
 }
@@ -665,7 +664,7 @@ function stampEl(level, got, size = '', count = 0, seed = '', clues = null) {
   s.title = got ? `${LEVEL_LABEL(level)} stamp${count > 1 ? ` ×${count}` : ''}` : `No ${LEVEL_LABEL(level)} stamp yet`;
   if (got && clues) { // the fewest clues a winning round at this level needed
     const m = el('i', 'cm', String(clues)); m.title = `${clues} ${clues === 1 ? 'clue' : 'clues'} used on your best ${LEVEL_LABEL(level)} round`;
-    s.append(m); s.title += ` · ${clues} ${clues === 1 ? 'clue' : 'clues'}`;
+    s.append(m); s.classList.add('has-cm'); s.title += ` · ${clues} ${clues === 1 ? 'clue' : 'clues'}`;
   }
   return s;
 }
