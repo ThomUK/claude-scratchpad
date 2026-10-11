@@ -91,7 +91,6 @@ representative lat/lon from the dataset.
 | Country facts | [mledoze/countries](https://github.com/mledoze/countries), the dataset behind REST Countries | ODbL |
 | Borders and population | [Natural Earth](https://www.naturalearthdata.com/) 1:50m admin-0 map units and population estimates | Public domain |
 | Coastlines | CIA World Factbook, via the [factbook.json](https://github.com/factbook/factbook.json) mirror | Public domain |
-| Commonly visited | [ONS, Travel trends 2024](https://www.ons.gov.uk/peoplepopulationandcommunity/leisureandtourism/articles/traveltrends/2024), UK residents' visits abroad | Open Government Licence v3.0 |
 | Flags | [Twemoji](https://github.com/jdecked/twemoji) flag graphics, as the flags-only font from [country-flag-emoji-polyfill](https://github.com/talkjs/country-flag-emoji-polyfill) (TalkJS, MIT), under `vendor/fonts/` | CC BY 4.0 |
 | 3D globe | [three.js](https://threejs.org/), vendored under `vendor/three/` | MIT |
 
@@ -108,6 +107,9 @@ Notes on the build (`build_data.mjs`):
   of Western Sahara, the Golan Heights, Northern Cyprus) are hatched. Three
   territories have no polygon at this scale (Bouvet Island, Gibraltar,
   US Minor Outlying Islands) and are shown as markers.
+- The Easy pool's "commonly visited" list is our own ranking (`EASY_POOL`),
+  informed by the ONS Travel trends figures for UK residents' visits abroad,
+  with the UK itself added. It reproduces no ONS data, so it carries no credit.
 - The flags-only font exists because Windows has no system font with flag
   emoji.
 

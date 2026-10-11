@@ -888,7 +888,6 @@ function renderCredits(cJson) {
   add('Borders', 'Natural Earth, 1:50m map units', 'https://www.naturalearthdata.com/', 'Public domain');
   add('Population', 'Natural Earth estimates', 'https://www.naturalearthdata.com/', 'Public domain');
   add('Coastlines', 'CIA World Factbook, via the factbook.json mirror', 'https://github.com/factbook/factbook.json', 'Public domain');
-  add('Commonly visited', 'ONS, Travel trends 2024: UK residents\u2019 visits abroad', 'https://www.ons.gov.uk/peoplepopulationandcommunity/leisureandtourism/articles/traveltrends/2024', 'Open Government Licence v3.0');
   add('Flags', 'Twemoji flag graphics', 'https://github.com/jdecked/twemoji', 'CC BY 4.0');
   add('Flag font', 'country-flag-emoji-polyfill by TalkJS', 'https://github.com/talkjs/country-flag-emoji-polyfill', 'MIT');
   add('3D globe', 'three.js', 'https://threejs.org/', 'MIT');
