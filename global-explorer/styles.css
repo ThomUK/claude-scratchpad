@@ -42,7 +42,8 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .screen[hidden] { display: none; }
 #screen-atlas, #screen-settings, #screen-country, #screen-passport { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .appbar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; padding: calc(12px + var(--safe-t)) 16px 10px; background: var(--bg); border-bottom: 1px solid var(--border); }
-.appbar .back { min-height: 36px; width: 36px; padding: 0; font-size: 1.5rem; line-height: 1; border-radius: 50%; }
+.appbar .back { min-height: 36px; width: 36px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+.back svg { width: 20px; height: 20px; display: block; }
 .page { padding: 12px 16px 24px; max-width: 760px; width: 100%; margin: 0 auto; }
 .page-actions { padding: 0 16px 20px; max-width: 760px; width: 100%; margin: 0 auto; }
 .page-actions.top { padding: 12px 16px 0; flex-wrap: nowrap; }
@@ -89,7 +90,7 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 #screen-play.exploring .globe-wrap, #screen-play.picking .globe-wrap { bottom: 0 !important; }
 .explore-bar { position: absolute; left: 10px; right: 84px; top: calc(10px + var(--safe-t)); z-index: 3; display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 6px; background: rgba(255,255,255,0.92); border: 1px solid var(--border); border-radius: 14px; }
 .explore-bar[hidden], .explore-pop[hidden] { display: none; }
-.explore-bar .back { min-height: 36px; width: 36px; padding: 0; font-size: 1.5rem; line-height: 1; border-radius: 50%; flex: none; }
+.explore-bar .back { min-height: 36px; width: 36px; padding: 0; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; }
 .explore-title { display: grid; line-height: 1.2; min-width: 0; }
 .explore-title strong { font-size: 0.95rem; }
 .explore-pop { position: absolute; left: 10px; right: 10px; bottom: 12px; z-index: 4; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 14px 12px; box-shadow: 0 10px 30px rgba(31,41,51,0.2); animation: menuUp .2s ease-out; }
@@ -184,24 +185,24 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
   -webkit-mask-size: 90px 90px; mask-size: 90px 90px;
 }
 
-.stamp { white-space: pre-line; --ink: #8a94a0; display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 50%; border: 3px double var(--ink); color: var(--ink); font-weight: 800; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; line-height: 1.05; transform: rotate(var(--rot, -9deg)); position: relative; background: transparent; flex: none; font-family: Georgia, "Times New Roman", serif; }
+.stamp { white-space: pre-line; --ink: #8a94a0; display: inline-flex; align-items: center; justify-content: center; width: 66px; height: 66px; border-radius: 50%; border: 3px double var(--ink); color: var(--ink); font-weight: 800; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; line-height: 1.05; transform: rotate(var(--rot, -9deg)); position: relative; background: transparent; flex: none; font-family: Georgia, "Times New Roman", serif; }
 .stamp::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 1px solid var(--ink); opacity: 0.6; }
 .stamp.easy { --ink: #2f7d4f; } .stamp.intermediate { --ink: #3b63a8; } .stamp.hard { --ink: #a3352f; }
 /* The real-life stamp: a rectangular visa-style stamp in violet ink. */
-.stamp.visited { --ink: #6b3fa0; border-radius: 7px; width: 66px; height: 46px; font-size: 0.56rem; letter-spacing: 0.06em; }
+.stamp.visited { --ink: #6b3fa0; border-radius: 7px; width: 80px; height: 54px; font-size: 0.6rem; letter-spacing: 0.06em; }
 .stamp.visited::after { border-radius: 4px; inset: 3px; }
 .stamp.visited.sm { width: 62px; height: 30px; font-size: 0.6rem; letter-spacing: 0.04em; }
 .stamp.visited.sm::after { inset: 2px; border-radius: 3px; }
 .stamp.visited.lg { width: 104px; height: 70px; font-size: 0.72rem; }
 .stamp.visited.lg::after { inset: 5px; border-radius: 5px; }
 .stamp.got { background: color-mix(in srgb, var(--ink) 9%, transparent); opacity: 0.92; }
-.stamp.missing { --ink: #cbc3b2; border-style: dashed; color: #cbc3b2; }
+.stamp.missing { --ink: #cbc3b2; border-style: dashed; color: #cbc3b2; font-weight: 600; letter-spacing: 0.05em; } /* placeholders: the same light lettering on every page */
 .stamp.missing::after { display: none; }
 .stamp.sm { width: 34px; height: 34px; font-size: 0.78rem; border-width: 2px; letter-spacing: 0; }
 .stamp.sm::after { inset: 2px; }
 .stamp.lg { width: 92px; height: 92px; font-size: 0.78rem; border-width: 4px; }
 .stamp.lg::after { inset: 7px; }
-.stamp.hard:not(.sm) { font-size: 0.5rem; letter-spacing: 0.03em; }
+.stamp.hard:not(.sm) { font-size: 0.54rem; letter-spacing: 0.03em; }
 .stamp.hard.lg { font-size: 0.68rem; }
 .stamp small { display: block; font-weight: 600; font-size: 0.55em; letter-spacing: 0.04em; opacity: 0.9; }
 /* Clue mark: how many clues the best round at this level needed. */
