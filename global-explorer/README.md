@@ -23,8 +23,8 @@ administers them. **Next round** chains on from the country you found; the Game 
 per level (Easy, Intermediate, Advanced). Finding a
 country stamps it, and until a level's passport is complete the mystery
 country is always drawn from the countries you have not yet stamped at that
-level. Shows rounds, streaks, best scores,
-progress bars per level and the stamp book.
+level. Shows progress per level and the stamp book; resetting it lives in
+Settings.
 
 Tapping a level in the passport summary opens the globe shaded by your
 progress on that level (dark for stamped, light for still to collect, beige for

@@ -712,19 +712,7 @@ function poolSize(level) { const key = DIFFICULTY[level].pool; return key && sta
 function poolLabel(level) { const key = DIFFICULTY[level].pool; return key && state.pools[key] ? state.pools[key].label : `all ${state.countries.length} countries and territories`; }
 const allStamps = () => STAMP_LEVELS.reduce((n, l) => n + poolSize(l), 0);
 
-function renderStats(container, compact) {
-  const s = state.stats || normalizeStats(null);
-  const stamps = totalStamps();
-  const tiles = compact
-    ? [[s.rounds, 'rounds'], [stamps, `stamps of ${allStamps()}`], [s.streak, 'streak']] // (unused since the game screen dropped its strip)
-    : [[s.rounds, 'rounds played'], [s.wins, 'countries found'], [stamps, `stamps of ${allStamps()}`], [s.streak, 'current streak'], [s.bestStreak, 'best streak'],
-      ...Object.entries(s.best || {}).map(([k, v]) => [v, `best score · ${LEVEL_LABEL(k)}`])];
-  container.replaceChildren();
-  for (const [v, l] of tiles) { const d = el('div', 'stat'); d.append(el('div', 'v', String(v)), el('div', 'l', l)); container.append(d); }
-}
-
 function renderPassport() {
-  renderStats($('stats-full'), false);
   $('passport-count').textContent = `${totalStamps()} of ${allStamps()} stamps`;
   const levels = $('levels');
   levels.replaceChildren();
@@ -881,7 +869,7 @@ function wireSettings() {
     box.append(lab);
   }
   for (const inp of document.querySelectorAll('#units input')) inp.addEventListener('change', () => { state.settings.units = inp.value; saveSettings(); });
-  $('btn-reset-stats').addEventListener('click', () => { if (confirm('Reset rounds, streaks and all passport stamps?')) { state.stats = normalizeStats(null); save(KEYS.stats, null); renderPassport(); } });
+  $('btn-reset-stats').addEventListener('click', () => { if (confirm('Reset all passport stamps and progress?')) { state.stats = normalizeStats(null); save(KEYS.stats, null); renderPassport(); } });
 }
 
 function saveSettings() {

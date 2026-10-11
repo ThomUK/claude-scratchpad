@@ -118,11 +118,6 @@
           <div class="chips sort" id="passport-filter"></div>
           <div class="book" id="book"></div>
           <p class="muted small" id="book-empty" hidden>No stamps yet. Find a country on Easy, Intermediate or Advanced to earn its stamp, or open a country in the Atlas to mark somewhere you have really been.</p>
-          <details class="scoreboard" id="scoreboard">
-            <summary>Scoreboard</summary>
-            <div class="stats" id="stats-full"></div>
-            <div class="btnrow"><button type="button" class="ghost" id="btn-reset-stats">Reset passport and progress</button></div>
-          </details>
         </div>
       </section>
 
@@ -164,6 +159,10 @@
             <label><input type="radio" name="units" value="km" /> Kilometres</label>
             <label><input type="radio" name="units" value="mi" /> Miles</label>
           </div>
+
+          <h2>Passport</h2>
+          <div class="btnrow"><button type="button" class="ghost" id="btn-reset-stats">Reset passport and progress</button></div>
+          <p class="muted small">Clears every level's stamps. Places you have really been are kept.</p>
 
           <h2>Credits</h2>
           <dl class="facts-grid credits" id="credits"></dl>
