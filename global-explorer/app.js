@@ -177,6 +177,7 @@ function applyView() {
   if (view === 'start' && sel) fillStartCard(sel);
   if (view === 'explore' && sel) fillExploreCard(sel);
   fitGlobeToSheet();
+  syncHint();
 }
 
 /** Ring a country and open the current view's card for it, flying it into the clear part of the globe. */
@@ -561,9 +562,27 @@ function flash(text, cls = '') {
 
 let toastTimer = null;
 function toast(text, cls = '') {
-  const t = $('toast'); t.textContent = text; t.className = `toast ${cls}`; t.hidden = !text;
-  clearTimeout(toastTimer);
-  if (text) toastTimer = setTimeout(() => { t.hidden = true; }, 2800);
+  const t = $('toast');
+  clearTimeout(toastTimer); toastTimer = null;
+  if (!text) { syncHint(); return; }
+  t.textContent = text; t.className = `toast ${cls}`; t.hidden = false;
+  toastTimer = setTimeout(() => { toastTimer = null; syncHint(); }, 2800);
+}
+
+/** The standing prompt for a round with no guesses yet, or null. */
+function roundHint() {
+  const g = state.game;
+  if (state.screen !== 'play' || viewKind() !== 'round' || state.phase !== 'guessing' || !g || guessCount(g) || state.tapped) return null;
+  if (g.rules.type) return "Move the map, then type a country's name to guess.";
+  const tap = window.matchMedia('(hover: hover)').matches ? 'click' : 'tap';
+  return `Move the map and ${tap} a country to guess.`;
+}
+/** Show the round hint whenever no passing message has the toast. */
+function syncHint() {
+  if (toastTimer) return;
+  const t = $('toast'), text = roundHint();
+  t.hidden = !text;
+  if (text) { t.textContent = text; t.className = 'toast'; }
 }
 
 function renderOver() {
