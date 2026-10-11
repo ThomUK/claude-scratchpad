@@ -308,13 +308,35 @@ function fitGlobeToSheet() {
   // The compass sits level with the floating card's centreline when there is one.
   const comp = $('compass');
   comp.style.top = bar && !bar.hidden ? `${bar.offsetTop + (bar.offsetHeight - comp.offsetHeight) / 2}px` : '';
-  const pop = [$('start-pop'), $('explore-pop')].find((p) => !p.hidden);
-  state.globe.bottomInset = pop ? $('globe').clientHeight - pop.offsetTop : 0; // the card over the bottom of the canvas
+  // The start and explorer views always reserve their card's space at the
+  // bottom, open or not, so the globe sits in the same place from first load.
+  state.globe.bottomInset = view === 'start' ? cardInset('start-pop') : view === 'explore' ? cardInset('explore-pop') : 0;
   state.globe.refHeight = $('screen-play').clientHeight; // the full-height canvas the zoom fit is tuned for
   if (window.matchMedia('(min-width: 900px)').matches) { $('globe-wrap').style.bottom = ''; state.globe.resize(); return; }
   $('globe-wrap').style.bottom = `${$('sheet').offsetHeight}px`;
   state.globe.resize();
 }
+/**
+ * How much of the canvas a card covers from the bottom, measured once per
+ * card from a typical filling (and cached), so the figure is the same whether
+ * the card is open, closed, or showing a long name.
+ */
+const cardInsets = {};
+function cardInset(id) {
+  if (cardInsets[id]) return cardInsets[id];
+  const pop = $(id), wasHidden = pop.hidden;
+  if (wasHidden) { pop.style.visibility = 'hidden'; pop.hidden = false; }
+  const sample = state.byCode.get('FRA') || state.countries[0];
+  const nameEl = id === 'start-pop' ? $('start-pop-name') : $('pop-name');
+  const wasEmpty = !nameEl.textContent;
+  if (wasEmpty && sample) (id === 'start-pop' ? fillStartCard : fillExploreCard)(sample.code);
+  const h = $('globe').clientHeight;
+  const inset = h ? h - pop.offsetTop : 0;
+  if (wasHidden) { pop.hidden = true; pop.style.visibility = ''; }
+  if (inset > 0) cardInsets[id] = inset;
+  return inset;
+}
+
 function wireSheet() {
   const grip = $('grip');
   let start = null;
