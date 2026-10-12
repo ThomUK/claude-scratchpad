@@ -4,8 +4,8 @@
 // territories get a screen-space ring marker. Recolouring a country is just a
 // material colour change.
 import * as THREE from 'three';
-import { OrbitControls } from './vendor/three/OrbitControls.js?v=bf828186';
-import { cameraDistanceForSpan, pickCountry } from './engine.js?v=bf828186';
+import { OrbitControls } from './vendor/three/OrbitControls.js?v=7aabe021';
+import { cameraDistanceForSpan, pickCountry } from './engine.js?v=7aabe021';
 
 // Light "atlas" palette: pale ocean, sand land, soft grey borders.
 export const COLORS = {
@@ -90,6 +90,7 @@ export class Globe {
     this.controls.autoRotateSpeed = 0.5;
     this.controls.addEventListener('start', () => {
       this.flight = null;
+      this.fitDebt = 1; // the player's view is the new baseline
       this.controls.autoRotate = false;
       this.controls.dampingFactor = DRAG_DAMPING;
     });
@@ -185,7 +186,8 @@ export class Globe {
     });
 
     this.resize();
-    this.ro = new ResizeObserver(() => this.resize());
+    this.fitDebt = 1;
+    this.ro = new ResizeObserver(() => this.relayout());
     this.ro.observe(container);
     this.renderer.setAnimationLoop(() => this.frame());
   }
@@ -736,6 +738,7 @@ export class Globe {
     const lat = THREE.MathUtils.clamp(c.latlng[0], -89, 89); // the camera's up vector degenerates exactly over a pole
     const to = latLonToVec3(lat, c.latlng[1], dist);
     this.flight = { from, to, start: performance.now(), duration, fromDir: from.clone().normalize(), toDir: to.clone().normalize() };
+    this.fitDebt = 1;
   }
 
   /**
@@ -750,6 +753,7 @@ export class Globe {
     // turn: the slow rotation, carried through the flight so it starts at once.
     this.flight = { from, to, start: performance.now(), duration, fromDir: from.clone().normalize(), toDir: to.clone().normalize(), turn: 0 };
     this.zoomGlide = null;
+    this.fitDebt = 1;
     this.controls.autoRotate = true;
   }
 
@@ -786,7 +790,10 @@ export class Globe {
       if (t >= 1) this.flight = null;
     }
     this.stepZoomGlide();
-    if (this.slide) this.applyViewOffset();
+    if (this.slide) {
+      if (this.slide.start == null) this.slide.start = performance.now();
+      this.applyViewOffset();
+    }
     this.controls.update();
     // Hard floor: never let the camera dip into the globe, whatever the controls did.
     const floor = this.controls.minDistance;
@@ -830,18 +837,16 @@ export class Globe {
   /**
    * Cards over the top or bottom of the canvas hide that much of the view, so
    * shift the view centre to the middle of the strip left clear between them.
-   * (The app reserves a card's space even while it is closed, so the globe
-   * does not move when one opens.) A slide from keepView() eases in on top.
+   * A slide from relayout() eases in on top.
    */
   applyViewOffset() {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     if (!w || !h) return;
     let dx = 0, dy = ((this.topInset || 0) - (this.bottomInset || 0)) / 2;
     if (this.slide) {
-      const t = Math.min(1, (performance.now() - this.slide.start) / this.slide.duration);
-      const left = 1 - (t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2); // ease in-out, as flights
-      dx += this.slide.x * left; dy += this.slide.y * left;
-      if (t >= 1) this.slide = null;
+      const rest = this.slideLeft();
+      dx += rest.x; dy += rest.y;
+      if (this.slide.start != null && performance.now() - this.slide.start >= this.slide.duration) this.slide = null;
     }
     if (dx || dy) this.camera.setViewOffset(w, h, -dx, -dy, w, h); else this.camera.clearViewOffset();
     this.container.style.setProperty('--globe-cy', `calc(50% + ${dy}px)`); // the page vignette follows the globe
@@ -854,7 +859,7 @@ export class Globe {
     if (!c) return false;
     const p = latLonToVec3(c.latlng[0], c.latlng[1], 1);
     if (p.dot(this.camera.position.clone().normalize()) <= 0.2) return false; // behind or on the horizon
-    // Judge where the view settles, not the middle of a slide from keepView().
+    // Judge where the view settles, not the middle of a slide from relayout().
     const slide = this.slide; this.slide = null; this.applyViewOffset();
     const q = p.project(this.camera), strip = this.clearStrip();
     this.slide = slide; this.applyViewOffset();
@@ -871,34 +876,64 @@ export class Globe {
   }
 
   /**
-   * Run `change`, which re-lays the page out around the globe (a new canvas
-   * size, other cards), without the view jumping. The camera's height is
-   * rescaled at once so the map keeps its size on screen (the field of view is
-   * vertical, so a shorter canvas would otherwise shrink it), and the view
-   * slides from where it was to the middle of the new clear strip. If that
-   * strip is shorter than the old one, the view also eases out just enough to
-   * keep the same share of it; it never zooms in.
+   * Lay the view out again after the canvas or the cards over it changed (a
+   * card opened or closed, the sheet moved, the window turned), without the
+   * map jumping:
+   * - the camera's height is rescaled at once so the map keeps its size on
+   *   screen (the field of view is vertical, so a shorter canvas would
+   *   otherwise shrink it);
+   * - the view slides smoothly from where it was to the middle of the new
+   *   clear strip;
+   * - if that strip is shorter, the view eases out to keep the same share of
+   *   it, and when it grows again it eases back in, but only as far as it went
+   *   out. A zoom chosen by the player or a flight is the new baseline.
+   * Several calls in a row (one re-layout often takes two) compose into one slide.
    */
-  keepView(change, { duration = 700 } = {}) {
-    const before = this.clearStrip();
-    change();
+  relayout({ duration = 700 } = {}) {
     this.resize();
-    const after = this.clearStrip();
-    if (!before.h || !after.h) return;
-    const fit = after.height > 0 && after.height < before.height ? before.height / after.height : 1;
+    const after = this.clearStrip(), before = this.laidOut;
+    this.laidOut = after;
+    if (!before || !before.h || !after.h || !after.height || !before.height) return;
     const scaled = (v, k) => v.clone().setLength(1 + (v.length() - 1) * k);
     const k = after.h / before.h; // keeps the map's size on screen
-    this.camera.position.copy(scaled(this.camera.position, k));
+    let fit = before.height / after.height; // > 1: less room, so ease out
+    if (fit < 1) fit = Math.max(fit, 1 / this.fitDebt); // more room: ease back in only as far as we went out
+    this.fitDebt = Math.max(1, this.fitDebt * fit);
+    if (Math.abs(k - 1) > 1e-4) this.camera.position.copy(scaled(this.camera.position, k));
     if (this.flight) {
-      // Still flying in to the country: land at the rescaled height instead.
+      // A flight under way lands at the rescaled height instead.
       this.flight.from = scaled(this.flight.from, k);
       this.flight.to = scaled(this.flight.to, k * fit);
-    } else if (fit > 1) {
-      const from = this.camera.position.clone(), to = scaled(from, fit), dir = from.clone().normalize();
-      this.flight = { from, to, start: performance.now(), duration, fromDir: dir, toDir: dir.clone() };
+    } else if (Math.abs(fit - 1) > 1e-3) {
+      const from = this.camera.position.clone(), dir = from.clone().normalize();
+      this.flight = { from, to: scaled(from, fit), start: performance.now(), duration, fromDir: dir, toDir: dir.clone(), fit: true };
     }
+    const dx = before.cx - after.cx, dy = before.cy - after.cy;
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+    const rest = this.slideLeft(); // whatever of an earlier slide is still to run
     this.zoomGlide = null;
-    this.slide = { x: before.cx - after.cx, y: before.cy - after.cy, start: performance.now(), duration };
+    // The clock starts at the first frame that draws it, so re-layouts within
+    // one task compose exactly from what is on screen.
+    this.slide = { x: rest.x + dx, y: rest.y + dy, start: null, duration };
     this.applyViewOffset();
+  }
+
+  /** Take the current layout as the starting point, with nothing to animate (the app's first layout). */
+  settle() {
+    this.resize();
+    this.laidOut = this.clearStrip();
+    this.slide = null;
+    if (this.flight && this.flight.fit) this.flight = null;
+    this.fitDebt = 1;
+    this.applyViewOffset();
+  }
+
+  /** How far the current slide still has to go, in CSS pixels. */
+  slideLeft() {
+    if (!this.slide) return { x: 0, y: 0 };
+    if (this.slide.start == null) return { x: this.slide.x, y: this.slide.y };
+    const t = Math.min(1, (performance.now() - this.slide.start) / this.slide.duration);
+    const left = 1 - (t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2); // ease in-out, as flights
+    return { x: this.slide.x * left, y: this.slide.y * left };
   }
 }

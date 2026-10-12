@@ -4,9 +4,9 @@ import {
   decodeTopology, createGame, makeGuess, giveUp, formatDistance, guessCount, haversineKm, initialBearing,
   compassPoint, clueText, useClue, MAX_CLUES, DIFFICULTY, sortCountries, NUMERIC_KEYS, resolveRules, difficultyTier,
   score, recordRound, normalizeStats, stampsFor, clueMarksFor, remainingPool, STAMP_LEVELS,
-} from './engine.js?v=bf828186';
-import { Globe, COLORS } from './globe.js?v=bf828186';
-import { isNative, initNative } from './native.js?v=bf828186';
+} from './engine.js?v=7aabe021';
+import { Globe, COLORS } from './globe.js?v=7aabe021';
+import { isNative, initNative } from './native.js?v=7aabe021';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -52,8 +52,8 @@ const name = (code) => state.byCode.get(code).name;
 // ------------------------------------------------------------------ boot --
 async function main() {
   const [cJson, topo] = await Promise.all([
-    fetch('data/countries.json?v=bf828186').then((r) => r.json()),
-    fetch('data/world.json?v=bf828186').then((r) => r.json()),
+    fetch('data/countries.json?v=7aabe021').then((r) => r.json()),
+    fetch('data/world.json?v=7aabe021').then((r) => r.json()),
   ]);
   state.countries = cJson.countries;
   state.pools = cJson.pools || {};
@@ -95,8 +95,9 @@ async function main() {
   $('compass').addEventListener('click', recentre);
   render();
   applyView();
+  state.globe.settle(); // the first layout is where the globe starts: nothing to slide from
   // Inside the Android app the files are already on the phone: no service worker.
-  if ('serviceWorker' in navigator && !isNative()) navigator.serviceWorker.register('sw.js?v=bf828186').catch(() => {});
+  if ('serviceWorker' in navigator && !isNative()) navigator.serviceWorker.register('sw.js?v=7aabe021').catch(() => {});
   initNative({ back: goBack }).catch(() => {});
 }
 
@@ -339,13 +340,14 @@ function fitGlobeToSheet() {
     comp.style.left = `${bar.offsetLeft + bar.offsetWidth + 10}px`;
     comp.style.right = 'auto';
   } else { comp.style.top = ''; comp.style.left = ''; comp.style.right = ''; }
-  // The start and explorer views always reserve their card's space at the
-  // bottom, open or not, so the globe sits in the same place from first load.
-  state.globe.bottomInset = view === 'start' ? cardInset('start-pop') : view === 'explore' ? cardInset('explore-pop') : 0;
+  // With nothing selected the globe centres in the whole space; a country's
+  // card opening below makes it slide up out of the way (Globe.relayout).
+  const sel = state.selected && view !== 'round';
+  state.globe.bottomInset = !sel ? 0 : view === 'start' ? cardInset('start-pop') : cardInset('explore-pop');
   state.globe.refHeight = $('screen-play').clientHeight; // the full-height canvas the zoom fit is tuned for
-  if (window.matchMedia('(min-width: 900px)').matches) { $('globe-wrap').style.bottom = ''; state.globe.resize(); return; }
-  $('globe-wrap').style.bottom = `${$('sheet').offsetHeight}px`;
-  state.globe.resize();
+  if (!window.matchMedia('(min-width: 900px)').matches) $('globe-wrap').style.bottom = `${$('sheet').offsetHeight}px`;
+  else $('globe-wrap').style.bottom = '';
+  state.globe.relayout(); // every change of room for the globe slides and zooms smoothly
 }
 /**
  * How much of the canvas a card covers from the bottom, measured once per
@@ -450,12 +452,10 @@ function startRound(startCode) {
   state.game = createGame(state.countries, startCode, { rules: r, pool: codes });
   state.phase = 'guessing';
   // The view stays where it was: the sheet opens beneath it and the globe
-  // slides up into the space above, easing out only if that space is shorter.
-  state.globe.keepView(() => {
-    setSheet('half');
-    render();
-    applyView();
-  });
+  // slides up into the space above (Globe.relayout), easing out to fit.
+  setSheet('half');
+  render();
+  applyView();
   // Only if the start country is out of sight (the view was moved away) does the globe fly to it.
   if (!state.globe.inView(startCode)) state.globe.flyTo(startCode);
   // The sheet already says where you start and how far the mystery country is; only a full passport needs a word.
