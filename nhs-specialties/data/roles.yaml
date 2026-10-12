@@ -1,0 +1,579 @@
+# Role catalogue: the nodes the specialty graph joins on.
+# kind:  grade            — a post on the medical/dental career ladder (or a MAP role)
+#        pathway          — a shared training programme that feeds several specialties
+#        special-interest — a role that cuts across specialties
+# staff_group: medical-dental | medical-associate. Add nursing, ahp, scientist, ...
+#        here when those layers are built; specialty files then list them too.
+
+roles:
+  - id: consultant
+    title: "Consultant"
+    kind: grade
+    staff_group: medical-dental
+    description: >-
+      Senior doctor or dentist who has completed specialist training (CCT/CESR,
+      now 'portfolio pathway') and is on the GMC/GDC specialist register; holds
+      ultimate clinical responsibility for patients under their care.
+  - id: specialist
+    title: "Specialist (SAS)"
+    kind: grade
+    staff_group: medical-dental
+    description: >-
+      Senior autonomous SAS grade introduced with the 2021 SAS contract; works at
+      a level comparable to a consultant within agreed scope.
+  - id: specialty-doctor
+    title: "Specialty doctor (SAS)"
+    kind: grade
+    staff_group: medical-dental
+    description: >-
+      Non-training SAS grade with at least four years' postgraduate experience,
+      two of them in the relevant specialty.
+  - id: specialty-registrar
+    title: "Specialty registrar (StR)"
+    kind: grade
+    staff_group: medical-dental
+    description: >-
+      Resident doctor (formerly 'junior doctor') in higher specialty training,
+      typically ST3 and above, working towards a CCT.
+  - id: core-trainee
+    title: "Core / early-stage trainee"
+    kind: grade
+    staff_group: medical-dental
+    description: >-
+      Resident doctor in core training (CT1–CT3) or the early years (ST1–ST2) of a
+      run-through programme.
+  - id: foundation-doctor
+    title: "Foundation doctor (FY1–FY2)"
+    kind: grade
+    staff_group: medical-dental
+    description: >-
+      First two years after medical school; rotates across specialties. FY1s hold
+      provisional GMC registration.
+  - id: locally-employed-doctor
+    title: "Locally employed doctor"
+    kind: grade
+    staff_group: medical-dental
+    description: >-
+      Doctor employed by a trust outside a national training programme (trust
+      grade, clinical fellow); titles and terms are set locally.
+  - id: general-practitioner
+    title: "General practitioner"
+    kind: grade
+    staff_group: medical-dental
+    description: >-
+      Doctor on the GMC GP register working as a partner, salaried or locum GP in
+      primary care.
+  - id: dental-foundation-trainee
+    title: "Dental foundation trainee (DFT)"
+    kind: grade
+    staff_group: medical-dental
+    description: >-
+      First year after dental school, usually in general dental practice.
+  - id: dental-core-trainee
+    title: "Dental core trainee (DCT1–DCT3)"
+    kind: grade
+    staff_group: medical-dental
+    description: >-
+      Hospital or community dental posts after foundation, often in oral and
+      maxillofacial surgery units.
+  - id: general-dental-practitioner
+    title: "General dental practitioner"
+    kind: grade
+    staff_group: medical-dental
+    description: >-
+      Dentist providing primary-care dentistry, NHS and/or private.
+  - id: physician-assistant
+    title: "Physician assistant"
+    kind: grade
+    staff_group: medical-associate
+    description: >-
+      Medical associate profession (formerly 'physician associate', renamed after
+      the 2025 Leng review); works under the supervision of a named senior doctor
+      and is regulated by the GMC.
+  - id: physician-assistant-anaesthesia
+    title: "Physician assistant (anaesthesia)"
+    kind: grade
+    staff_group: medical-associate
+    description: >-
+      Formerly 'anaesthesia associate'; delivers anaesthesia under the supervision
+      of a consultant anaesthetist. Regulated by the GMC.
+  - id: core-surgical-training
+    title: "Core Surgical Training (CST)"
+    kind: pathway
+    staff_group: medical-dental
+    description: >-
+      Two-year core programme (CT1–CT2) feeding most surgical specialties at ST3.
+      Some specialties are piloting run-through from ST1 ('Improving Surgical
+      Training').
+  - id: internal-medicine-training
+    title: "Internal Medicine Training (IMT)"
+    kind: pathway
+    staff_group: medical-dental
+    description: >-
+      Core physician training. Group 1 specialties take the full three years and
+      train dually in General Internal Medicine; Group 2 specialties usually enter
+      after two years.
+  - id: acute-care-common-stem
+    title: "Acute Care Common Stem (ACCS)"
+    kind: pathway
+    staff_group: medical-dental
+    description: >-
+      Core programme combining emergency medicine, acute medicine, anaesthetics
+      and intensive care; the main entry route to Emergency Medicine.
+  - id: core-psychiatry-training
+    title: "Core Psychiatry Training (CPT)"
+    kind: pathway
+    staff_group: medical-dental
+    description: >-
+      Three-year core programme (CT1–CT3) feeding the psychiatry specialties at
+      ST4.
+  - id: paediatrics-training
+    title: "Paediatrics run-through"
+    kind: pathway
+    staff_group: medical-dental
+    description: >-
+      Run-through training (ST1–ST7) for general and subspecialty paediatrics,
+      with subspecialty (GRID) training in the later years.
+  - id: og-training
+    title: "Obstetrics and gynaecology run-through"
+    kind: pathway
+    staff_group: medical-dental
+    description: >-
+      Run-through training (ST1–ST7) covering both obstetrics and gynaecology,
+      with special-interest training modules in the later years.
+  - id: combined-infection-training
+    title: "Combined Infection Training (CIT)"
+    kind: pathway
+    staff_group: medical-dental
+    description: >-
+      Shared two-year programme after IMT stage 1, leading to infectious diseases,
+      tropical medicine, medical microbiology or medical virology (some dual).
+  - id: clinical-radiology-training
+    title: "Clinical radiology training"
+    kind: pathway
+    staff_group: medical-dental
+    description: >-
+      Run-through radiology training (ST1–ST5, or ST1–ST6 for interventional
+      radiology); one entry route into nuclear medicine.
+  - id: histopathology-training
+    title: "Histopathology training"
+    kind: pathway
+    staff_group: medical-dental
+    description: >-
+      Run-through cellular pathology training, with options in diagnostic
+      neuropathology, forensic and paediatric pathology.
+  - id: public-health-training
+    title: "Public health specialty training"
+    kind: pathway
+    staff_group: medical-dental
+    description: >-
+      Five-year programme open to doctors and to non-medical graduates; leads to
+      the GMC or UKPHR specialist register.
+  - id: gp-training
+    title: "GP specialty training"
+    kind: pathway
+    staff_group: medical-dental
+    description: >-
+      Three-year programme (ST1–ST3) in hospital posts and general practice
+      leading to a CCT in general practice.
+  - id: dental-core-training
+    title: "Dental Core Training"
+    kind: pathway
+    staff_group: medical-dental
+    description: >-
+      One to three years of hospital/community dental posts that precede dental
+      specialty training.
+  - id: acute-take-physician
+    title: "Physician on the acute medical take"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Group 1 physicians who dual-accredit in General Internal Medicine and staff
+      the acute medical take alongside their specialty.
+  - id: intensivist
+    title: "Intensivist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Intensive care consultant; often dual-accredited with anaesthetics, acute
+      medicine, emergency medicine, respiratory or renal medicine.
+  - id: pre-hospital-emergency-medicine
+    title: "Pre-hospital emergency medicine doctor"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Subspecialty (PHEM) for consultants and senior trainees from emergency
+      medicine, anaesthetics and intensive care who work with air and road
+      ambulance teams.
+  - id: paediatric-emergency-medicine
+    title: "Paediatric emergency medicine specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Subspecialty open to emergency medicine and paediatric trainees.
+  - id: paediatric-intensivist
+    title: "Paediatric intensivist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Paediatric intensive care consultant, trained via paediatrics, anaesthetics
+      or intensive care medicine.
+  - id: major-trauma
+    title: "Major trauma team leader"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Consultant who leads major trauma care in a trauma centre; drawn from
+      emergency medicine, general and trauma surgery and orthopaedics.
+  - id: stroke-physician
+    title: "Stroke physician"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Stroke medicine is a subspecialty open to several physician specialties,
+      notably geriatric medicine, neurology, general and acute internal medicine.
+  - id: orthogeriatrician
+    title: "Orthogeriatrician"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Geriatrician working jointly with orthopaedic surgeons, notably on hip-
+      fracture care (treatment function 431).
+  - id: memory-clinic-doctor
+    title: "Memory clinic / dementia specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Dementia assessment and diagnosis, led by old-age psychiatrists,
+      geriatricians or neurologists.
+  - id: endoscopist
+    title: "Endoscopist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Doctor accredited (JAG) to perform GI endoscopy; gastroenterologists and
+      general (upper GI / colorectal) surgeons, alongside nurse endoscopists.
+  - id: hepatologist
+    title: "Hepatologist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Liver specialist; a gastroenterology special interest (treatment function
+      306).
+  - id: interventional-cardiologist
+    title: "Interventional cardiologist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Cardiologist performing coronary angiography, angioplasty and structural
+      heart procedures.
+  - id: electrophysiologist
+    title: "Cardiac electrophysiologist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Cardiologist specialising in heart rhythm disorders, ablation and devices.
+  - id: cardiac-imaging
+    title: "Cardiac imaging specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Cardiologists and radiologists reporting cardiac MRI and CT.
+  - id: endovascular-specialist
+    title: "Endovascular specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Vascular surgeons and interventional radiologists performing minimally
+      invasive vascular procedures such as EVAR.
+  - id: interventional-radiologist
+    title: "Interventional radiologist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Radiologist performing image-guided procedures (treatment functions 811,
+      280).
+  - id: molecular-imaging
+    title: "Molecular imaging (PET-CT) reporter"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Nuclear medicine physicians and radiologists reporting PET-CT and
+      radionuclide imaging.
+  - id: transplant-surgeon
+    title: "Transplant surgeon"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Abdominal (kidney, liver, pancreas) and cardiothoracic organ
+      transplantation.
+  - id: breast-surgeon
+    title: "Oncoplastic breast surgeon"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Breast cancer and reconstructive surgery, by general surgeons with a breast
+      interest and plastic surgeons.
+  - id: hand-surgeon
+    title: "Hand surgeon"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Interface subspecialty shared by plastic surgery and trauma and
+      orthopaedics.
+  - id: head-and-neck-surgeon
+    title: "Head and neck surgeon"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Head and neck cancer and reconstruction; shared by ENT, OMFS and plastic
+      surgery.
+  - id: endocrine-surgeon
+    title: "Endocrine surgeon"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Thyroid, parathyroid and adrenal surgery by general and ENT surgeons
+      (treatment function 113).
+  - id: spinal-surgeon
+    title: "Spinal surgeon"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Spinal surgery is shared by orthopaedic surgeons and neurosurgeons
+      (treatment function 108).
+  - id: skull-base-surgeon
+    title: "Skull base surgeon"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Joint ENT and neurosurgical work on the skull base.
+  - id: cleft-surgeon
+    title: "Cleft lip and palate surgeon"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Multidisciplinary cleft teams combine plastic surgery, OMFS and
+      orthodontics.
+  - id: pain-medicine
+    title: "Pain medicine specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Anaesthetists with Faculty of Pain Medicine training running chronic pain
+      services (treatment function 191).
+  - id: obstetric-anaesthetist
+    title: "Obstetric anaesthetist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Anaesthetist covering labour wards and caesarean sections.
+  - id: fetal-medicine
+    title: "Fetal medicine specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Obstetrician managing high-risk pregnancies with fetal problems (treatment
+      function 505).
+  - id: maternal-medicine
+    title: "Maternal medicine physician"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Obstetricians and physicians (often endocrinology or general medicine)
+      managing medical problems in pregnancy.
+  - id: gynaecological-oncologist
+    title: "Gynaecological oncologist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Gynaecologist specialising in cancer surgery (treatment function 503).
+  - id: reproductive-medicine
+    title: "Reproductive medicine specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Gynaecologist specialising in subfertility and assisted conception.
+  - id: neonatologist
+    title: "Neonatologist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Paediatrician specialising in newborn and neonatal intensive care (treatment
+      function 422).
+  - id: acute-oncology
+    title: "Acute oncology lead"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Oncologists and acute physicians managing cancer patients who present as
+      emergencies.
+  - id: sexual-health-physician
+    title: "Sexual health physician"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Integrated sexual health services combine genitourinary medicine and
+      community sexual and reproductive health.
+  - id: hiv-physician
+    title: "HIV physician"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      HIV care is delivered by genitourinary medicine and infectious diseases
+      physicians.
+  - id: allergist
+    title: "Allergist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Adult and paediatric allergy services, from allergy, clinical immunology and
+      paediatric specialists.
+  - id: immunologist
+    title: "Clinical immunologist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Immunodeficiency and laboratory immunology; spans clinical immunology and
+      immunopathology.
+  - id: transfusion-medicine
+    title: "Transfusion medicine specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Haematologists leading blood transfusion and blood services.
+  - id: bmt-physician
+    title: "Bone marrow transplant physician"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Haematologist working in blood and marrow transplantation (treatment
+      function 308).
+  - id: infection-control-doctor
+    title: "Infection prevention and control doctor"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Microbiologists and virologists leading hospital infection prevention and
+      control.
+  - id: travel-medicine
+    title: "Travel and tropical medicine physician"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Tropical and infectious diseases physicians covering imported infection and
+      travel health.
+  - id: sleep-physician
+    title: "Sleep physician"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Sleep medicine spans respiratory medicine, neurology and clinical
+      neurophysiology (treatment function 347).
+  - id: epilepsy-specialist
+    title: "Epilepsy specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Neurologists, paediatric neurologists and clinical neurophysiologists
+      (treatment function 223 in children).
+  - id: neuropsychiatrist
+    title: "Neuropsychiatrist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Psychiatrists and neurologists working at the brain–mind interface
+      (treatment function 730).
+  - id: liaison-psychiatrist
+    title: "Liaison psychiatrist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Psychiatrists working in acute hospitals (treatment function 722).
+  - id: addiction-psychiatrist
+    title: "Addiction psychiatrist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Substance misuse services (treatment function 721).
+  - id: perinatal-psychiatrist
+    title: "Perinatal psychiatrist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Mental health care in pregnancy and the first postnatal year (treatment
+      function 724).
+  - id: eating-disorders-psychiatrist
+    title: "Eating disorders psychiatrist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Adult and adolescent eating disorder services (treatment function 720).
+  - id: metabolic-medicine
+    title: "Metabolic medicine specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Adult and paediatric inherited metabolic medicine (treatment functions 335,
+      261).
+  - id: balance-and-hearing
+    title: "Hearing and balance specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Otology and neuro-otology across ENT and audiovestibular medicine.
+  - id: medical-retina
+    title: "Medical retina and uveitis specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Ophthalmologists and medical ophthalmologists managing retinal and
+      inflammatory eye disease.
+  - id: dermatological-surgery
+    title: "Dermatological (Mohs) surgeon"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Skin cancer surgery shared by dermatologists and plastic surgeons.
+  - id: sport-and-msk
+    title: "Sport and musculoskeletal medicine doctor"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Non-operative musculoskeletal care spanning sport and exercise medicine,
+      rheumatology and rehabilitation.
+  - id: gp-extended-role
+    title: "GP with an extended role (GPwER)"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      GPs accredited to provide a specialist service in the community, commonly in
+      dermatology or sexual and reproductive health.
+  - id: public-health-consultant
+    title: "Public health consultant"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Consultant in public health; medical or non-medical, working in local
+      authorities, UKHSA or the NHS.
+  - id: oral-medicine
+    title: "Oral medicine specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Non-surgical management of oral mucosal and facial pain conditions (main
+      specialty 450).
+  - id: restorative-monospecialist
+    title: "Restorative mono-specialist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Endodontics, periodontics and prosthodontics are mono-specialties that
+      combine in restorative dentistry.
+  - id: community-dentist
+    title: "Community dental service dentist"
+    kind: special-interest
+    staff_group: medical-dental
+    description: >-
+      Salaried dentists treating children and adults who cannot be seen in general
+      practice.

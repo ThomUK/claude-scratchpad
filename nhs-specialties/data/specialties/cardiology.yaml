@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: cardiology
+title: "Cardiology"
+group: medical
+main_specialty_codes: ["320"]
+treatment_function_codes: ["320", "327", "331"]
+summary: >-
+  Heart disease: coronary disease, heart failure, rhythm disorders, valve and
+  congenital heart disease, and cardiac rehabilitation.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training (3 years), then specialty training ST4–ST7 dual-accredited with General Internal Medicine (Group 1)"
+  length: "7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant cardiologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [acute-take-physician, interventional-cardiologist, electrophysiologist, cardiac-imaging]
+related: [cardiothoracic-surgery, paediatric-cardiology, general-internal-medicine]

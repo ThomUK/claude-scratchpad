@@ -1,0 +1,21 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: ophthalmology
+title: "Ophthalmology"
+group: surgical
+main_specialty_codes: ["130"]
+treatment_function_codes: ["130", "216", "461"]
+summary: >-
+  Medical and surgical care of the eye: cataract, glaucoma, retina, cornea,
+  oculoplastics and children's eye services. One of the busiest outpatient
+  specialties.
+training:
+  college: "Royal College of Ophthalmologists"
+  route: "Run-through specialty training ST1–ST7"
+  length: "7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant ophthalmologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: []
+    special_interests: [medical-retina]
+related: [medical-ophthalmology, neurology]

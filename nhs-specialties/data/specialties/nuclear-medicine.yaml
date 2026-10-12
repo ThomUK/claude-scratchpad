@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: nuclear-medicine
+title: "Nuclear Medicine"
+group: diagnostics
+main_specialty_codes: ["371"]
+treatment_function_codes: ["371"]
+summary: >-
+  Diagnosis and treatment using radioactive tracers: radionuclide imaging,
+  PET-CT and radionuclide therapy.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum) / Royal College of Radiologists"
+  route: "Entry from IMT or clinical radiology, then nuclear medicine training"
+  length: "about 6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant in nuclear medicine"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training, clinical-radiology-training]
+    special_interests: [molecular-imaging]
+related: [radiology, clinical-oncology]

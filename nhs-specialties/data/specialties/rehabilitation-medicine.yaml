@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: rehabilitation-medicine
+title: "Rehabilitation Medicine"
+group: medical
+main_specialty_codes: ["314"]
+treatment_function_codes: ["314", "323", "344", "345", "346"]
+summary: >-
+  Restoring function after disabling illness or injury: brain and spinal cord
+  injury, amputation, prosthetics and complex neurological disability.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2) (other core routes accepted)"
+  length: "about 6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant in rehabilitation medicine"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [sport-and-msk]
+related: [neurology, trauma-and-orthopaedics, sport-and-exercise-medicine, allied-health-professional]

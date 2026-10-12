@@ -1,0 +1,15 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: community-health-services-dental
+title: "Community Health Services Dental"
+group: dental
+main_specialty_codes: ["902"]
+treatment_function_codes: []
+summary: >-
+  Salaried community dental services for children and adults with additional
+  needs who cannot be treated in general practice.
+workforce:
+  medical:
+    grades: [specialist, specialty-doctor, dental-core-trainee]
+    pathways: [dental-core-training]
+    special_interests: [community-dentist]
+related: [special-care-dentistry, paediatric-dentistry, public-health-dental]

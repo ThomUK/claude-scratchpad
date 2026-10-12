@@ -1,0 +1,23 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: audio-vestibular-medicine
+title: "Audio Vestibular Medicine"
+group: medical
+main_specialty_codes: ["310"]
+treatment_function_codes: ["310", "840"]
+summary: >-
+  Medical diagnosis and management of hearing, balance and tinnitus disorders
+  in adults and children.
+notes: >-
+  Audiology services (840) are mapped here; they are mostly delivered by
+  audiologists and clinical scientists.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2) (paediatrics also accepted)"
+  length: "about 6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant in audiovestibular medicine"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [balance-and-hearing]
+related: [ear-nose-and-throat, paediatrics]

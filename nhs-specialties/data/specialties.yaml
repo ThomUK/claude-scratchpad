@@ -1,0 +1,112 @@
+# Factsheet manifest. GitHub Pages cannot list a directory, so every
+# data/specialties/<id>.yaml must be listed here (the tests check both ways).
+# groups: navigation grouping used by the app (not an NHS classification).
+
+groups:
+  - id: surgical
+    title: "Surgical specialties"
+  - id: medical
+    title: "Medical specialties"
+  - id: acute
+    title: "Acute and critical care"
+  - id: women-children
+    title: "Women's and children's"
+  - id: mental-health
+    title: "Mental health"
+  - id: oncology
+    title: "Oncology"
+  - id: diagnostics
+    title: "Diagnostics and pathology"
+  - id: dental
+    title: "Dental"
+  - id: primary-public
+    title: "Primary care, public health and occupational"
+  - id: non-medical
+    title: "Non-medical led"
+specialties:
+  - general-surgery
+  - urology
+  - vascular-surgery
+  - trauma-and-orthopaedics
+  - ear-nose-and-throat
+  - ophthalmology
+  - oral-and-maxillofacial-surgery
+  - neurosurgery
+  - plastic-surgery
+  - cardiothoracic-surgery
+  - paediatric-surgery
+  - oral-surgery
+  - restorative-dentistry
+  - paediatric-dentistry
+  - orthodontics
+  - endodontics
+  - periodontics
+  - prosthodontics
+  - surgical-dentistry
+  - dental-medicine
+  - special-care-dentistry
+  - general-dental-practice
+  - community-health-services-dental
+  - public-health-dental
+  - emergency-medicine
+  - anaesthetics
+  - intensive-care-medicine
+  - acute-internal-medicine
+  - general-internal-medicine
+  - gastroenterology
+  - endocrinology-and-diabetes
+  - clinical-haematology
+  - clinical-physiology
+  - clinical-pharmacology
+  - audio-vestibular-medicine
+  - clinical-genetics
+  - clinical-immunology
+  - rehabilitation-medicine
+  - palliative-medicine
+  - allergy
+  - cardiology
+  - paediatric-cardiology
+  - sport-and-exercise-medicine
+  - dermatology
+  - respiratory-medicine
+  - infectious-diseases
+  - tropical-medicine
+  - genitourinary-medicine
+  - renal-medicine
+  - medical-oncology
+  - nuclear-medicine
+  - neurology
+  - clinical-neurophysiology
+  - rheumatology
+  - geriatric-medicine
+  - medical-ophthalmology
+  - aviation-and-space-medicine
+  - occupational-medicine
+  - paediatrics
+  - paediatric-neurology
+  - obstetrics
+  - gynaecology
+  - community-sexual-and-reproductive-health
+  - midwifery
+  - adult-mental-illness
+  - child-and-adolescent-psychiatry
+  - forensic-psychiatry
+  - medical-psychotherapy
+  - old-age-psychiatry
+  - learning-disability
+  - clinical-oncology
+  - radiology
+  - general-pathology
+  - blood-transfusion
+  - chemical-pathology
+  - haematology
+  - histopathology
+  - immunopathology
+  - medical-microbiology-and-virology
+  - medical-microbiology
+  - medical-virology
+  - general-practice
+  - public-health-medicine
+  - community-medicine
+  - nursing
+  - allied-health-professional

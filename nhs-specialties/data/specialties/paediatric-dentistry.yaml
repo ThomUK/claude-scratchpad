@@ -1,0 +1,19 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: paediatric-dentistry
+title: "Paediatric Dentistry"
+group: dental
+main_specialty_codes: ["142"]
+treatment_function_codes: ["142"]
+summary: >-
+  Dental care for children and young people, including those with medical
+  conditions, disabilities or complex dental needs.
+training:
+  college: "Faculty of Dental Surgery, Royal College of Surgeons (dental SAC)"
+  route: "Dental Core Training, then specialty training (typically 3 years, plus 2 for consultant posts)"
+workforce:
+  medical:
+    consultant_title: "Consultant in paediatric dentistry"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, dental-core-trainee]
+    pathways: [dental-core-training]
+    special_interests: [community-dentist]
+related: [orthodontics, community-health-services-dental]

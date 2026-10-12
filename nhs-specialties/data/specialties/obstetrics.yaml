@@ -1,0 +1,23 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: obstetrics
+title: "Obstetrics"
+group: women-children
+main_specialty_codes: ["501", "500"]
+treatment_function_codes: ["501", "505"]
+summary: >-
+  Medical care of women in pregnancy, labour and the postnatal period,
+  including high-risk pregnancy and fetal medicine.
+notes: >-
+  Combined code 500 (Obstetrics and Gynaecology) is not accepted for central
+  returns; most consultants hold both 501 and 502 sessions.
+training:
+  college: "Royal College of Obstetricians and Gynaecologists"
+  route: "Run-through specialty training ST1–ST7 (obstetrics and gynaecology)"
+  length: "7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant obstetrician"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [og-training]
+    special_interests: [fetal-medicine, maternal-medicine, obstetric-anaesthetist]
+related: [gynaecology, midwifery, anaesthetics, paediatrics]

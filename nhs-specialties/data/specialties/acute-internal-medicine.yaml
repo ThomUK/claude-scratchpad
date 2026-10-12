@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: acute-internal-medicine
+title: "Acute Internal Medicine"
+group: acute
+main_specialty_codes: ["326"]
+treatment_function_codes: ["326"]
+summary: >-
+  Immediate and early specialist care of adults with acute medical illness,
+  running acute medical units and same-day emergency care.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training (3 years), then specialty training ST4–ST7 dual-accredited with General Internal Medicine (Group 1)"
+  length: "7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant acute physician"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor, physician-assistant]
+    pathways: [internal-medicine-training]
+    special_interests: [acute-take-physician, intensivist, stroke-physician, acute-oncology]
+related: [general-internal-medicine, emergency-medicine, intensive-care-medicine]

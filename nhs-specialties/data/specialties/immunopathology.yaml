@@ -1,0 +1,21 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: immunopathology
+title: "Immunopathology"
+group: diagnostics
+main_specialty_codes: ["830"]
+treatment_function_codes: []
+summary: >-
+  Laboratory immunology: autoantibody, allergy and immunodeficiency testing.
+notes: >-
+  No treatment function of its own; clinical work is recorded under Clinical
+  Immunology (313).
+training:
+  college: "Royal College of Pathologists"
+  route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2) (joint immunology training)"
+workforce:
+  medical:
+    consultant_title: "Consultant immunologist"
+    grades: [consultant, specialty-registrar]
+    pathways: [internal-medicine-training]
+    special_interests: [immunologist]
+related: [clinical-immunology, allergy]

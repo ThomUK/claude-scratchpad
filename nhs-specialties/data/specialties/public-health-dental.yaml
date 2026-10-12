@@ -1,0 +1,19 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: public-health-dental
+title: "Public Health Dental"
+group: dental
+main_specialty_codes: ["904"]
+treatment_function_codes: []
+summary: >-
+  Dental public health: oral health needs assessment, commissioning advice,
+  fluoridation and oral health improvement programmes.
+training:
+  college: "Faculty of Dental Surgery, Royal College of Surgeons (dental SAC)"
+  route: "Dental Core Training, then dental public health specialty training"
+workforce:
+  medical:
+    consultant_title: "Consultant in dental public health"
+    grades: [consultant, specialty-registrar]
+    pathways: [dental-core-training]
+    special_interests: [public-health-consultant]
+related: [public-health-medicine, community-health-services-dental]

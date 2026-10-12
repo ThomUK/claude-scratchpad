@@ -1,0 +1,23 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: histopathology
+title: "Histopathology"
+group: diagnostics
+main_specialty_codes: ["824", "832"]
+treatment_function_codes: ["832"]
+summary: >-
+  Diagnosis of disease from tissue and cells (cellular pathology), including
+  cancer diagnosis, cytology, autopsy and neuropathology.
+notes: >-
+  Neuropathology had its own main specialty (832) until 2004; treatment
+  function 832 is mapped here.
+training:
+  college: "Royal College of Pathologists"
+  route: "Run-through specialty training ST1–ST5"
+  length: "5 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant histopathologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, locally-employed-doctor, core-trainee]
+    pathways: [histopathology-training]
+    special_interests: []
+related: [general-pathology, clinical-oncology, neurology]

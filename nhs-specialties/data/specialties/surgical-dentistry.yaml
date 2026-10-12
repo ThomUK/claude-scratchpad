@@ -1,0 +1,18 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: surgical-dentistry
+title: "Surgical Dentistry"
+group: dental
+main_specialty_codes: ["149"]
+treatment_function_codes: []
+summary: >-
+  Historical dental specialty title for surgical dentistry, largely superseded
+  by Oral Surgery.
+notes: >-
+  No treatment function of its own; activity is recorded under Oral Surgery
+  (140).
+workforce:
+  medical:
+    grades: [specialist, specialty-doctor]
+    pathways: []
+    special_interests: []
+related: [oral-surgery]

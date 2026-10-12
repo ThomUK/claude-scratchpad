@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: urology
+title: "Urology"
+group: surgical
+main_specialty_codes: ["101"]
+treatment_function_codes: ["101"]
+summary: >-
+  Diseases of the kidneys, bladder, prostate and male reproductive organs,
+  including urological cancer, stones and functional urology.
+training:
+  college: "Royal College of Surgeons (JCST curriculum)"
+  route: "Core Surgical Training (CT1–CT2), then specialty training ST3–ST8"
+  length: "about 8 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant urologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [core-surgical-training]
+    special_interests: [transplant-surgeon]
+related: [renal-medicine, general-surgery, paediatric-surgery]

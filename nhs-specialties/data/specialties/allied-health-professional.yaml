@@ -1,0 +1,19 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: allied-health-professional
+title: "Allied Health Professional"
+group: non-medical
+main_specialty_codes: ["960"]
+treatment_function_codes: ["650", "651", "652", "653", "654", "655", "657", "658", "659", "660", "661", "662", "663"]
+summary: >-
+  Episodes of care led by allied health professionals: physiotherapy,
+  occupational therapy, speech and language therapy, podiatry, dietetics,
+  orthoptics, prosthetics, orthotics and the arts therapies.
+notes: >-
+  AHP-led code. Optometry (662) and podiatric surgery (663) are mapped here.
+  AHP roles are a candidate for the next staff group.
+workforce:
+  medical:
+    grades: []
+    pathways: []
+    special_interests: []
+related: [rehabilitation-medicine, nursing, trauma-and-orthopaedics]

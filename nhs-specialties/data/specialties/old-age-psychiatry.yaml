@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: old-age-psychiatry
+title: "Old Age Psychiatry"
+group: mental-health
+main_specialty_codes: ["715"]
+treatment_function_codes: ["715", "727"]
+summary: >-
+  Mental illness in older adults, including dementia diagnosis and memory
+  services.
+training:
+  college: "Royal College of Psychiatrists"
+  route: "Core Psychiatry Training (CT1–CT3), then specialty training ST4–ST6"
+  length: "6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant old age psychiatrist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [core-psychiatry-training]
+    special_interests: [memory-clinic-doctor, liaison-psychiatrist]
+related: [geriatric-medicine, adult-mental-illness, neurology]

@@ -1,0 +1,393 @@
+# NHS Data Dictionary — MAIN SPECIALTY CODE national codes.
+# Source: https://www.datadictionary.nhs.uk/attributes/main_specialty_code.html
+# Main specialties are the specialties recognised by the medical and dental
+# Royal Colleges / Faculties; a consultant's main specialty is the one they
+# are contracted in. Heading = the Data Dictionary's grouping.
+# status: active | retired
+
+codes:
+  - code: "100"
+    title: "General Surgery"
+    heading: "Surgical"
+    status: active
+  - code: "101"
+    title: "Urology"
+    heading: "Surgical"
+    status: active
+  - code: "107"
+    title: "Vascular Surgery"
+    heading: "Surgical"
+    status: active
+  - code: "110"
+    title: "Trauma and Orthopaedics"
+    heading: "Surgical"
+    status: active
+  - code: "120"
+    title: "Ear Nose and Throat"
+    heading: "Surgical"
+    status: active
+    note: "Formerly 'ENT'."
+  - code: "130"
+    title: "Ophthalmology"
+    heading: "Surgical"
+    status: active
+  - code: "140"
+    title: "Oral Surgery"
+    heading: "Surgical"
+    status: active
+  - code: "141"
+    title: "Restorative Dentistry"
+    heading: "Surgical"
+    status: active
+  - code: "142"
+    title: "Paediatric Dentistry"
+    heading: "Surgical"
+    status: active
+  - code: "143"
+    title: "Orthodontics"
+    heading: "Surgical"
+    status: active
+  - code: "145"
+    title: "Oral and Maxillofacial Surgery"
+    heading: "Surgical"
+    status: active
+  - code: "146"
+    title: "Endodontics"
+    heading: "Surgical"
+    status: active
+  - code: "147"
+    title: "Periodontics"
+    heading: "Surgical"
+    status: active
+  - code: "148"
+    title: "Prosthodontics"
+    heading: "Surgical"
+    status: active
+  - code: "149"
+    title: "Surgical Dentistry"
+    heading: "Surgical"
+    status: active
+  - code: "150"
+    title: "Neurosurgery"
+    heading: "Surgical"
+    status: active
+  - code: "160"
+    title: "Plastic Surgery"
+    heading: "Surgical"
+    status: active
+  - code: "170"
+    title: "Cardiothoracic Surgery"
+    heading: "Surgical"
+    status: active
+  - code: "171"
+    title: "Paediatric Surgery"
+    heading: "Surgical"
+    status: active
+  - code: "180"
+    title: "Emergency Medicine"
+    heading: "Emergency medicine"
+    status: active
+    note: "Formerly 'Accident and Emergency'."
+  - code: "190"
+    title: "Anaesthetics"
+    heading: "Anaesthetics"
+    status: active
+  - code: "191"
+    title: "Pain Management"
+    heading: "Anaesthetics"
+    status: retired
+    note: "Retired 1 April 2004; pain management is recorded under Anaesthetics (190). Treatment function 191 is still in use."
+  - code: "192"
+    title: "Intensive Care Medicine"
+    heading: "Anaesthetics"
+    status: active
+  - code: "199"
+    title: "Non-UK provider; specialty function not known, treatment mainly surgical"
+    heading: "Surgical"
+    status: active
+    note: "Pseudo-specialty for activity at non-UK providers."
+  - code: "200"
+    title: "Aviation and Space Medicine"
+    heading: "Medical"
+    status: active
+  - code: "300"
+    title: "General Internal Medicine"
+    heading: "Medical"
+    status: active
+    note: "Formerly 'General Medicine'."
+  - code: "301"
+    title: "Gastroenterology"
+    heading: "Medical"
+    status: active
+  - code: "302"
+    title: "Endocrinology and Diabetes"
+    heading: "Medical"
+    status: active
+  - code: "303"
+    title: "Clinical Haematology"
+    heading: "Medical"
+    status: active
+  - code: "304"
+    title: "Clinical Physiology"
+    heading: "Medical"
+    status: active
+  - code: "305"
+    title: "Clinical Pharmacology"
+    heading: "Medical"
+    status: active
+  - code: "310"
+    title: "Audio Vestibular Medicine"
+    heading: "Medical"
+    status: active
+  - code: "311"
+    title: "Clinical Genetics"
+    heading: "Medical"
+    status: active
+  - code: "312"
+    title: "Clinical Cytogenetics and Molecular Genetics"
+    heading: "Medical"
+    status: retired
+    note: "Retired 1 April 2010; retained for consultants who qualified before then."
+  - code: "313"
+    title: "Clinical Immunology"
+    heading: "Medical"
+    status: active
+    note: "Formerly 'Clinical Immunology and Allergy'; Allergy is now 317."
+  - code: "314"
+    title: "Rehabilitation Medicine"
+    heading: "Medical"
+    status: active
+  - code: "315"
+    title: "Palliative Medicine"
+    heading: "Medical"
+    status: active
+  - code: "317"
+    title: "Allergy"
+    heading: "Medical"
+    status: active
+  - code: "320"
+    title: "Cardiology"
+    heading: "Medical"
+    status: active
+  - code: "321"
+    title: "Paediatric Cardiology"
+    heading: "Medical"
+    status: active
+  - code: "325"
+    title: "Sport and Exercise Medicine"
+    heading: "Medical"
+    status: active
+  - code: "326"
+    title: "Acute Internal Medicine"
+    heading: "Medical"
+    status: active
+  - code: "330"
+    title: "Dermatology"
+    heading: "Medical"
+    status: active
+  - code: "340"
+    title: "Respiratory Medicine"
+    heading: "Medical"
+    status: active
+    note: "Formerly 'Thoracic Medicine'."
+  - code: "350"
+    title: "Infectious Diseases"
+    heading: "Medical"
+    status: active
+  - code: "352"
+    title: "Tropical Medicine"
+    heading: "Medical"
+    status: active
+  - code: "360"
+    title: "Genitourinary Medicine"
+    heading: "Medical"
+    status: active
+  - code: "361"
+    title: "Renal Medicine"
+    heading: "Medical"
+    status: active
+    note: "Formerly 'Nephrology'."
+  - code: "370"
+    title: "Medical Oncology"
+    heading: "Medical"
+    status: active
+  - code: "371"
+    title: "Nuclear Medicine"
+    heading: "Medical"
+    status: active
+  - code: "400"
+    title: "Neurology"
+    heading: "Medical"
+    status: active
+  - code: "401"
+    title: "Clinical Neurophysiology"
+    heading: "Medical"
+    status: active
+  - code: "410"
+    title: "Rheumatology"
+    heading: "Medical"
+    status: active
+  - code: "420"
+    title: "Paediatrics"
+    heading: "Medical"
+    status: active
+  - code: "421"
+    title: "Paediatric Neurology"
+    heading: "Medical"
+    status: active
+  - code: "430"
+    title: "Geriatric Medicine"
+    heading: "Medical"
+    status: active
+  - code: "450"
+    title: "Dental Medicine"
+    heading: "Medical"
+    status: active
+  - code: "451"
+    title: "Special Care Dentistry"
+    heading: "Medical"
+    status: active
+  - code: "460"
+    title: "Medical Ophthalmology"
+    heading: "Medical"
+    status: active
+  - code: "499"
+    title: "Non-UK provider; specialty function not known, treatment mainly medical"
+    heading: "Medical"
+    status: active
+    note: "Pseudo-specialty for activity at non-UK providers."
+  - code: "500"
+    title: "Obstetrics and Gynaecology"
+    heading: "Obstetrics and gynaecology"
+    status: active
+    note: "Not acceptable for central returns (including HES); use 501 or 502."
+  - code: "501"
+    title: "Obstetrics"
+    heading: "Obstetrics and gynaecology"
+    status: active
+  - code: "502"
+    title: "Gynaecology"
+    heading: "Obstetrics and gynaecology"
+    status: active
+  - code: "504"
+    title: "Community Sexual and Reproductive Health"
+    heading: "Obstetrics and gynaecology"
+    status: active
+  - code: "560"
+    title: "Midwifery"
+    heading: "Obstetrics and gynaecology"
+    status: active
+  - code: "600"
+    title: "General Medical Practice"
+    heading: "General practice"
+    status: active
+  - code: "601"
+    title: "General Dental Practice"
+    heading: "General practice"
+    status: active
+  - code: "700"
+    title: "Learning Disability"
+    heading: "Psychiatry"
+    status: active
+  - code: "710"
+    title: "Adult Mental Illness"
+    heading: "Psychiatry"
+    status: active
+  - code: "711"
+    title: "Child and Adolescent Psychiatry"
+    heading: "Psychiatry"
+    status: active
+  - code: "712"
+    title: "Forensic Psychiatry"
+    heading: "Psychiatry"
+    status: active
+  - code: "713"
+    title: "Medical Psychotherapy"
+    heading: "Psychiatry"
+    status: active
+  - code: "715"
+    title: "Old Age Psychiatry"
+    heading: "Psychiatry"
+    status: active
+  - code: "800"
+    title: "Clinical Oncology"
+    heading: "Radiology"
+    status: active
+    note: "Formerly 'Radiotherapy'."
+  - code: "810"
+    title: "Radiology"
+    heading: "Radiology"
+    status: active
+  - code: "820"
+    title: "General Pathology"
+    heading: "Pathology"
+    status: active
+  - code: "821"
+    title: "Blood Transfusion"
+    heading: "Pathology"
+    status: active
+  - code: "822"
+    title: "Chemical Pathology"
+    heading: "Pathology"
+    status: active
+  - code: "823"
+    title: "Haematology"
+    heading: "Pathology"
+    status: active
+  - code: "824"
+    title: "Histopathology"
+    heading: "Pathology"
+    status: active
+  - code: "830"
+    title: "Immunopathology"
+    heading: "Pathology"
+    status: active
+  - code: "831"
+    title: "Medical Microbiology and Virology"
+    heading: "Pathology"
+    status: active
+    note: "See also 833 Medical Microbiology and 834 Medical Virology."
+  - code: "832"
+    title: "Neuropathology"
+    heading: "Pathology"
+    status: retired
+    note: "Retired 1 April 2004. Treatment function 832 is still in use."
+  - code: "833"
+    title: "Medical Microbiology"
+    heading: "Pathology"
+    status: active
+    note: "Also known as Microbiology and Bacteriology."
+  - code: "834"
+    title: "Medical Virology"
+    heading: "Pathology"
+    status: active
+  - code: "900"
+    title: "Community Medicine"
+    heading: "Other"
+    status: active
+  - code: "901"
+    title: "Occupational Medicine"
+    heading: "Other"
+    status: active
+  - code: "902"
+    title: "Community Health Services Dental"
+    heading: "Other"
+    status: active
+  - code: "903"
+    title: "Public Health Medicine"
+    heading: "Other"
+    status: active
+  - code: "904"
+    title: "Public Health Dental"
+    heading: "Other"
+    status: active
+  - code: "950"
+    title: "Nursing"
+    heading: "Other"
+    status: active
+    note: "For episodes led by a nurse rather than a consultant."
+  - code: "960"
+    title: "Allied Health Professional"
+    heading: "Other"
+    status: active
+    note: "For episodes led by an allied health professional."

@@ -1,0 +1,15 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: community-medicine
+title: "Community Medicine"
+group: primary-public
+main_specialty_codes: ["900"]
+treatment_function_codes: ["900"]
+summary: >-
+  Historical title for public health medicine and community-based medical
+  services; the treatment function is still used for some community clinics.
+workforce:
+  medical:
+    grades: [consultant, specialty-doctor]
+    pathways: [public-health-training]
+    special_interests: [public-health-consultant]
+related: [public-health-medicine, paediatrics]

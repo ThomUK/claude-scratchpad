@@ -1,0 +1,21 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: trauma-and-orthopaedics
+title: "Trauma and Orthopaedics"
+group: surgical
+main_specialty_codes: ["110"]
+treatment_function_codes: ["108", "110", "111", "214"]
+summary: >-
+  Injuries and conditions of bones, joints, ligaments, tendons and nerves:
+  fractures, joint replacement, spinal, hand, foot and ankle, and children's
+  orthopaedics.
+training:
+  college: "Royal College of Surgeons (JCST curriculum)"
+  route: "Core Surgical Training (CT1–CT2), then specialty training ST3–ST8"
+  length: "about 8 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant trauma and orthopaedic surgeon"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [core-surgical-training]
+    special_interests: [spinal-surgeon, hand-surgeon, orthogeriatrician, major-trauma, sport-and-msk]
+related: [geriatric-medicine, rheumatology, neurosurgery, plastic-surgery]

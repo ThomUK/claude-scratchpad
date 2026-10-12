@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: clinical-neurophysiology
+title: "Clinical Neurophysiology"
+group: diagnostics
+main_specialty_codes: ["401"]
+treatment_function_codes: ["401"]
+summary: >-
+  Diagnostic testing of nerve and brain function: EEG, nerve conduction
+  studies, EMG and evoked potentials.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2) (paediatrics also accepted)"
+  length: "about 6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant clinical neurophysiologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [epilepsy-specialist, sleep-physician]
+related: [neurology]

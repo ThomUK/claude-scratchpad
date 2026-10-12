@@ -1,0 +1,21 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: oral-and-maxillofacial-surgery
+title: "Oral and Maxillofacial Surgery"
+group: surgical
+main_specialty_codes: ["145"]
+treatment_function_codes: ["144", "145", "217"]
+summary: >-
+  Surgery of the face, jaws and mouth: facial trauma, head and neck cancer,
+  deformity correction and complex oral surgery. Consultants hold both medical
+  and dental degrees.
+training:
+  college: "Royal College of Surgeons (JCST curriculum)"
+  route: "Dual medical and dental qualification, Core Surgical Training, then specialty training ST3–ST7"
+  length: "about 7 years after foundation, plus a second degree"
+workforce:
+  medical:
+    consultant_title: "Consultant oral and maxillofacial surgeon"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [core-surgical-training]
+    special_interests: [head-and-neck-surgeon, cleft-surgeon]
+related: [oral-surgery, ear-nose-and-throat, plastic-surgery, orthodontics]

@@ -1,0 +1,19 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: dental-medicine
+title: "Dental Medicine"
+group: dental
+main_specialty_codes: ["450"]
+treatment_function_codes: ["450"]
+summary: >-
+  Oral medicine: non-surgical diagnosis and management of oral mucosal
+  disease, facial pain and the oral effects of systemic disease.
+training:
+  college: "Faculty of Dental Surgery, Royal College of Surgeons (dental SAC)"
+  route: "Dental Core Training, then specialty training (dental-only or dual-qualified)"
+workforce:
+  medical:
+    consultant_title: "Consultant in oral medicine"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, dental-core-trainee]
+    pathways: [dental-core-training]
+    special_interests: [oral-medicine]
+related: [oral-surgery, dermatology]

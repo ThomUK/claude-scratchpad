@@ -1,0 +1,22 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: radiology
+title: "Radiology"
+group: diagnostics
+main_specialty_codes: ["810"]
+treatment_function_codes: ["810", "811", "812", "280"]
+summary: >-
+  Diagnostic imaging (X-ray, CT, MRI, ultrasound) and image-guided
+  intervention.
+notes: >-
+  Paediatric interventional radiology (280) is mapped here.
+training:
+  college: "Royal College of Radiologists"
+  route: "Run-through specialty training ST1–ST5 (ST1–ST6 for interventional radiology)"
+  length: "5–6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant radiologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, locally-employed-doctor, core-trainee]
+    pathways: [clinical-radiology-training]
+    special_interests: [interventional-radiologist, endovascular-specialist, cardiac-imaging, molecular-imaging]
+related: [nuclear-medicine, vascular-surgery, clinical-oncology]

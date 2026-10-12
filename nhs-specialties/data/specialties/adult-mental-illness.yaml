@@ -1,0 +1,23 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: adult-mental-illness
+title: "Adult Mental Illness"
+group: mental-health
+main_specialty_codes: ["710"]
+treatment_function_codes: ["710", "656", "720", "721", "722", "723", "724", "725", "726", "730"]
+summary: >-
+  General adult psychiatry: assessment and treatment of mental illness in
+  working-age adults across community, crisis and inpatient services.
+notes: >-
+  Clinical psychology (656) and the adult mental health service functions
+  (720–730) are mapped here.
+training:
+  college: "Royal College of Psychiatrists"
+  route: "Core Psychiatry Training (CT1–CT3), then specialty training ST4–ST6"
+  length: "6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant general adult psychiatrist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [core-psychiatry-training]
+    special_interests: [liaison-psychiatrist, addiction-psychiatrist, perinatal-psychiatrist, eating-disorders-psychiatrist, neuropsychiatrist]
+related: [old-age-psychiatry, forensic-psychiatry, medical-psychotherapy, child-and-adolescent-psychiatry]

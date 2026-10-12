@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: paediatric-surgery
+title: "Paediatric Surgery"
+group: surgical
+main_specialty_codes: ["171"]
+treatment_function_codes: ["171", "211", "212", "213"]
+summary: >-
+  General and specialist surgery for babies, children and young people,
+  including neonatal surgery, paediatric urology and gastrointestinal surgery.
+training:
+  college: "Royal College of Surgeons (JCST curriculum)"
+  route: "Core Surgical Training (CT1–CT2), then specialty training ST3–ST8"
+  length: "about 8 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant paediatric surgeon"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [core-surgical-training]
+    special_interests: []
+related: [paediatrics, urology, general-surgery]

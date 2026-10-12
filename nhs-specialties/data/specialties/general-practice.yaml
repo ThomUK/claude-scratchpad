@@ -1,0 +1,22 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: general-practice
+title: "General Medical Practice"
+group: primary-public
+main_specialty_codes: ["600"]
+treatment_function_codes: []
+summary: >-
+  Primary medical care: first contact, continuity and coordination of care for
+  registered patients in the community.
+notes: >-
+  Primary-care code used, for example, for GP referral sources; no hospital
+  treatment function.
+training:
+  college: "Royal College of General Practitioners"
+  route: "GP specialty training ST1–ST3"
+  length: "3 years after foundation"
+workforce:
+  medical:
+    grades: [general-practitioner, specialty-registrar, foundation-doctor, physician-assistant]
+    pathways: [gp-training]
+    special_interests: [gp-extended-role]
+related: [community-sexual-and-reproductive-health, palliative-medicine, dermatology]

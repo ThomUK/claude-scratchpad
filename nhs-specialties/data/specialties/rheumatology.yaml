@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: rheumatology
+title: "Rheumatology"
+group: medical
+main_specialty_codes: ["410"]
+treatment_function_codes: ["410"]
+summary: >-
+  Inflammatory arthritis, connective tissue disease, vasculitis, osteoporosis
+  and other musculoskeletal conditions.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training, then specialty training (dual with GIM optional)"
+  length: "about 6–7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant rheumatologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [acute-take-physician, sport-and-msk]
+related: [trauma-and-orthopaedics, dermatology, sport-and-exercise-medicine]

@@ -1,0 +1,18 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: midwifery
+title: "Midwifery"
+group: non-medical
+main_specialty_codes: ["560"]
+treatment_function_codes: ["560"]
+summary: >-
+  Midwife-led care in pregnancy, birth and the postnatal period for women with
+  uncomplicated pregnancies.
+notes: >-
+  Midwife-led; medical roles appear only when care transfers to obstetrics.
+  Midwifery roles are a candidate for the next staff group.
+workforce:
+  medical:
+    grades: []
+    pathways: []
+    special_interests: []
+related: [obstetrics]

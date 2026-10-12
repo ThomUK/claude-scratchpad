@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: clinical-pharmacology
+title: "Clinical Pharmacology"
+group: medical
+main_specialty_codes: ["305"]
+treatment_function_codes: ["305"]
+summary: >-
+  Safe and effective use of medicines: drug development, toxicology and
+  poisoning, prescribing governance and therapeutics.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training (3 years), then specialty training ST4–ST7 dual-accredited with General Internal Medicine (Group 1)"
+  length: "7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant clinical pharmacologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [acute-take-physician, stroke-physician]
+related: [general-internal-medicine]

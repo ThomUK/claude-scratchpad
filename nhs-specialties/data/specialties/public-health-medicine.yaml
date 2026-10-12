@@ -1,0 +1,22 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: public-health-medicine
+title: "Public Health Medicine"
+group: primary-public
+main_specialty_codes: ["903"]
+treatment_function_codes: []
+summary: >-
+  Protecting and improving population health: health protection, health
+  improvement and healthcare public health.
+notes: >-
+  No hospital treatment function.
+training:
+  college: "Faculty of Public Health"
+  route: "Public health specialty training ST1–ST5"
+  length: "5 years after foundation (or other entry for non-medical specialists)"
+workforce:
+  medical:
+    consultant_title: "Consultant in public health"
+    grades: [consultant, specialty-registrar]
+    pathways: [public-health-training]
+    special_interests: [public-health-consultant]
+related: [community-medicine, occupational-medicine, public-health-dental]

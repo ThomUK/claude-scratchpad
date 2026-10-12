@@ -1,0 +1,21 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: cardiothoracic-surgery
+title: "Cardiothoracic Surgery"
+group: surgical
+main_specialty_codes: ["170"]
+treatment_function_codes: ["170", "172", "173", "174", "221", "222"]
+summary: >-
+  Surgery of the heart, lungs, chest wall and great vessels, including
+  coronary bypass, valve surgery, lung cancer resection and heart and lung
+  transplantation.
+training:
+  college: "Royal College of Surgeons (JCST curriculum)"
+  route: "Run-through specialty training ST1–ST8"
+  length: "8 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant cardiothoracic surgeon"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: []
+    special_interests: [transplant-surgeon]
+related: [cardiology, respiratory-medicine, paediatric-cardiology]

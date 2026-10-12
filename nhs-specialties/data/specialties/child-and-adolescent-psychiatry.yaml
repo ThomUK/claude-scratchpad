@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: child-and-adolescent-psychiatry
+title: "Child and Adolescent Psychiatry"
+group: mental-health
+main_specialty_codes: ["711"]
+treatment_function_codes: ["711"]
+summary: >-
+  Mental health care for children and young people (CAMHS), including
+  neurodevelopmental conditions and eating disorders.
+training:
+  college: "Royal College of Psychiatrists"
+  route: "Core Psychiatry Training (CT1–CT3), then specialty training ST4–ST6"
+  length: "6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant child and adolescent psychiatrist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [core-psychiatry-training]
+    special_interests: [eating-disorders-psychiatrist]
+related: [paediatrics, adult-mental-illness, learning-disability]

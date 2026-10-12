@@ -1,0 +1,22 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: medical-microbiology
+title: "Medical Microbiology"
+group: diagnostics
+main_specialty_codes: ["833"]
+treatment_function_codes: ["833", "322"]
+summary: >-
+  Diagnosis of bacterial, fungal and parasitic infection, antimicrobial
+  stewardship and infection prevention and control.
+notes: >-
+  Clinical microbiology (322) is mapped here.
+training:
+  college: "Royal College of Pathologists"
+  route: "IMT, then Combined Infection Training, then higher training (often dual with infectious diseases)"
+  length: "about 7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant medical microbiologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training, combined-infection-training]
+    special_interests: [infection-control-doctor]
+related: [infectious-diseases, medical-virology]

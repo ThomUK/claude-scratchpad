@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: chemical-pathology
+title: "Chemical Pathology"
+group: diagnostics
+main_specialty_codes: ["822"]
+treatment_function_codes: ["822", "335"]
+summary: >-
+  Clinical biochemistry and metabolic medicine: laboratory leadership plus
+  clinics for lipids, metabolic bone and inherited metabolic disease.
+training:
+  college: "Royal College of Pathologists"
+  route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2)"
+  length: "about 7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant chemical pathologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [metabolic-medicine]
+related: [endocrinology-and-diabetes, paediatrics]

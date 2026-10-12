@@ -1,0 +1,19 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: clinical-physiology
+title: "Clinical Physiology"
+group: medical
+main_specialty_codes: ["304"]
+treatment_function_codes: ["304", "670", "673", "675", "677"]
+summary: >-
+  Physiological measurement services (cardiac, vascular, respiratory,
+  gastrointestinal and urological physiology), largely delivered by clinical
+  scientists and physiologists.
+notes: >-
+  Rarely used as a medical main specialty; most activity is led by healthcare
+  scientists. Physiology treatment functions 670–677 are grouped here.
+workforce:
+  medical:
+    grades: [consultant, specialty-doctor]
+    pathways: []
+    special_interests: []
+related: [cardiology, respiratory-medicine, vascular-surgery]

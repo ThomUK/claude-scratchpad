@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: tropical-medicine
+title: "Tropical Medicine"
+group: medical
+main_specialty_codes: ["352"]
+treatment_function_codes: ["352"]
+summary: >-
+  Infections and conditions acquired in tropical and resource-limited
+  settings, and imported infection in travellers and migrants.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "IMT, then Combined Infection Training, then higher training dual with infectious diseases"
+  length: "about 7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant in tropical medicine"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training, combined-infection-training]
+    special_interests: [travel-medicine]
+related: [infectious-diseases]

@@ -1,0 +1,23 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: anaesthetics
+title: "Anaesthetics"
+group: acute
+main_specialty_codes: ["190", "191"]
+treatment_function_codes: ["190", "191"]
+summary: >-
+  Anaesthesia and sedation for surgery and procedures, perioperative medicine,
+  obstetric anaesthesia, resuscitation and chronic pain.
+notes: >-
+  Pain management had its own main specialty (191) until 2004; it is now
+  recorded under Anaesthetics, though treatment function 191 is still used.
+training:
+  college: "Royal College of Anaesthetists"
+  route: "Core anaesthetics (CT1–CT3), then ST4–ST7 (or ACCS entry)"
+  length: "7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant anaesthetist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor, physician-assistant-anaesthesia]
+    pathways: []
+    special_interests: [intensivist, pain-medicine, obstetric-anaesthetist, pre-hospital-emergency-medicine, paediatric-intensivist]
+related: [intensive-care-medicine, emergency-medicine, obstetrics]

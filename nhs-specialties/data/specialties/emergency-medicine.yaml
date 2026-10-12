@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: emergency-medicine
+title: "Emergency Medicine"
+group: acute
+main_specialty_codes: ["180"]
+treatment_function_codes: ["180"]
+summary: >-
+  Immediate assessment and treatment of undifferentiated injury and illness in
+  emergency departments, for patients of all ages.
+training:
+  college: "Royal College of Emergency Medicine"
+  route: "Run-through training: ACCS (ST1–ST3), then ST4–ST6"
+  length: "6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant in emergency medicine"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor, physician-assistant]
+    pathways: [acute-care-common-stem]
+    special_interests: [intensivist, pre-hospital-emergency-medicine, paediatric-emergency-medicine, major-trauma]
+related: [acute-internal-medicine, intensive-care-medicine, anaesthetics, paediatrics]

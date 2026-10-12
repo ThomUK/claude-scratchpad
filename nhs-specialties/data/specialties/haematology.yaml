@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: haematology
+title: "Haematology"
+group: diagnostics
+main_specialty_codes: ["823"]
+treatment_function_codes: ["823"]
+summary: >-
+  Laboratory haematology: blood counts, morphology, coagulation, blood bank
+  and haemoglobinopathy screening.
+training:
+  college: "Royal College of Pathologists"
+  route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2); training combines clinical and laboratory haematology"
+  length: "about 7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant haematologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [transfusion-medicine, bmt-physician]
+related: [clinical-haematology, blood-transfusion]

@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: gastroenterology
+title: "Gastroenterology"
+group: medical
+main_specialty_codes: ["301"]
+treatment_function_codes: ["301", "306"]
+summary: >-
+  Diseases of the gut, liver, pancreas and biliary tree, including
+  inflammatory bowel disease, endoscopy and hepatology.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training (3 years), then specialty training ST4–ST7 dual-accredited with General Internal Medicine (Group 1)"
+  length: "7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant gastroenterologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [acute-take-physician, endoscopist, hepatologist]
+related: [general-surgery, general-internal-medicine]

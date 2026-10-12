@@ -1,0 +1,22 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: clinical-oncology
+title: "Clinical Oncology"
+group: oncology
+main_specialty_codes: ["800"]
+treatment_function_codes: ["800"]
+summary: >-
+  Non-surgical cancer treatment with radiotherapy and systemic therapy; the
+  UK's combined radiation and medical oncology specialty.
+notes: >-
+  Main specialty 800 was formerly titled Radiotherapy.
+training:
+  college: "Royal College of Radiologists"
+  route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2), then ST3–ST7"
+  length: "about 7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant clinical oncologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [acute-oncology]
+related: [medical-oncology, radiology, palliative-medicine]

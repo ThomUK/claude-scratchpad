@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: gynaecology
+title: "Gynaecology"
+group: women-children
+main_specialty_codes: ["502", "500"]
+treatment_function_codes: ["502", "503"]
+summary: >-
+  Disorders of the female reproductive system: menstrual problems,
+  endometriosis, pelvic floor, subfertility and gynaecological cancer.
+training:
+  college: "Royal College of Obstetricians and Gynaecologists"
+  route: "Run-through specialty training ST1–ST7 (obstetrics and gynaecology)"
+  length: "7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant gynaecologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [og-training]
+    special_interests: [gynaecological-oncologist, reproductive-medicine]
+related: [obstetrics, community-sexual-and-reproductive-health, urology]

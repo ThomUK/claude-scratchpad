@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: clinical-genetics
+title: "Clinical Genetics"
+group: medical
+main_specialty_codes: ["311", "312"]
+treatment_function_codes: ["311", "333"]
+summary: >-
+  Diagnosis, counselling and management of inherited conditions and genetic
+  predisposition to cancer, for individuals and families.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2) (paediatrics also accepted)"
+  length: "about 6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant clinical geneticist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training, paediatrics-training]
+    special_interests: []
+related: [paediatrics, obstetrics]

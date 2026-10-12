@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: genitourinary-medicine
+title: "Genitourinary Medicine"
+group: medical
+main_specialty_codes: ["360"]
+treatment_function_codes: ["360"]
+summary: >-
+  Sexually transmitted infections and HIV, delivered in integrated sexual
+  health services.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2)"
+  length: "about 6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant in genitourinary medicine"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [sexual-health-physician, hiv-physician]
+related: [community-sexual-and-reproductive-health, infectious-diseases]

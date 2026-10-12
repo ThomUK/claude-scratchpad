@@ -1,0 +1,17 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: nursing
+title: "Nursing"
+group: non-medical
+main_specialty_codes: ["950"]
+treatment_function_codes: []
+summary: >-
+  Episodes of care led by a nurse rather than a consultant, such as nurse-led
+  clinics.
+notes: >-
+  Nurse-led code. Nursing roles are a candidate for the next staff group.
+workforce:
+  medical:
+    grades: []
+    pathways: []
+    special_interests: []
+related: [allied-health-professional, midwifery]

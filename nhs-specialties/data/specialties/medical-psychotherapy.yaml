@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: medical-psychotherapy
+title: "Medical Psychotherapy"
+group: mental-health
+main_specialty_codes: ["713"]
+treatment_function_codes: ["713"]
+summary: >-
+  Psychological therapies delivered and supervised by psychiatrists,
+  particularly for personality disorder and complex trauma.
+training:
+  college: "Royal College of Psychiatrists"
+  route: "Core Psychiatry Training (CT1–CT3), then specialty training ST4–ST6"
+  length: "6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant medical psychotherapist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [core-psychiatry-training]
+    special_interests: []
+related: [adult-mental-illness]

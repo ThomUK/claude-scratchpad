@@ -1,0 +1,23 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: geriatric-medicine
+title: "Geriatric Medicine"
+group: medical
+main_specialty_codes: ["430"]
+treatment_function_codes: ["430", "431", "318", "319"]
+summary: >-
+  Care of older people with frailty and multimorbidity: comprehensive
+  geriatric assessment, falls, delirium, orthogeriatrics and intermediate
+  care.
+notes: >-
+  Intermediate care (318) and respite care (319) are mapped here.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training (3 years), then specialty training ST4–ST7 dual-accredited with General Internal Medicine (Group 1)"
+  length: "7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant geriatrician"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor, physician-assistant]
+    pathways: [internal-medicine-training]
+    special_interests: [acute-take-physician, stroke-physician, orthogeriatrician, memory-clinic-doctor]
+related: [general-internal-medicine, trauma-and-orthopaedics, old-age-psychiatry]

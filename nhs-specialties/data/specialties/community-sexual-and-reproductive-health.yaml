@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: community-sexual-and-reproductive-health
+title: "Community Sexual and Reproductive Health"
+group: women-children
+main_specialty_codes: ["504"]
+treatment_function_codes: ["504"]
+summary: >-
+  Contraception, abortion care, unplanned pregnancy and sexual health in
+  community services.
+training:
+  college: "Faculty of Sexual and Reproductive Healthcare"
+  route: "Run-through specialty training ST1–ST6"
+  length: "6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant in sexual and reproductive health"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: []
+    special_interests: [sexual-health-physician, gp-extended-role]
+related: [genitourinary-medicine, gynaecology, general-practice]

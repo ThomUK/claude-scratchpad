@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: paediatric-neurology
+title: "Paediatric Neurology"
+group: women-children
+main_specialty_codes: ["421"]
+treatment_function_codes: ["421"]
+summary: >-
+  Neurological disorders in children: epilepsy, neuromuscular disease,
+  neurodevelopmental and neurometabolic conditions.
+training:
+  college: "Royal College of Paediatrics and Child Health"
+  route: "Paediatrics run-through with GRID subspecialty training in paediatric neurology"
+  length: "7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant paediatric neurologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [paediatrics-training]
+    special_interests: [epilepsy-specialist]
+related: [paediatrics, neurology, clinical-neurophysiology]

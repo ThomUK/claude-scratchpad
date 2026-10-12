@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NHS Specialties &amp; Treatment Functions</title>
+  <link rel="stylesheet" href="styles.css?v=dev" />
+</head>
+<body>
+  <header>
+    <h1>NHS Specialties &amp; Treatment Functions</h1>
+    <p class="repo-link">
+      <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/nhs-specialties" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.76-3.65 3.95.29.25.54.74.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        View source on GitHub
+      </a>
+    </p>
+    <p class="subtitle">
+      An index of NHS <strong>main specialties</strong> and <strong>treatment functions</strong> from the
+      <a href="https://www.datadictionary.nhs.uk/attributes/main_specialty_code.html" target="_blank" rel="noopener">NHS Data Dictionary</a>,
+      built into a factsheet per specialty, with a graph layer showing how specialties connect
+      through their clinical roles. The first layer is <strong>doctors and medical staff</strong>: career grades,
+      the shared training pathways that feed several specialties, and special-interest roles that cut across them.
+    </p>
+    <nav class="tabs" aria-label="Views">
+      <a href="#/" data-view="index">Specialties</a>
+      <a href="#/graph" data-view="graph">Role graph</a>
+      <a href="#/codes" data-view="codes">Code index</a>
+      <a href="#/about" data-view="about">About the data</a>
+    </nav>
+    <p id="status" class="status" role="status">Loading data…</p>
+  </header>
+
+  <main id="view"></main>
+
+  <div id="tip" class="tip" role="tooltip" hidden></div>
+
+  <footer>
+    Codes: NHS Data Dictionary (Main Specialty Code, Treatment Function Code). Factsheet text, role
+    mappings and training summaries are a curated starting point, not an authoritative source; each
+    factsheet is a YAML file under <code>nhs-specialties/data/specialties/</code>.
+  </footer>
+
+  <script type="module" src="app.js?v=dev"></script>
+</body>
+</html>

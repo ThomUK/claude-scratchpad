@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: renal-medicine
+title: "Renal Medicine"
+group: medical
+main_specialty_codes: ["361"]
+treatment_function_codes: ["361"]
+summary: >-
+  Kidney disease: acute kidney injury, chronic kidney disease, dialysis and
+  kidney transplantation.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training (3 years), then specialty training ST4–ST7 dual-accredited with General Internal Medicine (Group 1)"
+  length: "7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant nephrologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [acute-take-physician, intensivist]
+related: [urology, general-surgery, intensive-care-medicine]

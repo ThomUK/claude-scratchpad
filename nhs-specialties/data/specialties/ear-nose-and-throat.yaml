@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: ear-nose-and-throat
+title: "Ear Nose and Throat"
+group: surgical
+main_specialty_codes: ["120"]
+treatment_function_codes: ["120", "215"]
+summary: >-
+  Otorhinolaryngology: hearing and balance, nose and sinuses, airway, voice
+  and swallowing, and head and neck cancer.
+training:
+  college: "Royal College of Surgeons (JCST curriculum)"
+  route: "Core Surgical Training (CT1–CT2), then specialty training ST3–ST8"
+  length: "about 8 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant ENT surgeon"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [core-surgical-training]
+    special_interests: [head-and-neck-surgeon, skull-base-surgeon, endocrine-surgeon, balance-and-hearing]
+related: [audio-vestibular-medicine, oral-and-maxillofacial-surgery, neurosurgery]

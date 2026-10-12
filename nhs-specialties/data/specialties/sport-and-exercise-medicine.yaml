@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: sport-and-exercise-medicine
+title: "Sport and Exercise Medicine"
+group: medical
+main_specialty_codes: ["325"]
+treatment_function_codes: ["325"]
+summary: >-
+  Musculoskeletal injury, exercise as treatment for long-term conditions, and
+  medical care of athletes and active people.
+training:
+  college: "Faculty of Sport and Exercise Medicine (JRCPTB curriculum)"
+  route: "Entry after a core programme (IMT, ACCS or GP), then specialty training"
+  length: "about 6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant in sport and exercise medicine"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training, acute-care-common-stem, gp-training]
+    special_interests: [sport-and-msk]
+related: [rheumatology, trauma-and-orthopaedics, rehabilitation-medicine]

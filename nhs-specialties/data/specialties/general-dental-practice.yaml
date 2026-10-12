@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: general-dental-practice
+title: "General Dental Practice"
+group: dental
+main_specialty_codes: ["601"]
+treatment_function_codes: []
+summary: >-
+  Primary-care dentistry delivered in high-street practices under NHS and
+  private contracts.
+notes: >-
+  Primary-care code; no hospital treatment function.
+training:
+  route: "Dental degree, then Dental Foundation Training (1 year)"
+  length: "1 year after graduation"
+workforce:
+  medical:
+    grades: [general-dental-practitioner, dental-foundation-trainee]
+    pathways: []
+    special_interests: []
+related: [community-health-services-dental]

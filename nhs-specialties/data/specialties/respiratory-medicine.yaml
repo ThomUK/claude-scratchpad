@@ -1,0 +1,23 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: respiratory-medicine
+title: "Respiratory Medicine"
+group: medical
+main_specialty_codes: ["340"]
+treatment_function_codes: ["340", "341", "342", "343", "347", "348"]
+summary: >-
+  Lung disease: asthma, COPD, lung cancer, interstitial lung disease, cystic
+  fibrosis, sleep-disordered breathing and ventilation.
+notes: >-
+  Post-COVID-19 syndrome services (348) are mapped here; many were
+  multidisciplinary.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training (3 years), then specialty training ST4–ST7 dual-accredited with General Internal Medicine (Group 1)"
+  length: "7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant respiratory physician"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [acute-take-physician, intensivist, sleep-physician]
+related: [cardiothoracic-surgery, intensive-care-medicine, infectious-diseases]

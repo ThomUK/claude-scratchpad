@@ -1,0 +1,21 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: general-surgery
+title: "General Surgery"
+group: surgical
+main_specialty_codes: ["100"]
+treatment_function_codes: ["100", "102", "103", "104", "105", "106", "109", "113", "115"]
+summary: >-
+  Surgery of the abdomen, breast, endocrine glands and soft tissues, plus
+  emergency general surgery. Most consultants subspecialise in colorectal,
+  upper GI, HPB, breast, transplant or bariatric work.
+training:
+  college: "Royal College of Surgeons (JCST curriculum)"
+  route: "Core Surgical Training (CT1–CT2), then specialty training ST3–ST8"
+  length: "about 8 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant general surgeon"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [core-surgical-training]
+    special_interests: [endoscopist, transplant-surgeon, breast-surgeon, endocrine-surgeon, major-trauma]
+related: [vascular-surgery, urology, gastroenterology, plastic-surgery]

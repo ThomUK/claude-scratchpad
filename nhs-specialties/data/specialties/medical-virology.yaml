@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: medical-virology
+title: "Medical Virology"
+group: diagnostics
+main_specialty_codes: ["834"]
+treatment_function_codes: ["834"]
+summary: >-
+  Diagnosis and management of viral infection, including blood-borne viruses,
+  and virological laboratory leadership.
+training:
+  college: "Royal College of Pathologists"
+  route: "IMT, then Combined Infection Training, then higher training"
+  length: "about 7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant virologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training, combined-infection-training]
+    special_interests: [infection-control-doctor]
+related: [medical-microbiology, infectious-diseases]

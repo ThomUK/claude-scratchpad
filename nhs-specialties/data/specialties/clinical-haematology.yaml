@@ -1,0 +1,22 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: clinical-haematology
+title: "Clinical Haematology"
+group: medical
+main_specialty_codes: ["303"]
+treatment_function_codes: ["303", "308", "309", "324"]
+summary: >-
+  Clinical care of blood disorders: leukaemia, lymphoma, myeloma, bleeding and
+  clotting disorders, haemoglobinopathies and stem cell transplantation.
+notes: >-
+  Haematologists normally hold both clinical (303) and laboratory (823) roles.
+training:
+  college: "Royal College of Pathologists and Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2); training combines clinical and laboratory haematology"
+  length: "about 7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant haematologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [bmt-physician, transfusion-medicine]
+related: [haematology, blood-transfusion, medical-oncology]

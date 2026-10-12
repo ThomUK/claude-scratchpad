@@ -1,0 +1,19 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: medical-microbiology-and-virology
+title: "Medical Microbiology and Virology"
+group: diagnostics
+main_specialty_codes: ["831"]
+treatment_function_codes: ["831"]
+summary: >-
+  Combined laboratory and clinical infection specialty, now largely split into
+  Medical Microbiology (833) and Medical Virology (834).
+training:
+  college: "Royal College of Pathologists"
+  route: "IMT, then Combined Infection Training, then higher training"
+workforce:
+  medical:
+    consultant_title: "Consultant in medical microbiology and virology"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training, combined-infection-training]
+    special_interests: [infection-control-doctor]
+related: [medical-microbiology, medical-virology]

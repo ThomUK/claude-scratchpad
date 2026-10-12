@@ -1,0 +1,19 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: orthodontics
+title: "Orthodontics"
+group: dental
+main_specialty_codes: ["143"]
+treatment_function_codes: ["143"]
+summary: >-
+  Diagnosis and correction of irregularities of the teeth and jaws, including
+  joint work with OMFS on orthognathic surgery and cleft care.
+training:
+  college: "Faculty of Dental Surgery, Royal College of Surgeons (dental SAC)"
+  route: "Dental Core Training, then specialty training (3 years, plus 2 for consultant posts)"
+workforce:
+  medical:
+    consultant_title: "Consultant orthodontist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, dental-core-trainee]
+    pathways: [dental-core-training]
+    special_interests: [cleft-surgeon]
+related: [oral-and-maxillofacial-surgery, paediatric-dentistry]

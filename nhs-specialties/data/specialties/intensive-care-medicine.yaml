@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: intensive-care-medicine
+title: "Intensive Care Medicine"
+group: acute
+main_specialty_codes: ["192"]
+treatment_function_codes: ["192"]
+summary: >-
+  Care of critically ill patients needing organ support in intensive care and
+  high-dependency units, and critical care outreach.
+training:
+  college: "Faculty of Intensive Care Medicine"
+  route: "Run-through ICM training ST1–ST7, single or dual CCT with anaesthetics, medicine or emergency medicine"
+  length: "7 years after foundation (longer if dual)"
+workforce:
+  medical:
+    consultant_title: "Consultant in intensive care medicine"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: []
+    special_interests: [intensivist, pre-hospital-emergency-medicine, paediatric-intensivist]
+related: [anaesthetics, acute-internal-medicine, emergency-medicine, respiratory-medicine, renal-medicine]

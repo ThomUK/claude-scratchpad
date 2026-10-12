@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: neurology
+title: "Neurology"
+group: medical
+main_specialty_codes: ["400"]
+treatment_function_codes: ["400"]
+summary: >-
+  Disorders of the brain, spinal cord, nerves and muscles: epilepsy, multiple
+  sclerosis, Parkinson's disease, headache and neuromuscular disease.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2)"
+  length: "about 7 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant neurologist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [stroke-physician, epilepsy-specialist, neuropsychiatrist, memory-clinic-doctor, sleep-physician]
+related: [neurosurgery, clinical-neurophysiology, paediatric-neurology, rehabilitation-medicine]

@@ -1,0 +1,764 @@
+# NHS Data Dictionary — TREATMENT FUNCTION CODE national codes.
+# Source: https://www.datadictionary.nhs.uk/attributes/treatment_function_code.html
+# (machine copy taken from the Strategy Unit's tx-lookup.json, which mirrors the
+# Data Dictionary table). A treatment function is the specialised service in
+# which a patient is treated; it is what RTT, SUS and HES activity is reported by.
+# group: Surgical | Medical | Paediatric | Mental health | Other
+
+codes:
+  - code: "100"
+    title: "General Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "101"
+    title: "Urology Service"
+    group: "Surgical"
+    status: active
+  - code: "102"
+    title: "Transplant Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "103"
+    title: "Breast Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "104"
+    title: "Colorectal Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "105"
+    title: "Hepatobiliary and Pancreatic Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "106"
+    title: "Upper Gastrointestinal Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "107"
+    title: "Vascular Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "108"
+    title: "Spinal Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "109"
+    title: "Bariatric Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "110"
+    title: "Trauma and Orthopaedic Service"
+    group: "Surgical"
+    status: active
+  - code: "111"
+    title: "Orthopaedic Service"
+    group: "Surgical"
+    status: active
+  - code: "113"
+    title: "Endocrine Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "115"
+    title: "Trauma Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "120"
+    title: "Ear Nose and Throat Service"
+    group: "Surgical"
+    status: active
+  - code: "130"
+    title: "Ophthalmology Service"
+    group: "Surgical"
+    status: active
+  - code: "140"
+    title: "Oral Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "141"
+    title: "Restorative Dentistry Service"
+    group: "Surgical"
+    status: active
+  - code: "142"
+    title: "Paediatric Dentistry Service"
+    group: "Paediatric"
+    status: active
+  - code: "143"
+    title: "Orthodontic Service"
+    group: "Surgical"
+    status: active
+  - code: "144"
+    title: "Maxillofacial Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "145"
+    title: "Oral and Maxillofacial Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "150"
+    title: "Neurosurgical Service"
+    group: "Surgical"
+    status: active
+  - code: "160"
+    title: "Plastic Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "161"
+    title: "Burns Care Service"
+    group: "Surgical"
+    status: active
+  - code: "170"
+    title: "Cardiothoracic Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "171"
+    title: "Paediatric Surgery Service"
+    group: "Paediatric"
+    status: active
+  - code: "172"
+    title: "Cardiac Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "173"
+    title: "Thoracic Surgery Service"
+    group: "Surgical"
+    status: active
+  - code: "174"
+    title: "Cardiothoracic Transplantation Service"
+    group: "Surgical"
+    status: active
+  - code: "180"
+    title: "Emergency Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "190"
+    title: "Anaesthetic Service"
+    group: "Medical"
+    status: active
+  - code: "191"
+    title: "Pain Management Service"
+    group: "Medical"
+    status: active
+  - code: "192"
+    title: "Intensive Care Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "200"
+    title: "Aviation and Space Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "211"
+    title: "Paediatric Urology Service"
+    group: "Paediatric"
+    status: active
+  - code: "212"
+    title: "Paediatric Transplantation Surgery Service"
+    group: "Paediatric"
+    status: active
+  - code: "213"
+    title: "Paediatric Gastrointestinal Surgery Service"
+    group: "Paediatric"
+    status: active
+  - code: "214"
+    title: "Paediatric Trauma and Orthopaedic Service"
+    group: "Paediatric"
+    status: active
+  - code: "215"
+    title: "Paediatric Ear Nose and Throat Service"
+    group: "Paediatric"
+    status: active
+  - code: "216"
+    title: "Paediatric Ophthalmology Service"
+    group: "Paediatric"
+    status: active
+  - code: "217"
+    title: "Paediatric Oral and Maxillofacial Surgery Service"
+    group: "Paediatric"
+    status: active
+  - code: "218"
+    title: "Paediatric Neurosurgery Service"
+    group: "Paediatric"
+    status: active
+  - code: "219"
+    title: "Paediatric Plastic Surgery Service"
+    group: "Paediatric"
+    status: active
+  - code: "220"
+    title: "Paediatric Burns Care Service"
+    group: "Paediatric"
+    status: active
+  - code: "221"
+    title: "Paediatric Cardiac Surgery Service"
+    group: "Paediatric"
+    status: active
+  - code: "222"
+    title: "Paediatric Thoracic Surgery Service"
+    group: "Paediatric"
+    status: active
+  - code: "223"
+    title: "Paediatric Epilepsy Service"
+    group: "Paediatric"
+    status: active
+  - code: "230"
+    title: "Paediatric Clinical Pharmacology Service"
+    group: "Paediatric"
+    status: active
+  - code: "240"
+    title: "Paediatric Palliative Medicine Service"
+    group: "Paediatric"
+    status: active
+  - code: "241"
+    title: "Paediatric Pain Management Service"
+    group: "Paediatric"
+    status: active
+  - code: "242"
+    title: "Paediatric Intensive Care Service"
+    group: "Paediatric"
+    status: active
+  - code: "250"
+    title: "Paediatric Hepatology Service"
+    group: "Paediatric"
+    status: active
+  - code: "251"
+    title: "Paediatric Gastroenterology Service"
+    group: "Paediatric"
+    status: active
+  - code: "252"
+    title: "Paediatric Endocrinology Service"
+    group: "Paediatric"
+    status: active
+  - code: "253"
+    title: "Paediatric Clinical Haematology Service"
+    group: "Paediatric"
+    status: active
+  - code: "254"
+    title: "Paediatric Audio Vestibular Medicine Service"
+    group: "Paediatric"
+    status: active
+  - code: "255"
+    title: "Paediatric Clinical Immunology and Allergy Service"
+    group: "Paediatric"
+    status: active
+  - code: "256"
+    title: "Paediatric Infectious Diseases Service"
+    group: "Paediatric"
+    status: active
+  - code: "257"
+    title: "Paediatric Dermatology Service"
+    group: "Paediatric"
+    status: active
+  - code: "258"
+    title: "Paediatric Respiratory Medicine Service"
+    group: "Paediatric"
+    status: active
+  - code: "259"
+    title: "Paediatric Nephrology Service"
+    group: "Paediatric"
+    status: active
+  - code: "260"
+    title: "Paediatric Medical Oncology Service"
+    group: "Paediatric"
+    status: active
+  - code: "261"
+    title: "Paediatric Inherited Metabolic Medicine Service"
+    group: "Paediatric"
+    status: active
+  - code: "262"
+    title: "Paediatric Rheumatology Service"
+    group: "Paediatric"
+    status: active
+  - code: "263"
+    title: "Paediatric Diabetes Service"
+    group: "Paediatric"
+    status: active
+  - code: "264"
+    title: "Paediatric Cystic Fibrosis Service"
+    group: "Paediatric"
+    status: active
+  - code: "270"
+    title: "Paediatric Emergency Medicine Service"
+    group: "Paediatric"
+    status: active
+  - code: "280"
+    title: "Paediatric Interventional Radiology Service"
+    group: "Paediatric"
+    status: active
+  - code: "290"
+    title: "Community Paediatric Service"
+    group: "Paediatric"
+    status: active
+  - code: "291"
+    title: "Paediatric Neurodisability Service"
+    group: "Paediatric"
+    status: active
+  - code: "300"
+    title: "General Internal Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "301"
+    title: "Gastroenterology Service"
+    group: "Medical"
+    status: active
+  - code: "302"
+    title: "Endocrinology Service"
+    group: "Medical"
+    status: active
+  - code: "303"
+    title: "Clinical Haematology Service"
+    group: "Medical"
+    status: active
+  - code: "304"
+    title: "Clinical Physiology Service"
+    group: "Medical"
+    status: active
+  - code: "305"
+    title: "Clinical Pharmacology Service"
+    group: "Medical"
+    status: active
+  - code: "306"
+    title: "Hepatology Service"
+    group: "Medical"
+    status: active
+  - code: "307"
+    title: "Diabetes Service"
+    group: "Medical"
+    status: active
+  - code: "308"
+    title: "Blood and Marrow Transplantation Service"
+    group: "Medical"
+    status: active
+  - code: "309"
+    title: "Haemophilia Service"
+    group: "Medical"
+    status: active
+  - code: "310"
+    title: "Audio Vestibular Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "311"
+    title: "Clinical Genetics Service"
+    group: "Medical"
+    status: active
+  - code: "313"
+    title: "Clinical Immunology and Allergy Service"
+    group: "Medical"
+    status: active
+  - code: "314"
+    title: "Rehabilitation Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "315"
+    title: "Palliative Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "316"
+    title: "Clinical Immunology Service"
+    group: "Medical"
+    status: active
+  - code: "317"
+    title: "Allergy Service"
+    group: "Medical"
+    status: active
+  - code: "318"
+    title: "Intermediate Care Service"
+    group: "Medical"
+    status: active
+  - code: "319"
+    title: "Respite Care Service"
+    group: "Medical"
+    status: active
+  - code: "320"
+    title: "Cardiology Service"
+    group: "Medical"
+    status: active
+  - code: "321"
+    title: "Paediatric Cardiology Service"
+    group: "Paediatric"
+    status: active
+  - code: "322"
+    title: "Clinical Microbiology Service"
+    group: "Medical"
+    status: active
+  - code: "323"
+    title: "Spinal Injuries Service"
+    group: "Medical"
+    status: active
+  - code: "324"
+    title: "Anticoagulant Service"
+    group: "Medical"
+    status: active
+  - code: "325"
+    title: "Sport and Exercise Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "326"
+    title: "Acute Internal Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "327"
+    title: "Cardiac Rehabilitation Service"
+    group: "Medical"
+    status: active
+  - code: "328"
+    title: "Stroke Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "329"
+    title: "Transient Ischaemic Attack Service"
+    group: "Medical"
+    status: active
+  - code: "330"
+    title: "Dermatology Service"
+    group: "Medical"
+    status: active
+  - code: "331"
+    title: "Congenital Heart Disease Service"
+    group: "Medical"
+    status: active
+  - code: "333"
+    title: "Rare Disease Service"
+    group: "Medical"
+    status: active
+  - code: "335"
+    title: "Inherited Metabolic Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "340"
+    title: "Respiratory Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "341"
+    title: "Respiratory Physiology Service"
+    group: "Medical"
+    status: active
+  - code: "342"
+    title: "Pulmonary Rehabilitation Service"
+    group: "Medical"
+    status: active
+  - code: "343"
+    title: "Adult Cystic Fibrosis Service"
+    group: "Medical"
+    status: active
+  - code: "344"
+    title: "Complex Specialised Rehabilitation Service"
+    group: "Medical"
+    status: active
+  - code: "345"
+    title: "Specialist Rehabilitation Service"
+    group: "Medical"
+    status: active
+  - code: "346"
+    title: "Local Specialist Rehabilitation Service"
+    group: "Medical"
+    status: active
+  - code: "347"
+    title: "Sleep Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "348"
+    title: "Post-COVID-19 Syndrome Service"
+    group: "Medical"
+    status: active
+  - code: "350"
+    title: "Infectious Diseases Service"
+    group: "Medical"
+    status: active
+  - code: "352"
+    title: "Tropical Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "360"
+    title: "Genitourinary Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "361"
+    title: "Renal Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "370"
+    title: "Medical Oncology Service"
+    group: "Medical"
+    status: active
+  - code: "371"
+    title: "Nuclear Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "400"
+    title: "Neurology Service"
+    group: "Medical"
+    status: active
+  - code: "401"
+    title: "Clinical Neurophysiology Service"
+    group: "Medical"
+    status: active
+  - code: "410"
+    title: "Rheumatology Service"
+    group: "Medical"
+    status: active
+  - code: "420"
+    title: "Paediatric Service"
+    group: "Medical"
+    status: active
+  - code: "421"
+    title: "Paediatric Neurology Service"
+    group: "Paediatric"
+    status: active
+  - code: "422"
+    title: "Neonatal Critical Care Service"
+    group: "Medical"
+    status: active
+  - code: "424"
+    title: "Well Baby Service"
+    group: "Medical"
+    status: active
+  - code: "430"
+    title: "Elderly Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "431"
+    title: "Orthogeriatric Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "450"
+    title: "Dental Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "451"
+    title: "Special Care Dentistry Service"
+    group: "Medical"
+    status: active
+  - code: "460"
+    title: "Medical Ophthalmology Service"
+    group: "Medical"
+    status: active
+  - code: "461"
+    title: "Ophthalmic and Vision Science Service"
+    group: "Medical"
+    status: active
+  - code: "501"
+    title: "Obstetrics Service"
+    group: "Medical"
+    status: active
+  - code: "502"
+    title: "Gynaecology Service"
+    group: "Medical"
+    status: active
+  - code: "503"
+    title: "Gynaecological Oncology Service"
+    group: "Medical"
+    status: active
+  - code: "504"
+    title: "Community Sexual and Reproductive Health Service"
+    group: "Medical"
+    status: active
+  - code: "505"
+    title: "Fetal Medicine Service"
+    group: "Medical"
+    status: active
+  - code: "510"
+    title: "Retired (retained for historical purposes)"
+    group: "Medical"
+    status: retired
+  - code: "520"
+    title: "Retired (retained for historical purposes)"
+    group: "Medical"
+    status: retired
+  - code: "560"
+    title: "Midwifery Service"
+    group: "Other"
+    status: active
+  - code: "610"
+    title: "Retired (retained for historical purposes)"
+    group: "Medical"
+    status: retired
+  - code: "620"
+    title: "Retired (retained for historical purposes)"
+    group: "Medical"
+    status: retired
+  - code: "650"
+    title: "Physiotherapy Service"
+    group: "Other"
+    status: active
+  - code: "651"
+    title: "Occupational Therapy Service"
+    group: "Other"
+    status: active
+  - code: "652"
+    title: "Speech and Language Therapy Service"
+    group: "Other"
+    status: active
+  - code: "653"
+    title: "Podiatry Service"
+    group: "Other"
+    status: active
+  - code: "654"
+    title: "Dietetics Service"
+    group: "Other"
+    status: active
+  - code: "655"
+    title: "Orthoptics Service"
+    group: "Other"
+    status: active
+  - code: "656"
+    title: "Clinical Psychology Service"
+    group: "Mental health"
+    status: active
+  - code: "657"
+    title: "Prosthetics Service"
+    group: "Other"
+    status: active
+  - code: "658"
+    title: "Orthotics Service"
+    group: "Other"
+    status: active
+  - code: "659"
+    title: "Dramatherapy Service"
+    group: "Other"
+    status: active
+  - code: "660"
+    title: "Art Therapy Service"
+    group: "Other"
+    status: active
+  - code: "661"
+    title: "Music Therapy Service"
+    group: "Other"
+    status: active
+  - code: "662"
+    title: "Optometry Service"
+    group: "Other"
+    status: active
+  - code: "663"
+    title: "Podiatric Surgery Service"
+    group: "Other"
+    status: active
+  - code: "670"
+    title: "Urological Physiology Service"
+    group: "Other"
+    status: active
+  - code: "673"
+    title: "Vascular Physiology Service"
+    group: "Other"
+    status: active
+  - code: "675"
+    title: "Cardiac Physiology Service"
+    group: "Other"
+    status: active
+  - code: "677"
+    title: "Gastrointestinal Physiology Service"
+    group: "Other"
+    status: active
+  - code: "700"
+    title: "Learning Disability Service"
+    group: "Mental health"
+    status: active
+  - code: "710"
+    title: "Adult Mental Health Service"
+    group: "Mental health"
+    status: active
+  - code: "711"
+    title: "Child and Adolescent Psychiatry Service"
+    group: "Mental health"
+    status: active
+  - code: "712"
+    title: "Forensic Psychiatry Service"
+    group: "Mental health"
+    status: active
+  - code: "713"
+    title: "Medical Psychotherapy Service"
+    group: "Mental health"
+    status: active
+  - code: "715"
+    title: "Old Age Psychiatry Service"
+    group: "Mental health"
+    status: active
+  - code: "720"
+    title: "Eating Disorders Service"
+    group: "Mental health"
+    status: active
+  - code: "721"
+    title: "Addiction Service"
+    group: "Mental health"
+    status: active
+  - code: "722"
+    title: "Liaison Psychiatry Service"
+    group: "Mental health"
+    status: active
+  - code: "723"
+    title: "Psychiatric Intensive Care Service"
+    group: "Mental health"
+    status: active
+  - code: "724"
+    title: "Perinatal Mental Health Service"
+    group: "Mental health"
+    status: active
+  - code: "725"
+    title: "Mental Health Recovery and Rehabilitation Service"
+    group: "Mental health"
+    status: active
+  - code: "726"
+    title: "Mental Health Dual Diagnosis Service"
+    group: "Mental health"
+    status: active
+  - code: "727"
+    title: "Dementia Assessment Service"
+    group: "Mental health"
+    status: active
+  - code: "730"
+    title: "Neuropsychiatry Service"
+    group: "Mental health"
+    status: active
+  - code: "800"
+    title: "Clinical Oncology Service"
+    group: "Other"
+    status: active
+  - code: "810"
+    title: "Radiology Service"
+    group: "Other"
+    status: active
+  - code: "811"
+    title: "Interventional Radiology Service"
+    group: "Other"
+    status: active
+  - code: "812"
+    title: "Diagnostic Imaging Service"
+    group: "Other"
+    status: active
+  - code: "822"
+    title: "Chemical Pathology Service"
+    group: "Other"
+    status: active
+  - code: "823"
+    title: "Haematology Service"
+    group: "Other"
+    status: active
+  - code: "831"
+    title: "Medical Microbiology and Virology Service"
+    group: "Medical"
+    status: active
+  - code: "832"
+    title: "Neuropathology Service"
+    group: "Other"
+    status: active
+  - code: "833"
+    title: "Medical Microbiology Service"
+    group: "Medical"
+    status: active
+  - code: "834"
+    title: "Medical Virology Service"
+    group: "Medical"
+    status: active
+  - code: "840"
+    title: "Audiology Service"
+    group: "Other"
+    status: active
+  - code: "900"
+    title: "Community Medicine Service"
+    group: "Other"
+    status: active
+  - code: "920"
+    title: "Diabetic Education Service"
+    group: "Other"
+    status: active
+  - code: "990"
+    title: "Joint Consultant Clinics Service"
+    group: "Other"
+    status: active

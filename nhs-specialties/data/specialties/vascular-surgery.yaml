@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: vascular-surgery
+title: "Vascular Surgery"
+group: surgical
+main_specialty_codes: ["107"]
+treatment_function_codes: ["107"]
+summary: >-
+  Arterial, venous and lymphatic disease: aneurysms, carotid disease, limb
+  ischaemia and amputation, increasingly by endovascular techniques.
+training:
+  college: "Royal College of Surgeons (JCST curriculum)"
+  route: "Core Surgical Training (CT1–CT2), then specialty training ST3–ST8"
+  length: "about 8 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant vascular surgeon"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [core-surgical-training]
+    special_interests: [endovascular-specialist]
+related: [radiology, general-surgery, cardiology]

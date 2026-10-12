@@ -1,0 +1,20 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: allergy
+title: "Allergy"
+group: medical
+main_specialty_codes: ["317"]
+treatment_function_codes: ["317"]
+summary: >-
+  Diagnosis and management of allergic disease: food and drug allergy,
+  anaphylaxis, urticaria and angioedema, and immunotherapy.
+training:
+  college: "Royal College of Physicians (JRCPTB curriculum)"
+  route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2)"
+  length: "about 6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant allergist"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, core-trainee, foundation-doctor, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: [allergist]
+related: [clinical-immunology, paediatrics, dermatology]

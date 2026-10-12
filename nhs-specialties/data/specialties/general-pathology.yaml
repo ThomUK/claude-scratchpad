@@ -1,0 +1,17 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: general-pathology
+title: "General Pathology"
+group: diagnostics
+main_specialty_codes: ["820"]
+treatment_function_codes: []
+summary: >-
+  Historical generalist pathology covering several laboratory disciplines, now
+  rarely used.
+notes: >-
+  No treatment function of its own.
+workforce:
+  medical:
+    grades: [consultant]
+    pathways: [histopathology-training]
+    special_interests: []
+related: [histopathology, chemical-pathology, haematology]

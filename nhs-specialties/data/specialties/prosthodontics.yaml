@@ -1,0 +1,22 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: prosthodontics
+title: "Prosthodontics"
+group: dental
+main_specialty_codes: ["148"]
+treatment_function_codes: []
+summary: >-
+  Replacement of missing teeth and oral tissues with crowns, bridges, dentures
+  and implant-retained prostheses.
+notes: >-
+  Mono-specialty with no treatment function of its own; hospital activity is
+  usually recorded under Restorative Dentistry (141).
+training:
+  college: "Faculty of Dental Surgery, Royal College of Surgeons (dental SAC)"
+  route: "Dental Core Training, then specialty training (typically 3 years)"
+workforce:
+  medical:
+    consultant_title: "Specialist in prosthodontics"
+    grades: [specialist, specialty-registrar, dental-core-trainee]
+    pathways: [dental-core-training]
+    special_interests: [restorative-monospecialist]
+related: [restorative-dentistry]

@@ -1,0 +1,22 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: occupational-medicine
+title: "Occupational Medicine"
+group: primary-public
+main_specialty_codes: ["901"]
+treatment_function_codes: []
+summary: >-
+  The effect of work on health and health on work: fitness for work, workplace
+  hazards and NHS staff occupational health.
+notes: >-
+  No hospital treatment function.
+training:
+  college: "Faculty of Occupational Medicine"
+  route: "Entry after a core programme, then specialty training ST3–ST6"
+  length: "about 6 years after foundation"
+workforce:
+  medical:
+    consultant_title: "Consultant occupational physician"
+    grades: [consultant, specialist, specialty-doctor, specialty-registrar, locally-employed-doctor]
+    pathways: [internal-medicine-training]
+    special_interests: []
+related: [aviation-and-space-medicine, public-health-medicine]

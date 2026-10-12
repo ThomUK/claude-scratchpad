@@ -1,0 +1,21 @@
+# Specialty factsheet — edit freely; schema in ../../README.md
+id: blood-transfusion
+title: "Blood Transfusion"
+group: diagnostics
+main_specialty_codes: ["821"]
+treatment_function_codes: []
+summary: >-
+  Transfusion medicine: blood components, blood safety and hospital
+  transfusion practice.
+notes: >-
+  No treatment function of its own.
+training:
+  college: "Royal College of Pathologists"
+  route: "Haematology training with a transfusion medicine special interest"
+workforce:
+  medical:
+    consultant_title: "Consultant in transfusion medicine"
+    grades: [consultant, specialty-registrar]
+    pathways: []
+    special_interests: [transfusion-medicine]
+related: [haematology, clinical-haematology]
