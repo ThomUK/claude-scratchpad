@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { load as parseYaml } from '../vendor/js-yaml.mjs';
-import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter, overlaps } from '../engine.js';
+import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter, overlaps, regionTree, collapseRegions } from '../engine.js';
 
 const DATA = fileURLToPath(new URL('../data/', import.meta.url));
 let n = 0;
@@ -157,6 +157,30 @@ check('declutter: removes every node/label overlap and reports bounds', () => {
     assert.ok(p.x - b.w / 2 >= bounds.x0 - 1e-6 && p.x + b.w / 2 <= bounds.x1 + 1e-6);
     assert.ok(p.y + b.dy - b.h / 2 >= bounds.y0 - 1e-6 && p.y + b.dy + b.h / 2 <= bounds.y1 + 1e-6);
   }
+});
+
+check('regionTree: spanning tree joins all points, long links split islands', () => {
+  const pts = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 20, y: 0 }, { x: 500, y: 0 }, { x: 510, y: 0 }];
+  const all = regionTree(pts);
+  assert.equal(all.links.length, 4);
+  assert.equal(all.islands.length, 1);
+  const split = regionTree(pts, { maxLink: 50 });
+  assert.equal(split.links.length, 3);
+  assert.deepEqual(split.bridges, [[2, 3]]);
+  assert.deepEqual(split.islands.map((i) => i.sort((a, b) => a - b)), [[0, 1, 2], [3, 4]]);
+  assert.deepEqual(regionTree([]), { links: [], bridges: [], islands: [] });
+});
+
+check('collapseRegions: pathways leave the layout graph and become weak member-to-member pulls', () => {
+  const g = buildGraph(index, { minDegree: 2 });
+  const { graph, regions } = collapseRegions(g, (x) => x.kind === 'pathway');
+  assert.ok(!graph.nodes.some((x) => x.kind === 'pathway'));
+  const imt = regions.find((r) => r.id === 'r:internal-medicine-training');
+  assert.ok(imt.members.includes('s:cardiology') && imt.members.length > 30);
+  const pull = graph.edges.filter((e) => e.weight && (e.source === 's:cardiology' || e.target === 's:cardiology')).reduce((t, e) => t + e.weight, 0);
+  assert.ok(pull > 1 && pull < 4, `total pull on cardiology ${pull}`);
+  const ids = new Set(graph.nodes.map((x) => x.id));
+  for (const e of graph.edges) assert.ok(ids.has(e.source) && ids.has(e.target));
 });
 
 console.log(`\n${n} checks passed`);

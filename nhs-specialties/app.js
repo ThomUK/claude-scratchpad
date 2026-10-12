@@ -1,5 +1,5 @@
 import { load as parseYaml } from './vendor/js-yaml.mjs?v=dev';
-import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter } from './engine.js?v=dev';
+import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter, regionTree, collapseRegions } from './engine.js?v=dev';
 
 const REPO = 'https://github.com/ThomUK/claude-scratchpad';
 const DATA_PATH = 'nhs-specialties/data';
@@ -216,10 +216,12 @@ function shape(kind, x, y, r, extra = '') {
   return `<path class="n-role n--grade" d="M${x} ${y - r * 1.2}L${x + r * 1.1} ${y + r * 0.8}L${x - r * 1.1} ${y + r * 0.8}Z" ${extra}/>`;
 }
 
-function legendHtml(kinds, withSpecialty = true) {
+function legendHtml(kinds, withSpecialty = true, regions = false) {
   const item = (svg, label) => `<span class="lg-item"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">${svg}</svg>${label}</span>`;
-  return `<div class="legend">${withSpecialty ? item('<circle class="n-spec" cx="8" cy="8" r="5"/>', 'Specialty') : ''}${kinds.map((k) => item(shape(k, 8, 8, 5), KIND_LABEL[k].replace(/s$/, ''))).join('')}</div>`;
+  const mark = (k) => (regions && k === 'pathway' ? REGION_SWATCH : shape(k, 8, 8, 5));
+  return `<div class="legend">${withSpecialty ? item('<circle class="n-spec" cx="8" cy="8" r="5"/>', 'Specialty') : ''}${kinds.map((k) => item(mark(k), regions && k === 'pathway' ? 'Training pathway (shaded region)' : KIND_LABEL[k].replace(/s$/, ''))).join('')}</div>`;
 }
+const REGION_SWATCH = '<rect class="region-swatch" x="1" y="3" width="14" height="10" rx="5"/>';
 
 // ---------------------------------------------------------------- role page
 function renderRole(id) {
@@ -251,7 +253,7 @@ function renderGraph(focusRole) {
     <section class="panel">
       <div class="controls">
         ${['pathway', 'special-interest', 'grade'].map((k) => `<label class="check"><input type="checkbox" data-kind="${k}"${graphState.kinds.has(k) ? ' checked' : ''}/>
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">${shape(k, 8, 8, 5)}</svg>${KIND_LABEL[k]}</label>`).join('')}
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">${k === 'pathway' ? REGION_SWATCH : shape(k, 8, 8, 5)}</svg>${KIND_LABEL[k]}</label>`).join('')}
         <label class="check"><input type="checkbox" id="singles"${graphState.hideSingles ? ' checked' : ''}/>Hide roles in only one specialty</label>
         <div class="field">
           <select id="ggrp" aria-label="Specialty group"><option value="">All specialty groups</option>${index.groups.map((g) =>
@@ -259,8 +261,10 @@ function renderGraph(focusRole) {
         </div>
         <button class="btn" id="reset">Reset view</button>
       </div>
-      <p class="muted small">Specialties (grey circles) link to the roles they list in their factsheet. Hover to see a node, click to
-        highlight its neighbours, scroll or pinch to zoom and drag to pan. Grades link almost every specialty, so they are off by default.</p>
+      <p class="muted small">Specialties (grey circles) link to the roles they list in their factsheet. Shared training pathways are
+        shaded regions around the specialties they feed; a specialty fed by two pathways sits where the regions overlap. Hover to see a
+        node or region, click to highlight its links, scroll or pinch to zoom and drag to pan. Grades link almost every specialty, so they
+        are off by default.</p>
       <div class="graph-wrap">
         <svg id="graph" class="graph" role="img" aria-label="Network of NHS specialties and medical roles"></svg>
         <aside id="gside" class="gside"></aside>
@@ -289,7 +293,29 @@ function drawGraph() {
   if (!layoutCache.has(key)) {
     const nSpec = g.nodes.length;
     const H = Math.max(520, Math.round(W * 0.62), nSpec * 9);
-    const raw = layout(g, { width: W, height: H, iterations: 320, seed: 3 });
+    // pathways are regions, not nodes: lay out without them, letting each pathway
+    // gently pull its member specialties together instead
+    const { graph: lg } = collapseRegions(g, (n) => n.type === 'role' && n.kind === 'pathway');
+    const raw = layout(lg, { width: W, height: H, iterations: 320, seed: 3 });
+    // a pathway is drawn as a region, so put its anchor (where its label goes) at the
+    // centre of its largest cluster of member specialties
+    // (or, if its members are all far apart, beside its 'home' specialty: the one
+    // fed by the fewest pathways, e.g. GP training -> General Medical Practice)
+    for (const rn of g.nodes.filter((n) => n.type === 'role' && n.kind === 'pathway')) {
+      const ids = g.edges.filter((e) => e.target === rn.id).map((e) => e.source);
+      if (!ids.length) continue;
+      const pts = ids.map((id) => raw.get(id));
+      const top = regionTree(pts, { maxLink: REGION_LINK }).islands[0];
+      if (top.length > 1) {
+        const island = top.map((i) => pts[i]);
+        raw.set(rn.id, { x: island.reduce((t, p) => t + p.x, 0) / island.length, y: island.reduce((t, p) => t + p.y, 0) / island.length });
+      } else {
+        const pathwaysOf = (sid) => index.specialties.get(sid.slice(2)).rolesByKind.pathway.length;
+        const home = ids.reduce((a, b) => (pathwaysOf(b) < pathwaysOf(a) ? b : a));
+        const p = raw.get(home);
+        raw.set(rn.id, { x: p.x, y: p.y + REGION_R + 6 });
+      }
+    }
     layoutCache.set(key, declutter(raw, new Map(g.nodes.map((n) => [n.id, labelBox(n)]))));
   }
   const { pos, bounds } = layoutCache.get(key);
@@ -302,16 +328,43 @@ function drawGraph() {
 
   let h = `<g id="vp" transform="translate(${z.x} ${z.y}) scale(${z.k})">`;
   const degreeOf = new Map(g.nodes.map((n) => [n.id, n.degree]));
+  const isRegion = (n) => n.type === 'role' && n.kind === 'pathway';
+  const regionNodes = g.nodes.filter(isRegion);
+  const regionIds = new Set(regionNodes.map((n) => n.id));
+
+  // Training pathways are drawn as shaded regions around their specialties rather
+  // than as hub nodes. The pathway still takes part in the layout (as an unseen
+  // anchor at the middle of its members) and its label is drawn at that anchor.
+  h += '<g class="regions">';
+  for (const rn of regionNodes) {
+    const members = g.edges.filter((e) => e.target === rn.id).map((e) => pos.get(e.source));
+    const pts = [pos.get(rn.id), ...members];
+    const { links, bridges } = regionTree(pts, { maxLink: REGION_LINK });
+    const state = !nb ? '' : (rn.id === graphState.focus || nb.has(rn.id)) ? ' region--on' : ' region--dim';
+    h += `<g class="region${state}" data-id="${esc(rn.id)}">`;
+    for (const [a, b] of links) h += `<line x1="${pts[a].x.toFixed(1)}" y1="${pts[a].y.toFixed(1)}" x2="${pts[b].x.toFixed(1)}" y2="${pts[b].y.toFixed(1)}" stroke-width="${REGION_R * 1.3}"/>`;
+    for (const [a, b] of bridges) h += `<line class="region-bridge" x1="${pts[a].x.toFixed(1)}" y1="${pts[a].y.toFixed(1)}" x2="${pts[b].x.toFixed(1)}" y2="${pts[b].y.toFixed(1)}"/>`;
+    for (const p of pts) h += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${REGION_R}"/>`;
+    h += '</g>';
+  }
+  h += '</g>';
   h += '<g class="edges">';
   for (const e of g.edges) {
+    if (regionIds.has(e.target)) continue;
     const a = pos.get(e.source); const b = pos.get(e.target);
     const lit = nb && (e.source === graphState.focus || e.target === graphState.focus);
     // spokes of a hub (e.g. IMT's 30+ specialties) are faded until the hub is picked
     const hub = !nb && (degreeOf.get(e.source) > 9 || degreeOf.get(e.target) > 9);
     h += `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" class="${lit ? 'e e--lit' : nb ? 'e e--dim' : hub ? 'e e--hub' : 'e'}"/>`;
   }
+  h += '</g><g class="region-labels">';
+  for (const rn of regionNodes) {
+    const p = pos.get(rn.id);
+    h += `<text class="region-lbl${nb && !on(rn.id) ? ' dim' : ''}" x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="middle">${esc(regionLabel(rn))}</text>`;
+  }
   h += '</g><g class="nodes">';
   for (const n of g.nodes) {
+    if (isRegion(n)) continue;
     const p = pos.get(n.id); const dim = !on(n.id) ? ' dim' : '';
     const r = nodeRadius(n);
     const mark = n.type === 'specialty' ? `<circle class="n-spec${n.id === graphState.focus ? ' n-focus' : ''}" cx="${p.x}" cy="${p.y}" r="${r}"/>` : shape(n.kind, p.x, p.y, r, n.id === graphState.focus ? 'stroke-width="3"' : '');
@@ -323,7 +376,7 @@ function drawGraph() {
   svg.innerHTML = h;
 
   const byId = new Map(g.nodes.map((n) => [n.id, n]));
-  svg.querySelectorAll('.node').forEach((el) => {
+  svg.querySelectorAll('.node, .region').forEach((el) => {
     const n = byId.get(el.dataset.id);
     el.addEventListener('mouseenter', (ev) => showTip(ev, tipFor(n)));
     el.addEventListener('mousemove', moveTip);
@@ -338,12 +391,21 @@ function drawGraph() {
   renderGraphTable(g, byId);
 }
 
+const REGION_R = 24;       // radius of the shading around each pathway member
+const REGION_LINK = 190;   // longer gaps split a pathway's region into islands
+const regionLabel = (n) => trunc(n.label.replace(/\s*\([^)]*\)$/, ''), 34).toUpperCase();
 const nodeRadius = (n) => (n.type === 'specialty' ? 5 + Math.min(4, n.degree * 0.5) : 5 + Math.min(7, Math.sqrt(n.degree) * 1.6));
 const LABEL_FONT = { specialty: '11px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', role: '600 12px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' };
+const REGION_FONT = '700 11px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 let measureCtx = null;
 // Box covering a node's mark and the label drawn above it (see drawGraph).
 function labelBox(n) {
   measureCtx ||= document.createElement('canvas').getContext('2d');
+  if (n.type === 'role' && n.kind === 'pathway') {
+    // region label, drawn centred on the (unseen) pathway anchor
+    measureCtx.font = REGION_FONT;
+    return { w: measureCtx.measureText(regionLabel(n)).width + regionLabel(n).length * 0.6, h: 15, dy: 0 };
+  }
   measureCtx.font = LABEL_FONT[n.type];
   const r = nodeRadius(n);
   const w = Math.max(measureCtx.measureText(trunc(n.label, 30)).width, 2 * r);
@@ -356,6 +418,7 @@ function tipFor(n) {
     return `<b>${esc(s.title)}</b><br>${s.mainSpecialtyCodes.map((c) => `MS ${esc(c)}`).join(', ')} · ${esc(groupTitle(s.group))}<br>${n.degree} role link${n.degree === 1 ? '' : 's'} shown`;
   }
   const r = index.roles.get(n.ref);
+  if (r.kind === 'pathway') return `<b>${esc(r.title)}</b><br>Training pathway feeding ${n.degree} specialt${n.degree === 1 ? 'y' : 'ies'} shown<br><span class="muted">Click to highlight them</span>`;
   return `<b>${esc(r.title)}</b><br>${esc(KIND_LABEL[r.kind].replace(/s$/, ''))} · ${n.degree} specialt${n.degree === 1 ? 'y' : 'ies'} shown`;
 }
 
@@ -365,7 +428,7 @@ function renderSide(g, byId, nb) {
   if (!f) {
     const roles = g.nodes.filter((n) => n.type === 'role').sort((a, b) => b.degree - a.degree).slice(0, 10);
     side.innerHTML = `<p class="lbl">Most-shared roles in view</p><ol class="rank">${roles.map((n) => `<li><a href="#/role/${esc(n.ref)}">${esc(n.label)}</a> <span class="muted small">${n.degree}</span></li>`).join('')}</ol>
-      ${legendHtml([...graphState.kinds].filter((k) => KIND_LABEL[k]))}
+      ${legendHtml([...graphState.kinds].filter((k) => KIND_LABEL[k]), true, true)}
       <p class="muted small">${g.nodes.filter((n) => n.type === 'specialty').length} specialties · ${g.nodes.filter((n) => n.type === 'role').length} roles · ${g.edges.length} links</p>
       ${g.isolated.length ? `<details class="small"><summary class="muted">${g.isolated.length} specialt${g.isolated.length === 1 ? 'y has' : 'ies have'} no shared role in view</summary><p>${g.isolated.map(sLink).join(', ')}</p></details>` : ''}`;
     return;
@@ -516,7 +579,9 @@ related: [cardiothoracic-surgery, ...]</pre>
         <li><strong>Grades</strong>: the medical and dental career ladder (consultant, SAS grades, resident doctors) plus the
           medical associate professions. These are shared by almost everything, so they are shown on factsheets and are off by default in the graph.</li>
         <li><strong>Training pathways</strong>: programmes that feed several specialties (Core Surgical Training, Internal Medicine Training, ACCS,
-          Core Psychiatry, Combined Infection Training …). They show where doctors in different specialties started from the same place.</li>
+          Core Psychiatry, Combined Infection Training …). They show where doctors in different specialties started from the same place.
+          In the graph each pathway is a shaded region around its specialties rather than a node, and it gently pulls them together in the layout.
+          Where a pathway's specialties end up far apart, its region splits into islands joined by a faint dashed line.</li>
         <li><strong>Special-interest roles</strong>: roles that cut across specialties (intensivist, stroke physician, hand surgeon …).</li>
       </ul>
       <p>Later layers can add other staff groups (nursing, AHPs, healthcare science, pharmacy) with no change to the engine. Add roles with a new

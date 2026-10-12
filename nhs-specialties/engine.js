@@ -235,9 +235,9 @@ export function layout(graph, { width = 1000, height = 700, iterations = 300, se
     x[i] = width / 2 + (width / 3) * Math.cos(a) + (rand() - 0.5) * 10;
     y[i] = height / 2 + (height / 3) * Math.sin(a) + (rand() - 0.5) * 10;
   });
-  const E = graph.edges.map((e) => [idx.get(e.source), idx.get(e.target)]);
+  const E = graph.edges.map((e) => [idx.get(e.source), idx.get(e.target), e.weight ?? 1]);
   const deg = new Float64Array(n);
-  for (const [a, b] of E) { deg[a]++; deg[b]++; }
+  for (const [a, b, w] of E) { deg[a] += w; deg[b] += w; }
   const mass = Float64Array.from(deg, (d) => (d + 1) ** degRep);
   const amass = Float64Array.from(deg, (d) => (d + 1) ** massAttr);
   const meanA = amass.reduce((t, m) => t + m, 0) / n;
@@ -257,10 +257,10 @@ export function layout(graph, { width = 1000, height = 700, iterations = 300, se
         dx[i] += ddx * f; dy[i] += ddy * f; dx[j] -= ddx * f; dy[j] -= ddy * f;
       }
     }
-    for (const [a, b] of E) {
+    for (const [a, b, w] of E) {
       const ddx = x[a] - x[b]; const ddy = y[a] - y[b];
       const d = Math.sqrt(ddx * ddx + ddy * ddy) || 0.01;
-      const f = d / k;
+      const f = (w * d) / k;
       // each end moves in inverse proportion to its mass, so hubs stay put and leaves come to them
       dx[a] -= ddx * f / amass[a] * meanA; dy[a] -= ddy * f / amass[a] * meanA;
       dx[b] += ddx * f / amass[b] * meanA; dy[b] += ddy * f / amass[b] * meanA;
@@ -350,4 +350,59 @@ function mulberry32(a) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+// ------------------------------------------------------------------ regions
+// For drawing some roles (e.g. training pathways) as shaded regions rather than
+// nodes: returns a layout graph without those roles, where each region instead
+// becomes a weak pull between every pair of its members (total pull per member
+// ~ `strength`, so a 36-specialty pathway gathers its members without knotting
+// them). regions: [{ id, members: [nodeId] }].
+export function collapseRegions(graph, isRegion, { strength = 1.5 } = {}) {
+  const regionIds = new Set(graph.nodes.filter(isRegion).map((n) => n.id));
+  const members = new Map([...regionIds].map((id) => [id, []]));
+  const edges = [];
+  for (const e of graph.edges) {
+    if (regionIds.has(e.target)) members.get(e.target).push(e.source);
+    else edges.push(e);
+  }
+  for (const list of members.values()) {
+    const w = strength / Math.max(1, list.length - 1);
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) edges.push({ source: list[i], target: list[j], weight: w });
+  }
+  return {
+    graph: { nodes: graph.nodes.filter((n) => !regionIds.has(n.id)), edges },
+    regions: [...members.entries()].map(([id, m]) => ({ id, members: m })),
+  };
+}
+
+// A shaded region for a group of points (e.g. the specialties on one training
+// pathway): a minimum spanning tree over the points, keeping only links up to
+// maxLink so far-apart members form separate islands rather than a corridor
+// across unrelated parts of the graph. Returns { links: [[i, j]], bridges: [[i, j]],
+// islands: [[i...]] } — bridges are the tree links that were too long — islands largest first.
+export function regionTree(points, { maxLink = Infinity } = {}) {
+  const n = points.length;
+  const links = []; const bridges = [];
+  if (!n) return { links, bridges, islands: [] };
+  const inTree = new Uint8Array(n); const best = new Float64Array(n).fill(Infinity); const from = new Int32Array(n).fill(-1);
+  best[0] = 0;
+  for (let step = 0; step < n; step++) {
+    let u = -1;
+    for (let i = 0; i < n; i++) if (!inTree[i] && (u < 0 || best[i] < best[u])) u = i;
+    inTree[u] = 1;
+    if (from[u] >= 0) (best[u] <= maxLink ? links : bridges).push([from[u], u]);
+    for (let v = 0; v < n; v++) {
+      if (inTree[v]) continue;
+      const d = Math.hypot(points[u].x - points[v].x, points[u].y - points[v].y);
+      if (d < best[v]) { best[v] = d; from[v] = u; }
+    }
+  }
+  // islands = connected components of the kept links
+  const parent = Array.from({ length: n }, (_, i) => i);
+  const find = (i) => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  for (const [a, b] of links) parent[find(a)] = find(b);
+  const groups = new Map();
+  for (let i = 0; i < n; i++) { const r = find(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(i); }
+  return { links, bridges, islands: [...groups.values()].sort((a, b) => b.length - a.length) };
 }

@@ -15,8 +15,10 @@ Live: https://thomuk.github.io/claude-scratchpad/nhs-specialties/
 - **Factsheet** (`#/s/<id>`): codes, treatment functions, training route,
   medical workforce (grade ladder, shared pathways, special-interest roles), a
   small role network, and specialties connected through shared roles.
-- **Role graph** (`#/graph`): a bipartite network of specialties and roles.
-  Filter by role kind and specialty group, click to highlight neighbours, and zoom
+- **Role graph** (`#/graph`): specialties linked to the special-interest roles
+  (and optionally grades) they list. Shared training pathways are drawn as
+  shaded regions around their specialties instead of hub nodes. Filter by role kind
+  and specialty group, click a node or region to highlight its links, and zoom
   or pan. Includes a table view.
 - **Code index** (`#/codes`): both Data Dictionary code lists, with the
   factsheet each code maps to.

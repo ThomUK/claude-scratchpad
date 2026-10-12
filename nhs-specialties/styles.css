@@ -142,6 +142,17 @@ select { width: auto; max-width: 100%; }
 .e--dim { stroke: #1e2731; }
 .e--hub { stroke: #2a3441; }
 
+/* training pathways as shaded regions: one group per pathway, faded as a whole
+   so a pathway's own circles/links don't stack, while two overlapping pathways do */
+.region { fill: var(--k-pathway); stroke: var(--k-pathway); stroke-linecap: round; opacity: .16; cursor: pointer; transition: opacity .15s; }
+.region:hover { opacity: .26; }
+.region--on { opacity: .34; }
+.region--dim { opacity: .05; }
+.region-lbl { font-size: 11px; font-weight: 700; letter-spacing: .05em; fill: #8cbcf2; pointer-events: none; }
+.region-lbl.dim { opacity: .25; }
+.region .region-bridge { stroke-width: 4; stroke-dasharray: 2 9; fill: none; }
+.region-swatch { fill: var(--k-pathway); opacity: .45; }
+
 .ego { margin-top: 10px; }
 .ego-svg { width: 100%; height: auto; background: var(--surface); border-radius: 10px; display: block; }
 .ego-svg text { font-size: 10px; fill: var(--muted); }
