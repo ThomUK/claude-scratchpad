@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { load as parseYaml } from '../vendor/js-yaml.mjs';
-import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout } from '../engine.js';
+import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter, overlaps } from '../engine.js';
 
 const DATA = fileURLToPath(new URL('../data/', import.meta.url));
 let n = 0;
@@ -129,6 +129,34 @@ check('layout: linked nodes end up closer than the average pair', () => {
   let all = 0; let cnt = 0;
   for (let i = 0; i < g.nodes.length; i += 3) for (let j = i + 1; j < g.nodes.length; j += 3) { all += dist(g.nodes[i].id, g.nodes[j].id); cnt++; }
   assert.ok(edgeMean < all / cnt, `${edgeMean} vs ${all / cnt}`);
+});
+
+check('layout: hubs do not knot the graph (IMT spokes no longer cross everything)', () => {
+  const g = buildGraph(index, { minDegree: 2 });
+  const pos = layout(g, { width: 1100, height: 700, iterations: 320, seed: 3 });
+  const L = g.edges.map((e) => [pos.get(e.source), pos.get(e.target)]);
+  const ccw = (a, b, c) => (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x);
+  let crossings = 0;
+  for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
+    const [a, b] = L[i]; const [c, d] = L[j];
+    if (a === c || a === d || b === c || b === d) continue;
+    if (ccw(a, c, d) !== ccw(b, c, d) && ccw(a, b, c) !== ccw(a, b, d)) crossings++;
+  }
+  assert.ok(crossings < 800, `${crossings} edge crossings`);
+});
+
+check('declutter: removes every node/label overlap and reports bounds', () => {
+  const g = buildGraph(index, { kinds: ['grade', 'pathway', 'special-interest'], minDegree: 1 });
+  const boxes = new Map(g.nodes.map((x) => [x.id, { w: Math.min(x.label.length, 30) * 6.5, h: 26, dy: -8 }]));
+  const raw = layout(g, { width: 900, height: 600, iterations: 120 });
+  assert.ok(overlaps(raw, boxes) > 0, 'the raw layout should have overlaps to fix');
+  const { pos, bounds } = declutter(raw, boxes);
+  assert.equal(overlaps(pos, boxes), 0);
+  for (const [id, p] of pos) {
+    const b = boxes.get(id);
+    assert.ok(p.x - b.w / 2 >= bounds.x0 - 1e-6 && p.x + b.w / 2 <= bounds.x1 + 1e-6);
+    assert.ok(p.y + b.dy - b.h / 2 >= bounds.y0 - 1e-6 && p.y + b.dy + b.h / 2 <= bounds.y1 + 1e-6);
+  }
 });
 
 console.log(`\n${n} checks passed`);

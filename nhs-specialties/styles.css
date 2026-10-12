@@ -140,6 +140,7 @@ select { width: auto; max-width: 100%; }
 .e--core { stroke: #56657a; stroke-width: 1.5; }
 .e--lit { stroke: var(--accent); stroke-width: 1.6; }
 .e--dim { stroke: #1e2731; }
+.e--hub { stroke: #2a3441; }
 
 .ego { margin-top: 10px; }
 .ego-svg { width: 100%; height: auto; background: var(--surface); border-radius: 10px; display: block; }
@@ -150,10 +151,10 @@ select { width: auto; max-width: 100%; }
 .lg-item { display: inline-flex; align-items: center; gap: 5px; }
 
 /* graph */
-.graph-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 14px; margin-top: 10px; }
-@media (max-width: 900px) { .graph-wrap { grid-template-columns: 1fr; } }
+.graph-wrap { display: flex; flex-direction: column; gap: 14px; margin-top: 10px; }
+.graph-box { width: 100%; }
 .graph {
-  width: 100%; height: auto; aspect-ratio: 1100 / 760; background: var(--surface); border-radius: 10px;
+  width: 100%; height: auto; background: var(--surface); border-radius: 10px;
   touch-action: none; cursor: grab; user-select: none; display: block;
 }
 .graph:active { cursor: grabbing; }
@@ -162,9 +163,10 @@ select { width: auto; max-width: 100%; }
 .graph .node:focus-visible .n-spec, .graph .node:focus-visible .n-role { stroke: var(--accent); }
 .graph .hit { fill: transparent; }
 .graph text { pointer-events: none; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
-.lbl-s { font-size: 9px; fill: var(--muted); }
-.lbl-r { font-size: 10.5px; font-weight: 600; fill: var(--text); }
-.gside { background: var(--surface); border-radius: 10px; padding: 12px 14px; font-size: 0.88rem; align-self: start; }
+.lbl-s { font-size: 11px; fill: var(--muted); }
+.lbl-r { font-size: 12px; font-weight: 600; fill: var(--text); }
+.gside { background: var(--surface); border-radius: 10px; padding: 12px 14px; font-size: 0.88rem; columns: 2 280px; column-gap: 28px; }
+.gside > * { break-inside: avoid; }
 .gside .lbl:first-child { margin-top: 0; }
 .side-title { margin: 0 0 4px !important; font-size: 1.05rem !important; }
 .side-list, .rank { margin: 0; padding-left: 26px; max-height: 420px; overflow: auto; }

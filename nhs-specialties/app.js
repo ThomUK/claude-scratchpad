@@ -1,5 +1,5 @@
 import { load as parseYaml } from './vendor/js-yaml.mjs?v=dev';
-import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout } from './engine.js?v=dev';
+import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter } from './engine.js?v=dev';
 
 const REPO = 'https://github.com/ThomUK/claude-scratchpad';
 const DATA_PATH = 'nhs-specialties/data';
@@ -281,11 +281,19 @@ const layoutCache = new Map();
 function drawGraph() {
   const svg = document.getElementById('graph');
   if (!svg) return;
-  const W = 1100; const H = 760;
+  // Lay out in real CSS pixels (viewBox = rendered width), so labels are drawn at
+  // their true size and can be measured and decluttered.
+  const W = Math.max(600, Math.round(svg.parentElement.clientWidth / 50) * 50);
   const g = buildGraph(index, { kinds: [...graphState.kinds], groups: graphState.group ? [graphState.group] : null, minDegree: graphState.hideSingles ? 2 : 1 });
-  const key = JSON.stringify([[...graphState.kinds].sort(), graphState.group, graphState.hideSingles]);
-  if (!layoutCache.has(key)) layoutCache.set(key, layout(g, { width: W, height: H, iterations: 320, seed: 3 }));
-  const pos = layoutCache.get(key);
+  const key = JSON.stringify([[...graphState.kinds].sort(), graphState.group, graphState.hideSingles, W]);
+  if (!layoutCache.has(key)) {
+    const nSpec = g.nodes.length;
+    const H = Math.max(520, Math.round(W * 0.62), nSpec * 9);
+    const raw = layout(g, { width: W, height: H, iterations: 320, seed: 3 });
+    layoutCache.set(key, declutter(raw, new Map(g.nodes.map((n) => [n.id, labelBox(n)]))));
+  }
+  const { pos, bounds } = layoutCache.get(key);
+  const vb = { x: bounds.x0 - 12, y: bounds.y0 - 12, w: bounds.x1 - bounds.x0 + 24, h: bounds.y1 - bounds.y0 + 24 };
   const ids = new Set(g.nodes.map((n) => n.id));
   if (graphState.focus && !ids.has(graphState.focus)) graphState.focus = null;
   const nb = graphState.focus ? neighbours(g, graphState.focus) : null;
@@ -293,22 +301,25 @@ function drawGraph() {
   const z = graphState.zoom;
 
   let h = `<g id="vp" transform="translate(${z.x} ${z.y}) scale(${z.k})">`;
+  const degreeOf = new Map(g.nodes.map((n) => [n.id, n.degree]));
   h += '<g class="edges">';
   for (const e of g.edges) {
     const a = pos.get(e.source); const b = pos.get(e.target);
     const lit = nb && (e.source === graphState.focus || e.target === graphState.focus);
-    h += `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" class="${lit ? 'e e--lit' : nb ? 'e e--dim' : 'e'}"/>`;
+    // spokes of a hub (e.g. IMT's 30+ specialties) are faded until the hub is picked
+    const hub = !nb && (degreeOf.get(e.source) > 9 || degreeOf.get(e.target) > 9);
+    h += `<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" class="${lit ? 'e e--lit' : nb ? 'e e--dim' : hub ? 'e e--hub' : 'e'}"/>`;
   }
   h += '</g><g class="nodes">';
   for (const n of g.nodes) {
     const p = pos.get(n.id); const dim = !on(n.id) ? ' dim' : '';
-    const r = n.type === 'specialty' ? 5 + Math.min(4, n.degree * 0.5) : 5 + Math.min(7, Math.sqrt(n.degree) * 1.6);
+    const r = nodeRadius(n);
     const mark = n.type === 'specialty' ? `<circle class="n-spec${n.id === graphState.focus ? ' n-focus' : ''}" cx="${p.x}" cy="${p.y}" r="${r}"/>` : shape(n.kind, p.x, p.y, r, n.id === graphState.focus ? 'stroke-width="3"' : '');
     const showLabel = n.type === 'role' || nb ? on(n.id) : true;
     h += `<g class="node${dim}" data-id="${esc(n.id)}" tabindex="0">${mark}<circle class="hit" cx="${p.x}" cy="${p.y}" r="${r + 6}"/>${showLabel ? `<text class="${n.type === 'role' ? 'lbl-r' : 'lbl-s'}" x="${p.x}" y="${p.y - r - 4}" text-anchor="middle">${esc(trunc(n.label, 30))}</text>` : ''}</g>`;
   }
   h += '</g></g>';
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
   svg.innerHTML = h;
 
   const byId = new Map(g.nodes.map((n) => [n.id, n]));
@@ -325,6 +336,18 @@ function drawGraph() {
   attachPanZoom(svg);
   renderSide(g, byId, nb);
   renderGraphTable(g, byId);
+}
+
+const nodeRadius = (n) => (n.type === 'specialty' ? 5 + Math.min(4, n.degree * 0.5) : 5 + Math.min(7, Math.sqrt(n.degree) * 1.6));
+const LABEL_FONT = { specialty: '11px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', role: '600 12px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' };
+let measureCtx = null;
+// Box covering a node's mark and the label drawn above it (see drawGraph).
+function labelBox(n) {
+  measureCtx ||= document.createElement('canvas').getContext('2d');
+  measureCtx.font = LABEL_FONT[n.type];
+  const r = nodeRadius(n);
+  const w = Math.max(measureCtx.measureText(trunc(n.label, 30)).width, 2 * r);
+  return { w, h: 2 * r + 17, dy: -8.5 };
 }
 
 function tipFor(n) {

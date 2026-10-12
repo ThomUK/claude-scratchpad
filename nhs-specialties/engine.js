@@ -218,9 +218,11 @@ export function neighbours(graph, nodeId) {
   return out;
 }
 
-// Deterministic force-directed layout (Fruchterman–Reingold with cooling),
-// seeded so the same data always draws the same picture.
-export function layout(graph, { width = 1000, height = 700, iterations = 300, seed = 1, spread = 0.7, gravity = 12, margin = 40 } = {}) {
+// Deterministic force-directed layout, seeded so the same data always draws the
+// same picture. Repulsion is degree-weighted (as in ForceAtlas2) so a hub such as
+// Internal Medicine Training pushes its 30+ specialties out into a ring instead
+// of pulling them into a knot; positions are then fitted to the canvas.
+export function layout(graph, { width = 1000, height = 700, iterations = 300, seed = 1, spread = 0.7, gravity = 12, margin = 40, degRep = 0.5, massAttr = 0.5 } = {}) {
   const n = graph.nodes.length;
   if (!n) return new Map();
   const rand = mulberry32(seed);
@@ -233,9 +235,14 @@ export function layout(graph, { width = 1000, height = 700, iterations = 300, se
     x[i] = width / 2 + (width / 3) * Math.cos(a) + (rand() - 0.5) * 10;
     y[i] = height / 2 + (height / 3) * Math.sin(a) + (rand() - 0.5) * 10;
   });
-  const area = width * height;
-  const k = Math.sqrt(area / n) * spread;
   const E = graph.edges.map((e) => [idx.get(e.source), idx.get(e.target)]);
+  const deg = new Float64Array(n);
+  for (const [a, b] of E) { deg[a]++; deg[b]++; }
+  const mass = Float64Array.from(deg, (d) => (d + 1) ** degRep);
+  const amass = Float64Array.from(deg, (d) => (d + 1) ** massAttr);
+  const meanA = amass.reduce((t, m) => t + m, 0) / n;
+  const meanMass = mass.reduce((t, m) => t + m, 0) / n;
+  const k = Math.sqrt((width * height) / n) * spread;
   const dx = new Float64Array(n); const dy = new Float64Array(n);
   let t = width / 8;
   const cool = t / (iterations + 1);
@@ -246,19 +253,20 @@ export function layout(graph, { width = 1000, height = 700, iterations = 300, se
         let ddx = x[i] - x[j]; let ddy = y[i] - y[j];
         let d2 = ddx * ddx + ddy * ddy;
         if (d2 < 0.01) { ddx = rand() - 0.5; ddy = rand() - 0.5; d2 = 0.01; }
-        const f = (k * k) / d2; // repulsion k²/d, applied along unit vector => k²/d² * vector
+        const f = (k * k * mass[i] * mass[j]) / (meanMass * meanMass * d2);
         dx[i] += ddx * f; dy[i] += ddy * f; dx[j] -= ddx * f; dy[j] -= ddy * f;
       }
     }
     for (const [a, b] of E) {
       const ddx = x[a] - x[b]; const ddy = y[a] - y[b];
       const d = Math.sqrt(ddx * ddx + ddy * ddy) || 0.01;
-      const f = d / k; // attraction d²/k along unit vector => d/k * vector
-      dx[a] -= ddx * f; dy[a] -= ddy * f; dx[b] += ddx * f; dy[b] += ddy * f;
+      const f = d / k;
+      // each end moves in inverse proportion to its mass, so hubs stay put and leaves come to them
+      dx[a] -= ddx * f / amass[a] * meanA; dy[a] -= ddy * f / amass[a] * meanA;
+      dx[b] += ddx * f / amass[b] * meanA; dy[b] += ddy * f / amass[b] * meanA;
     }
     for (let i = 0; i < n; i++) {
-      // gravity towards the centre keeps disconnected clusters on screen
-      // (constant-magnitude pull, so a small cluster is held as firmly as a big one)
+      // constant-magnitude pull to the centre keeps disconnected clusters on screen
       const gx = width / 2 - x[i]; const gy = (height / 2 - y[i]) * (width / height);
       const gd = Math.sqrt(gx * gx + gy * gy) || 1;
       dx[i] += (gx / gd) * gravity * k; dy[i] += (gy / gd) * gravity * k;
@@ -275,6 +283,62 @@ export function layout(graph, { width = 1000, height = 700, iterations = 300, se
   const sc = Math.min(sx, sy, 1.5);
   const ox = (width - (x1 - x0) * sc) / 2; const oy = (height - (y1 - y0) * sc) / 2;
   return new Map(graph.nodes.map((node, i) => [node.id, { x: ox + (x[i] - x0) * sc, y: oy + (y[i] - y0) * sc }]));
+}
+
+// Push apart overlapping node+label boxes. boxes: Map id -> {w, h, dy} where the
+// box is w wide, h tall and its centre sits dy below the node (labels sit above,
+// so dy is negative). Moves along the axis of least overlap; returns new positions
+// and the bounds of all boxes, so the caller can size the canvas to fit.
+export function declutter(pos, boxes, { iterations = 2000, pad = 2 } = {}) {
+  const ids = [...pos.keys()];
+  const n = ids.length;
+  const cx = new Float64Array(n); const cy = new Float64Array(n);
+  const hw = new Float64Array(n); const hh = new Float64Array(n); const off = new Float64Array(n);
+  ids.forEach((id, i) => {
+    const b = boxes.get(id); const p = pos.get(id);
+    hw[i] = b.w / 2 + pad; hh[i] = b.h / 2 + pad; off[i] = b.dy;
+    cx[i] = p.x; cy[i] = p.y + b.dy;
+  });
+  for (let it = 0; it < iterations; it++) {
+    let moved = false;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const ox = hw[i] + hw[j] - Math.abs(cx[i] - cx[j]);
+        const oy = hh[i] + hh[j] - Math.abs(cy[i] - cy[j]);
+        if (ox <= 0 || oy <= 0) continue;
+        moved = true;
+        // prefer vertical moves (labels are wide and short) unless the x overlap is small
+        if (ox < oy * 2) {
+          const s = (cx[i] < cx[j] || (cx[i] === cx[j] && i < j) ? -1 : 1) * (ox / 2 + 0.1);
+          cx[i] += s; cx[j] -= s;
+        } else {
+          const s = (cy[i] < cy[j] || (cy[i] === cy[j] && i < j) ? -1 : 1) * (oy / 2 + 0.1);
+          cy[i] += s; cy[j] -= s;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+  let x0 = Infinity; let x1 = -Infinity; let y0 = Infinity; let y1 = -Infinity;
+  const out = new Map();
+  ids.forEach((id, i) => {
+    out.set(id, { x: cx[i], y: cy[i] - off[i] });
+    x0 = Math.min(x0, cx[i] - hw[i]); x1 = Math.max(x1, cx[i] + hw[i]);
+    y0 = Math.min(y0, cy[i] - hh[i]); y1 = Math.max(y1, cy[i] + hh[i]);
+  });
+  return { pos: out, bounds: { x0, y0, x1, y1 } };
+}
+
+// Count of overlapping box pairs — used by the tests and handy when tuning.
+export function overlaps(pos, boxes) {
+  const ids = [...pos.keys()]; let c = 0;
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const a = pos.get(ids[i]); const b = pos.get(ids[j]); const A = boxes.get(ids[i]); const B = boxes.get(ids[j]);
+      if (Math.abs(a.x - b.x) < (A.w + B.w) / 2 && Math.abs(a.y + A.dy - (b.y + B.dy)) < (A.h + B.h) / 2) c++;
+    }
+  }
+  return c;
 }
 
 const key = (node) => (node.type === 'specialty' ? `0${node.group}${node.label}` : `1${node.kind}${node.label}`);
