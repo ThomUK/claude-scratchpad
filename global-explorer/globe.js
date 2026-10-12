@@ -4,8 +4,8 @@
 // territories get a screen-space ring marker. Recolouring a country is just a
 // material colour change.
 import * as THREE from 'three';
-import { OrbitControls } from './vendor/three/OrbitControls.js?v=daaeec81';
-import { cameraDistanceForSpan, pickCountry } from './engine.js?v=daaeec81';
+import { OrbitControls } from './vendor/three/OrbitControls.js?v=cdba8160';
+import { cameraDistanceForSpan, pickCountry } from './engine.js?v=cdba8160';
 
 // Light "atlas" palette: pale ocean, sand land, soft grey borders.
 export const COLORS = {
@@ -18,6 +18,7 @@ const FILL_R = 1.0008;      // fills sit just above the ocean sphere
 const BORDER_R = 1.0016;    // borders above fills
 // Momentum. OrbitControls applies dampingFactor of the pending rotation each
 // frame: a high factor keeps the globe glued to the finger, a low one glides.
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
 const HOME_DISTANCE = 2.4;   // the opening zoom, which spin() returns to
 const HOME_MAX_LAT = 70;     // the opening view keeps the poles out of the middle
 const DRAG_DAMPING = 0.2;    // while a pointer is down
@@ -746,7 +747,8 @@ export class Globe {
     const from = this.camera.position.clone();
     const [lat, lon] = vec3ToLatLon(from);
     const to = latLonToVec3(THREE.MathUtils.clamp(lat, -HOME_MAX_LAT, HOME_MAX_LAT), lon, HOME_DISTANCE);
-    this.flight = { from, to, start: performance.now(), duration, fromDir: from.clone().normalize(), toDir: to.clone().normalize() };
+    // turn: the slow rotation, carried through the flight so it starts at once.
+    this.flight = { from, to, start: performance.now(), duration, fromDir: from.clone().normalize(), toDir: to.clone().normalize(), turn: 0 };
     this.zoomGlide = null;
     this.controls.autoRotate = true;
   }
@@ -770,6 +772,14 @@ export class Globe {
       const t = Math.min(1, (performance.now() - f.start) / f.duration);
       const e = t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2; // ease in-out
       const dir = Globe.slerp(f.fromDir, f.toDir, e);
+      if (f.turn != null) {
+        // spin(): turn as auto-rotation does (each frame's step, faster away
+        // from the equator as in _rotateLeft above), so the turning globe is
+        // already moving while it zooms out and carries on seamlessly after.
+        const lat = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
+        f.turn += this.controls._getAutoRotationAngle(null) / Math.max(0.25, Math.cos(lat));
+        dir.applyAxisAngle(Y_AXIS, -f.turn); // _rotateLeft lowers theta: a negative turn about +y
+      }
       const dist = THREE.MathUtils.lerp(f.from.length(), f.to.length(), e);
       this.camera.position.copy(dir.multiplyScalar(dist));
       this.camera.lookAt(0, 0, 0);

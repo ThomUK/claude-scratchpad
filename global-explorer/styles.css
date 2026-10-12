@@ -99,7 +99,11 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 #screen-play.exploring .globe-wrap, #screen-play.picking .globe-wrap { bottom: 0 !important; }
 .explore-bar { position: absolute; left: 10px; right: 84px; top: calc(10px + var(--safe-t)); z-index: 3; display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 6px; background: rgba(255,255,255,0.92); border: 1px solid var(--border); border-radius: 14px; }
 .explore-bar[hidden], .explore-pop[hidden] { display: none; }
-.explore-bar .back { min-height: 36px; width: 36px; padding: 0; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; }
+/* The explorer's header: a round back button floating on its own, then the card. */
+.explore-head { position: absolute; left: 10px; right: 84px; top: calc(10px + var(--safe-t)); z-index: 3; display: flex; align-items: center; gap: 8px; }
+.explore-head[hidden] { display: none; }
+.explore-head .explore-card { position: static; flex: 1; min-width: 0; width: auto; padding: 10px 14px; }
+.back.float { flex: none; width: 44px; min-height: 44px; height: 44px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.92); }
 .explore-title { display: grid; line-height: 1.2; min-width: 0; }
 .explore-title strong { font-size: 0.95rem; }
 .explore-pop { position: absolute; left: 10px; right: 10px; bottom: 12px; z-index: 4; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 14px 12px; box-shadow: 0 10px 30px rgba(31,41,51,0.2); animation: menuUp .2s ease-out; }
@@ -114,7 +118,7 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 .credits .lic { display: block; color: var(--muted); font-size: 0.8rem; }
 .facts-grid { margin-top: 8px; font-size: 0.86rem; }
 .explore-pop .btnrow { margin-top: 10px; }
-@media (min-width: 900px) { .explore-pop { left: auto; width: 380px; right: 16px; } .explore-bar { right: auto; width: 440px; } } /* on a phone the compass follows the bar's right edge; on the desktop it keeps the corner */
+@media (min-width: 900px) { .explore-pop { left: auto; width: 380px; right: 16px; } .explore-bar { right: auto; width: 440px; } .explore-head { right: auto; width: 492px; } } /* on a phone the compass follows the bar's right edge; on the desktop it keeps the corner */
 /* New-round screen: the globe fills the view, with the title floating over it. */
 .start-bar { flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 14px; }
 .start-bar h1 { font-size: 1.1rem; }

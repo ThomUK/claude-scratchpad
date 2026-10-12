@@ -4,9 +4,9 @@ import {
   decodeTopology, createGame, makeGuess, giveUp, formatDistance, guessCount, haversineKm, initialBearing,
   compassPoint, clueText, useClue, MAX_CLUES, DIFFICULTY, sortCountries, NUMERIC_KEYS, resolveRules, difficultyTier,
   score, recordRound, normalizeStats, stampsFor, clueMarksFor, remainingPool, STAMP_LEVELS,
-} from './engine.js?v=daaeec81';
-import { Globe, COLORS } from './globe.js?v=daaeec81';
-import { isNative, initNative } from './native.js?v=daaeec81';
+} from './engine.js?v=cdba8160';
+import { Globe, COLORS } from './globe.js?v=cdba8160';
+import { isNative, initNative } from './native.js?v=cdba8160';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -52,8 +52,8 @@ const name = (code) => state.byCode.get(code).name;
 // ------------------------------------------------------------------ boot --
 async function main() {
   const [cJson, topo] = await Promise.all([
-    fetch('data/countries.json?v=daaeec81').then((r) => r.json()),
-    fetch('data/world.json?v=daaeec81').then((r) => r.json()),
+    fetch('data/countries.json?v=cdba8160').then((r) => r.json()),
+    fetch('data/world.json?v=cdba8160').then((r) => r.json()),
   ]);
   state.countries = cJson.countries;
   state.pools = cJson.pools || {};
@@ -96,7 +96,7 @@ async function main() {
   render();
   applyView();
   // Inside the Android app the files are already on the phone: no service worker.
-  if ('serviceWorker' in navigator && !isNative()) navigator.serviceWorker.register('sw.js?v=daaeec81').catch(() => {});
+  if ('serviceWorker' in navigator && !isNative()) navigator.serviceWorker.register('sw.js?v=cdba8160').catch(() => {});
   initNative({ back: goBack }).catch(() => {});
 }
 

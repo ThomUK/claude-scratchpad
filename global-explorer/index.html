@@ -9,12 +9,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Global Explorer" />
   <title>Global Explorer</title>
-  <link rel="manifest" href="manifest.webmanifest?v=daaeec81" />
-  <link rel="icon" href="icons/icon.svg?v=daaeec81" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icons/icon-180.png?v=daaeec81" />
-  <link rel="stylesheet" href="styles.css?v=daaeec81" />
+  <link rel="manifest" href="manifest.webmanifest?v=cdba8160" />
+  <link rel="icon" href="icons/icon.svg?v=cdba8160" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png?v=cdba8160" />
+  <link rel="stylesheet" href="styles.css?v=cdba8160" />
   <script type="importmap">
-    { "imports": { "three": "./vendor/three/three.module.js?v=daaeec81" } }
+    { "imports": { "three": "./vendor/three/three.module.js?v=cdba8160" } }
   </script>
 </head>
 <body>
@@ -26,9 +26,9 @@
         <div class="globe-wrap" id="globe-wrap">
           <div id="globe"></div>
           <div class="loading" id="loading"><div class="spin"></div>Loading…</div>
-          <div class="explore-bar" id="explore-bar" hidden>
-            <button type="button" class="back" id="explore-back" aria-label="Back to passport"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-            <div class="explore-title"><strong id="explore-title"></strong><span class="muted small" id="explore-sub"></span></div>
+          <div class="explore-head" id="explore-bar" hidden><!-- the back button floats on its own beside the explorer's card -->
+            <button type="button" class="back float" id="explore-back" aria-label="Back to passport"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <div class="explore-bar explore-card"><div class="explore-title"><strong id="explore-title"></strong><span class="muted small" id="explore-sub"></span></div></div>
           </div>
           <div class="explore-bar start-bar" id="start-bar" hidden>
             <h1>Global Explorer</h1>
@@ -203,6 +203,6 @@
     </div>
   </dialog>
 
-  <script type="module" src="app.js?v=daaeec81"></script>
+  <script type="module" src="app.js?v=cdba8160"></script>
 </body>
 </html>
