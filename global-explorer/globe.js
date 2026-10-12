@@ -4,8 +4,8 @@
 // territories get a screen-space ring marker. Recolouring a country is just a
 // material colour change.
 import * as THREE from 'three';
-import { OrbitControls } from './vendor/three/OrbitControls.js?v=abc5b366';
-import { cameraDistanceForSpan, pickCountry } from './engine.js?v=abc5b366';
+import { OrbitControls } from './vendor/three/OrbitControls.js?v=bf828186';
+import { cameraDistanceForSpan, pickCountry } from './engine.js?v=bf828186';
 
 // Light "atlas" palette: pale ocean, sand land, soft grey borders.
 export const COLORS = {
@@ -786,6 +786,7 @@ export class Globe {
       if (t >= 1) this.flight = null;
     }
     this.stepZoomGlide();
+    if (this.slide) this.applyViewOffset();
     this.controls.update();
     // Hard floor: never let the camera dip into the globe, whatever the controls did.
     const floor = this.controls.minDistance;
@@ -821,15 +822,83 @@ export class Globe {
     const w = this.container.clientWidth, h = this.container.clientHeight;
     if (!w || !h) return;
     this.camera.aspect = w / h;
-    // Cards over the top or bottom of the canvas hide that much of the view, so
-    // shift the view centre to the middle of the strip left clear between them.
-    // (The app reserves a card's space even while it is closed, so the globe
-    // does not move when one opens.)
-    const dy = ((this.topInset || 0) - (this.bottomInset || 0)) / 2;
-    if (dy) this.camera.setViewOffset(w, h, 0, -dy, w, h); else this.camera.clearViewOffset();
-    this.container.style.setProperty('--globe-cy', `calc(50% + ${dy}px)`); // the page vignette follows the globe
-    this.camera.updateProjectionMatrix();
+    this.applyViewOffset();
     this.renderer.setSize(w, h, false);
     if (this.nameGroup) this.applyLabelScale();
+  }
+
+  /**
+   * Cards over the top or bottom of the canvas hide that much of the view, so
+   * shift the view centre to the middle of the strip left clear between them.
+   * (The app reserves a card's space even while it is closed, so the globe
+   * does not move when one opens.) A slide from keepView() eases in on top.
+   */
+  applyViewOffset() {
+    const w = this.container.clientWidth, h = this.container.clientHeight;
+    if (!w || !h) return;
+    let dx = 0, dy = ((this.topInset || 0) - (this.bottomInset || 0)) / 2;
+    if (this.slide) {
+      const t = Math.min(1, (performance.now() - this.slide.start) / this.slide.duration);
+      const left = 1 - (t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2); // ease in-out, as flights
+      dx += this.slide.x * left; dy += this.slide.y * left;
+      if (t >= 1) this.slide = null;
+    }
+    if (dx || dy) this.camera.setViewOffset(w, h, -dx, -dy, w, h); else this.camera.clearViewOffset();
+    this.container.style.setProperty('--globe-cy', `calc(50% + ${dy}px)`); // the page vignette follows the globe
+    this.camera.updateProjectionMatrix();
+  }
+
+  /** Whether a country's centre is on the side facing the camera and well inside the visible clear strip. */
+  inView(code) {
+    const c = this.countries.get(code);
+    if (!c) return false;
+    const p = latLonToVec3(c.latlng[0], c.latlng[1], 1);
+    if (p.dot(this.camera.position.clone().normalize()) <= 0.2) return false; // behind or on the horizon
+    // Judge where the view settles, not the middle of a slide from keepView().
+    const slide = this.slide; this.slide = null; this.applyViewOffset();
+    const q = p.project(this.camera), strip = this.clearStrip();
+    this.slide = slide; this.applyViewOffset();
+    const x = (q.x + 1) / 2 * strip.w, y = (1 - q.y) / 2 * strip.h;
+    const top = this.topInset || 0, bottom = strip.h - (this.bottomInset || 0);
+    return x > strip.w * 0.1 && x < strip.w * 0.9 && y > top + strip.height * 0.1 && y < bottom - strip.height * 0.1;
+  }
+
+  /** The canvas and the strip of it left clear between the cards, in CSS pixels. */
+  clearStrip() {
+    const w = this.container.clientWidth, h = this.container.clientHeight;
+    const top = this.topInset || 0, bottom = this.bottomInset || 0;
+    return { w, h, height: h - top - bottom, cx: w / 2, cy: top + (h - top - bottom) / 2 };
+  }
+
+  /**
+   * Run `change`, which re-lays the page out around the globe (a new canvas
+   * size, other cards), without the view jumping. The camera's height is
+   * rescaled at once so the map keeps its size on screen (the field of view is
+   * vertical, so a shorter canvas would otherwise shrink it), and the view
+   * slides from where it was to the middle of the new clear strip. If that
+   * strip is shorter than the old one, the view also eases out just enough to
+   * keep the same share of it; it never zooms in.
+   */
+  keepView(change, { duration = 700 } = {}) {
+    const before = this.clearStrip();
+    change();
+    this.resize();
+    const after = this.clearStrip();
+    if (!before.h || !after.h) return;
+    const fit = after.height > 0 && after.height < before.height ? before.height / after.height : 1;
+    const scaled = (v, k) => v.clone().setLength(1 + (v.length() - 1) * k);
+    const k = after.h / before.h; // keeps the map's size on screen
+    this.camera.position.copy(scaled(this.camera.position, k));
+    if (this.flight) {
+      // Still flying in to the country: land at the rescaled height instead.
+      this.flight.from = scaled(this.flight.from, k);
+      this.flight.to = scaled(this.flight.to, k * fit);
+    } else if (fit > 1) {
+      const from = this.camera.position.clone(), to = scaled(from, fit), dir = from.clone().normalize();
+      this.flight = { from, to, start: performance.now(), duration, fromDir: dir, toDir: dir.clone() };
+    }
+    this.zoomGlide = null;
+    this.slide = { x: before.cx - after.cx, y: before.cy - after.cy, start: performance.now(), duration };
+    this.applyViewOffset();
   }
 }

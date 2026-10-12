@@ -4,9 +4,9 @@ import {
   decodeTopology, createGame, makeGuess, giveUp, formatDistance, guessCount, haversineKm, initialBearing,
   compassPoint, clueText, useClue, MAX_CLUES, DIFFICULTY, sortCountries, NUMERIC_KEYS, resolveRules, difficultyTier,
   score, recordRound, normalizeStats, stampsFor, clueMarksFor, remainingPool, STAMP_LEVELS,
-} from './engine.js?v=abc5b366';
-import { Globe, COLORS } from './globe.js?v=abc5b366';
-import { isNative, initNative } from './native.js?v=abc5b366';
+} from './engine.js?v=bf828186';
+import { Globe, COLORS } from './globe.js?v=bf828186';
+import { isNative, initNative } from './native.js?v=bf828186';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -52,8 +52,8 @@ const name = (code) => state.byCode.get(code).name;
 // ------------------------------------------------------------------ boot --
 async function main() {
   const [cJson, topo] = await Promise.all([
-    fetch('data/countries.json?v=abc5b366').then((r) => r.json()),
-    fetch('data/world.json?v=abc5b366').then((r) => r.json()),
+    fetch('data/countries.json?v=bf828186').then((r) => r.json()),
+    fetch('data/world.json?v=bf828186').then((r) => r.json()),
   ]);
   state.countries = cJson.countries;
   state.pools = cJson.pools || {};
@@ -96,7 +96,7 @@ async function main() {
   render();
   applyView();
   // Inside the Android app the files are already on the phone: no service worker.
-  if ('serviceWorker' in navigator && !isNative()) navigator.serviceWorker.register('sw.js?v=abc5b366').catch(() => {});
+  if ('serviceWorker' in navigator && !isNative()) navigator.serviceWorker.register('sw.js?v=bf828186').catch(() => {});
   initNative({ back: goBack }).catch(() => {});
 }
 
@@ -449,10 +449,15 @@ function startRound(startCode) {
   const codes = pool.codes.filter((c) => c !== startCode).length ? pool.codes : state.countries.map((c) => c.code);
   state.game = createGame(state.countries, startCode, { rules: r, pool: codes });
   state.phase = 'guessing';
-  setSheet('half');
-  render();
-  applyView();
-  state.globe.flyTo(startCode); // after the sheet is laid out, so the fit knows the canvas shape
+  // The view stays where it was: the sheet opens beneath it and the globe
+  // slides up into the space above, easing out only if that space is shorter.
+  state.globe.keepView(() => {
+    setSheet('half');
+    render();
+    applyView();
+  });
+  // Only if the start country is out of sight (the view was moved away) does the globe fly to it.
+  if (!state.globe.inView(startCode)) state.globe.flyTo(startCode);
   // The sheet already says where you start and how far the mystery country is; only a full passport needs a word.
   if (pool.complete) flash(`Your ${r.label} passport is complete, so any of its countries can come up.`);
 }
