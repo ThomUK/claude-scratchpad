@@ -4,9 +4,9 @@ import {
   decodeTopology, createGame, makeGuess, giveUp, formatDistance, guessCount, haversineKm, initialBearing,
   compassPoint, clueText, useClue, MAX_CLUES, DIFFICULTY, sortCountries, NUMERIC_KEYS, resolveRules, difficultyTier,
   score, recordRound, normalizeStats, stampsFor, clueMarksFor, remainingPool, STAMP_LEVELS,
-} from './engine.js?v=cdba8160';
-import { Globe, COLORS } from './globe.js?v=cdba8160';
-import { isNative, initNative } from './native.js?v=cdba8160';
+} from './engine.js?v=abc5b366';
+import { Globe, COLORS } from './globe.js?v=abc5b366';
+import { isNative, initNative } from './native.js?v=abc5b366';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -52,8 +52,8 @@ const name = (code) => state.byCode.get(code).name;
 // ------------------------------------------------------------------ boot --
 async function main() {
   const [cJson, topo] = await Promise.all([
-    fetch('data/countries.json?v=cdba8160').then((r) => r.json()),
-    fetch('data/world.json?v=cdba8160').then((r) => r.json()),
+    fetch('data/countries.json?v=abc5b366').then((r) => r.json()),
+    fetch('data/world.json?v=abc5b366').then((r) => r.json()),
   ]);
   state.countries = cJson.countries;
   state.pools = cJson.pools || {};
@@ -96,7 +96,7 @@ async function main() {
   render();
   applyView();
   // Inside the Android app the files are already on the phone: no service worker.
-  if ('serviceWorker' in navigator && !isNative()) navigator.serviceWorker.register('sw.js?v=cdba8160').catch(() => {});
+  if ('serviceWorker' in navigator && !isNative()) navigator.serviceWorker.register('sw.js?v=abc5b366').catch(() => {});
   initNative({ back: goBack }).catch(() => {});
 }
 
@@ -721,7 +721,7 @@ function jitter(seed) {
 function stampEl(level, got, size = '', count = 0, seed = '', clues = null) {
   const s = el('span', `stamp ${level} ${got ? 'got inked' : 'missing'} ${size}`.trim());
   s.style.setProperty('--rot', `${(jitter(seed + level) * 12).toFixed(1)}deg`);
-  s.textContent = level === 'visited' ? (size === 'sm' ? 'Been here' : 'Been\nhere') : size === 'sm' ? LEVEL_LABEL(level)[0] : level === 'intermediate' ? 'Inter\nmediate' : LEVEL_LABEL(level);
+  s.textContent = level === 'visited' ? 'Been\nhere' : size === 'sm' ? LEVEL_LABEL(level)[0] : level === 'intermediate' ? 'Inter\nmediate' : LEVEL_LABEL(level);
   if (level === 'visited') s.title = got ? 'Been here for real' : 'Not visited for real yet';
   if (got && count > 1) s.append(el('small', null, `×${count}`));
   s.title = got ? `${LEVEL_LABEL(level)} stamp${count > 1 ? ` ×${count}` : ''}` : `No ${LEVEL_LABEL(level)} stamp yet`;
