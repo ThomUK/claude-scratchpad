@@ -205,3 +205,39 @@ select { width: auto; max-width: 100%; }
 .basis { display: inline-block; font-size: 0.72rem; font-weight: 600; border-radius: 999px; padding: 0 8px; border: 1px solid var(--panel-border); white-space: nowrap; cursor: help; }
 .basis--code-match { color: var(--muted); }
 .basis--curated { color: #e6d8b8; border-color: #6b5a2e; background: #1f1a10; }
+
+/* code tree */
+.tree-filters { display: flex; flex-direction: column; gap: 10px; margin: 12px 0 8px; }
+.frow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.frow input[type="search"] { flex: 1; min-width: 220px; width: auto; }
+.flbl { font-size: 0.8rem; font-weight: 700; min-width: 170px; }
+.fchip {
+  font: inherit; font-size: 0.84rem; cursor: pointer; color: var(--muted); background: var(--surface);
+  border: 1px solid var(--panel-border); border-radius: 999px; padding: 3px 12px;
+}
+.fchip:hover { color: var(--text); border-color: var(--accent); }
+.fchip[aria-pressed="true"] { color: var(--bg); background: var(--accent); border-color: var(--accent); font-weight: 600; }
+.check:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+
+.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
+.tree ul { margin-left: 14px; padding-left: 14px; border-left: 1px solid var(--panel-border); }
+.tree li { position: relative; }
+.tree ul > li::before { content: ""; position: absolute; left: -14px; top: 15px; width: 12px; border-top: 1px solid var(--panel-border); }
+.tree ul > li.t-leaf--curated::before { border-top: 1px dashed #b08a3e; }
+.tree summary { cursor: pointer; list-style: none; }
+.tree summary::-webkit-details-marker { display: none; }
+.tree summary::before { content: "▸"; display: inline-block; width: 14px; color: var(--muted); transition: transform .12s; }
+.tree details[open] > summary::before { transform: rotate(90deg); }
+.t-head { font-weight: 700; font-size: 1.02rem; padding: 6px 0; }
+.t-node { padding: 4px 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; }
+.t-branch--empty > .t-node { padding-left: 14px; }
+.t-title { font-weight: 600; }
+.t-also { color: var(--muted); font-size: 0.78rem; }
+.t-count { color: var(--muted); font-size: 0.78rem; font-weight: 400; }
+.t-go { font-size: 0.78rem; margin-left: auto; text-decoration: none; }
+.t-leaf { padding: 3px 0; font-size: 0.9rem; }
+.t-leaf--none { padding-left: 2px; }
+.t-svc { color: var(--muted); font-size: 0.74rem; }
+.code--tfc { color: var(--text); }
+.t-leaf--curated .code--tfc { border-style: dashed; border-color: #6b5a2e; }
+@media (max-width: 600px) { .flbl { min-width: 100%; } .t-go { margin-left: 0; } }

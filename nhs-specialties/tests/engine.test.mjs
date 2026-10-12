@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { load as parseYaml } from '../vendor/js-yaml.mjs';
-import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter, overlaps, regionTree, collapseRegions, linkBasis } from '../engine.js';
+import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter, overlaps, regionTree, collapseRegions, linkBasis, mappingTree } from '../engine.js';
 
 const DATA = fileURLToPath(new URL('../data/', import.meta.url));
 let n = 0;
@@ -206,6 +206,39 @@ check('Data Dictionary table: not-a-treatment-function codes are known and refus
 check('Data Dictionary table: every main specialty code has a factsheet or is retired / a combined code', () => {
   const orphans = [...index.mainSpecialties.values()].filter((m) => m.status === 'active' && !m.specialties.length).map((m) => m.code);
   assert.deepEqual(orphans, []);
+});
+
+check('mappingTree: every current treatment function appears exactly once, under Table 1 headings', () => {
+  const tree = mappingTree(index);
+  assert.deepEqual(tree.map((g) => g.heading), ['Surgical Specialties', 'Medical Specialties', 'Psychiatry', 'Other']);
+  const codes = tree.flatMap((g) => g.branches.flatMap((b) => b.tfcs.map((t) => t.code)));
+  const current = [...index.treatmentFunctions.values()].filter((t) => t.status === 'active').map((t) => t.code);
+  assert.equal(codes.length, current.length);
+  assert.deepEqual(new Set(codes), new Set(current));
+  const gs = tree[0].branches.find((b) => b.code === '100');
+  assert.ok(gs.tfcs.some((t) => t.code === '100' && t.basis === 'code-match'));
+  assert.ok(gs.tfcs.some((t) => t.code === '103' && t.basis === 'curated'));
+  const obs = tree.flatMap((g) => g.branches).find((b) => b.code === '501');
+  assert.deepEqual(obs.otherCodes.map((c) => c.code), ['500', '510', '520', '610']);
+});
+
+check('mappingTree: filters by type, link basis, query, and empty branches', () => {
+  const cur = mappingTree(index, { basis: 'curated' });
+  assert.ok(cur.flatMap((g) => g.branches.flatMap((b) => b.tfcs)).every((t) => t.basis === 'curated'));
+  assert.ok(!cur.flatMap((g) => g.branches).some((b) => b.code === '320' && b.tfcs.some((t) => t.code === '320')));
+  const surg = mappingTree(index, { msHeadings: ['Surgical Specialties'] });
+  assert.deepEqual(surg.map((g) => g.heading), ['Surgical Specialties']);
+  const kids = mappingTree(index, { tfcHeadings: ["Other Children's Specialist Services"] });
+  const kidTfcs = kids.flatMap((g) => g.branches.flatMap((b) => b.tfcs));
+  assert.equal(kidTfcs.length, 40);
+  assert.ok(kids.flatMap((g) => g.branches).some((b) => b.code === '110')); // 214 Paediatric T&O lives under T&O
+  const q = mappingTree(index, { query: 'hepatology' }).flatMap((g) => g.branches);
+  assert.ok(q.some((b) => b.code === '301' && b.tfcs.length === 1 && b.tfcs[0].code === '306'));
+  const withEmpty = mappingTree(index, { showEmpty: true }).flatMap((g) => g.branches);
+  const haem = withEmpty.find((b) => b.code === '823');
+  assert.equal(haem.notTreatmentFunction, 'See Clinical Haematology');
+  assert.ok(!mappingTree(index).flatMap((g) => g.branches).some((b) => b.code === '823'));
+  assert.ok(!mappingTree(index, { showEmpty: true, basis: 'curated' }).flatMap((g) => g.branches).some((b) => b.code === '823'));
 });
 
 console.log(`\n${n} checks passed`);

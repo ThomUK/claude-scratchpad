@@ -1,5 +1,5 @@
 import { load as parseYaml } from './vendor/js-yaml.mjs?v=dev';
-import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter, regionTree, collapseRegions, linkBasis } from './engine.js?v=dev';
+import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter, regionTree, collapseRegions, linkBasis, mappingTree } from './engine.js?v=dev';
 
 const REPO = 'https://github.com/ThomUK/claude-scratchpad';
 const DATA_PATH = 'nhs-specialties/data';
@@ -66,6 +66,7 @@ function route() {
   else if (view === 'role' && index.roles.has(arg)) renderRole(arg);
   else if (view === 'graph') renderGraph(arg);
   else if (view === 'codes') renderCodes();
+  else if (view === 'tree') renderTree();
   else if (view === 'about') renderAbout();
   else renderIndex();
   if (view !== 'graph') window.scrollTo(0, 0);
@@ -541,6 +542,82 @@ function renderCodes() {
   document.getElementById('cq').addEventListener('input', (e) => { codeState.q = e.target.value; draw(); });
   document.getElementById('ret').addEventListener('change', (e) => { codeState.showRetired = e.target.checked; draw(); });
   draw();
+}
+
+// ---------------------------------------------------------------- code tree
+const treeState = { q: '', ms: new Set(), tfc: new Set(), basis: 'all', showEmpty: false };
+const TFC_HEADING_SHORT = { "Other Children's Specialist Services": "Children's services", 'Mental Health Services': 'Mental health', 'Other Services': 'Other services', 'Surgical Specialties': 'Surgical', 'Medical Specialties': 'Medical' };
+const MS_HEADING_SHORT = { 'Surgical Specialties': 'Surgical', 'Medical Specialties': 'Medical', Psychiatry: 'Psychiatry', Other: 'Other' };
+
+function renderTree() {
+  const msHeadings = [...new Set([...index.mainSpecialties.values()].map((m) => m.heading))];
+  const tfcHeadings = [...new Set([...index.treatmentFunctions.values()].map((t) => t.heading))];
+  const chips = (kind, list, short) => list.map((h) => `<button class="fchip" data-${kind}="${esc(h)}" aria-pressed="${treeState[kind].has(h)}">${esc(short[h] || h)}</button>`).join('');
+  $view.innerHTML = `
+    <section class="panel">
+      <p class="muted small" style="margin-top:0">How main specialty codes (Data Dictionary Table 1) and treatment function codes (Table 2) are linked in this app.
+        Each branch is a main specialty, and the leaves are the treatment functions whose home is that specialty's factsheet.
+        <span class="basis basis--code-match">same code</span> means the two codes share a number;
+        <span class="basis basis--curated">curated</span> means an editorial grouping (see <a href="#/about">About the data</a>).</p>
+      <div class="tree-filters">
+        <div class="frow"><span class="flbl">Specialty type <span class="muted">(Table 1)</span></span>${chips('ms', msHeadings, MS_HEADING_SHORT)}</div>
+        <div class="frow"><span class="flbl">Service type <span class="muted">(Table 2)</span></span>${chips('tfc', tfcHeadings, TFC_HEADING_SHORT)}</div>
+        <div class="frow"><span class="flbl">Link</span>
+          <div class="seg" role="radiogroup" aria-label="Link type">
+            ${[['all', 'All links'], ['code-match', 'Same code only'], ['curated', 'Curated only']].map(([v, l]) => `<button class="seg-b" data-basis="${v}" role="radio" aria-selected="${treeState.basis === v}">${l}</button>`).join('')}
+          </div>
+        </div>
+        <div class="frow">
+          <input id="tq" type="search" aria-label="Search codes and titles" placeholder="Search codes or titles, e.g. 306, paediatric, rehab" value="${esc(treeState.q)}" />
+          <label class="check"><input type="checkbox" id="tempty"${treeState.showEmpty ? ' checked' : ''}/>Include main specialties with no treatment function</label>
+          <button class="btn" id="texp">Expand all</button><button class="btn" id="tcol">Collapse all</button>
+        </div>
+      </div>
+      <p class="muted small" id="tsum"></p>
+      <div id="tree"></div>
+    </section>`;
+  const draw = () => {
+    document.querySelectorAll('[data-ms]').forEach((b) => b.setAttribute('aria-pressed', String(treeState.ms.has(b.dataset.ms))));
+    document.querySelectorAll('[data-tfc]').forEach((b) => b.setAttribute('aria-pressed', String(treeState.tfc.has(b.dataset.tfc))));
+    document.querySelectorAll('[data-basis]').forEach((b) => b.setAttribute('aria-selected', String(treeState.basis === b.dataset.basis)));
+    const emptyBox = document.getElementById('tempty');
+    const tfcFiltered = treeState.tfc.size || treeState.basis !== 'all';
+    emptyBox.disabled = !!tfcFiltered;
+    emptyBox.parentElement.title = tfcFiltered ? 'Only available when no service-type or link filter is set' : '';
+    const tree = mappingTree(index, {
+      msHeadings: treeState.ms.size ? [...treeState.ms] : null,
+      tfcHeadings: treeState.tfc.size ? [...treeState.tfc] : null,
+      basis: treeState.basis, query: treeState.q, showEmpty: treeState.showEmpty,
+    });
+    const tot = tree.reduce((t, g) => ({ m: t.m + g.counts.mainSpecialties, f: t.f + g.counts.treatmentFunctions, c: t.c + g.counts.curated }), { m: 0, f: 0, c: 0 });
+    document.getElementById('tsum').textContent = `${tot.m} main specialt${tot.m === 1 ? 'y' : 'ies'} · ${tot.f} treatment function${tot.f === 1 ? '' : 's'} (${tot.f - tot.c} same code, ${tot.c} curated)`;
+    document.getElementById('tree').innerHTML = tree.length ? `<ul class="tree">${tree.map((g) => `
+      <li><details open><summary class="t-head">${esc(g.heading)} <span class="t-count">${g.counts.mainSpecialties} main specialties · ${g.counts.treatmentFunctions} TFCs${g.counts.curated ? ` · ${g.counts.curated} curated` : ''}</span></summary>
+        <ul>${g.branches.map(branchHtml).join('')}</ul></details></li>`).join('')}</ul>` : '<p class="muted">Nothing matches these filters.</p>';
+  };
+  const toggle = (set, v) => { set.has(v) ? set.delete(v) : set.add(v); draw(); };
+  document.querySelectorAll('[data-ms]').forEach((b) => b.addEventListener('click', () => toggle(treeState.ms, b.dataset.ms)));
+  document.querySelectorAll('[data-tfc]').forEach((b) => b.addEventListener('click', () => toggle(treeState.tfc, b.dataset.tfc)));
+  document.querySelectorAll('[data-basis]').forEach((b) => b.addEventListener('click', () => { treeState.basis = b.dataset.basis; draw(); }));
+  document.getElementById('tq').addEventListener('input', (e) => { treeState.q = e.target.value; draw(); });
+  document.getElementById('tempty').addEventListener('change', (e) => { treeState.showEmpty = e.target.checked; draw(); });
+  const setOpen = (open) => document.querySelectorAll('#tree details').forEach((d) => { d.open = open; });
+  document.getElementById('texp').addEventListener('click', () => setOpen(true));
+  document.getElementById('tcol').addEventListener('click', () => { setOpen(false); document.querySelectorAll('#tree > ul > li > details').forEach((d) => { d.open = true; }); });
+  draw();
+}
+
+function branchHtml(b) {
+  const others = b.otherCodes.length ? `<span class="t-also">also ${b.otherCodes.map((c) => `${esc(c.code)} ${esc(c.title)}${c.status === 'retired' ? ' (retired)' : ''}`).join(', ')}</span>` : '';
+  const head = `<span class="code">${esc(b.code)}</span> <span class="t-title">${esc(b.title)}</span>${others}
+    <span class="t-count">${b.tfcs.length} TFC${b.tfcs.length === 1 ? '' : 's'}</span> <a class="t-go" href="#/s/${esc(b.specialty)}" title="Open factsheet">factsheet →</a>`;
+  if (!b.tfcs.length) {
+    const why = b.notTreatmentFunction ? `Not a treatment function${typeof b.notTreatmentFunction === 'string' ? ` (Data Dictionary: “${esc(b.notTreatmentFunction)}”)` : ''}` : 'No treatment function';
+    return `<li class="t-branch t-branch--empty"><div class="t-node">${head}</div><ul><li class="t-leaf t-leaf--none"><span class="muted small">${why}</span></li></ul></li>`;
+  }
+  return `<li class="t-branch"><details open><summary class="t-node">${head}</summary><ul>${b.tfcs.map((t) => `
+    <li class="t-leaf t-leaf--${t.basis}"${t.comment ? ` title="${esc(t.comment)}"` : ''}><span class="code code--tfc">${esc(t.code)}</span> ${esc(t.title)}
+      ${basisTag(t.code)} <span class="t-svc">${esc(TFC_HEADING_SHORT[t.heading] || t.heading)}</span></li>`).join('')}</ul></details></li>`;
 }
 
 // ---------------------------------------------------------------- about

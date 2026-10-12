@@ -20,6 +20,12 @@ Live: https://thomuk.github.io/claude-scratchpad/nhs-specialties/
   shaded regions around their specialties instead of hub nodes. Filter by role kind
   and specialty group, click a node or region to highlight its links, and zoom
   or pan. Includes a table view.
+- **Code tree** (`#/tree`): main specialty → treatment function tree, grouped
+  by Data Dictionary Table 1 heading, with each link marked *same code* or
+  *curated*. Filter by specialty type (Table 1), service type (Table 2), link
+  kind (all / same code / curated) and free text. Optionally include main
+  specialties that have no treatment function, such as 823 Haematology, which
+  the Data Dictionary points to Clinical Haematology.
 - **Code index** (`#/codes`): both Data Dictionary code lists, with the
   factsheet each code maps to.
 

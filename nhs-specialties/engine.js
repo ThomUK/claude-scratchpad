@@ -424,3 +424,48 @@ export function regionTree(points, { maxLink = Infinity } = {}) {
   for (let i = 0; i < n; i++) { const r = find(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(i); }
   return { links, bridges, islands: [...groups.values()].sort((a, b) => b.length - a.length) };
 }
+
+// ------------------------------------------------------------------ mapping tree
+// Main specialty -> treatment function tree, grouped by Data Dictionary Table 1
+// heading. Each factsheet is one branch, named by its first main specialty code;
+// any other codes on it (retired or combined, e.g. 500) are listed as `otherCodes`.
+// opts: { msHeadings, tfcHeadings: arrays or null (= all), basis: 'all' | 'code-match' | 'curated',
+//         query: text matched against codes and titles, showEmpty: include branches with no
+//         treatment function (only when no treatment-function filter is active) }
+export function mappingTree(index, opts = {}) {
+  const msHeadings = opts.msHeadings ? new Set(opts.msHeadings) : null;
+  const tfcHeadings = opts.tfcHeadings ? new Set(opts.tfcHeadings) : null;
+  const basis = opts.basis || 'all';
+  const q = norm(opts.query || '');
+  const hits = (code, title) => !q || code.includes(q) || norm(title).includes(q);
+  const tfcFiltered = !!tfcHeadings || basis !== 'all';
+  const order = [];
+  for (const m of index.mainSpecialties.values()) if (!order.includes(m.heading)) order.push(m.heading);
+  const groups = new Map(order.map((h) => [h, []]));
+
+  for (const s of index.specialties.values()) {
+    const ms = index.mainSpecialties.get(s.mainSpecialtyCodes[0]);
+    if (!ms || (msHeadings && !msHeadings.has(ms.heading))) continue;
+    const branchHit = !q || s.mainSpecialtyCodes.some((c) => hits(c, index.mainSpecialties.get(c).title)) || norm(s.title).includes(q);
+    const tfcs = s.treatmentFunctionCodes
+      .map((c) => index.treatmentFunctions.get(c))
+      .map((t) => ({ code: t.code, title: t.title, heading: t.heading, comment: t.comment || null, basis: linkBasis(index, t.code) }))
+      .filter((t) => (!tfcHeadings || tfcHeadings.has(t.heading)) && (basis === 'all' || t.basis === basis) && (branchHit || hits(t.code, t.title)));
+    const empty = !s.treatmentFunctionCodes.length;
+    if (!tfcs.length && !(empty && opts.showEmpty && !tfcFiltered && branchHit)) continue;
+    groups.get(ms.heading).push({
+      specialty: s.id, code: ms.code, title: ms.title,
+      otherCodes: s.mainSpecialtyCodes.slice(1).map((c) => { const m = index.mainSpecialties.get(c); return { code: c, title: m.title, status: m.status }; }),
+      notTreatmentFunction: ms.notTreatmentFunction ? (ms.notTreatmentFunctionComment || true) : null,
+      tfcs,
+    });
+  }
+  const out = [];
+  for (const [heading, branches] of groups) {
+    if (!branches.length) continue;
+    branches.sort((a, b) => a.code.localeCompare(b.code));
+    const tf = branches.flatMap((b) => b.tfcs);
+    out.push({ heading, branches, counts: { mainSpecialties: branches.length, treatmentFunctions: tf.length, curated: tf.filter((t) => t.basis === 'curated').length } });
+  }
+  return out;
+}
