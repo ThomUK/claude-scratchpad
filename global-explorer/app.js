@@ -4,9 +4,9 @@ import {
   decodeTopology, createGame, makeGuess, giveUp, formatDistance, guessCount, haversineKm, initialBearing,
   compassPoint, clueText, useClue, MAX_CLUES, DIFFICULTY, sortCountries, NUMERIC_KEYS, resolveRules, difficultyTier,
   score, recordRound, normalizeStats, stampsFor, clueMarksFor, remainingPool, STAMP_LEVELS,
-} from './engine.js?v=69782716';
-import { Globe, COLORS } from './globe.js?v=69782716';
-import { isNative, initNative } from './native.js?v=69782716';
+} from './engine.js?v=daaeec81';
+import { Globe, COLORS } from './globe.js?v=daaeec81';
+import { isNative, initNative } from './native.js?v=daaeec81';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -52,8 +52,8 @@ const name = (code) => state.byCode.get(code).name;
 // ------------------------------------------------------------------ boot --
 async function main() {
   const [cJson, topo] = await Promise.all([
-    fetch('data/countries.json?v=69782716').then((r) => r.json()),
-    fetch('data/world.json?v=69782716').then((r) => r.json()),
+    fetch('data/countries.json?v=daaeec81').then((r) => r.json()),
+    fetch('data/world.json?v=daaeec81').then((r) => r.json()),
   ]);
   state.countries = cJson.countries;
   state.pools = cJson.pools || {};
@@ -96,7 +96,7 @@ async function main() {
   render();
   applyView();
   // Inside the Android app the files are already on the phone: no service worker.
-  if ('serviceWorker' in navigator && !isNative()) navigator.serviceWorker.register('sw.js?v=69782716').catch(() => {});
+  if ('serviceWorker' in navigator && !isNative()) navigator.serviceWorker.register('sw.js?v=daaeec81').catch(() => {});
   initNative({ back: goBack }).catch(() => {});
 }
 
@@ -173,7 +173,7 @@ function applyView() {
   const canClick = view !== 'round' || state.phase === 'guessing'; // on Advanced a tap rings the shape instead of guessing
   state.globe.pickEnabled = canClick;
   sp.classList.toggle('clickable', canClick);
-  if (view !== 'start' || sel) state.globe.controls.autoRotate = false;
+  if (view === 'round' || sel) state.globe.controls.autoRotate = false; // the start and explore views may turn
   // The card for the selected country, if the view has one.
   $('start-pop').hidden = !(view === 'start' && sel);
   $('explore-pop').hidden = !(view === 'explore' && sel);
@@ -200,6 +200,7 @@ function enterExplore(ctx, code) {
   state.selected = null;
   showScreen('play');
   if (code) select(code);
+  else state.globe.spin(); // the whole globe, turning slowly until touched
 }
 /** Hand the globe back to the game and show `to`. */
 function exitExplore(to) {
@@ -266,9 +267,12 @@ function recentre() {
 function wireTabs() {
   for (const b of document.querySelectorAll('.tab')) b.addEventListener('click', () => {
     state.explore = null; state.selected = null;
+    const toGame = b.dataset.screen === 'play';
     // A finished round is done with: the Game tab goes back to the new-round screen.
-    if (b.dataset.screen === 'play' && state.phase === 'over') resetToPickStart();
+    if (toGame && state.phase === 'over') resetToPickStart();
     showScreen(b.dataset.screen);
+    // With no round in progress, the Game tab opens on the slowly turning globe, as at launch.
+    if (toGame && state.phase === 'pick-start') state.globe.spin();
   });
   $('country-back').addEventListener('click', () => showScreen(state.countryFrom || 'atlas'));
   $('btn-show-globe').addEventListener('click', () => showOnGlobe(state.countryPage));
@@ -502,7 +506,7 @@ function finishRound() {
 function resetToPickStart() {
   state.phase = 'pick-start'; state.game = null; state.clue = null; state.tapped = null; state.explore = null; state.selected = null;
   flash('');
-  state.globe.controls.autoRotate = true;
+  state.globe.spin();
   setSheet('half');
   render();
   applyView();

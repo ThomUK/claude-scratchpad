@@ -4,8 +4,8 @@
 // territories get a screen-space ring marker. Recolouring a country is just a
 // material colour change.
 import * as THREE from 'three';
-import { OrbitControls } from './vendor/three/OrbitControls.js?v=69782716';
-import { cameraDistanceForSpan, pickCountry } from './engine.js?v=69782716';
+import { OrbitControls } from './vendor/three/OrbitControls.js?v=daaeec81';
+import { cameraDistanceForSpan, pickCountry } from './engine.js?v=daaeec81';
 
 // Light "atlas" palette: pale ocean, sand land, soft grey borders.
 export const COLORS = {
@@ -18,6 +18,8 @@ const FILL_R = 1.0008;      // fills sit just above the ocean sphere
 const BORDER_R = 1.0016;    // borders above fills
 // Momentum. OrbitControls applies dampingFactor of the pending rotation each
 // frame: a high factor keeps the globe glued to the finger, a low one glides.
+const HOME_DISTANCE = 2.4;   // the opening zoom, which spin() returns to
+const HOME_MAX_LAT = 70;     // the opening view keeps the poles out of the middle
 const DRAG_DAMPING = 0.2;    // while a pointer is down
 const GLIDE_DAMPING = 0.09;  // after release: ~0.8 s to run down
 const GLIDE_BOOST = 3;       // stretch the leftover motion at release
@@ -61,9 +63,9 @@ export class Globe {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.01, 200);
     // Open somewhere different each time: a random country, framed with its region around it.
-    const shaped = countries.filter((c) => c.hasShape && Math.abs(c.latlng[0]) < 70);
+    const shaped = countries.filter((c) => c.hasShape && Math.abs(c.latlng[0]) < HOME_MAX_LAT);
     const pick = shaped[Math.floor(Math.random() * shaped.length)] || { latlng: [20, 0] };
-    this.camera.position.copy(latLonToVec3(pick.latlng[0], pick.latlng[1], 2.4));
+    this.camera.position.copy(latLonToVec3(pick.latlng[0], pick.latlng[1], HOME_DISTANCE));
     this.openedAt = pick.code || null;
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -733,6 +735,20 @@ export class Globe {
     const lat = THREE.MathUtils.clamp(c.latlng[0], -89, 89); // the camera's up vector degenerates exactly over a pole
     const to = latLonToVec3(lat, c.latlng[1], dist);
     this.flight = { from, to, start: performance.now(), duration, fromDir: from.clone().normalize(), toDir: to.clone().normalize() };
+  }
+
+  /**
+   * Back to the opening view: ease out to the opening zoom over whatever is in
+   * the middle of the view (drawn away from the poles, as at launch), then turn
+   * slowly until the next touch.
+   */
+  spin({ duration = 1200 } = {}) {
+    const from = this.camera.position.clone();
+    const [lat, lon] = vec3ToLatLon(from);
+    const to = latLonToVec3(THREE.MathUtils.clamp(lat, -HOME_MAX_LAT, HOME_MAX_LAT), lon, HOME_DISTANCE);
+    this.flight = { from, to, start: performance.now(), duration, fromDir: from.clone().normalize(), toDir: to.clone().normalize() };
+    this.zoomGlide = null;
+    this.controls.autoRotate = true;
   }
 
   /**
