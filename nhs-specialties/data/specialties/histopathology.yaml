@@ -3,13 +3,14 @@ id: histopathology
 title: "Histopathology"
 group: diagnostics
 main_specialty_codes: ["824", "832"]
-treatment_function_codes: ["832"]
+treatment_function_codes: []
 summary: >-
   Diagnosis of disease from tissue and cells (cellular pathology), including
   cancer diagnosis, cytology, autopsy and neuropathology.
 notes: >-
-  Neuropathology had its own main specialty (832) until 2004; treatment
-  function 832 is mapped here.
+  Histopathology (824) is a main specialty but not a treatment function.
+  Neuropathology (832) was retired as both a main specialty and a treatment
+  function on 1 April 2004.
 training:
   college: "Royal College of Pathologists"
   route: "Run-through specialty training ST1–ST5"

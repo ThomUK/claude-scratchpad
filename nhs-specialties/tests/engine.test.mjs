@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { load as parseYaml } from '../vendor/js-yaml.mjs';
-import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter, overlaps, regionTree, collapseRegions } from '../engine.js';
+import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter, overlaps, regionTree, collapseRegions, linkBasis } from '../engine.js';
 
 const DATA = fileURLToPath(new URL('../data/', import.meta.url));
 let n = 0;
@@ -181,6 +181,31 @@ check('collapseRegions: pathways leave the layout graph and become weak member-t
   assert.ok(pull > 1 && pull < 4, `total pull on cardiology ${pull}`);
   const ids = new Set(graph.nodes.map((x) => x.id));
   for (const e of graph.edges) assert.ok(ids.has(e.source) && ids.has(e.target));
+});
+
+check('linkBasis: same-code links vs curated groupings', () => {
+  assert.equal(linkBasis(index, '320'), 'code-match');
+  assert.equal(linkBasis(index, '103'), 'curated');
+  assert.equal(linkBasis(index, '510'), null); // retired, no factsheet
+  const counts = { 'code-match': 0, curated: 0 };
+  for (const t of index.treatmentFunctions.values()) if (t.specialty) counts[linkBasis(index, t.code)]++;
+  assert.ok(counts['code-match'] > 60 && counts.curated > 100, JSON.stringify(counts));
+});
+
+check('Data Dictionary table: not-a-treatment-function codes are known and refused on factsheets', () => {
+  const m = index.mainSpecialties.get('823');
+  assert.equal(m.notTreatmentFunction, true);
+  assert.equal(m.notTreatmentFunctionComment, 'See Clinical Haematology');
+  assert.ok(!index.treatmentFunctions.has('810'));
+  assert.equal(index.treatmentFunctions.get('990').status, 'retired');
+  const bad = structuredClone(data);
+  bad.specialties.find((x) => x.id === 'radiology').treatment_function_codes.push('810');
+  assert.ok(validate(bad).some((e) => e.includes('810 is listed in the Data Dictionary as "not a Treatment Function"')));
+});
+
+check('Data Dictionary table: every main specialty code has a factsheet or is retired / a combined code', () => {
+  const orphans = [...index.mainSpecialties.values()].filter((m) => m.status === 'active' && !m.specialties.length).map((m) => m.code);
+  assert.deepEqual(orphans, []);
 });
 
 console.log(`\n${n} checks passed`);

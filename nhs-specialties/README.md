@@ -30,8 +30,10 @@ data/
   specialties.yaml              manifest: navigation groups + list of factsheet ids
   specialties/<id>.yaml         one factsheet per specialty (86)
   roles.yaml                    role catalogue: grades, pathways, special-interest roles
-  codes/main-specialties.yaml   MAIN SPECIALTY CODE national codes (92)
-  codes/treatment-functions.yaml TREATMENT FUNCTION CODE national codes (189)
+  codes/main-specialties.yaml   Data Dictionary Table 1: main specialty codes (95)
+  codes/treatment-functions.yaml Data Dictionary Table 2: treatment function codes (184)
+source/                         saved copy of the Data Dictionary page (input of record)
+ingest/ingest_dd_table.py       rebuilds data/codes/ from the newest copy in source/
 ```
 
 Factsheet schema:
@@ -77,16 +79,40 @@ node tests/engine.test.mjs        # from nhs-specialties/
 
 ## Sources and caveats
 
-- **Treatment function codes**: the full Data Dictionary table, taken
-  programmatically from the Strategy Unit's mirror
-  ([`tx-lookup.json`](https://github.com/The-Strategy-Unit/nhp_outputs/blob/main/inst/app/data/tx-lookup.json))
-  because datadictionary.nhs.uk was not reachable from the build environment.
-- **Main specialty codes**: transcribed from the Data Dictionary's
-  Main Specialty Code attribute, including the retired codes 191, 312 and 832.
-  Re-check this list against the live page when convenient.
-- **Each TFC's home factsheet** follows the Data Dictionary's Main Specialty and
-  Treatment Function Codes Table where it is clear. Judgement calls are explained
-  in the factsheet's `notes`.
+- **Both code lists** come from the NHS Data Dictionary page
+  [Main Specialty and Treatment Function Codes Table](https://www.datadictionary.nhs.uk/supporting_information/main_specialty_and_treatment_function_codes_table.html).
+  A saved copy is kept in `source/` and is the input of record.
+  `ingest/ingest_dd_table.py` turns it into `data/codes/*.yaml`. Don't edit those
+  files by hand.
+  - Table 1, Main Specialty Codes: 95 codes, 8 of them retired.
+  - Table 2, Treatment Function Codes: 184 codes, 6 of them retired. It also
+    lists 18 main specialty codes as "not a Treatment Function", sometimes with a
+    pointer such as 823 "See Clinical Haematology".
+- **To update the codes**:
+  1. Save the live page (browser "Save page as… → HTML only") as
+     `source/dd-main-specialty-and-treatment-function-codes-table.<YYYY-MM-DD>.html`.
+  2. Run `python3 ingest/ingest_dd_table.py`. It reads the newest copy.
+  3. Run `node tests/engine.test.mjs`. Validation names every factsheet that now
+     uses a retired, removed or "not a Treatment Function" code.
+- **The table does not map main specialties to treatment functions.** It is two
+  separate lists that share many code numbers. Each treatment function's home
+  factsheet is one of two kinds of link, labelled in the app:
+  - **Same code** (66): the treatment function shares its number with the
+    factsheet's main specialty.
+  - **Curated** (112): this app's editorial grouping for treatment functions with
+    no same-number main specialty, such as 103 Breast Surgery under General
+    Surgery. The table's service descriptions and its "See …" pointers were used
+    as a guide. Debatable placements are explained in the factsheet's `notes`.
+- **History:** the first version used an older mirror of the treatment function
+  list and a main specialty list compiled from memory. Against the Data Dictionary
+  copy of 2026-10-12 these were wrong in places:
+  - 810, 823, 831 and 900 are not treatment functions;
+  - 832 and 990 are retired;
+  - 833 is not a treatment function code;
+  - 199 and 499 are no longer listed;
+  - the retired main specialty codes 510, 520, 610, 620 and 990 were missing.
+
+  All of these are corrected.
 - **Summaries, training routes and lengths, role mappings and related specialties**
   are a curated first draft for discussion. They are not an authoritative
   statement of curricula; check the relevant college's curriculum.

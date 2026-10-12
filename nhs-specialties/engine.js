@@ -18,7 +18,8 @@ export async function loadData(readText, parseYaml) {
     manifest.specialties.map((id) => read(`specialties/${id}.yaml`)));
   return {
     groups: manifest.groups, manifestIds: manifest.specialties,
-    roles: roles.roles, mainSpecialties: ms.codes, treatmentFunctions: tfc.codes, specialties,
+    roles: roles.roles, mainSpecialties: ms.codes, treatmentFunctions: tfc.codes,
+    notTreatmentFunctions: tfc.not_treatment_functions || [], specialties,
   };
 }
 
@@ -35,6 +36,7 @@ export function validate(data) {
   }
   const ms = new Map(data.mainSpecialties.map((c) => [String(c.code), c]));
   const tfc = new Map(data.treatmentFunctions.map((c) => [String(c.code), c]));
+  const notTfc = new Set((data.notTreatmentFunctions || []).map((c) => String(c.code)));
   if (ms.size !== data.mainSpecialties.length) err('main-specialties.yaml: duplicate code');
   if (tfc.size !== data.treatmentFunctions.length) err('treatment-functions.yaml: duplicate code');
 
@@ -53,7 +55,8 @@ export function validate(data) {
     }
     for (const c of s.treatment_function_codes || []) {
       const k = String(c);
-      if (!tfc.has(k)) err(`${where}: unknown treatment function code ${c}`);
+      if (notTfc.has(k)) err(`${where}: ${c} is listed in the Data Dictionary as "not a Treatment Function"`);
+      else if (!tfc.has(k)) err(`${where}: unknown treatment function code ${c}`);
       else if (tfc.get(k).status === 'retired') err(`${where}: treatment function ${c} is retired`);
       if (tfcOwner.has(k)) err(`${where}: treatment function ${c} already belongs to ${tfcOwner.get(k)}`);
       tfcOwner.set(k, s.id);
@@ -85,6 +88,11 @@ export function buildIndex(data) {
   const mainSpecialties = new Map(data.mainSpecialties.map((c) => [String(c.code), { ...c, code: String(c.code), specialties: [] }]));
   const treatmentFunctions = new Map(data.treatmentFunctions.map((c) => [String(c.code), { ...c, code: String(c.code), specialty: null }]));
   const roleSpecialties = new Map(data.roles.map((r) => [r.id, []]));
+  // main specialty codes that Table 2 says are not treatment functions, with its pointer (e.g. "See Clinical Haematology")
+  for (const c of data.notTreatmentFunctions || []) {
+    const m = mainSpecialties.get(String(c.code));
+    if (m) { m.notTreatmentFunction = true; m.notTreatmentFunctionComment = c.comment || null; }
+  }
   for (const s of specialties.values()) {
     for (const c of s.mainSpecialtyCodes) mainSpecialties.get(c)?.specialties.push(s.id);
     for (const c of s.treatmentFunctionCodes) { const t = treatmentFunctions.get(c); if (t) t.specialty = s.id; }
@@ -107,6 +115,16 @@ function normaliseSpecialty(s) {
     related: s.related || [],
     training: s.training || {},
   };
+}
+
+// Why a treatment function sits on its factsheet: 'code-match' when the factsheet's
+// main specialty has the same code (e.g. TFC 320 Cardiology Service -> MS 320
+// Cardiology); 'curated' when the grouping is an editorial choice made in the
+// YAML (e.g. TFC 103 Breast Surgery Service -> General Surgery). null if unmapped.
+export function linkBasis(index, tfcCode) {
+  const t = index.treatmentFunctions.get(String(tfcCode));
+  if (!t || !t.specialty) return null;
+  return index.specialties.get(t.specialty).mainSpecialtyCodes.includes(t.code) ? 'code-match' : 'curated';
 }
 
 // Specialties sharing a pathway or special-interest role with `id`, strongest first.

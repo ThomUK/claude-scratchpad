@@ -3,10 +3,14 @@ id: medical-microbiology-and-virology
 title: "Medical Microbiology and Virology"
 group: diagnostics
 main_specialty_codes: ["831"]
-treatment_function_codes: ["831"]
+treatment_function_codes: []
 summary: >-
   Combined laboratory and clinical infection specialty, now largely split into
   Medical Microbiology (833) and Medical Virology (834).
+notes: >-
+  Not a treatment function: the Data Dictionary says "See Clinical
+  Microbiology" (treatment function 322). Medical Microbiology (833) and
+  Medical Virology (834) are separate main specialties.
 training:
   college: "Royal College of Pathologists"
   route: "IMT, then Combined Infection Training, then higher training"

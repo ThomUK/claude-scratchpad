@@ -3,10 +3,14 @@ id: haematology
 title: "Haematology"
 group: diagnostics
 main_specialty_codes: ["823"]
-treatment_function_codes: ["823"]
+treatment_function_codes: []
 summary: >-
   Laboratory haematology: blood counts, morphology, coagulation, blood bank
   and haemoglobinopathy screening.
+notes: >-
+  Haematology (823) is a main specialty but not a treatment function: the Data
+  Dictionary says "See Clinical Haematology", so patient-facing haematology
+  activity is recorded under treatment function 303 and its related services.
 training:
   college: "Royal College of Pathologists"
   route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2); training combines clinical and laboratory haematology"

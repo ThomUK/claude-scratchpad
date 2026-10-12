@@ -3,10 +3,12 @@ id: community-medicine
 title: "Community Medicine"
 group: primary-public
 main_specialty_codes: ["900"]
-treatment_function_codes: ["900"]
+treatment_function_codes: []
 summary: >-
   Historical title for public health medicine and community-based medical
-  services; the treatment function is still used for some community clinics.
+  services.
+notes: >-
+  Community Medicine (900) is a main specialty but not a treatment function.
 workforce:
   medical:
     grades: [consultant, specialty-doctor]

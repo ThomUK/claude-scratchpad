@@ -200,3 +200,8 @@ select { width: auto; max-width: 100%; }
 .prose h2 { margin-top: 0; }
 .prose li { margin-bottom: 6px; }
 .yaml { background: var(--surface); border: 1px solid var(--panel-border); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-size: 0.82rem; color: #c9d1d9; }
+
+/* how a treatment function is linked to its factsheet */
+.basis { display: inline-block; font-size: 0.72rem; font-weight: 600; border-radius: 999px; padding: 0 8px; border: 1px solid var(--panel-border); white-space: nowrap; cursor: help; }
+.basis--code-match { color: var(--muted); }
+.basis--curated { color: #e6d8b8; border-color: #6b5a2e; background: #1f1a10; }

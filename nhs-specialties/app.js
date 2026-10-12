@@ -1,5 +1,5 @@
 import { load as parseYaml } from './vendor/js-yaml.mjs?v=dev';
-import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter, regionTree, collapseRegions } from './engine.js?v=dev';
+import { loadData, validate, buildIndex, search, connections, buildGraph, neighbours, layout, declutter, regionTree, collapseRegions, linkBasis } from './engine.js?v=dev';
 
 const REPO = 'https://github.com/ThomUK/claude-scratchpad';
 const DATA_PATH = 'nhs-specialties/data';
@@ -17,6 +17,18 @@ let index = null;
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const groupTitle = (g) => index.groups.find((x) => x.id === g)?.title ?? g;
 const sLink = (id) => `<a href="#/s/${esc(id)}">${esc(index.specialties.get(id).title)}</a>`;
+const BASIS = {
+  'code-match': ['same code', 'This treatment function has the same code as the main specialty of its factsheet.'],
+  curated: ['curated', 'Editorial grouping made in this app’s YAML. There is no main specialty with this code, so the treatment function was placed with the specialty that most usually leads it.'],
+};
+const basisTag = (code) => { const b = linkBasis(index, code); return b ? `<span class="basis basis--${b}" title="${esc(BASIS[b][1])}">${BASIS[b][0]}</span>` : ''; };
+// What the Data Dictionary says about a main specialty code, minus the routine "see the college" links
+const msNote = (m) => [
+  m.comment && m.comment.replace(/\s*For further information, see:.*$/, ''),
+  m.footnote,
+  m.notTreatmentFunction && `Not a treatment function${m.notTreatmentFunctionComment ? ` (Data Dictionary: “${m.notTreatmentFunctionComment}”)` : ''}.`,
+].filter(Boolean).join(' ');
+const msStatus = (m) => (m.status === 'retired' ? `retired${m.retired ? ` ${m.retired}` : ''}` : m.status);
 const rLink = (id) => `<a class="chip chip--${esc(index.roles.get(id).kind)}" href="#/role/${esc(id)}">${esc(index.roles.get(id).title)}</a>`;
 
 // ---------------------------------------------------------------- boot
@@ -124,7 +136,7 @@ function renderFactsheet(id) {
       <p class="crumbs"><a href="#/">← All specialties</a> · ${esc(groupTitle(s.group))}</p>
       <h2 class="fs-title">${esc(s.title)}</h2>
       <p class="fs-codes">
-        ${s.mainSpecialtyCodes.map((c) => { const m = index.mainSpecialties.get(c); return `<span class="badge${m.status === 'retired' ? ' badge--retired' : ''}" title="${esc(m.note || '')}">Main specialty <b>${esc(c)}</b>${m.status === 'retired' ? ' (retired)' : ''}</span>`; }).join('')}
+        ${s.mainSpecialtyCodes.map((c) => { const m = index.mainSpecialties.get(c); return `<span class="badge${m.status === 'retired' ? ' badge--retired' : ''}" title="${esc(msNote(m))}">Main specialty <b>${esc(c)}</b>${m.status === 'retired' ? ' (retired)' : ''}</span>`; }).join('')}
         ${s.treatmentFunctionCodes.length ? `<span class="badge badge--tfc">${s.treatmentFunctionCodes.length} treatment function${s.treatmentFunctionCodes.length > 1 ? 's' : ''}</span>` : ''}
       </p>
       <p class="fs-summary">${esc(s.summary)}</p>
@@ -133,12 +145,12 @@ function renderFactsheet(id) {
       <div class="fs-grid">
         <section>
           <h3>Treatment functions</h3>
-          ${s.treatmentFunctionCodes.length ? `<table class="tbl"><thead><tr><th>TFC</th><th>Service</th><th>DD group</th></tr></thead><tbody>
-            ${s.treatmentFunctionCodes.map((c) => { const r = index.treatmentFunctions.get(c); return `<tr><td class="num">${esc(c)}</td><td>${esc(r.title)}</td><td class="muted">${esc(r.group)}</td></tr>`; }).join('')}
+          ${s.treatmentFunctionCodes.length ? `<table class="tbl"><thead><tr><th>TFC</th><th>Service</th><th>DD heading</th><th>Link</th></tr></thead><tbody>
+            ${s.treatmentFunctionCodes.map((c) => { const r = index.treatmentFunctions.get(c); return `<tr><td class="num">${esc(c)}</td><td>${esc(r.title)}</td><td class="muted">${esc(r.heading)}</td><td>${basisTag(c)}</td></tr>`; }).join('')}
           </tbody></table>` : '<p class="muted small">No treatment function maps to this specialty.</p>'}
           <h3>Main specialty codes</h3>
           <table class="tbl"><thead><tr><th>Code</th><th>Title</th><th>Status</th></tr></thead><tbody>
-            ${s.mainSpecialtyCodes.map((c) => { const m = index.mainSpecialties.get(c); return `<tr><td class="num">${esc(c)}</td><td>${esc(m.title)}${m.note ? `<div class="muted small">${esc(m.note)}</div>` : ''}</td><td>${esc(m.status)}</td></tr>`; }).join('')}
+            ${s.mainSpecialtyCodes.map((c) => { const m = index.mainSpecialties.get(c); return `<tr><td class="num">${esc(c)}</td><td>${esc(m.title)}${msNote(m) ? `<div class="muted small">${esc(msNote(m))}</div>` : ''}</td><td>${esc(msStatus(m))}</td></tr>`; }).join('')}
           </tbody></table>
           ${t.college || t.route || t.length ? `<h3>Training</h3><dl class="dl">
             ${t.college ? `<dt>College / faculty</dt><dd>${esc(t.college)}</dd>` : ''}
@@ -513,15 +525,15 @@ function renderCodes() {
     const match = (r) => (!q || r.code.includes(q) || r.title.toLowerCase().includes(q)) && (codeState.showRetired || r.status !== 'retired');
     let html;
     if (codeState.table === 'tfc') {
-      document.getElementById('cnote').textContent = 'Treatment function: the specialised service a patient is treated in. This is what RTT, SUS and HES activity is reported by. Each active code has one home factsheet here.';
+      document.getElementById('cnote').textContent = 'Treatment function (Data Dictionary Table 2): the specialised service a patient is treated in. This is what RTT, SUS and HES activity is reported by. Each current code has one home factsheet here; “Link” says whether that home is a same-code match or a curated grouping.';
       const rows = [...index.treatmentFunctions.values()].filter(match);
-      html = `<table class="tbl"><thead><tr><th>TFC</th><th>Title</th><th>DD group</th><th>Status</th><th>Factsheet</th></tr></thead><tbody>${rows.map((r) =>
-        `<tr class="${r.status === 'retired' ? 'retired' : ''}"><td class="num">${esc(r.code)}</td><td>${esc(r.title)}</td><td class="muted">${esc(r.group)}</td><td>${esc(r.status)}</td><td>${r.specialty ? sLink(r.specialty) : '<span class="muted">—</span>'}</td></tr>`).join('')}</tbody></table>`;
+      html = `<table class="tbl"><thead><tr><th>TFC</th><th>Title</th><th>DD heading</th><th>Status</th><th>Factsheet</th><th>Link</th></tr></thead><tbody>${rows.map((r) =>
+        `<tr class="${r.status === 'retired' ? 'retired' : ''}"><td class="num">${esc(r.code)}</td><td>${esc(r.title)}${r.comment ? `<div class="muted small">${esc(trunc(r.comment, 220))}</div>` : ''}</td><td class="muted">${esc(r.heading)}</td><td>${esc(r.status)}</td><td>${r.specialty ? sLink(r.specialty) : '<span class="muted">—</span>'}</td><td>${basisTag(r.code)}</td></tr>`).join('')}</tbody></table>`;
     } else {
-      document.getElementById('cnote').textContent = 'Main specialty: the specialty recognised by the medical and dental Royal Colleges, and the one a consultant is contracted in.';
+      document.getElementById('cnote').textContent = 'Main specialty (Data Dictionary Table 1): the specialty recognised by the Royal Colleges and Faculties, and the one a consultant is contracted in. Codes that Table 2 marks “not a Treatment Function” are noted.';
       const rows = [...index.mainSpecialties.values()].filter(match);
       html = `<table class="tbl"><thead><tr><th>Code</th><th>Title</th><th>DD heading</th><th>Status</th><th>Factsheet</th></tr></thead><tbody>${rows.map((r) =>
-        `<tr class="${r.status === 'retired' ? 'retired' : ''}"><td class="num">${esc(r.code)}</td><td>${esc(r.title)}${r.note ? `<div class="muted small">${esc(r.note)}</div>` : ''}</td><td class="muted">${esc(r.heading)}</td><td>${esc(r.status)}</td><td>${r.specialties.length ? r.specialties.map(sLink).join(', ') : '<span class="muted">—</span>'}</td></tr>`).join('')}</tbody></table>`;
+        `<tr class="${r.status === 'retired' ? 'retired' : ''}"><td class="num">${esc(r.code)}</td><td>${esc(r.title)}${msNote(r) ? `<div class="muted small">${esc(msNote(r))}</div>` : ''}</td><td class="muted">${esc(r.heading)}</td><td>${esc(msStatus(r))}</td><td>${r.specialties.length ? r.specialties.map(sLink).join(', ') : '<span class="muted">—</span>'}</td></tr>`).join('')}</tbody></table>`;
     }
     document.getElementById('ctable').innerHTML = html;
   };
@@ -532,6 +544,8 @@ function renderCodes() {
 }
 
 // ---------------------------------------------------------------- about
+const basisCount = (b) => [...index.treatmentFunctions.values()].filter((t) => linkBasis(index, t.code) === b).length;
+
 function renderAbout() {
   const tree = `${REPO}/tree/main/${DATA_PATH}`;
   $view.innerHTML = `
@@ -545,9 +559,46 @@ function renderAbout() {
           the specialised service the patient is treated in. It is used for RTT, SUS/HES and most activity reporting. A consultant in one main
           specialty can work in several treatment functions. For example, a general surgeon (100) may run a breast service (103).</li>
       </ul>
-      <p>The Data Dictionary's <a href="https://www.datadictionary.nhs.uk/supporting_information/main_specialty_and_treatment_function_codes_table.html" target="_blank" rel="noopener">Main Specialty and Treatment Function Codes Table</a>
-        shows how the two relate. Here each active treatment function is given one <em>home</em> factsheet. Where the home is a
-        judgement call (stroke, post-COVID, clinical psychology, the physiology services) the factsheet says so in its notes.</p>
+      <h3>What the Data Dictionary table contains</h3>
+      <p>Both code lists come from one Data Dictionary page, the
+        <a href="https://www.datadictionary.nhs.uk/supporting_information/main_specialty_and_treatment_function_codes_table.html" target="_blank" rel="noopener">Main Specialty and Treatment Function Codes Table</a>.
+        A copy of that page is kept in the repository (<code>source/</code>) and turned into <code>data/codes/*.yaml</code> by
+        <code>ingest/ingest_dd_table.py</code>. The page holds <strong>two separate lists</strong>:</p>
+      <ul>
+        <li><strong>Table 1, Main Specialty Codes</strong> (${index.mainSpecialties.size} codes, ${[...index.mainSpecialties.values()].filter((m) => m.status === 'retired').length} retired), grouped under
+          Surgical Specialties, Medical Specialties, Psychiatry and Other.</li>
+        <li><strong>Table 2, Treatment Function Codes</strong> (${index.treatmentFunctions.size} codes, ${[...index.treatmentFunctions.values()].filter((t) => t.status === 'retired').length} retired), grouped under
+          Surgical Specialties, Other Children's Specialist Services, Medical Specialties, Mental Health Services and Other Services, each with a
+          description of the service.</li>
+      </ul>
+      <p>The page <strong>does not map one list to the other</strong>. What connects them is that many codes appear in both lists with the same number
+        (100 General Surgery and 100 General Surgery Service). Table 2 also lists some main specialty codes as <em>“not a Treatment Function”</em>,
+        sometimes with a pointer: 823 Haematology “See Clinical Haematology”, 830 Immunopathology “See Clinical Immunology”, and 831 Medical Microbiology
+        and Virology “See Clinical Microbiology”. Those pointers are the only cross-references on the page. The footnotes add that treatment
+        function codes are the ones to use for data sets (the National Workforce Data Set uses main specialty), and that joint consultant clinics
+        are recorded against the treatment function that best describes the service.</p>
+      <h3>How this app links treatment functions to specialties</h3>
+      <p>Each factsheet is built around one or more main specialty codes, and every current treatment function is given one <em>home</em>
+        factsheet. The factsheets and the code index label each link:</p>
+      <ul>
+        <li><span class="basis basis--code-match">same code</span> <strong>${basisCount('code-match')} treatment functions</strong> share their number
+          with the factsheet's main specialty, which is the one relationship the table itself implies. Example: 320 Cardiology Service goes
+          with main specialty 320 Cardiology.</li>
+        <li><span class="basis basis--curated">curated</span> <strong>${basisCount('curated')} treatment functions</strong> have no main specialty with the
+          same number, such as 103 Breast Surgery Service, 306 Hepatology Service, 322 Clinical Microbiology Service and the children's services 211–291.
+          These were placed by editorial judgement with the specialty that most usually leads the service, using the table's service descriptions
+          as a guide:
+          <ul>
+            <li>breast, colorectal and similar surgical services go with General Surgery;</li>
+            <li>hepatology goes with Gastroenterology;</li>
+            <li>children's medical services go with Paediatrics;</li>
+            <li>children's surgical services go with the matching adult surgical specialty or with Paediatric Surgery;</li>
+            <li>Clinical Microbiology goes with Medical Microbiology, following the table's own “See Clinical Microbiology” pointer.</li>
+          </ul>
+          The debatable ones (stroke and TIA, post-COVID, clinical psychology, the physiology services) are explained in the factsheet's notes. These
+          links are this app's choices, not an NHS mapping, and the Data Dictionary itself says choosing a service's treatment function is a local
+          decision. To change one, move the code between factsheet YAML files.</li>
+      </ul>
       <h3>Factsheets are YAML</h3>
       <p>Each specialty is one file in <a href="${tree}/specialties" target="_blank" rel="noopener"><code>data/specialties/</code></a>, listed in
         <code>data/specialties.yaml</code>. The roles the graph joins on are defined once in <code>data/roles.yaml</code>. The code lists live in
@@ -587,7 +638,7 @@ related: [cardiothoracic-surgery, ...]</pre>
       <p>Later layers can add other staff groups (nursing, AHPs, healthcare science, pharmacy) with no change to the engine. Add roles with a new
         <code>staff_group</code> to <code>roles.yaml</code>, then list them under a new key beside <code>workforce.medical</code>.</p>
       <h3>Caveats</h3>
-      <p>The code lists are taken from the Data Dictionary and should be re-checked against it when it changes. Everything else (summaries, training
+      <p>The code lists are the Data Dictionary table as of the copy in <code>source/</code>. To update them, save the live page there and re-run the ingest script; the tests then list any factsheet pointing at a code that has changed. Everything else (summaries, training
         routes and lengths, role mappings, related specialties) is a curated first draft written for discussion. It is not an authoritative
         statement of curricula. Check the relevant college's curriculum before relying on any training detail.</p>
     </section>`;

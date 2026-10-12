@@ -3,11 +3,13 @@ id: radiology
 title: "Radiology"
 group: diagnostics
 main_specialty_codes: ["810"]
-treatment_function_codes: ["810", "811", "812", "280"]
+treatment_function_codes: ["811", "812", "280"]
 summary: >-
   Diagnostic imaging (X-ray, CT, MRI, ultrasound) and image-guided
   intervention.
 notes: >-
+  Radiology (810) is a main specialty but not a treatment function; imaging is
+  recorded under Diagnostic Imaging (812) and Interventional Radiology (811).
   Paediatric interventional radiology (280) is mapped here.
 training:
   college: "Royal College of Radiologists"

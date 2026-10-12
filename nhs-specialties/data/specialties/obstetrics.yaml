@@ -2,14 +2,16 @@
 id: obstetrics
 title: "Obstetrics"
 group: women-children
-main_specialty_codes: ["501", "500"]
+main_specialty_codes: ["501", "500", "510", "520", "610"]
 treatment_function_codes: ["501", "505"]
 summary: >-
   Medical care of women in pregnancy, labour and the postnatal period,
   including high-risk pregnancy and fetal medicine.
 notes: >-
   Combined code 500 (Obstetrics and Gynaecology) is not accepted for central
-  returns; most consultants hold both 501 and 502 sessions.
+  returns including HES; most consultants hold both 501 and 502 sessions.
+  Antenatal Clinic (510), Postnatal Clinic (520) and Maternity Function (610)
+  were retired in 2004; the Data Dictionary says to record them as Obstetrics.
 training:
   college: "Royal College of Obstetricians and Gynaecologists"
   route: "Run-through specialty training ST1–ST7 (obstetrics and gynaecology)"

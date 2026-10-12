@@ -3,12 +3,13 @@ id: medical-microbiology
 title: "Medical Microbiology"
 group: diagnostics
 main_specialty_codes: ["833"]
-treatment_function_codes: ["833", "322"]
+treatment_function_codes: ["322"]
 summary: >-
   Diagnosis of bacterial, fungal and parasitic infection, antimicrobial
   stewardship and infection prevention and control.
 notes: >-
-  Clinical microbiology (322) is mapped here.
+  There is no treatment function 833; clinical microbiology activity is
+  recorded under Clinical Microbiology Service (322), which is mapped here.
 training:
   college: "Royal College of Pathologists"
   route: "IMT, then Combined Infection Training, then higher training (often dual with infectious diseases)"

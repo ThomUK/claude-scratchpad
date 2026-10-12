@@ -3,13 +3,15 @@ id: general-internal-medicine
 title: "General Internal Medicine"
 group: medical
 main_specialty_codes: ["300"]
-treatment_function_codes: ["300", "328", "329", "990"]
+treatment_function_codes: ["300", "328", "329"]
 summary: >-
   Adult medicine without a single organ focus: the acute medical take, complex
   multimorbidity and, in many hospitals, stroke and TIA services.
 notes: >-
-  Stroke medicine (328), TIA (329) and joint consultant clinics (990) are
-  mapped here because they are led by physicians from several specialties.
+  Stroke medicine (328) and TIA (329) are mapped here because they are led by
+  physicians from several specialties. Joint Consultant Clinics (990) was
+  retired; the Data Dictionary says joint clinic activity should be recorded
+  against the treatment function that best describes the specialised service.
 training:
   college: "Royal College of Physicians (JRCPTB curriculum)"
   route: "Internal Medicine Training, then GIM dual-accredited with a Group 1 specialty"

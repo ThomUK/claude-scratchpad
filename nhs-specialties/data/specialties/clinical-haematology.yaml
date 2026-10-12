@@ -8,7 +8,9 @@ summary: >-
   Clinical care of blood disorders: leukaemia, lymphoma, myeloma, bleeding and
   clotting disorders, haemoglobinopathies and stem cell transplantation.
 notes: >-
-  Haematologists normally hold both clinical (303) and laboratory (823) roles.
+  Haematologists normally hold both clinical and laboratory roles. Laboratory
+  Haematology (823) is a main specialty only; the Data Dictionary points it to
+  this treatment function.
 training:
   college: "Royal College of Pathologists and Royal College of Physicians (JRCPTB curriculum)"
   route: "Internal Medicine Training stage 1 (2 years), then specialty training from ST3 (Group 2); training combines clinical and laboratory haematology"
