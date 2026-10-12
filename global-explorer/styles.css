@@ -62,6 +62,10 @@ input[type="search"]:focus { outline: none; border-color: var(--accent); box-sha
 /* ----------------------------------------------------------- play: globe -- */
 .globe-wrap { position: absolute; top: 0; left: 0; right: 0; bottom: var(--sheet-half); touch-action: none; }
 #screen-play.clickable #globe canvas { cursor: pointer; }
+/* The map runs edge to edge, but never under the phone's status bar: that strip
+   gets the paper of the other screens' title bars, with their hairline below it.
+   Where there is no status bar (the desktop) the inset, and so the strip, is 0. */
+#screen-play::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: var(--safe-t); z-index: 5; background: var(--bg); border-bottom: min(1px, var(--safe-t)) solid var(--border); pointer-events: none; }
 /* The globe sits on a cool slate desk (so the sand land stands off it): a vignette centred on the globe under a fine grain. */
 #globe { position: absolute; inset: 0;
   background:
