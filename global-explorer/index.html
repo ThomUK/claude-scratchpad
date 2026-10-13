@@ -9,12 +9,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Global Explorer" />
   <title>Global Explorer</title>
-  <link rel="manifest" href="manifest.webmanifest?v=b00a3159" />
-  <link rel="icon" href="icons/icon.svg?v=b00a3159" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icons/icon-180.png?v=b00a3159" />
-  <link rel="stylesheet" href="styles.css?v=b00a3159" />
+  <link rel="manifest" href="manifest.webmanifest?v=4434b9f7" />
+  <link rel="icon" href="icons/icon.svg?v=4434b9f7" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png?v=4434b9f7" />
+  <link rel="stylesheet" href="styles.css?v=4434b9f7" />
   <script type="importmap">
-    { "imports": { "three": "./vendor/three/three.module.js?v=b00a3159" } }
+    { "imports": { "three": "./vendor/three/three.module.js?v=4434b9f7" } }
   </script>
 </head>
 <body>
@@ -167,6 +167,8 @@
           <h2>Credits</h2>
           <dl class="facts-grid credits" id="credits"></dl>
           <p class="muted small">Boundaries follow internationally recognised borders. Distances are great-circle, centre to centre.</p>
+          <!-- build.mjs fills in the version from package.json and the commit, e.g. "1.0.0 (b00a3159)" -->
+          <p class="muted small app-version" id="app-version">Version 0.1.0 (4434b9f7)</p>
         </div>
       </section>
 
@@ -203,6 +205,6 @@
     </div>
   </dialog>
 
-  <script type="module" src="app.js?v=b00a3159"></script>
+  <script type="module" src="app.js?v=4434b9f7"></script>
 </body>
 </html>
