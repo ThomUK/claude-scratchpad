@@ -271,7 +271,7 @@ function updateCamLabel() {
   if (!cams.length) { $('camLabel').textContent = 'No cameras'; return; }
   camIndex = ((camIndex % cams.length) + cams.length) % cams.length;
   const c = cams[camIndex];
-  $('camLabel').textContent = `Camera ${c.n} (${camIndex + 1} of ${cams.length})`;
+  $('camLabel').textContent = cams.length === 1 ? 'Camera' : `Camera ${camIndex + 1} of ${cams.length}`;
   camCam.rotation.set(c.pitch || 0, c.yaw || 0, 0);
   const dir = new THREE.Vector3(); camCam.getWorldDirection(dir);
   camCam.position.set(c.x + 0.5, c.y + 0.5, c.z + 0.5).addScaledVector(dir, 0.45);   // start just in front of the lens
@@ -492,7 +492,7 @@ function doUse() {
   }
   const err = world.place(px, py, pz, pid, opts);
   if (err) toast(err);
-  else if (pid === B.CAMERA) toast(`Camera ${world.meta.get(key(px, py, pz)).n} placed. Tap a computer to watch it.`, 3000);
+  else if (pid === B.CAMERA) toast('Camera placed. Tap a computer to watch it.', 3000);
   navigator.vibrate?.(10);
 }
 function sit(x, y, z, seat) {

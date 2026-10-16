@@ -255,7 +255,7 @@ export function propDescription(id, meta, open) {
     case B.TRAPDOOR: return open ? 'Trapdoor (open) – tap to close' : 'Passcode trapdoor – tap to enter the code';
     case B.CHEST: return 'Chest – tap to open';
     case B.COMPUTER: return 'Computer – tap to watch the cameras';
-    case B.CAMERA: return `Security camera ${meta && meta.n ? meta.n : ''}`;
+    case B.CAMERA: return 'Security camera – watch it from a computer';
     case B.BED: case B.BED_FOOT: return 'Bed – tap to sleep till morning';
     case B.CHAIR: case B.SOFA: return `${BLOCKS[id].name} – tap to sit`;
     case B.FRIDGE: return 'Fridge – tap for a snack';
@@ -308,7 +308,6 @@ export function buildProp(id, meta, x, y, z) {
       head.rotation.order = 'YXZ'; head.rotation.y = meta.yaw || 0; head.rotation.x = meta.pitch || 0;
       head.add(box(0.26, 0.26, 0.5, M.metal, 0, 0, 0), box(0.18, 0.18, 0.1, M.lens, 0, 0, -0.3), box(0.05, 0.05, 0.05, M.red, 0.09, 0.09, -0.27));
       g.add(head);
-      if (meta.n) g.add(makeLabel(`📷 ${meta.n}`, 0.8, 0.45));
       break;
     }
     case B.BED:   // head here, foot in the cell in front (local -z)
