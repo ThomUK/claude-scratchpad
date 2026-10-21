@@ -1,0 +1,278 @@
+code_set,group,description,snomed_code
+arrival_mode,Urgent and emergency care arrival mode,Patient arranged own transport / walk-in,1048071000000103
+arrival_mode,Urgent and emergency care arrival mode,Public transport / taxi,1048061000000105
+arrival_mode,Urgent and emergency care arrival mode,Emergency road ambulance,1048031000000100
+arrival_mode,Urgent and emergency care arrival mode,Emergency road ambulance with medical escort,1048041000000109
+arrival_mode,Urgent and emergency care arrival mode,Non-emergency road ambulance,1048021000000102
+arrival_mode,Urgent and emergency care arrival mode,Helicopter,1048051000000107
+arrival_mode,Urgent and emergency care arrival mode,Fixed wing / medical repatriation by air,1048081000000101
+arrival_mode,Urgent and emergency care arrival mode,Custodial services : prison / detention centre transport,1047991000000102
+arrival_mode,Urgent and emergency care arrival mode,Police transport,1048001000000106
+acuity,Urgent and emergency care acuity,1 - Immediate care level emergency care,1064891000000107
+acuity,Urgent and emergency care acuity,2 - Very urgent level emergency care,1064911000000105
+acuity,Urgent and emergency care acuity,3 - Urgent level emergency care,1064901000000108
+acuity,Urgent and emergency care acuity,4 - Standard level emergency care,1077241000000103
+acuity,Urgent and emergency care acuity,5 - Low acuity level emergency care,1077251000000100
+attendance_source,Personal,Self / family / friends / education / work colleague,1991000124105
+attendance_source,Personal,"Carer (external, not family / friend)",1065391000000104
+attendance_source,Personal,Non-NHS telephone / internet advice,315261000000101
+attendance_source,Primary care,GP / practice nurse,276491000
+attendance_source,Primary care,Out of hours GP service,1082331000000106
+attendance_source,Primary care,NHS telephone / internet advice e.g. NHS 111,879591000000102
+attendance_source,Hospital,Emergency department,1066431000000102
+attendance_source,Hospital,Urgent Treatment Centre,1066441000000106
+attendance_source,Hospital,Outpatient service including SDEC,835091000000109
+attendance_source,Hospital,Inpatient,835101000000101
+attendance_source,Hospital,Extended Care Episode,1465211000000108
+attendance_source,Hospital,Private specialist,1079521000000104
+attendance_source,Community,Community nurse (not practice nurse),1077191000000103
+attendance_source,Community,Health visitor,1052681000000105
+attendance_source,Community,Midwife,185363009
+attendance_source,Community,School nurse,1065401000000101
+attendance_source,Community,Community mental health nurse,1077201000000101
+attendance_source,Community,Mental health assessment team,1065991000000100
+attendance_source,Community,Social services,877171000000103
+attendance_source,Community,Older persons day care centre,1077761000000105
+attendance_source,Community,Homeless persons drop in centre,1077211000000104
+attendance_source,Community,Custodial services : prison,1066011000000104
+attendance_source,Community,Custodial services : detention centre,1066001000000101
+attendance_source,Community,Pharmacist (including community pharmacist),185369008
+attendance_source,Community,Dentist (including community dentist),185366001
+attendance_source,Community,Optician / optometrist,185368000
+attendance_source,Emergency Services,Advanced care practitioner,1066021000000105
+attendance_source,Emergency Services,Ambulance service,198261000000104
+attendance_source,Emergency Services,Police service / forensic medical officer,889801000000100
+attendance_source,Emergency Services,Fire service,1066031000000107
+attendance_source,Emergency Services,Search and rescue,1066061000000102
+attendance_source,Emergency Services,Coastguard,1066041000000103
+attendance_source,Emergency Services,Mountain rescue,1066051000000100
+discharge_status,Treatment complete,Treatment complete,182992009
+discharge_status,Streamed at assessment,Streamed to primary care service / GP,1077021000000100
+discharge_status,Streamed at assessment,Streamed to Urgent Treatment Centre,1077031000000103
+discharge_status,Streamed at assessment,Streamed to Emergency Department,1077781000000101
+discharge_status,Streamed at assessment,Streamed to inpatient unit,1324201000000109
+discharge_status,Streamed at assessment,Same Day Emergency Care service,1077081000000104
+discharge_status,Streamed at assessment,Streamed to falls service,1077091000000102
+discharge_status,Streamed at assessment,Streamed to frailty service,1077101000000105
+discharge_status,Streamed at assessment,Streamed to mental health service,1077041000000107
+discharge_status,Streamed at assessment,Streamed to dental service,1077051000000105
+discharge_status,Streamed at assessment,Streamed to ophthalmology service,1077061000000108
+discharge_status,Streamed at assessment,"Following clinical initial assessment, advised to return for scheduled care at this or another UEC facility",2304481000000106
+discharge_status,Left before treatment complete,Left before initial assessment,1066301000000103
+discharge_status,Streamed at assessment,Streamed to pharmacy service,1077071000000101
+discharge_status,Left before treatment complete,Left after assessment with intent to attend other healthcare provider,1066311000000101
+discharge_status,Left before treatment complete,Left after assessment but before treatment complete (destination unknown),1066321000000107
+discharge_status,Died,Dead on arrival,63238001
+discharge_status,Died,Died in the Emergency Care facility,75004002
+discharge_destination,Discharged,Usual place of residence / family members,306689006
+discharge_destination,Discharged,Residential care facility without 24 hour nursing care (e.g. residential home),306691003
+discharge_destination,Discharged,Residential care facility with 24 hour nursing care (e.g. nursing home),306694006
+discharge_destination,Discharged,Police,306705005
+discharge_destination,Discharged,Custodial services e.g. prison / detention centre,50861005
+discharge_destination,Ambulatory / short stay,Short stay (less than 24hr) ward outside the ED but managed by ED,1066331000000109
+discharge_destination,Ambulatory / short stay,Same Day Emergency Care service,1066341000000100
+discharge_destination,Ambulatory / short stay,Hospital in the home service,1066351000000102
+discharge_destination,Admitted,Ward – physical ward bed outside ED,306706006
+discharge_destination,Admitted,Operating theatre,1874161000000104
+discharge_destination,Admitted,High Dependency Unit (level 2),1066361000000104
+discharge_destination,Admitted,Coronary Care Unit (level 2),1066371000000106
+discharge_destination,Admitted,Special Care Baby Unit (level 2),1066381000000108
+discharge_destination,Admitted,Intensive Care Unit (level 3),1066391000000105
+discharge_destination,Admitted,Neonatal Intensive Care Unit (level 3),1066401000000108
+discharge_destination,Transfer,Transfer to another hospital / healthcare facility,19712007
+discharge_destination,Transfer,Discharge to Hospice,183919006
+discharge_destination,Died,Mortuary,305398007
+chief_complaint,Airway / breathing,Short of breath,267036007
+chief_complaint,Airway / breathing,Difficulty breathing,230145002
+chief_complaint,Airway / breathing,Stridor,70407001
+chief_complaint,Airway / breathing,Noisy respiration,248573009
+chief_complaint,Airway / breathing,Coughing up blood (haemoptysis),66857006
+chief_complaint,Airway / breathing,Foreign body in respiratory tract,262599003
+chief_complaint,Airway / breathing,Infant with episodes not breathing (apnoea),13094009
+chief_complaint,Airway / breathing,Respiratory arrest,87317003
+chief_complaint,Circulation / chest,Chest pain,29857009
+chief_complaint,Circulation / chest,Palpitations,80313002
+chief_complaint,Circulation / chest,Irregular heart beat,361137007
+chief_complaint,Circulation / chest,Near syncope (feeling faint without LOC),427461000
+chief_complaint,Circulation / chest,Syncope (collapse with LOC),271594007
+chief_complaint,Circulation / chest,Swollen legs (both),762898005
+chief_complaint,Circulation / chest,Swollen leg (single),449614009
+chief_complaint,Circulation / chest,Cold painful limb,21631000119105
+chief_complaint,Circulation / chest,Cardiac arrest,410429000
+chief_complaint,Circulation / chest,Cardiac arrest due to trauma,422970001
+chief_complaint,Gastrointestinal,Abdominal pain,21522001
+chief_complaint,Gastrointestinal,Constipation,14760008
+chief_complaint,Gastrointestinal,Diarrhoea,62315008
+chief_complaint,Gastrointestinal,Nausea without vomiting,422587007
+chief_complaint,Gastrointestinal,Vomiting + / - nausea,422400008
+chief_complaint,Gastrointestinal,Abdominal distension,60728008
+chief_complaint,Gastrointestinal,Hiccoughs,65958008
+chief_complaint,Gastrointestinal,Jaundice,18165001
+chief_complaint,Gastrointestinal,Loss of appetite,79890006
+chief_complaint,Gastrointestinal,Vomiting blood,8765009
+chief_complaint,Gastrointestinal,Rectal pain,77880009
+chief_complaint,Gastrointestinal,Blood in stool,405729008
+chief_complaint,Gastrointestinal,Injury of anus,276464002
+chief_complaint,Gastrointestinal,Food / foreign body in oesophagus,47609003
+chief_complaint,Gastrointestinal,Difficulty swallowing,40739000
+chief_complaint,Gastrointestinal,Foreign body in digestive tract,33334006
+chief_complaint,Gastrointestinal,Foreign body in rectum,70176004
+chief_complaint,Neurological,Headache,25064002
+chief_complaint,Neurological,Confusion,40917007
+chief_complaint,Neurological,Drowsy,3006004
+chief_complaint,Neurological,Limb weakness,713514005
+chief_complaint,Neurological,Facial weakness,95666008
+chief_complaint,Neurological,Speech disturbance,29164008
+chief_complaint,Neurological,Seizure (fit),91175000
+chief_complaint,Neurological,Dizziness,404640003
+chief_complaint,Neurological,Numbness / tingling (parasthesia),44077006
+chief_complaint,Neurological,Tremor,26079004
+chief_complaint,Neurological,Unsteady when walking,22631008
+chief_complaint,Neurological,Falls,161898004
+chief_complaint,Neurological,Insomnia,193462001
+chief_complaint,Skin,Wound : abrasion,399963005
+chief_complaint,Skin,Wound : laceration,312608009
+chief_complaint,Skin,Wound : puncture,312609001
+chief_complaint,Skin,Wound : sting,299972003
+chief_complaint,Skin,Wound : bite,283682007
+chief_complaint,Skin,Burn,125666000
+chief_complaint,Skin,Rash,271807003
+chief_complaint,Skin,Localised swelling / redness / lumps / bumps,297982009
+chief_complaint,Skin,Skin lump,444905003
+chief_complaint,Skin,Skin redness / inflammation,247441003
+chief_complaint,Skin,Itching,418363000
+chief_complaint,Skin,Spontaneous bruising,161887000
+chief_complaint,Skin,Foreign body in skin / subcutaneous tissue,93459000
+chief_complaint,Head and neck,Facial pain (inc. toothache),95668009
+chief_complaint,Head and neck,Toothache,27355003
+chief_complaint,Head and neck,Neck pain,81680005
+chief_complaint,Head and neck,Ear : pain,301354004
+chief_complaint,Head and neck,Ear : injury,2999009
+chief_complaint,Head and neck,Ear : discharge,300132001
+chief_complaint,Head and neck,Ear : hearing loss,15188001
+chief_complaint,Head and neck,Ear : ringing in ears (tinnitus),60862001
+chief_complaint,Head and neck,Ear : foreign body,75441006
+chief_complaint,Head and neck,Nose : bleeding from nose,249366005
+chief_complaint,Head and neck,Nose : injury,19491003
+chief_complaint,Head and neck,Nose : congestion,68235000
+chief_complaint,Head and neck,Nose : foreign body,74699008
+chief_complaint,Head and neck,Throat : sore,267102003
+chief_complaint,Head and neck,Throat : cough,49727002
+chief_complaint,Head and neck,Throat : swelling,421581006
+chief_complaint,Head and neck,Throat : foreign body in mouth,14380007
+chief_complaint,Head and neck,Throat : foreign body in throat,25479004
+chief_complaint,Eye,Red eye,703630003
+chief_complaint,Eye,Foreign body on eye,55899000
+chief_complaint,Eye,Pain in / around eye,41652007
+chief_complaint,Eye,Discharge from eye,246679005
+chief_complaint,Eye,Visual disturbance,63102001
+chief_complaint,Eye,Photophobia,409668002
+chief_complaint,Eye,Eye injury,282752000
+chief_complaint,Eye,Eye review,170720001
+chief_complaint,Injury,Head injury,82271004
+chief_complaint,Injury,Facial injury,125593007
+chief_complaint,Injury,Injury of neck,90460009
+chief_complaint,Injury,Clavicle injury,282760004
+chief_complaint,Injury,Injury of shoulder region,125594001
+chief_complaint,Injury,Injury of upper arm,125595000
+chief_complaint,Injury,Injury of elbow,125596004
+chief_complaint,Injury,Injury of forearm,125597008
+chief_complaint,Injury,Injury of wrist,125598003
+chief_complaint,Injury,Injury of hand,125599006
+chief_complaint,Injury,Injury of finger,52011008
+chief_complaint,Injury,Thumb injury,262520005
+chief_complaint,Injury,Injury of hip region,125600009
+chief_complaint,Injury,Injury of thigh,7523003
+chief_complaint,Injury,Injury of knee,125601008
+chief_complaint,Injury,Injury of lower leg,125602001
+chief_complaint,Injury,Injury of ankle,125603006
+chief_complaint,Injury,Injury of foot,125604000
+chief_complaint,Injury,Heel injury,282780003
+chief_complaint,Injury,Injury of toe,282776008
+chief_complaint,Injury,Chest injury,262525000
+chief_complaint,Injury,Injury of ribs,282770002
+chief_complaint,Injury,Injury of sternum,432754003
+chief_complaint,Injury,Injury of chest wall,65978000
+chief_complaint,Injury,Injury of abdomen,128069005
+chief_complaint,Injury,Injury of cervical region of back (disorder),450724008
+chief_complaint,Injury,Injury of upper back,282765009
+chief_complaint,Injury,Injury of lower back,282766005
+chief_complaint,Injury,Major trauma (serious injury >1 body area) traumatic injury,1089261000000101
+chief_complaint,Injury,Traumatic amputation,262595009
+chief_complaint,Musculoskeletal,Backache (no recent injury),161891005
+chief_complaint,Musculoskeletal,Shoulder pain,45326000
+chief_complaint,Musculoskeletal,Pain in upper arm,771083005
+chief_complaint,Musculoskeletal,Pain in elbow,74323005
+chief_complaint,Musculoskeletal,Pain in forearm,444899003
+chief_complaint,Musculoskeletal,Pain in wrist,56608008
+chief_complaint,Musculoskeletal,Hand pain,53057004
+chief_complaint,Musculoskeletal,Pain in finger,18876004
+chief_complaint,Musculoskeletal,Pain in thumb,300955002
+chief_complaint,Musculoskeletal,Hip pain,49218002
+chief_complaint,Musculoskeletal,Thigh pain,78514002
+chief_complaint,Musculoskeletal,Pain in knee,1003722009
+chief_complaint,Musculoskeletal,Pain in calf,300954003
+chief_complaint,Musculoskeletal,Ankle pain,247373008
+chief_complaint,Musculoskeletal,Foot pain,47933007
+chief_complaint,Musculoskeletal,Heel pain,2733002
+chief_complaint,Musculoskeletal,Pain in toe,285365001
+chief_complaint,Musculoskeletal,Joint swelling,271771009
+chief_complaint,Genitourinary,Pain on passing urine,49650001
+chief_complaint,Genitourinary,Increased frequency of urination,162116003
+chief_complaint,Genitourinary,Unable to pass urine,267064002
+chief_complaint,Genitourinary,Decreased urine output,718403007
+chief_complaint,Genitourinary,Blood in urine,34436003
+chief_complaint,Genitourinary,Flank pain,247355005
+chief_complaint,Genitourinary,Pain in scrotum / testes,20502007
+chief_complaint,Genitourinary,Abnormal swelling groin area,281398003
+chief_complaint,Genitourinary,Pain in genital area (generalised),225565007
+chief_complaint,Genitourinary,Pain in male genitalia,279020002
+chief_complaint,Genitourinary,Pain in female genitalia,162143008
+chief_complaint,Genitourinary,Injury to perineum,6923002
+chief_complaint,Genitourinary,Injury to genital area,282772005
+chief_complaint,Genitourinary,Problem related to penis,300528000
+chief_complaint,Genitourinary,States victim of sexual assault,56890008
+chief_complaint,ObGyn,Concern related to pregnancy less than 20 weeks of gestation,1874001000000104
+chief_complaint,ObGyn,Concern related to pregnancy at or greater than 20 weeks of gestation,1874011000000102
+chief_complaint,ObGyn,Abnormal vaginal bleeding,301822002
+chief_complaint,ObGyn,Foreign body in vagina,34124000
+chief_complaint,ObGyn,Problem related to vagina,289610003
+chief_complaint,ObGyn,Problem related to breast,290085007
+chief_complaint,Environmental,Poisoning from any source,75478009
+chief_complaint,Environmental,Electrical exposure (inc. lightning),371708003
+chief_complaint,Environmental,Effects of direct lightning strike,418723004
+chief_complaint,Environmental,Hypothermia,386689009
+chief_complaint,Environmental,Frostbite,370977006
+chief_complaint,Environmental,Near drowning,87970004
+chief_complaint,Environmental,Exposure to communicable disease (inc. needlestick / body fluids),417981005
+chief_complaint,Environmental,Exposure to communicable disease,2304411000000104
+chief_complaint,Environmental,Needle stick injury,10850741000119108
+chief_complaint,Environmental,Chemical exposure,371704001
+chief_complaint,Environmental,Noxious inhalation - gas / fumes / vapour,1156755000
+chief_complaint,Environmental,Smoke inhalation,426936004
+chief_complaint,Drug and Alcohol,Effects of alcohol and/or drug use,66214007
+chief_complaint,Drug and Alcohol,Alcohol intoxication,18653004
+chief_complaint,Drug and Alcohol,Alcohol withdrawal syndrome,191480000
+chief_complaint,Drug and Alcohol,Drug withdrawal,1254795002
+chief_complaint,Psychosocial / Behaviour change,Self-harm,248062006
+chief_complaint,Psychosocial / Behaviour change,Depressive feelings,366979004
+chief_complaint,Psychosocial / Behaviour change,Feeling suicidal,6471006
+chief_complaint,Psychosocial / Behaviour change,Feeling anxious,48694002
+chief_complaint,Psychosocial / Behaviour change,Behaviour : unusual,248020004
+chief_complaint,Psychosocial / Behaviour change,Behaviour :  violent,248004009
+chief_complaint,Psychosocial / Behaviour change,Behaviour :  agitation,24199005
+chief_complaint,Psychosocial / Behaviour change,Hallucinations,7011001
+chief_complaint,Psychosocial / Behaviour change,Delusions,2073000
+chief_complaint,General,Fever,386661006
+chief_complaint,General,Hyperglycaemia,80394007
+chief_complaint,General,Hypoglycaemia,302866003
+chief_complaint,General,Dressing change/ wound care surveillance (uncomplicated),410379003
+chief_complaint,General,Postoperative complication,385486001
+chief_complaint,General,Complication associated with medical device,473023007
+chief_complaint,General,Crying infant,162214009
+chief_complaint,General,Generalised weakness,13791008
+chief_complaint,General,Blue colour (cyanosis),3415004
+chief_complaint,General,Social problem (medically well),271437004
+chief_complaint,General,Direct referral to inpatient unit,78680009
+chief_complaint,General,Requesting prescription,182888003
+chief_complaint,General,"Asymptomatic, no symptoms",84387000
