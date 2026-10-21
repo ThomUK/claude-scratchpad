@@ -24,6 +24,9 @@ generator follows.
 - Flow only. No diagnoses, procedure codes, observations or results in v1.
 - Mess is injected on purpose, at known rates, and every injected row is
   recorded in a hidden answers table (`mess_log`). See `MESS-CATALOGUE.md`.
+  Two source systems (ED and outpatients) ship with their audit trails so
+  that administrative "bouncing", a status set, unset and reset within
+  minutes, is visible as events and not just as a final value.
 - Reproducible: one seed, one manifest, committed output. Re-running the
   generator with the same seed and version gives byte-identical Parquet.
 
@@ -223,6 +226,17 @@ teaching trusts in the imaging top ten run 13,000–14,000 Type 1 a month)**,
 of which about 28% of Type 1 are admitted **(source: national Type 1 series,
 27–29.5% every month 2023–26; Nottingham 27.5%)**.
 
+#### 4.2.1 `ed_status_log` — the tracking board audit trail
+
+The ED system keeps an audit trail of every status change on the tracking
+board, and `ed_attendances` is the last-written state. One row per change:
+`uec_activity_identifier`, `status` (arrived, triaged, in cubicle, seen,
+awaiting results, referred, decision to admit, ready to go, departed,
+re-opened), `recorded_datetime`, `user_role` (receptionist, nurse,
+clinician, bed manager). About six rows per attendance, more when the
+record bounces (see M-BOUNCE-*). The timestamps in `ed_attendances` are
+the *last* time each status was set, which is not always the first.
+
 ### 4.3 `pas_outpatient_appointments`
 
 One row per appointment slot that was booked, with HES OP field semantics
@@ -247,6 +261,18 @@ Volume: 1.5 million attended appointments a year plus 105,000 DNAs,
 attendances, 19% are by telephone or video, half of first attendances are
 GP referrals, and the median wait from GP referral to first attendance is
 17 days **(source: HES OP provider table 2025/26, Nottingham and Oxford)**.
+
+#### 4.3.1 `pas_op_status_log` — the appointment audit trail
+
+The PAS writes an audit row every time an appointment's status or outcome
+is changed, and `pas_outpatient_appointments` holds the last value. One
+row per change: `appointment_id`, `field` (`attendance_status` or
+`outcome`), `old_value`, `new_value`, `recorded_datetime`, `user_id`,
+`workstation` (clinic reception, central booking, ward clerk, overnight
+batch). About 2.5 rows per appointment on average: booked, then arrived or
+DNA, then an outcome. Clinic reception closes the day's clinic in a batch
+at the end of the session, so most "arrived" and "seen" rows carry the
+same `recorded_datetime` an hour or more after the appointment time.
 
 ### 4.4 `pas_referrals` — the RTT skeleton
 
@@ -494,8 +520,8 @@ without a dictionary.
 | `spells` | one hospital provider spell (`PROVSPNO`, `ADMIDATE`, `DISDATE`, `ADMIMETH`, `ADMISORC`, `CLASSPAT`, `DISMETH`, `DISDEST`, `SPELDUR`) | `pas_adt_events` | handling A11/A13 cancellations, duplicate A03s, missing A03s, open spells at the edges |
 | `episodes` | consultant episode (`EPIKEY`, `EPIORDER`, `EPISTART`, `EPIEND`, `TRETSPEF`, `MAINSPEF`, `SPELBGIN`, `SPELEND`, `EPISTAT`) | A01 + A08 specialty changes | episode boundaries when A08 is a correction rather than a transfer of care; `EPISTAT` 3 finished / unfinished at year end |
 | `ward_stays` | one continuous stay on one ward | A01/A02/A03 | normalising ward names; stays of zero minutes; ED and Discharge Lounge as locations |
-| `ed_attendances_clean` | one attendance (`AEKEY`-style key) | `ed_attendances` + MPI | resolving unmapped MRNs; linking admitted attendances to spells (HES AE carries `EPIKEY`, APC carries `AEKEY` **(source: HES data model)**) |
-| `op_appointments_clean` | one appointment (`ATTENDKEY`, `ATENTYPE` derived from `FIRSTATT` and `ATTENDED`) | `pas_outpatient_appointments` | collapsing rebooked slots |
+| `ed_attendances_clean` | one attendance (`AEKEY`-style key) | `ed_attendances` + `ed_status_log` + MPI | resolving unmapped MRNs; linking admitted attendances to spells (HES AE carries `EPIKEY`, APC carries `AEKEY` **(source: HES data model)**); choosing the *first* time a status was reached rather than the last-written one when the record has bounced |
+| `op_appointments_clean` | one appointment (`ATTENDKEY`, `ATENTYPE` derived from `FIRSTATT` and `ATTENDED`) | `pas_outpatient_appointments` + `pas_op_status_log` | collapsing rebooked slots; deciding the final status when it changed several times within minutes (last write, last write by a clinical user, or the value that held longest) |
 | `rtt_pathways` | one pathway | `pas_referrals` + appointments + spells | clock stops implied by activity |
 | `imaging_exams` | one performed exam | `ris_imaging` | de-duplicating CT cancellations; backfilled MRI report dates; ultrasound multi-row bookings; request-to-test and test-to-report intervals |
 | `endoscopy_procedures` | one performed procedure | `endo_procedures` + MPI + spells | parsing text dates; attaching `spell_id` or `referral_id` by date overlap; DM01 category (waiting list / planned / unscheduled) |
