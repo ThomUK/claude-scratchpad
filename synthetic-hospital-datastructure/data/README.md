@@ -37,7 +37,12 @@ The release is produced by the `Synthetic hospital dataset release`
 workflow (`.github/workflows/synthetic-hospital-release.yml`), which
 rebuilds the full set from the seed on a GitHub runner, checks every row
 count against the committed `manifest.json` and uploads the files. The
-rebuilt manifest is attached to the release too.
+rebuilt manifest is attached to the release too, and it is the one to
+check full-set downloads against: the rows are identical between builds
+but the Parquet bytes are not (row order inside a file depends on thread
+scheduling), so the full-set checksums in the committed manifest describe
+the session build, not the release assets. The sample's checksums in the
+committed manifest describe the files in this repository.
 
 Timestamps are UTC to the second. Two source systems have deliberate clock
 behaviour (the ED runs two minutes fast; the RIS writes UTC during British
