@@ -1,0 +1,124 @@
+# Mess catalogue
+
+Every imperfection the generator injects, with a stable code so that the
+`mess_log` answers table, the teaching material and the tests all refer to
+the same thing. Rates are **assumptions** and are generator parameters.
+
+Codes are grouped by the system they live in, because the point of the
+exercise is that different teams and different vendors make different kinds
+of mess. A category column groups them by *type* of problem so the same
+lesson can be taught across systems.
+
+Categories:
+
+- **identity** — the same person or thing appears under more than one key, or two things share a key
+- **timing** — timestamps that are missing, out of order, batch-entered or in the wrong clock
+- **completeness** — rows or fields that should exist and don't, or exist and shouldn't
+- **coding** — the same concept recorded in different codes or free text
+- **structure** — the shape of the data hides or distorts the thing it describes
+- **process** — an artefact of how the organisation works rather than of the system
+
+## PAS event log (`pas_adt_events`)
+
+| Code | Category | What is injected | Rate | How to detect | What it teaches |
+| --- | --- | --- | --- | --- | --- |
+| M-PAS-01 | completeness | Duplicate event: the same A02 or A03 sent twice with a new `message_id`, seconds apart | 0.5% of events | identical event fields, different message id | Counting events is not counting things; de-duplication needs a definition of "same" |
+| M-PAS-02 | completeness | Missing discharge: an A03 never sent for a spell that clearly ended (next admission for the same patient starts later) | 0.8% of spells | open spell followed by a later A01 for the same MRN | Census from events drifts upward unless spells are closed by inference |
+| M-PAS-03 | timing | Out-of-order arrival: `recorded_datetime` order differs from `event_datetime` order within a spell | 2% of spells | message id order ≠ event time order | Sorting by receipt time builds the wrong story; late messages change history |
+| M-PAS-04 | timing | Batch-entered transfers: a run of A02 events recorded at 07:00 or 19:00 with `event_datetime` rounded to the hour | 6% of A02 | clustering of recorded times at shift handover; minute = 00 | Ward moves "happen" at handover in the data, not when they happened |
+| M-PAS-05 | process | Cancelled admission: A01 followed by A11, patient never arrived | 1.5% of A01 | A11 present | Admissions ≠ arrivals; cancelled spells must be excluded from activity and census |
+| M-PAS-06 | process | Cancelled discharge: A03 followed by A13 then a later A03 | 1% of A03 | A13 present | A spell can "end" twice; discharge date is the last valid A03 |
+| M-PAS-07 | identity | Duplicate MRN: a patient registered twice under different MRNs, later merged by an A40 | 1.2% of patients | A40 with `prior_mrn` | Patient counts are too high until merges are applied; activity before the merge sits under the old key |
+| M-PAS-08 | identity | Unmerged duplicate: as M-PAS-07 but the A40 never comes | 0.3% of patients | same NHS number and date of birth, two MRNs | Some duplicates are only findable by matching, and matching has false positives |
+| M-PAS-09 | coding | Ward name drift: the same ward typed as `Ward 5 Frailty`, `WARD 5 FRAILTY`, `Ward5 Frailty`, `W5 Frailty`, and (before month 14) `Ward 5 Elderly Care` | 8% of ward values | distinct count of ward strings ≫ real wards | Free text needs a reference table with validity dates |
+| M-PAS-10 | structure | Zero-length ward stay: A02 to a ward and A02 away within 2 minutes (clerical correction) | 1% of A02 | stay duration < 5 min | Every location in the log is not a stay; a stay needs a minimum duration rule |
+| M-PAS-11 | structure | A08 ambiguity: an A08 that changes the specialty code sometimes starts a new consultant episode and sometimes corrects a typo in the original episode | 3% of spells | A08 within 1 hour of A01 with specialty change is usually a correction | Episodes are a judgement derived from events, not a fact in them |
+| M-PAS-12 | structure | ED as a ward: admitted patients boarding in ED have an A01 with `ward = 'ED'` and an A02 to a bed hours later | 15% of ED admissions | A01 on ward ED | Admission time ≠ arrival on a ward; the "bed" the census counts may be a trolley |
+| M-PAS-13 | timing | Event lag: `recorded_datetime` lags `event_datetime` by 1–3 days for discharges on a Friday | 4% of A03 | lag > 24 h | A report run on Monday morning under-counts Friday discharges; data is never "final" |
+| M-PAS-14 | completeness | Open spells at the edges of the window: spells admitted before 1 April 2023 and spells not yet discharged at 31 March 2026 | ~250 at each edge | admission or discharge outside the window | Stock versus flow; a census on day 1 is not the sum of admissions since day 1 |
+| M-PAS-15 | process | Activity after death: an outpatient appointment or an A08 recorded after the patient's date of death | 0.2% of deceased patients | event after `date_of_death` | Dates of death arrive late; downstream data is not re-written |
+
+## ED system (`ed_attendances`)
+
+| Code | Category | What is injected | Rate | How to detect | What it teaches |
+| --- | --- | --- | --- | --- | --- |
+| M-ED-01 | identity | MRN not populated: the interface failed to match, `mrn` is null | 4% of attendances | null `mrn` | Linking ED to admissions needs the MPI, not a key |
+| M-ED-02 | identity | Wrong MRN: the interface matched the wrong person (same name and date of birth) | 0.1% of attendances | NHS number on the ED row ≠ NHS number of the MRN in PAS | Interface errors are silent; cross-check identifiers where two exist |
+| M-ED-03 | timing | Departure time equals decision-to-admit time: the ED system auto-closes on admission, so `departure_datetime` is when the admission was keyed, not when the patient left | 60% of admitted attendances | departure = DTA to the minute; PAS A02 away from ED hours later | The four-hour clock stops in the ED system before the patient leaves the department |
+| M-ED-04 | timing | Breach-shaped departures: a cluster of `departure_datetime` at 3 h 55–3 h 59 after arrival for discharged patients | 5% of discharged attendances | histogram spike just under 4 h | Targets shape data; the distribution reveals the behaviour |
+| M-ED-05 | completeness | Missing initial assessment and triage times for walk-in minors streamed to UTC | 20% of UTC attendances | null `initial_assessment_datetime` | Process steps that did not happen are indistinguishable from steps not recorded |
+| M-ED-06 | process | Unplanned re-attendance within 72 h recorded as a new first attendance | 3% of re-attendances | same patient within 72 h, category = first | Re-attendance rates depend on who classifies, not just what happened |
+| M-ED-07 | coding | `nhs_number` with spaces and without the `fake_` prefix on 2% of rows (typed by hand at registration) | 2% | pattern mismatch | Identifiers need normalising before they are keys |
+
+## Outpatients and referrals (`pas_outpatient_appointments`, `pas_referrals`)
+
+| Code | Category | What is injected | Rate | How to detect | What it teaches |
+| --- | --- | --- | --- | --- | --- |
+| M-OP-01 | structure | Rebooking churn: a hospital-cancelled slot plus a new slot for the same referral, so one intended appointment is 2–4 rows | 12% of appointments | same referral, cancelled then booked | Appointments offered ≠ appointments delivered ≠ patients seen |
+| M-OP-02 | coding | Attendance status 5 recorded for telephone contacts that the clinician never logged as completed | 3% of telephone contacts | status 5 with no outcome | Attended is a default, not an observation |
+| M-OP-03 | completeness | Referral with no appointment and no clock stop (lost to follow-up) | 1.5% of referrals | open pathway, no activity for 52 weeks | The RTT incomplete list contains ghosts; validation is a job |
+| M-OP-04 | process | Clock stop recorded 1–3 weeks after the attendance that stopped it | 10% of clock stops | `clock_stop_date` > attendance date | Snapshots taken too early over-state waiting |
+
+## Radiology: CT team (`ris_imaging` where `modality = 'CT'`)
+
+The CT team is a high-volume, 24/7, emergency-led service. Its timestamps are
+clean because scanners write them, but its booking admin is loose.
+
+| Code | Category | What is injected | Rate | How to detect | What it teaches |
+| --- | --- | --- | --- | --- | --- |
+| M-CT-01 | completeness | Cancelled-and-rebooked exams kept as separate rows with `status = 'cancelled'` and a second row for the same request | 7% of CT requests | same patient, same exam code, request minutes apart | Requests ≠ exams; activity counts need a status filter |
+| M-CT-02 | completeness | ED CTs with `request_datetime` after `scan_start_datetime` (scan done on a verbal request, order entered afterwards) | 10% of ED CT | request > scan | Negative waits are a process signal, not a data error to delete |
+| M-CT-03 | coding | `body_area` blank, `exam_description` carries it as free text (`CT abdo pelv w contrast`, `CTAP`, `CT A/P`) | 30% of CT | null `body_area` | Classification lives in the catalogue, not the row |
+| M-CT-04 | completeness | `vetted_datetime` null (CT does not vet emergency or urgent) | 70% of CT | null vetting | A step that one team does and another does not is not missing data |
+| M-CT-05 | timing | Report and verification time identical (auto-verified by the reporting radiologist) | 85% of CT | reported = verified | Two timestamps, one event |
+| M-CT-06 | process | Duplicate `exam_id` across the two scanners after a RIS upgrade in month 20, resolved by a `scanner_id` suffix later | 0.2% of CT in months 20–22 | non-unique accession | Keys are only unique within the assumptions of the system that minted them |
+
+## Radiology: MRI team (`ris_imaging` where `modality = 'MR'`)
+
+The MRI team is a scheduled, vetted, mostly elective service with a reporting
+backlog. Its booking is tidy but its timestamps are backfilled.
+
+| Code | Category | What is injected | Rate | How to detect | What it teaches |
+| --- | --- | --- | --- | --- | --- |
+| M-MR-01 | timing | Backfilled report dates: reports written during a backlog clearance are dated in batches on Friday afternoons, with `reported_datetime` identical to the minute for 20–40 exams | 15% of MR reports | many reports with the same timestamp | Median report turnaround depends on when the data was cut, not just on the service |
+| M-MR-02 | timing | `scan_end_datetime` = `scan_start_datetime` + `slot_minutes` exactly (end time derived from the slot, not observed) | 40% of MR | end − start equals slot for all exams of a type | A derived field dressed as an observation |
+| M-MR-03 | coding | `body_area` inconsistent for the same `exam_code`: `Knee`, `knee`, `Knee (L)`, `Lower limb` | 12% of MR | several body areas per exam code | A field filled by people, not by the catalogue |
+| M-MR-04 | process | Reporting backlog: `reported_datetime` − `scan_end_datetime` grows from a median of 3 days to 21 days over each summer, then collapses | seasonal | time series of turnaround | A backlog is visible in events and invisible in a monthly mean |
+| M-MR-05 | completeness | `vetted_datetime` present for every routine MR but `vetted_datetime` < `request_datetime` for 1% (vetting clock set to default on form) | 1% of MR | vetting before request | Timestamps from forms carry the form's defaults |
+| M-MR-06 | process | DNA rate twice as high at RZ902 on Saturdays (extended-hours lists) | structural | DNA by site and weekday | Access initiatives generate their own data patterns |
+| M-MR-07 | structure | Two exams in one slot: whole spine booked as three rows (cervical, thoracic, lumbar) sharing one `booked_datetime` and one scan start | 4% of MR | multiple rows, same patient, same scan start | Counting rows counts exam codes, not patients scanned or scanner hours used |
+
+## Endoscopy vendor (`endo_procedures`)
+
+A procedure reporting system, not a flow system. Its mess is about shape and
+linkage rather than events.
+
+| Code | Category | What is injected | Rate | How to detect | What it teaches |
+| --- | --- | --- | --- | --- | --- |
+| M-EN-01 | structure | Dates as text in `DD/MM/YYYY`; times as `HH:MM` text; 1% of dates in `MM/DD/YYYY` after a locale change on one workstation in month 9 | 1% in month 9 | dates where day ≤ 12 and month > 12 after parsing; impossible gaps | Parse dates with a rule and a validation, never with a cast |
+| M-EN-02 | identity | `NHSNo` with spaces; `HospNo` blank for screening patients (registered by the screening hub, not the trust) | spaces 100%, blank HospNo 80% of BCSP | pattern; null | Departmental systems hold their own view of who a patient is |
+| M-EN-03 | coding | `Site` as free text in four spellings | 100% | distinct values | Even a two-site trust needs a site reference table |
+| M-EN-04 | completeness | `StartTime`/`EndTime` blank for emergency inpatient procedures done on the ward or in theatre | 50% of IP-NEL | null times, Category = IP-NEL | Activity that happens outside the room the system was built for is thin in the data |
+| M-EN-05 | structure | No spell, appointment or referral key: linkage to PAS is by NHS number and date | 100% | by design | Joining across vendors is matching, with rules and a confidence, not a key |
+| M-EN-06 | process | Surveillance recalls booked 3–9 months late with `ReferralDate` set to the original recall date, so they look like long waits unless `Category` is used | structural | SURV with long referral-to-procedure | Planned patients distort waiting-time measures unless excluded, as DM01 does |
+| M-EN-07 | completeness | `Comfort` and `Extent` null for abandoned and DNA procedures, and null for 5% of completed ones | structural + 5% | null where Outcome = completed | Missing-by-design versus missing-by-omission need different handling |
+| M-EN-08 | identity | Same procedure exported twice with different `ProcID` after a report amendment | 2% | same PatientRef, ProcDate, ProcType, StartTime | Amendments create rows in a system without versioning |
+
+## Cross-system
+
+| Code | Category | What is injected | Rate | How to detect | What it teaches |
+| --- | --- | --- | --- | --- | --- |
+| M-X-01 | identity | The same person has an MRN, an ED id, a RIS id and an endoscopy id, with the NHS number present and correctly formatted in only some of them | structural | MPI build | The master patient index is a product, not an input |
+| M-X-02 | timing | Clocks differ: the ED system runs 2 minutes ahead of the PAS and the RIS writes times in UTC during British Summer Time, so overlapping events disagree by 1 hour in summer | structural | ED departure 1 h before/after PAS admission in summer | Timestamps have a time zone and a source, whether or not the column says so |
+| M-X-03 | completeness | The aggregates do not add up: `agg_daily_flow` admissions minus discharges does not equal the change in `agg_midnight_census` | emergent, not injected | reconcile the three layers | Aggregates built from different definitions never reconcile exactly; the event layer is where reconciliation happens |
+
+## How the catalogue is used
+
+- The generator reads this file's codes as parameter names in
+  `default_mess_rates()`. Any code can be set to 0 to switch it off.
+- Every injected row is written to `mess_log` with its code, so an exercise
+  can be marked: "find the duplicate MRNs" has an answer key.
+- The explainer page uses the codes as anchors so each lesson links to the
+  rows that demonstrate it.
+- When a new kind of mess is added, add it here first with a code, then to
+  the generator, then to the tests.
