@@ -83,3 +83,11 @@ test_that("every NHS number in every table keeps the fake_ prefix, whatever the 
     }
   }
 })
+
+
+test_that("duplicate registrations never reuse an MRN that belongs to someone else", {
+  g <- gen_messy()
+  p <- g$tables$pas_patients
+  expect_equal(anyDuplicated(p$mrn), 0L)
+  expect_true(all(g$tables$pas_adt_events$mrn %in% p$mrn))
+})

@@ -549,7 +549,9 @@ mess_identity <- function(T, tr, r, ml, ctx) {
     p <- r(code); if (p <= 0) next
     sel <- active[runif(length(active)) < p]
     if (!length(sel)) next
-    old <- sprintf("T%07d", sample.int(900000L, length(sel)) + 9000000L)
+    # the duplicate registration's MRN must not collide with any MRN already in use
+    taken <- c(pts$mrn, ev$mrn)
+    old <- setdiff(sprintf("T%07d", sample.int(9000000L, length(sel) * 2L + 100L) + 999999L), taken)[seq_along(sel)]
     m <- data.table(mrn = sel, old_mrn = old)
     # split time: the earliest ADT event plus a random share of the patient's span
     span <- ev[mrn %in% sel, .(t0 = min(event_datetime), t1 = max(event_datetime)), by = mrn]

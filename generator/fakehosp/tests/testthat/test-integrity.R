@@ -105,3 +105,13 @@ test_that("beds reference: every ward has bed spaces, with the four bed types", 
   # day units hold trolleys, recliners and chairs as well as beds
   expect_true(all(c("trolley", "recliner") %in% beds[ward_id %in% ref$wards[kind == "daycase", ward_id], bed_type]))
 })
+
+
+test_that("reference keys are unique and codes keep their leading zeros", {
+  ref <- fh_reference()
+  expect_equal(anyDuplicated(ref$clinics$clinic_code), 0L)
+  expect_false(any(is.na(ref$clinics$clinic_code)) || any(grepl("NA$", ref$clinics$clinic_code)))
+  expect_equal(ref$patient_source_setting$code, sprintf("%02d", 1:7))
+  expect_equal(anyDuplicated(ref$consultants$consultant_code), 0L)
+  expect_equal(anyDuplicated(ref$wards$ward_id), 0L)
+})

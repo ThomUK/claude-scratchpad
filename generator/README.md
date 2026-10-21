@@ -79,6 +79,23 @@ for the full set. The build ends by writing `preview/sample/` (the first
 also runs on its own against a build directory or the repository's
 `data/v1`.
 
+## The ERD is built from the data
+
+`erd.py` writes `data/<version>/erd.json` at the end of each build. Column
+names and types come from the sample Parquet, row counts from the manifest,
+and lineage from the `CREATE TABLE` statements in `sql/`. Relationships are
+inferred by naming convention (`ALIASES` maps column names to key concepts,
+`CONCEPTS` says which table holds each key) and then measured: the share of
+each child column's values found in the parent key, raw and after
+normalising case and punctuation. A link at or above 99.5% is drawn as a
+key, a partial match as a fuzzy link with its rate, and anything under 5%
+is listed as rejected rather than drawn. Primary keys are checked for
+uniqueness. The hand-maintained parts are the three lists at the top of
+`erd.py` and the mess-catalogue notes shown on fuzzy links; add a line to
+`ALIASES` or `CONCEPTS` when a new identifier appears, and the data decides
+the rest. Running it on v1 was what found the duplicate MRNs and the
+clinic-code and source-setting bugs listed in `pending-changes.json`.
+
 ## Pending changes to the published data
 
 `../pending-changes.json` lists generator changes that are not yet in the
@@ -133,6 +150,7 @@ CSV writer.
 | `build.py` | Parquet conversion, derived and aggregate SQL, sample, manifest (Python DuckDB) |
 | `check_manifest.py` | compares a rebuilt manifest with the committed one |
 | `preview.py` | 100-row JSON previews of every sample table for the table viewer; run by `build.py` |
+| `erd.py` | `erd.json` for the ERD page: columns from the Parquet, links inferred by name and measured against the data, lineage parsed from `sql/`; run by `build.py` |
 | `publish_release.sh` | attaches the full set to a GitHub release |
 | `setup-cloud.sh` | toolchain install for cloud sessions |
 
