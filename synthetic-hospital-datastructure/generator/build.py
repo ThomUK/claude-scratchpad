@@ -59,7 +59,8 @@ def load_csv(con, schema, name, path, types):
     cols = csv_header(path)
     # timestamps are read as text and parsed tolerantly (with or without fractional seconds), then truncated to whole seconds
     typed = ", ".join(f"'{c}': '{'VARCHAR' if types.get(c) == TS else types.get(c, 'VARCHAR')}'" for c in cols)
-    sel = ", ".join(f"date_trunc('second', CAST(replace(\"{c}\", 'Z', '') AS TIMESTAMP)) AS \"{c}\"" if types.get(c) == TS else f'"{c}"' for c in cols)
+    # a rare data.table fwrite artefact prints a fraction that rounds to one second as ".:00"; drop it before parsing
+    sel = ", ".join(f"date_trunc('second', CAST(regexp_replace(replace(\"{c}\", 'Z', ''), '\\.:00$', '') AS TIMESTAMP)) AS \"{c}\"" if types.get(c) == TS else f'"{c}"' for c in cols)
     con.execute(f"CREATE OR REPLACE TABLE {schema}.{name} AS SELECT {sel} FROM read_csv('{path}', header = true, types = {{{typed}}}, nullstr = '')")
     return con.execute(f"SELECT count(*) FROM {schema}.{name}").fetchone()[0]
 
