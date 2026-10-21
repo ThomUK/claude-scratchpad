@@ -5,24 +5,19 @@
 #' @export
 write_layer1 <- function(gen, out_dir) {
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-  fmt <- function(dt) {
-    dt <- copy(dt)
-    for (col in names(dt)) {
-      if (inherits(dt[[col]], "POSIXct")) set(dt, j = col, value = fmt_dt(dt[[col]]))
-      else if (inherits(dt[[col]], "Date")) set(dt, j = col, value = fmt_d(dt[[col]]))
-    }
-    dt
-  }
+  # fwrite formats POSIXct (UTC) as "YYYY-MM-DD HH:MM:SS" and Date as ISO without copying the table
+  fmt <- function(dt) dt
+  wr <- function(dt, f) fwrite(dt, f, na = "", dateTimeAs = "write.csv")
   counts <- list()
   for (nm in names(gen$tables)) {
     f <- file.path(out_dir, paste0(nm, ".csv"))
-    fwrite(fmt(gen$tables[[nm]]), f, na = "")
+    wr(gen$tables[[nm]], f)
     counts[[nm]] <- nrow(gen$tables[[nm]])
   }
-  if (!is.null(gen$mess_log)) { fwrite(fmt(gen$mess_log), file.path(out_dir, "mess_log.csv"), na = ""); counts$mess_log <- nrow(gen$mess_log) }
+  if (!is.null(gen$mess_log)) { wr(gen$mess_log, file.path(out_dir, "mess_log.csv")); counts$mess_log <- nrow(gen$mess_log) }
   for (nm in names(gen$reference)) {
     f <- file.path(out_dir, paste0("ref_", nm, ".csv"))
-    fwrite(fmt(gen$reference[[nm]]), f, na = "")
+    wr(gen$reference[[nm]], f)
     counts[[paste0("ref_", nm)]] <- nrow(gen$reference[[nm]])
   }
   manifest <- list(dataset = "Fake NHS Trust synthetic hospital data", layer = 1L, version = gen$meta$version,

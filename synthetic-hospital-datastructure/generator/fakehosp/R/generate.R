@@ -76,6 +76,7 @@ generate <- function(seed = 20230401L, n_patients = 800000L, start = "2023-04-01
     ed_admitted = ed$attendances[, .(uec_activity_identifier, admitted)]
   )
   mess_log <- NULL
+  rm(ed, op, adm, img, endo, d1, d2, cand, last, dod, moved); gc()
   if (!is.null(mess)) {
     gen0 <- list(tables = tables, truth = truth, reference = ref)
     m <- inject_mess(gen0, mess, seed, start, end, verbose)

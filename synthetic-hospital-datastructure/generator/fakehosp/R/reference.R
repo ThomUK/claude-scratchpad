@@ -77,7 +77,7 @@ tfc,name,ip_a,dc_a,op_a,ip_b,dc_b,op_b,elective_b_share,emergency_share
   cons_n <- c("300"=60,"430"=30,"320"=24,"340"=18,"301"=18,"361"=12,"400"=14,"100"=28,"104"=10,"107"=8,"110"=34,"101"=16,
               "130"=18,"120"=14,"502"=20,"420"=30,"330"=10,"410"=8,"192"=20,"180"=36)
   cons <- data.table(tfc = rep(names(cons_n), cons_n))
-  cons[, consultant_code := paste0("C", formatC(sample.int(8999999, .N) + 1000000, width = 7, flag = "0"))]
+  cons[, consultant_code := sprintf("C%07d", as.integer(sample.int(8999999L, .N) + 1000000L))]
   cons[, main_site := ifelse(tfc %in% c("130","120","330"), "RZ902", ifelse(runif(.N) < 0.2 & tfc %in% c("110","101","100","104","502","301","410","430","320","340","400"), "RZ902", "RZ901"))]
   ref$consultants <- cons
 
