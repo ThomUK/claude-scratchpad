@@ -359,6 +359,10 @@ the CT and MRI teams' different behaviours layered on top:
 | Reported same day, outpatient and GP | 18% | 12% |
 | Reported by end of next day, outpatient and GP | 29% | 24% |
 | Source mix (top-10 trusts): A&E / inpatient / outpatient / GP | 35 / 22 / 38 / 5 | 4 / 14 / 71 / 10 |
+| Request to test within 7 days: A&E / inpatient / outpatient / GP (Table 9) | 99.7 / 98 / 26 / 27 | 86 / 93 / 20 / 14 |
+| Request to test over 62 days: outpatient / GP (Table 9) | 18.5 / 5.2 | 17.9 / 10.5 |
+| Outpatient and GP exams reported within 7 days (Table 13, comparators) | 45–63% | 48–63% |
+| DM01 waiting list at month end, share over 6 weeks | 3,500, 10% | 5,000, 20% |
 
 Pathway: request → vetting (MRI always; CT only routine) → booking → scan →
 report → verification. January has longer request-to-test waits for all
@@ -425,10 +429,13 @@ this table. Linkage is by patient and date:
 - `OP` procedures match a referral or an outpatient appointment whose outcome was "diagnostic requested" within the preceding 12 weeks.
 - `SURV` and `BCSP` are planned: a recall date exists and the procedure is excluded from waiting-time aggregates. `BCSP` patients are aged 50–74 (**assumption**).
 
-About 40% `OP`, 25% `SURV`+`BCSP`, 25% `IP-EL`, 10% `IP-NEL`
-(**assumption**). Volume: about 28,000 procedures a year (**assumption**:
-no provider-level endoscopy activity was supplied; the DM01 monthly
-provider file would set this).
+About 45% `OP`, 12% `SURV`, 8% `BCSP`, 30% `IP-EL`, 5% `IP-NEL`
+(**assumption** for the split; the DM01 planned share of 12% and
+unscheduled share of 3% are **(source)**). Volume: 24,000 procedures a year,
+gastroscopy 9,400, colonoscopy 8,300, flexi sigmoidoscopy 3,700, cystoscopy
+2,600 **(source: DM01 provider file, Nottingham August 2026 scaled to a
+year)**. The endoscopy waiting list at month end is about 2,700 with 35%
+over six weeks **(source)**.
 
 ### 4.7 Reference tables
 
@@ -507,7 +514,7 @@ Annual volumes the generator targets:
 | Outpatient attendances | 1,500,000, plus 105,000 DNAs, 175,000 patient and 300,000 hospital cancellations | **(source: HES OP provider table, Nottingham and Oxford)** |
 | CT examinations | 125,000 | **(source: DID Table 11, rank 8–10)** |
 | MRI examinations | 68,000 | **(source: DID Table 11, rank 8–10)** |
-| Endoscopy procedures | 28,000 | **assumption** |
+| Endoscopy procedures | 24,000 | **(source: DM01 provider file, Nottingham)** |
 | RTT incomplete pathways (snapshot) | 88,000 | **(source: RTT provider file, Nottingham and Oxford)** |
 | RTT completed pathways | 180,000 | **(source: same, 15,000 a month)** |
 
@@ -602,8 +609,9 @@ Patterns the generator builds in, with sources where they exist:
 - The patient count (800,000) follows from the top-10 volumes: roughly
   14 million rows across tables, 400–500 MB of Parquet. The principle was
   agreed at 750,000; the HES outpatient volumes pushed it up slightly.
-- The only provider-level volume still assumed is endoscopy; the DM01
-  provider monthly file would set it. DID Table 9 (medians by modality and source) and
+- Every headline volume now has a provider-level source. What remains
+  assumed is listed in `CALIBRATION.md` section 8: exam durations and the
+  endoscopy procedure-level fields. DID Table 9 (medians by modality and source) and
   Table 13 (quarterly turnaround by provider) would sharpen the imaging
   calibration.
 - Whether ultrasound and plain X-ray should join CT and MRI in `ris_imaging`
