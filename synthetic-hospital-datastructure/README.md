@@ -3,8 +3,8 @@
 **Status: v1 published.** The sample is in `data/v1/`, the full set is on
 the [v1 release](https://github.com/ThomUK/claude-scratchpad/releases/tag/synthetic-hospital-datastructure-v1),
 and the [project page](https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/)
-and [table viewer](https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/viewer/)
-are live. The browser SQL console and the R helper package are still to come.
+[table viewer](https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/viewer/)
+and [ERDs](https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/erd/) are live. The browser SQL console and the R helper package are still to come.
 
 A seeded, reproducible synthetic dataset mimicking the data domain of a
 single fictional English acute trust, built in three layers so that the
@@ -25,6 +25,9 @@ can be explored and taught with real SQL.
 - [`viewer/`](viewer/) — the table viewer: an index of every table with
   counts, sizes and download links, and the first 100 rows of each. Pure JS;
   `node tests/engine.test.mjs` from `viewer/`.
+- [`erd/`](erd/) — entity relationship diagrams, one per layer, generated
+  from the data by `generator/erd.py`. Pure JS; `node tests/engine.test.mjs`
+  from `erd/`.
 - [`sql/`](sql/) — the derive and aggregate SQL the build runs.
 
 Nothing in this folder is real. Every NHS number is prefixed `fake_`, the

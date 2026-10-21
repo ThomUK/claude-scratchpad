@@ -233,6 +233,9 @@ def main():
     log("previews for the data viewer")
     import preview
     preview.write_previews(out)
+    log("erd.json for the ERD page")
+    import erd
+    erd.write_erd(out)
     log("done; full", round(manifest["totals"]["full_bytes"] / 1e6), "MB, sample", round(manifest["totals"]["sample_bytes"] / 1e6), "MB")
 
 

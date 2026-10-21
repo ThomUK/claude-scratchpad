@@ -92,7 +92,8 @@ tfc,name,ip_a,dc_a,op_a,ip_b,dc_b,op_b,elective_b_share,emergency_share
   clinics <- rbind(
     cl[op_a == 1, .(site_code = "RZ901", tfc, n = pmax(2L, round(8 * (emergency_share + 0.05) / 0.1)))],
     cl[op_b == 1, .(site_code = "RZ902", tfc, n = pmax(2L, round(6 * (elective_b_share + 0.2))))])
-  clinics <- clinics[, .(clinic_code = paste0(substr(site_code, 5, 5), tfc, LETTERS[seq_len(n)])), by = .(site_code, tfc)]
+  suffix <- function(n) { x <- c(LETTERS, as.vector(outer(LETTERS, LETTERS, paste0))); x[seq_len(n)] }
+  clinics <- clinics[, .(clinic_code = paste0(substr(site_code, 5, 5), tfc, suffix(n))), by = .(site_code, tfc)]
   ref$clinics <- clinics
 
   # Exam catalogue. room_min/max minutes, slot minutes, share within modality,
@@ -190,7 +191,7 @@ code,description
 6,Arrived late after the care professional was ready but was seen
 7,Did not attend patient arrived late and could not be seen
 ")
-  ref$patient_source_setting <- fread(text = "
+  ref$patient_source_setting <- fread(colClasses = "character", text = "
 code,description
 01,Admitted Patient Care - Inpatient
 02,Admitted Patient Care - Day case
