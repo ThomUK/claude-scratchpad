@@ -607,12 +607,15 @@ Patterns the generator builds in, with sources where they exist:
   produces 38 million rows, about 1.1 GB as ZSTD Parquet, which exceeds
   what GitHub Pages will host, so the **full set is attached to a GitHub
   release** of the repository (one asset per file, large tables partitioned
-  by financial year) and the **5% sample lives in the repository** under
+  by financial year, uploaded by a workflow that rebuilds the set from the
+  seed and checks it against the committed manifest) and the **5% sample
+  lives in the repository** under
   `data/v1/sample/` and is served by Pages. `data/README.md` has the URLs
   and read examples.
 - **A `sample/` partition alongside `full/`**: a 5% sample of *patients*
   (about 40,000) with all of their activity across every table, so joins
-  hold. About 25 MB. This is what the browser console loads by default;
+  hold. About 129 MB including the CSV zip (the full set is 1,069 MB).
+  This is what the browser console loads by default;
   `full/` is a toggle. Both carry the same version and seed.
 - **Secondary format: a CSV zip** of the sample's tables, alongside it. It
   exists only for people whose tools cannot read Parquet, and for opening a
@@ -673,15 +676,15 @@ Patterns the generator builds in, with sources where they exist:
 1. This design, the calibration note and the mess catalogue (done).
 2. R package with the clean generator and tests (done; `generate(mess = NULL)`).
 3. Mess injection and `mess_log` (done; `generate()` with `default_mess_rates()`).
-4. Derive and aggregate SQL; Parquet build; manifest; sample partition; CSV zip (done; `generator/build.py`, `sql/`).
+4. Derive and aggregate SQL; Parquet build; manifest; sample partition; CSV zip; publication (done; `generator/build.py`, `sql/`, sample under `data/v1/`, full set released by `.github/workflows/synthetic-hospital-release.yml`).
 5. Browser console and explainer page; card on the root `index.html`; README row.
 6. R helper package and R/Python access docs.
 
 ## 11. Open points for review
 
-- The patient count (800,000) follows from the top-10 volumes: roughly
-  14 million rows across tables, 400–500 MB of Parquet. The principle was
-  agreed at 750,000; the HES outpatient volumes pushed it up slightly.
+- The patient count (800,000) follows from the top-10 volumes: 38 million
+  rows across tables, 1,069 MB of Parquet for the full set. The principle
+  was agreed at 750,000; the HES outpatient volumes pushed it up slightly.
 - Every headline volume now has a provider-level source. What remains
   assumed is listed in `CALIBRATION.md` section 8: exam durations and the
   endoscopy procedure-level fields. DID Table 9 (medians by modality and source) and
