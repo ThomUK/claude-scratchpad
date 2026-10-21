@@ -14,6 +14,8 @@ Open Government Licence unless the document says otherwise.
 | `DID-Annual-Statistical-Release-2023-24.pdf` | DID annual release | national volumes, source mix, turnaround |
 | `DID-Table-11-2023-24-Modality-Provider-Source-setting.xlsx` | DID activity by provider, modality and source setting | top-10 trust scale and source splits |
 | `GIRFT-radiology-report.pdf` | GIRFT radiology national report, Nov 2020 | request-to-test and test-to-report distributions, equipment counts |
+| `HES-APC-provider-2025-26.xlsx` | HES admitted patient care activity by hospital provider, 2025/26 | admissions, admission-method mix, day cases, episodes, bed days, age profile |
+| `HES-OP-provider-2025-26.csv` | HES outpatient activity by provider, 2025/26 | attendances, DNAs, cancellations, first/follow-up, referral source, waits |
 | `HES-Data-Model-v1.0.pdf` | HES data model | entity relationships |
 | `HES-APC-TOS-v2.06.xlsx` | HES technical output specification (APC, OP, A&E, CC) | field names and code lists for the derived layer |
 | `ECDS-ETOS-v4.0.8.xlsx` | Emergency Care Data Set technical output specification v4 | `ed_attendances` fields and code lists |

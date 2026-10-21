@@ -36,6 +36,7 @@ Categories:
 | M-PAS-12 | structure | ED as a ward: admitted patients boarding in ED have an A01 with `ward = 'ED'` and an A02 to a bed hours later | 15% of ED admissions | A01 on ward ED | Admission time ≠ arrival on a ward; the "bed" the census counts may be a trolley |
 | M-PAS-13 | timing | Event lag: `recorded_datetime` lags `event_datetime` by 1–3 days for discharges on a Friday | 4% of A03 | lag > 24 h | A report run on Monday morning under-counts Friday discharges; data is never "final" |
 | M-PAS-14 | completeness | Open spells at the edges of the window: spells admitted before 1 April 2023 and spells not yet discharged at 31 March 2026 | ~250 at each edge | admission or discharge outside the window | Stock versus flow; a census on day 1 is not the sum of admissions since day 1 |
+| M-PAS-16 | timing | Decision-to-admit date for elective admissions defaulted to the admission date by one booking team, so the trust's median elective wait reads 10 days where comparators read 28 | 40% of elective A01 at RZ902 | `decision_to_admit_date` = admission date | A short wait in a national table can be a default, not a fast service (Nottingham's 2025/26 HES figure shows the pattern) |
 | M-PAS-15 | process | Activity after death: an outpatient appointment or an A08 recorded after the patient's date of death | 0.2% of deceased patients | event after `date_of_death` | Dates of death arrive late; downstream data is not re-written |
 
 ## ED system (`ed_attendances`)
@@ -54,7 +55,7 @@ Categories:
 
 | Code | Category | What is injected | Rate | How to detect | What it teaches |
 | --- | --- | --- | --- | --- | --- |
-| M-OP-01 | structure | Rebooking churn: a hospital-cancelled slot plus a new slot for the same referral, so one intended appointment is 2–4 rows | 12% of appointments | same referral, cancelled then booked | Appointments offered ≠ appointments delivered ≠ patients seen |
+| M-OP-01 | structure | Rebooking churn: a hospital-cancelled slot plus a new slot for the same referral, so one intended appointment is 2–4 rows | hospital cancellations run at 20% of attended appointments, patient cancellations at 12% (HES OP provider table) | same referral, cancelled then booked | Appointments offered ≠ appointments delivered ≠ patients seen |
 | M-OP-02 | coding | Attendance status 5 recorded for telephone contacts that the clinician never logged as completed | 3% of telephone contacts | status 5 with no outcome | Attended is a default, not an observation |
 | M-OP-03 | completeness | Referral with no appointment and no clock stop (lost to follow-up) | 1.5% of referrals | open pathway, no activity for 52 weeks | The RTT incomplete list contains ghosts; validation is a job |
 | M-OP-04 | process | Clock stop recorded 1–3 weeks after the attendance that stopped it | 10% of clock stops | `clock_stop_date` > attendance date | Snapshots taken too early over-state waiting |

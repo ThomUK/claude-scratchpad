@@ -113,17 +113,18 @@ appear with inconsistent casing and spacing.
   events exist, dated before the window) and some are open at 31 March 2026
   (no discharge yet). Open spells at the window edges are what make the
   midnight census differ from admissions minus discharges.
-- **Population: 750,000 patients** who had at least one contact in the
+- **Population: 800,000 patients** who had at least one contact in the
   window. **Assumption**, derived as follows: a trust of this scale sees
-  roughly 265,000 ED and UTC attendances, 250,000 spells and 1.2 million
-  outpatient appointments a year; with realistic repeat rates (an ED attender averages
+  roughly 265,000 ED and UTC attendances, 250,000 spells and 1.5 million
+  attended outpatient appointments a year; with realistic repeat rates (an ED attender averages
   about 1.5 attendances a year, an outpatient about 3 appointments a year)
-  that is roughly 450,000 distinct patients a year and about 750,000 over
+  that is roughly 500,000 distinct patients a year and about 800,000 over
   three years. The original plan of 50,000 patients would mean every patient
   attending ED eleven times, so it had to rise with the trust size.
-- Age and sex drawn from a profile matching the DID 2023/24 age bands for
-  imaging **(source)** and the national admitted-care profile
-  (**assumption** for ED and outpatients).
+- Age and sex drawn from the pooled teaching-trust admitted-care age
+  profile and the DID imaging age bands **(source: HES APC provider table,
+  DID release)**; the ED and outpatient profiles are **assumptions**
+  shaped from those.
 - Some patients die during the window (in hospital or notified later), so
   dates of death exist and some are recorded after activity that should have
   stopped.
@@ -178,12 +179,13 @@ everything in the inpatient domain is derived from it.
 | `discharge_ready_date` | HES `DISREADYDATE`, populated for a minority of long-stay patients. On A03 only. |
 | `prior_mrn` | on A40 only: the MRN being merged away |
 
-About 9 events per ordinary admission and 3 per day case. Volume: around
-250,000 spells a year, of which 90,000 non-elective (46,000 via the ED and
-about 40,000 by other emergency routes, the split the provider CSV shows for
-Nottingham and Oxford **(source)**; the rest **assumption** scaled from the
-imaging volume), so roughly 1.6 million events a year and 4.8 million over
-three years.
+About 9 events per ordinary admission and 3 per day case. Volume: 250,000
+spells a year excluding maternity, of which 95,000 emergency (46,000 via the
+ED and 49,000 by other routes), 140,000 waiting list or booked and 15,000
+planned; 90,000 are day cases and there are about 310,000 consultant
+episodes **(source: HES APC provider table 2025/26, Nottingham and Oxford;
+A&E provider CSV for the ED split)**. That is roughly 1.7 million events a
+year and 5 million over three years.
 
 ### 4.2 `ed_attendances` — ED system export
 
@@ -239,7 +241,12 @@ routine, 2 urgent, 3 two-week wait), `referral_source` (`REFSOURC`: 03 GP,
 admission, etc.), `booked_datetime`, `cancelled_datetime`,
 `dna_date` (`DNADATE`), `staff_type` (`STAFFTYP`).
 
-Volume around 1.2 million appointments a year. **Assumption.**
+Volume: 1.5 million attended appointments a year plus 105,000 DNAs,
+175,000 patient cancellations and 300,000 hospital cancellations, so about
+2.1 million appointment rows a year; 34% of attendances are first
+attendances, 19% are by telephone or video, half of first attendances are
+GP referrals, and the median wait from GP referral to first attendance is
+17 days **(source: HES OP provider table 2025/26, Nottingham and Oxford)**.
 
 ### 4.4 `pas_referrals` — the RTT skeleton
 
@@ -494,8 +501,10 @@ Annual volumes the generator targets:
 | UTC / Type 3 attendances | 100,000 | **(source: provider CSV, same trusts)** |
 | Emergency admissions via ED | 46,000 | 28% of Type 1 **(source: national series and provider CSV)** |
 | Other emergency admissions | 40,000 | **(source: provider CSV, Nottingham and Oxford)** |
-| Spells (all) | 250,000, of which day cases 110,000, non-elective 90,000, elective inpatient 50,000 | non-elective sourced as above; the rest **assumption** |
-| Outpatient appointments | 1,200,000 | **assumption** |
+| Spells, excluding maternity | 250,000: emergency 95,000, waiting list and booked 140,000, planned 15,000; day cases 90,000 | **(source: HES APC provider table, Nottingham and Oxford)** |
+| Consultant episodes | 310,000 | **(source: same, 1.25 per spell)** |
+| Bed days | 560,000 | **(source: same)** |
+| Outpatient attendances | 1,500,000, plus 105,000 DNAs, 175,000 patient and 300,000 hospital cancellations | **(source: HES OP provider table, Nottingham and Oxford)** |
 | CT examinations | 125,000 | **(source: DID Table 11, rank 8–10)** |
 | MRI examinations | 68,000 | **(source: DID Table 11, rank 8–10)** |
 | Endoscopy procedures | 28,000 | **assumption** |
@@ -512,7 +521,8 @@ Patterns the generator builds in, with sources where they exist:
 - **Admissions**: non-elective peaks in winter with an early-January spike;
   elective dips over Christmas and in August; discharges dip at weekends so
   occupancy peaks on Monday (**assumption**, consistent with the ED
-  performance pattern).
+  performance pattern). Median elective wait 28 days; median length of
+  stay 1 day with a long tail **(source: HES APC)**.
 - **Imaging**: April lowest, January highest, December a dip; January has
   the longest request-to-test waits **(source)**. MRI reporting backlog
   grows over each summer (**assumption** for the shape; the annual median
@@ -528,12 +538,13 @@ Patterns the generator builds in, with sources where they exist:
 
 - **Primary format: Parquet**, one file per table, committed under
   `synthetic-hospital-datastructure/data/v1/full/`. The ADT event table
-  (about 4.5 million rows) and outpatient appointments (about 3.6 million)
+  (about 5 million rows) and outpatient appointments (about 6 million)
   are partitioned by financial year so that no single file approaches
-  GitHub's 100 MB file limit. Expected total around 300–400 MB.
+  GitHub's 100 MB file limit. Expected total around 400–500 MB, about 14
+  million rows in all.
 - **A `sample/` partition alongside `full/`**: a 5% sample of *patients*
-  (about 37,000) with all of their activity across every table, so joins
-  hold. About 20 MB. This is what the browser console loads by default;
+  (about 40,000) with all of their activity across every table, so joins
+  hold. About 25 MB. This is what the browser console loads by default;
   `full/` is a toggle. Both carry the same version and seed.
 - **Secondary format: a CSV zip** of the same tables, committed alongside.
   It exists only for people whose tools cannot read Parquet, and for opening
@@ -559,7 +570,7 @@ Patterns the generator builds in, with sources where they exist:
 ## 9. The generator
 
 - **Language: R**, as an R package under `synthetic-hospital-datastructure/generator/`.
-- **Entry point:** `generate(seed = 20230401, n_patients = 750000, start = "2023-04-01", end = "2026-03-31", volumes = default_volumes(), mess = default_mess_rates(), out_dir)`.
+- **Entry point:** `generate(seed = 20230401, n_patients = 800000, start = "2023-04-01", end = "2026-03-31", volumes = default_volumes(), mess = default_mess_rates(), out_dir)`.
 - **Pipeline:** population → referrals and outpatient → ED attendances →
   admissions and ward moves (clean event log) → imaging → endoscopy → inject
   mess (recording every injection in `mess_log`) → write layer 1 Parquet →
@@ -588,11 +599,11 @@ Patterns the generator builds in, with sources where they exist:
 
 ## 11. Open points for review
 
-- The patient count (750,000) follows from the top-10 volumes: roughly
-  11 million rows across tables, 300–400 MB of Parquet. Agreed.
-- Provider-level files would replace the remaining volume assumptions: the
-  HES provider-level APC and OP activity tables, and the DM01 provider
-  monthly file for endoscopy (the A&E and RTT provider files are in hand). DID Table 9 (medians by modality and source) and
+- The patient count (800,000) follows from the top-10 volumes: roughly
+  14 million rows across tables, 400–500 MB of Parquet. The principle was
+  agreed at 750,000; the HES outpatient volumes pushed it up slightly.
+- The only provider-level volume still assumed is endoscopy; the DM01
+  provider monthly file would set it. DID Table 9 (medians by modality and source) and
   Table 13 (quarterly turnaround by provider) would sharpen the imaging
   calibration.
 - Whether ultrasound and plain X-ray should join CT and MRI in `ris_imaging`
