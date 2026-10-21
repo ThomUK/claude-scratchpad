@@ -20,6 +20,7 @@ Open Government Licence unless the document says otherwise.
 | `ECDS-v4.0-Data-Item-Mapping-Specification-v4.0.2.xlsx` | ECDS data item mapping | cross-check of field names |
 | `Monthly-AE-Provider-September-2026.csv` | A&E attendances and emergency admissions by provider, September 2026 | ED scale for a single-ED top-10 trust; admission routes |
 | `Monthly-AE-Time-Series-September-2026.xls` | National A&E attendances and emergency admissions, monthly | ED seasonality and admitted proportion |
+| `RTT-Waiting-Times-by-Provider-Aug26.xls` | RTT incomplete, admitted and non-admitted pathways by provider and treatment function, August 2026 | waiting list size, profile and specialty mix for a top-10 trust |
 | `RTT-Overview-Timeseries-Aug26.xlsx` | National RTT time series | waiting list profile over the window |
 
 Not kept: `ECDS_Refset_MAX_Specification_v4.0.3.xlsx` (10 MB SNOMED refset

@@ -253,10 +253,14 @@ not to treat, 35 patient declined, 36 died, 90/91/92 non-RTT). Enough to
 derive incomplete-pathway snapshots with the national weeks-waiting profile,
 not a full RTT implementation.
 
-The trust's incomplete list runs at about 75,000 pathways (**assumption**:
-roughly 1.6% of the national list of 4.3–4.6 million **(source: RTT
-overview)**), with median wait drifting from 14–15 weeks to 11 and the
-over-52-week share from 5% to 1.3% across the window, as nationally.
+The trust's incomplete list runs at about 88,000 pathways with about
+15,500 clock starts and 15,000 clock stops a month (3,000 admitted, 12,000
+non-admitted) **(source: RTT provider file, Nottingham and Oxford, August
+2026)**, with median wait drifting from 14–15 weeks to 11 and the
+over-52-week share from 5% to 1.5% across the window, as nationally
+**(source: RTT overview)**. The specialty mix of the list follows the
+pooled teaching-trust profile in `CALIBRATION.md` section 3.1, including
+the "other medical" and "other surgical" catch-alls.
 
 ### 4.5 `ris_imaging` — CT and MRI from the Radiology Information System
 
@@ -495,7 +499,8 @@ Annual volumes the generator targets:
 | CT examinations | 125,000 | **(source: DID Table 11, rank 8–10)** |
 | MRI examinations | 68,000 | **(source: DID Table 11, rank 8–10)** |
 | Endoscopy procedures | 28,000 | **assumption** |
-| RTT incomplete pathways (snapshot) | 75,000 | **assumption**, 1.6% of national |
+| RTT incomplete pathways (snapshot) | 88,000 | **(source: RTT provider file, Nottingham and Oxford)** |
+| RTT completed pathways | 180,000 | **(source: same, 15,000 a month)** |
 
 Patterns the generator builds in, with sources where they exist:
 
@@ -586,9 +591,8 @@ Patterns the generator builds in, with sources where they exist:
 - The patient count (750,000) follows from the top-10 volumes: roughly
   11 million rows across tables, 300–400 MB of Parquet. Agreed.
 - Provider-level files would replace the remaining volume assumptions: the
-  RTT provider-level incomplete file, the HES provider-level APC and OP
-  activity tables, and the DM01 provider monthly file for endoscopy (the
-  A&E provider CSV is now in hand). DID Table 9 (medians by modality and source) and
+  HES provider-level APC and OP activity tables, and the DM01 provider
+  monthly file for endoscopy (the A&E and RTT provider files are in hand). DID Table 9 (medians by modality and source) and
   Table 13 (quarterly turnaround by provider) would sharpen the imaging
   calibration.
 - Whether ultrasound and plain X-ray should join CT and MRI in `ris_imaging`
