@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Synthetic Hospital Data</title>
+  <style>
+    :root {
+      --bg: #0f1419; --panel: #1a212b; --panel-border: #2a3441;
+      --text: #e6edf3; --muted: #9aa7b4; --accent: #4cc2ff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+           background: var(--bg); color: var(--text); line-height: 1.5; }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 48px 20px 64px; }
+    h1 { margin: 0 0 8px; font-size: 2rem; }
+    h2 { margin: 36px 0 10px; font-size: 1.3rem; }
+    .repo-link { margin: 6px 0 0; font-size: 0.85rem; }
+    .repo-link a { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); text-decoration: none; }
+    .repo-link a:hover { color: var(--accent); }
+    .lede { color: var(--muted); max-width: 70ch; margin: 18px 0 28px; }
+    a { color: var(--accent); }
+    .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin: 0 0 8px; }
+    .fact { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px; padding: 14px 16px; }
+    .fact b { display: block; font-size: 1.35rem; }
+    .fact span { color: var(--muted); font-size: 0.85rem; }
+    .panel { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px; padding: 18px 20px; margin: 12px 0; }
+    .panel h3 { margin: 0 0 8px; font-size: 1.05rem; }
+    .panel p { margin: 0 0 10px; color: var(--muted); font-size: 0.95rem; }
+    ul { margin: 0; padding-left: 20px; color: var(--muted); }
+    li { margin: 4px 0; }
+    pre { background: #0b0f14; border: 1px solid var(--panel-border); border-radius: 8px; padding: 12px 14px;
+          overflow-x: auto; font-size: 0.85rem; margin: 10px 0 0; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+    .soon { font-size: 0.75rem; font-weight: 600; color: var(--accent); border: 1px solid var(--panel-border);
+            border-radius: 999px; padding: 2px 9px; margin-left: 8px; vertical-align: middle; }
+    footer { margin-top: 40px; color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Synthetic Hospital Data</h1>
+    <p class="repo-link">
+      <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/synthetic-hospital-datastructure" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.76-3.65 3.95.29.25.54.74.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        View source on GitHub
+      </a>
+    </p>
+    <p class="lede">
+      A seeded, reproducible synthetic dataset for <strong>Fake NHS Trust</strong>, a fictional
+      large acute trust with two hospitals, covering 1 April 2023 to 31 March 2026. It is built
+      to look like the extracts an analyst actually receives: a patient administration system
+      with ADT events, an emergency department tracking board, outpatient appointments and
+      referral-to-treatment pathways, CT, MRI and ultrasound in a radiology system, and an
+      endoscopy vendor export. The data is deliberately messy, every imperfection is catalogued
+      and recorded in an answers table, and a derived layer rebuilds spells, episodes and
+      national-return aggregates from the raw events so the difference between
+      <strong>event data</strong> and <strong>aggregated data</strong> can be explored directly.
+      No row describes a real person; every NHS number carries the <code>fake_</code> prefix.
+    </p>
+
+    <div class="facts">
+      <div class="fact"><b>800,000</b><span>patients</span></div>
+      <div class="fact"><b>38 million</b><span>rows across 9 source tables</span></div>
+      <div class="fact"><b>3 years</b><span>April 2023 to March 2026</span></div>
+      <div class="fact"><b>2.4 million</b><span>catalogued imperfections</span></div>
+      <div class="fact"><b>68</b><span>kinds of mess</span></div>
+    </div>
+
+    <h2>Get the data</h2>
+    <div class="panel">
+      <h3>5% sample (in this site, 129 MB)</h3>
+      <p>About 40,000 patients with all of their rows in every table, so joins hold. Parquet, with a CSV zip for tools that cannot read Parquet.</p>
+      <ul>
+        <li>Base URL: <a href="data/v1/sample/">data/v1/sample/</a></li>
+        <li><a href="data/v1/manifest.json">manifest.json</a>: every file with row counts, sizes and SHA-256; the generator seed and parameters</li>
+        <li><a href="data/v1/sample/sample-csv.zip">sample-csv.zip</a> (67 MB)</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Full set (GitHub release, 1.1 GB)</h3>
+      <p>Every row, one Parquet asset per file. Asset names are the paths under <code>full/</code> with <code>/</code> replaced by <code>__</code>.</p>
+      <ul>
+        <li><a href="https://github.com/ThomUK/claude-scratchpad/releases/tag/synthetic-hospital-datastructure-v1" target="_blank" rel="noopener">Release synthetic-hospital-datastructure-v1</a></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Query it from Python or R</h3>
+      <p>DuckDB reads the Parquet straight from the URL.</p>
+<pre><code>import duckdb
+base = "https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/v1/sample/"
+duckdb.sql(f"""
+  SELECT tretspef_first, count(*) AS spells, median(speldur) AS median_los
+  FROM read_parquet('{base}derived/spells.parquet')
+  WHERE emergency GROUP BY 1 ORDER BY 2 DESC
+""").show()</code></pre>
+<pre><code>library(duckdb); con &lt;- dbConnect(duckdb())
+base &lt;- "https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/v1/sample/"
+dbGetQuery(con, sprintf("SELECT count(*) FROM read_parquet('%sderived/spells.parquet')", base))</code></pre>
+    </div>
+    <div class="panel">
+      <h3>SQL console in the browser <span class="soon">coming next</span></h3>
+      <p>A DuckDB-WASM console pre-loaded with the sample, a schema browser, and an explainer walking from an ADT event to a spell to a midnight census with runnable queries.</p>
+    </div>
+
+    <h2>Read about it</h2>
+    <div class="panel">
+      <ul>
+        <li><a href="https://github.com/ThomUK/claude-scratchpad/blob/main/synthetic-hospital-datastructure/docs/DESIGN.md" target="_blank" rel="noopener">Design</a>: sites, specialties, every table in the three layers, volumes, hosting and the generator pipeline</li>
+        <li><a href="https://github.com/ThomUK/claude-scratchpad/blob/main/synthetic-hospital-datastructure/docs/CALIBRATION.md" target="_blank" rel="noopener">Calibration</a>: every volume and distribution traced to its public source (ECDS, HES, DID, DM01, RTT, GIRFT)</li>
+        <li><a href="https://github.com/ThomUK/claude-scratchpad/blob/main/synthetic-hospital-datastructure/docs/MESS-CATALOGUE.md" target="_blank" rel="noopener">Mess catalogue</a>: the coded list of imperfections, what each one breaks and which measure it affects</li>
+        <li><a href="https://github.com/ThomUK/claude-scratchpad/blob/main/synthetic-hospital-datastructure/data/README.md" target="_blank" rel="noopener">Data README</a>: layout, URLs, read examples, versioning</li>
+        <li><a href="https://github.com/ThomUK/claude-scratchpad/blob/main/synthetic-hospital-datastructure/generator/README.md" target="_blank" rel="noopener">Generator</a>: the R package, the DuckDB build and the release workflow</li>
+      </ul>
+    </div>
+
+    <footer>
+      Source on <a href="https://github.com/ThomUK/claude-scratchpad" target="_blank" rel="noopener">GitHub</a>.
+      Generated with seed 20230401; <code>data/v1/</code> is immutable once published.
+    </footer>
+  </div>
+</body>
+</html>

@@ -44,7 +44,7 @@ jobs:
 
       - name: Generate layer 1 (R, seeded)
         run: |
-          R CMD INSTALL --no-docs $PROJ/generator/fakehosp
+          sudo R CMD INSTALL --no-docs $PROJ/generator/fakehosp
           mkdir -p "$RUNNER_TEMP/run"
           Rscript $PROJ/generator/run.R "$RUNNER_TEMP/run"
 
