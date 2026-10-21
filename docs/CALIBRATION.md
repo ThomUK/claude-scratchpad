@@ -27,9 +27,9 @@ Providers ranked by CT plus MRI examinations. Source: `DID-Table-11-2023-24-Moda
 137 NHS trusts submitted CT activity. The top-10 pooled mean is CT 134,560
 and MRI 72,800; the 10th-ranked trust does CT 118,045 and MRI 59,670.
 
-**Generator target (a trust sitting around rank 8 to 10):** CT 125,000 and
-MRI 68,000 a year. X-ray and ultrasound, if added later: 320,000 and
-130,000.
+**Generator target (a trust sitting around rank 8 to 10):** CT 125,000,
+MRI 68,000 and non-obstetric ultrasound 130,000 a year. Plain X-ray is out
+of scope.
 
 ### Patient source setting, % of examinations
 
@@ -42,8 +42,8 @@ MRI 68,000 a year. X-ray and ultrasound, if added later: 320,000 and
 | X-ray, England | 34.4 | 0.4 | 16.1 | 21.4 | 25.9 | 0.7 | 1.2 |
 | Ultrasound, England | 2.5 | 0.7 | 11.4 | 51.8 | 30.2 | 1.2 | 2.3 |
 
-The generator uses the top-10 pooled splits for CT and MRI. The difference
-between the two modalities is the single strongest reason the CT and MRI
+The generator uses the top-10 pooled splits for CT, MRI and ultrasound. The difference
+between CT and MRI is the single strongest reason those two
 teams behave differently in the data: a third of CT comes through the
 emergency department, almost no MRI does.
 
@@ -326,6 +326,7 @@ Weeks-waiting profile, CT, pooled RX1/RTH/RR8/RYJ (% of list): 0<1: 21.1 | 1<2: 
 | Endoscopy waiting list at month end | 2,700, with 35% over 6 weeks and 15% over 13 weeks |
 | MRI waiting list at month end | 5,000, with 20% over 6 weeks |
 | CT waiting list at month end | 3,500, with 10% over 6 weeks |
+| Non-obstetric ultrasound waiting list at month end | 5,500, with 20% over 6 weeks (Nottingham 6,439 at 52%, Oxford 5,380 at 8%) |
 | Weeks-waiting profiles | the pooled profiles above, as band weights |
 
 ## 5. Diagnostic Imaging Dataset: fields and derivations
@@ -427,7 +428,7 @@ assumptions.
 
 Source: `DID-Table-9-2023-24-Request-to-test-by-source.xlsx`. Share of
 examinations by days from request to test. These are the band weights the
-generator uses per modality and source; they explain why the CT and MRI
+generator uses per modality and source; they explain why the CT, MRI and ultrasound
 teams' queues look nothing alike.
 
 | Modality | Source setting | 0-7 days % | 8-31 | 32-62 | >62 | Exams |
@@ -444,6 +445,12 @@ teams' queues look nothing alike.
 | MRI | GP Direct Access | 14.3 | 45.6 | 29.6 | 10.5 | 695,515 |
 | MRI | Outpatient | 19.6 | 37.4 | 25.1 | 17.9 | 2,772,130 |
 | MRI | Other | 27.7 | 33.4 | 26.7 | 12.2 | 216,645 |
+| US | Accident and Emergency Department | 85.7 | 5.7 | 3.2 | 5.4 | 267,930 |
+| US | Admitted Patient Care - Day case | 67.7 | 17.2 | 6.9 | 8.2 | 71,275 |
+| US | Admitted Patient Care - Inpatient | 94.2 | 3.8 | 1.4 | 0.6 | 1,222,785 |
+| US | GP Direct Access | 14.7 | 37.3 | 33.9 | 14.1 | 3,270,575 |
+| US | Outpatient | 41.9 | 25.6 | 16.0 | 16.5 | 5,578,890 |
+| US | Other | 41.2 | 26.3 | 19.2 | 13.4 | 369,220 |
 
 ### 5.7 Report turnaround by provider (DID Table 13, 2023/24 Q4)
 

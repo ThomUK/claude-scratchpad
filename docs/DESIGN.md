@@ -29,7 +29,7 @@ generator follows.
 
 ## 2. The fictional trust
 
-**Thornfield Vale NHS Foundation Trust**, organisation code `RZ9` (chosen to
+**Fake NHS Trust**, organisation code `RZ9` (chosen to
 look like an ODS code without being one). A large teaching trust: around
 1,500 beds, activity at the scale of the 8th to 10th largest imaging
 providers in England **(source: DID Table 11)**.
@@ -38,8 +38,8 @@ Two sites:
 
 | Site code | Name | Beds | Role |
 | --- | --- | --- | --- |
-| `RZ901` | Thornfield General Hospital | ~1,100 | Main site. The only emergency department (Type 1) plus a co-located UTC stream and SDEC. All non-elective admissions, every medical specialty, trauma, emergency and complex surgery, critical care, children's services, and a large elective programme of its own. Two CT scanners dedicated to the ED and inpatients ("hot") plus two elective CT scanners; three MRI scanners. |
-| `RZ902` | Wyvern Park Hospital | ~400 | Predominantly elective: day surgery, elective orthopaedics, ophthalmology, ENT, urology, most routine outpatients, a large share of routine MRI and endoscopy, and a community diagnostic centre (CDC) wing. One CT and two MRI scanners. A small number of non-elective admissions arise from elective patients deteriorating on site; anything serious is transferred to RZ901. |
+| `RZ901` | Hospital A | ~1,100 | Main site. The only emergency department (Type 1) plus a co-located UTC stream and SDEC. All non-elective admissions, every medical specialty, trauma, emergency and complex surgery, critical care, children's services, and a large elective programme of its own. Two CT scanners dedicated to the ED and inpatients ("hot") plus two elective CT scanners; three MRI scanners; six ultrasound rooms. |
+| `RZ902` | Hospital B | ~400 | Predominantly elective: day surgery, elective orthopaedics, ophthalmology, ENT, urology, most routine outpatients, a large share of routine MRI and endoscopy, and a community diagnostic centre (CDC) wing. One CT, two MRI scanners and four ultrasound rooms in the CDC. A small number of non-elective admissions arise from elective patients deteriorating on site; anything serious is transferred to RZ901. |
 
 One ED at a top-10 trust is unusual (most of the real top ten run two or
 more) and is a deliberate simplification so that ED flow has one shape.
@@ -51,7 +51,7 @@ Treatment function codes (TFC) from the NHS Data Dictionary, reusing the
 "DC" day case, "OP" outpatients. Some specialties are split across sites,
 some are not.
 
-| TFC | Specialty | RZ901 Thornfield General | RZ902 Wyvern Park |
+| TFC | Specialty | RZ901 Hospital A | RZ902 Hospital B |
 | --- | --- | --- | --- |
 | 180 | Emergency Medicine | ED, UTC, SDEC | – |
 | 300 | General Internal Medicine | AMU, IP, OP | – |
@@ -269,12 +269,14 @@ over-52-week share from 5% to 1.5% across the window, as nationally
 pooled teaching-trust profile in `CALIBRATION.md` section 3.1, including
 the "other medical" and "other surgical" catch-alls.
 
-### 4.5 `ris_imaging` — CT and MRI from the Radiology Information System
+### 4.5 `ris_imaging` — CT, MRI and ultrasound from the Radiology Information System
 
-One structure, two modalities, two very different teams (see mess
-catalogue M-CT-* and M-MR-*). One row per examination request, which is
-richer than the DID submission (the DID is a date-only, performed-exams-only
-extract of this; see the aggregate layer).
+One structure, three modalities, three very different teams (see mess
+catalogue M-CT-*, M-MR-* and M-US-*). Plain X-ray is deliberately left out:
+it would add 320,000 rows a year and teach nothing the other three do not.
+One row per examination request, which is richer than the DID submission
+(the DID is a date-only, performed-exams-only extract of this; see the
+aggregate layer).
 
 | Column | Meaning | DID item it feeds **(source: DID Annex 2)** |
 | --- | --- | --- |
@@ -282,8 +284,8 @@ extract of this; see the aggregate layer).
 | `ris_patient_id` | RIS identifier | – |
 | `nhs_number`, `nhs_number_status` | as the RIS holds them | NHS Number (M*), NHS Number Status (R) |
 | `mrn` | as the RIS holds it, from the PAS feed | – |
-| `modality` | `CT` or `MR` | derived from the code via Annex 1 |
-| `nicip_code` | NICIP code from the Annex 1 lookup **(source)**, e.g. `CHEAC` CT head, `CABPEC` CT abdomen and pelvis with contrast, `CCHEC` CT chest with contrast, `CURIT` CT urinary tract, `CAICN` CT angiogram intracranial, `CVCLD` CT colonography, `MMRCP` MRCP, `MPROSC` MRI prostate with contrast, `MCARD` MRI heart, `MLIVEC` MRI liver with contrast, `MSHLL` MRI shoulder left, `MHIPB` MRI hips | Imaging Code NICIP (M) |
+| `modality` | `CT`, `MR` or `US` | derived from the code via Annex 1 |
+| `nicip_code` | NICIP code from the Annex 1 lookup **(source)**, e.g. `CHEAC` CT head, `CABPEC` CT abdomen and pelvis with contrast, `CCHEC` CT chest with contrast, `CURIT` CT urinary tract, `CAICN` CT angiogram intracranial, `CVCLD` CT colonography, `MMRCP` MRCP, `MPROSC` MRI prostate with contrast, `MCARD` MRI heart, `MLIVEC` MRI liver with contrast, `MSHLL` MRI shoulder left, `MHIPB` MRI hips, `UABDO` US abdomen, `UPETV` US pelvis transvaginal, `UURTR` US urinary tract | Imaging Code NICIP (M) |
 | `snomed_code` | the mapped SNOMED CT code, sometimes blank, sometimes the only code present | Imaging Code SNOMED CT (M, either/or) |
 | `exam_description` | free text as the booking clerk typed it | – |
 | `body_area` | local reference value, inconsistently filled | – (DID carries body site inside the code) |
@@ -292,7 +294,7 @@ extract of this; see the aggregate layer).
 | `referrer_code`, `referring_organisation` | GMC-style or practice code; ODS code | Referrer (R), Referring Organisation (R) |
 | `request_datetime` | when the clinician made the request | Date of Test Request (R) |
 | `request_received_datetime` | when the RIS received it (order comms makes these equal; paper and phone requests do not) | Date Test Request Received (R) |
-| `vetted_datetime` | radiologist or radiographer vetting, nullable | – |
+| `vetted_datetime` | radiologist, radiographer or (for ultrasound) clinical support worker vetting, nullable | – |
 | `booked_datetime` | appointment time given | – |
 | `scan_start_datetime`, `scan_end_datetime` | actual scanner time | Date of Test (M), date part only |
 | `slot_minutes` | the slot the booking system allocated | – |
@@ -302,7 +304,7 @@ extract of this; see the aggregate layer).
 | `status` | requested, vetted, booked, cancelled, DNA, performed, reported, verified | – (the DID has no cancellation or DNA items) |
 | `cancel_reason` | nullable | – |
 | `site_code` | scanner site | Provider Site Code (M) |
-| `scanner_id` | `CT1`–`CT4`, `MR1`–`MR3` at RZ901; `CT5`, `MR4`, `MR5` at RZ902 | – |
+| `scanner_id` | `CT1`–`CT4`, `MR1`–`MR3`, `US1`–`US6` at RZ901; `CT5`, `MR4`, `MR5`, `US7`–`US10` at RZ902 | – |
 
 **Exam catalogue.** The GIRFT radiology report **(source)** gives no slot
 lengths or per-scanner throughput ("there is no clear correlation between
@@ -337,39 +339,61 @@ Inpatient and ED exams run a few minutes longer than outpatient ones.
 | MR | Cardiac | `MCARD` | 45–60 | 60 | 4% | OP cardiology |
 | MR | Breast | `MBRSB` | 30–45 | 45 | 2% | OP |
 | MR | Liver / abdomen with contrast | `MLIVEC`, `MABDOC` | 30–40 | 45 | 5% | OP, inpatient |
+| US | Abdomen | `UABDO` | 15–20 | 20 | 18% | GP, OP, inpatient |
+| US | Abdomen and pelvis | `UABPE` | 20–25 | 30 | 8% | GP, OP |
+| US | Pelvis, transabdominal and transvaginal | `UPELV`, `UPETV` | 15–25 | 20 | 14% | GP, OP gynaecology |
+| US | Urinary tract / renal | `UURTR` | 15–20 | 20 | 10% | GP, OP, inpatient |
+| US | Thyroid and neck | `UTHPY`, `UNECK` | 15–20 | 20 | 6% | GP, OP, 2WW |
+| US | Testes / scrotal | `UTEST` | 10–15 | 15 | 3% | GP, OP, ED |
+| US | Musculoskeletal (shoulder, soft tissue lump) | `USHLL`, `USLUM` | 15–20 | 20 | 10% | GP, OP |
+| US | Lower limb veins (DVT) | placeholder | 15–20 | 20 | 9% | ED, inpatient, SDEC |
+| US | Liver | `ULIVE` | 15–20 | 20 | 5% | OP, GP |
+| US | Breast and axilla (symptomatic) | `UMAAB` | 20–30 | 30 | 7% | OP breast clinic |
+| US | Paediatric hips | `UHIPB` | 10–15 | 15 | 3% | OP paediatrics |
+| US | Guided biopsy / drainage | `UABDOB` | 30–45 | 45 | 4% | inpatient, OP |
+| US | Arterial doppler, carotid, other vascular | `ULAMB` | 20–30 | 30 | 3% | OP, inpatient; excluded from DM01 |
 
-Codes marked * were not pulled from the lookup in this pass and are placeholders
-to confirm from `DID-Annex-1-...xlsx` when the catalogue is built. The DID
+Codes marked * or "placeholder" were not pulled from the lookup in this
+pass and are to be confirmed from `DID-Annex-1-...xlsx` when the catalogue
+is built. Obstetric ultrasound is excluded altogether (DM01 excludes it and
+maternity is out of scope); vascular ultrasound is in the RIS and the DID
+but excluded from the DM01 non-obstetric ultrasound count **(source)**. The DID
 release reports Brain MRI as 21.6% of all MRI and chest/abdomen CT as 10.5%
 of all CT nationally **(source)**, which the shares above respect.
 
 #### 4.5.1 Calibration of the imaging queue **(source: DID annual release, GIRFT)**
 
 The generator reproduces these national 2023/24 figures at trust level, with
-the CT and MRI teams' different behaviours layered on top:
+the three teams' different behaviours layered on top:
 
-| Measure | CT | MRI |
-| --- | --- | --- |
-| Median request to test, all sources | 1 day | 20 days |
-| Request to test: share done same day (GIRFT, 2017/18) | ≈43% | ≈8% |
-| Request to test: share done by day 14 | ≈72% | ≈38% |
-| Request to test: share done by day 42 | ≈92% | ≈84% |
-| Median test to report, all sources | 0 days | 4 days |
-| Reported same day, inpatient and A&E | 91% | 74% |
-| Reported same day, outpatient and GP | 18% | 12% |
-| Reported by end of next day, outpatient and GP | 29% | 24% |
-| Source mix (top-10 trusts): A&E / inpatient / outpatient / GP | 35 / 22 / 38 / 5 | 4 / 14 / 71 / 10 |
-| Request to test within 7 days: A&E / inpatient / outpatient / GP (Table 9) | 99.7 / 98 / 26 / 27 | 86 / 93 / 20 / 14 |
-| Request to test over 62 days: outpatient / GP (Table 9) | 18.5 / 5.2 | 17.9 / 10.5 |
-| Outpatient and GP exams reported within 7 days (Table 13, comparators) | 45–63% | 48–63% |
-| DM01 waiting list at month end, share over 6 weeks | 3,500, 10% | 5,000, 20% |
+| Measure | CT | MRI | Ultrasound |
+| --- | --- | --- | --- |
+| Median request to test, all sources | 1 day | 20 days | 15 days |
+| Request to test: share done same day (GIRFT, 2017/18) | ≈43% | ≈8% | ≈18% |
+| Request to test: share done by day 14 | ≈72% | ≈38% | ≈46% |
+| Request to test: share done by day 42 | ≈92% | ≈84% | ≈87% |
+| Median test to report, all sources | 0 days | 4 days | 0 days |
+| Reported same day, inpatient and A&E | 91% | 74% | 97% |
+| Reported same day, outpatient and GP | 18% | 12% | 94% |
+| Reported by end of next day, outpatient and GP | 29% | 24% | 96% |
+| Source mix (top-10 trusts): A&E / inpatient / outpatient / GP | 35 / 22 / 38 / 5 | 4 / 14 / 71 / 10 | 3 / 14 / 55 / 27 |
+| Request to test within 7 days: A&E / inpatient / outpatient / GP (Table 9) | 99.7 / 98 / 26 / 27 | 86 / 93 / 20 / 14 | 86 / 94 / 42 / 15 |
+| Request to test over 62 days: outpatient / GP (Table 9) | 18.5 / 5.2 | 17.9 / 10.5 | 16.5 / 14.1 |
+| Outpatient and GP exams reported within 7 days (Table 13, comparators) | 45–63% | 48–63% | ≈95% |
+| DM01 waiting list at month end, share over 6 weeks | 3,500, 10% | 5,000, 20% | 5,500, 20% |
 
-Pathway: request → vetting (MRI always; CT only routine) → booking → scan →
-report → verification. January has longer request-to-test waits for all
+Ultrasound is the third personality: sonographers report their own scans
+as they go, so test-to-report is near zero everywhere, but a quarter of
+requests are GP direct access and those queue for weeks.
+
+Pathway: request → vetting (MRI always; CT only routine; ultrasound by a
+clinical support worker against a protocol) → booking → scan → report →
+verification (ultrasound reports are verified by the sonographer at the
+time, so `reported_datetime` and `verified_datetime` coincide). January has longer request-to-test waits for all
 modalities **(source)**, and the DID counts an exam on its test date.
 
-Volume: **125,000 CT and 68,000 MRI examinations a year (source: top-10
-scale from DID Table 11)**, with the national monthly shape (April lowest,
+Volume: **125,000 CT, 68,000 MRI and 130,000 ultrasound examinations a
+year (source: top-10 scale from DID Table 11)**, with the national monthly shape (April lowest,
 January highest, December a dip; range about ±8%).
 
 ### 4.6 `endo_procedures` — the endoscopy vendor's export
@@ -400,7 +424,7 @@ field names are the vendor's style, not the NED's.
 | `Completion` | Y/N (caecal intubation for colonoscopy) |
 | `Comfort` | 1–5 modified Gloucester comfort score |
 | `Outcome` | normal, abnormal with biopsy, polypectomy, abandoned, DNA, cancelled on the day |
-| `Site` | free text: `TGH`, `Thornfield`, `WP`, `Wyvern Park` |
+| `Site` | free text: `HA`, `Hosp A`, `HB`, `Hospital B` |
 | `Report` | one-line synthetic free text, no clinical meaning |
 
 Procedure durations (**assumption**, from NHS patient guidance): OGD 10–15
@@ -471,7 +495,7 @@ without a dictionary.
 | `ed_attendances_clean` | one attendance (`AEKEY`-style key) | `ed_attendances` + MPI | resolving unmapped MRNs; linking admitted attendances to spells (HES AE carries `EPIKEY`, APC carries `AEKEY` **(source: HES data model)**) |
 | `op_appointments_clean` | one appointment (`ATTENDKEY`, `ATENTYPE` derived from `FIRSTATT` and `ATTENDED`) | `pas_outpatient_appointments` | collapsing rebooked slots |
 | `rtt_pathways` | one pathway | `pas_referrals` + appointments + spells | clock stops implied by activity |
-| `imaging_exams` | one performed exam | `ris_imaging` | de-duplicating CT cancellations; backfilled MRI report dates; request-to-test and test-to-report intervals |
+| `imaging_exams` | one performed exam | `ris_imaging` | de-duplicating CT cancellations; backfilled MRI report dates; ultrasound multi-row bookings; request-to-test and test-to-report intervals |
 | `endoscopy_procedures` | one performed procedure | `endo_procedures` + MPI + spells | parsing text dates; attaching `spell_id` or `referral_id` by date overlap; DM01 category (waiting list / planned / unscheduled) |
 
 ## 6. Layer 3: aggregates
@@ -514,6 +538,7 @@ Annual volumes the generator targets:
 | Outpatient attendances | 1,500,000, plus 105,000 DNAs, 175,000 patient and 300,000 hospital cancellations | **(source: HES OP provider table, Nottingham and Oxford)** |
 | CT examinations | 125,000 | **(source: DID Table 11, rank 8–10)** |
 | MRI examinations | 68,000 | **(source: DID Table 11, rank 8–10)** |
+| Ultrasound examinations, non-obstetric | 130,000 | **(source: DID Table 11, top-10 median)** |
 | Endoscopy procedures | 24,000 | **(source: DM01 provider file, Nottingham)** |
 | RTT incomplete pathways (snapshot) | 88,000 | **(source: RTT provider file, Nottingham and Oxford)** |
 | RTT completed pathways | 180,000 | **(source: same, 15,000 a month)** |
@@ -565,8 +590,8 @@ Patterns the generator builds in, with sources where they exist:
   external hosting is needed.
 - **R:** `duckdb` with the httpfs extension or `arrow::read_parquet()` on the
   Pages URL. A small R package in the sub-project (working name
-  `thornfield`) wraps this: `tf_tables()`, `tf_read("spells")`, and
-  `tf_connect(scale = "sample")` which returns a DuckDB connection with
+  `fakehosp`) wraps this: `fh_tables()`, `fh_read("spells")`, and
+  `fh_connect(scale = "sample")` which returns a DuckDB connection with
   every table attached as a view so joins run locally.
 - **Python:** `duckdb.sql("select ... from 'https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/v1/full/spells.parquet'")`
   or `pandas.read_parquet(url)`. Documented in the README; no package.
@@ -589,9 +614,9 @@ Patterns the generator builds in, with sources where they exist:
 - **Entry point:** `generate(seed = 20230401, n_patients = 800000, start = "2023-04-01", end = "2026-03-31", volumes = default_volumes(), mess = default_mess_rates(), out_dir)`.
 - **Pipeline:** population → referrals and outpatient → ED attendances →
   admissions and ward moves (clean event log) → imaging → endoscopy → inject
-  mess (recording every injection in `mess_log`) → write layer 1 Parquet →
-  run `sql/derive/*.sql` with DuckDB → run `sql/aggregate/*.sql` → draw the
-  patient sample → write manifest.
+  mess (recording every injection in `mess_log`) → write layer 1 CSV →
+  Python DuckDB converts to Parquet → run `sql/derive/*.sql` → run
+  `sql/aggregate/*.sql` → draw the patient sample → write manifest.
 - **Tests:** `testthat` unit tests on the engine (determinism for a fixed
   seed, volumes within tolerance, every spell has one A01, every injected
   mess row is in `mess_log`, derived layer reproduces the clean truth when
@@ -623,6 +648,4 @@ Patterns the generator builds in, with sources where they exist:
   endoscopy procedure-level fields. DID Table 9 (medians by modality and source) and
   Table 13 (quarterly turnaround by provider) would sharpen the imaging
   calibration.
-- Whether ultrasound and plain X-ray should join CT and MRI in `ris_imaging`
-  (same structure, cheap to add, 2.5× the imaging volume).
-- The fictional names (Thornfield Vale, Wyvern Park) and code `RZ9`.
+- The trust code `RZ9` and site codes `RZ901`/`RZ902`.
