@@ -88,6 +88,19 @@ backlog. Its booking is tidy but its timestamps are backfilled.
 | M-MR-06 | process | DNA rate twice as high at RZ902 on Saturdays (extended-hours lists) | structural | DNA by site and weekday | Access initiatives generate their own data patterns |
 | M-MR-07 | structure | Two exams in one slot: whole spine booked as three rows (cervical, thoracic, lumbar) sharing one `booked_datetime` and one scan start | 4% of MR | multiple rows, same patient, same scan start | Counting rows counts exam codes, not patients scanned or scanner hours used |
 
+## Radiology: both teams, DID-shaped (`ris_imaging` and `agg_did_extract`)
+
+Behaviours the DID technical report documents at real providers.
+
+| Code | Category | What is injected | Rate | How to detect | What it teaches |
+| --- | --- | --- | --- | --- | --- |
+| M-RIS-01 | completeness | `request_datetime` null; `request_received_datetime` present | 6% of exams (DID request-date completeness 94.0%) | null request date | The national median uses the received date as a fallback and excludes rows missing both; which rows fall out is not random |
+| M-RIS-02 | completeness | `verified_datetime` null on performed exams (report never issued through the RIS, e.g. outsourced report filed as a document) | 4% of exams | status performed, no report date | Turnaround medians are computed only over exams with a report date |
+| M-RIS-03 | coding | `patient_source_setting` defaulted to `07 Other` for a run of outpatient requests at RZ902 for seven months | up to 40% of RZ902 OP requests in months 13–19 | spike in 07 | A default looks like a category; source splits are only as good as the booking screen |
+| M-RIS-04 | identity | Same exam submitted twice with different accession numbers after a RIS archive rebuild | 0.5% in month 25 | same patient, code, test date | Accession numbers are unique within site and within the system that minted them, not forever |
+| M-RIS-05 | structure | Complex exam submitted as several records (CT chest/abdo/pelvis as three rows sharing an accession suffix) | 3% of CT staging | same accession stem, same minute | "One record per examination, with the most complex code" is a rule some systems cannot follow |
+| M-RIS-06 | identity | `nhs_number_status` 02 (untraced) with an NHS number present that differs from the PAS one by one digit | 1% | status 02 and mismatch against MPI | An untraced number is a claim, not a fact |
+
 ## Endoscopy vendor (`endo_procedures`)
 
 A procedure reporting system, not a flow system. Its mess is about shape and
