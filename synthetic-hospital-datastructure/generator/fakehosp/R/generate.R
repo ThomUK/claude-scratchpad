@@ -73,8 +73,11 @@ generate <- function(seed = 20230401L, n_patients = 800000L, start = "2023-04-01
     spells = adm$spells[, .(visit_number, mrn, admit, discharge, admission_method, patient_class, specialty_first = first_specialty, specialty_last = specialty_code,
                             site_code, los, died, day_case, endoscopy, n_episodes, origin, uec_activity_identifier, referral_id, open_at_end)],
     stays = adm$stays,
-    ed_admitted = ed$attendances[, .(uec_activity_identifier, admitted)]
+    ed_admitted = ed$attendances[, .(uec_activity_identifier, admitted)],
+    imaging_links = img[, .(accession_number, linked_id)],
+    endoscopy_links = endo[, .(ProcID, linked_id)]
   )
+  img[, linked_id := NULL]; endo[, linked_id := NULL]
   mess_log <- NULL
   rm(ed, op, adm, img, endo, d1, d2, cand, last, dod, moved); gc()
   if (!is.null(mess)) {

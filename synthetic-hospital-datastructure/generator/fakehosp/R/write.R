@@ -5,9 +5,9 @@
 #' @export
 write_layer1 <- function(gen, out_dir) {
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-  # fwrite formats POSIXct (UTC) as "YYYY-MM-DD HH:MM:SS" and Date as ISO without copying the table
-  fmt <- function(dt) dt
-  wr <- function(dt, f) fwrite(dt, f, na = "", dateTimeAs = "write.csv")
+  # fwrite writes POSIXct as ISO 8601 UTC ("2023-04-01T12:34:56Z") and Date as
+  # ISO natively, streaming without materialising string copies of the table
+  wr <- function(dt, f) fwrite(dt, f, na = "", dateTimeAs = "ISO")
   counts <- list()
   for (nm in names(gen$tables)) {
     f <- file.path(out_dir, paste0(nm, ".csv"))
@@ -19,6 +19,10 @@ write_layer1 <- function(gen, out_dir) {
     f <- file.path(out_dir, paste0("ref_", nm, ".csv"))
     wr(gen$reference[[nm]], f)
     counts[[paste0("ref_", nm)]] <- nrow(gen$reference[[nm]])
+  }
+  if (!is.null(gen$truth)) {
+    dir.create(file.path(out_dir, "truth"), showWarnings = FALSE)
+    for (nm in names(gen$truth)) if (!is.null(gen$truth[[nm]])) { wr(gen$truth[[nm]], file.path(out_dir, "truth", paste0(nm, ".csv"))); counts[[paste0("truth_", nm)]] <- nrow(gen$truth[[nm]]) }
   }
   manifest <- list(dataset = "Fake NHS Trust synthetic hospital data", layer = 1L, version = gen$meta$version,
                    seed = gen$meta$seed, n_patients = gen$meta$n_patients, start = gen$meta$start, end = gen$meta$end,
