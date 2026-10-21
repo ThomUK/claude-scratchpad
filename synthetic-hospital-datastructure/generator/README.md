@@ -99,8 +99,8 @@ clinic-code and source-setting bugs listed in `pending-changes.json`.
 ## Pending changes to the published data
 
 `../pending-changes.json` lists generator changes that are not yet in the
-published dataset; the project page and the table viewer show it as a
-banner. Add a line there with every change to the generator, and empty the
+published dataset; every page shows it through the one shared module
+`../banner.js`, so the notice cannot differ between pages. Add a line there with every change to the generator, and empty the
 list when the next version is built and published.
 
 ## Publishing

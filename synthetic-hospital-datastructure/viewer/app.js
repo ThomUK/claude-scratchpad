@@ -1,11 +1,9 @@
-import { buildIndex, releaseUrl, sampleUrl, previewPath, formatCell, fmtBytes, fmtInt, parseRoute, routeFor, isNumericType, assetName, pendingBanner } from './engine.js?v=dev';
+import { buildIndex, releaseUrl, sampleUrl, previewPath, formatCell, fmtBytes, fmtInt, parseRoute, routeFor, isNumericType, assetName } from './engine.js?v=dev';
 
 const DATA_ROOT = '../data/v1/';
 const RELEASE_PAGE = 'https://github.com/ThomUK/claude-scratchpad/releases/tag/synthetic-hospital-datastructure-';
-const PENDING = '../pending-changes.json';
 const view = document.getElementById('view');
 const status = document.getElementById('status');
-const banner = document.getElementById('banner');
 let index = null;
 const previews = new Map();
 
@@ -37,16 +35,6 @@ async function loadPreview(key) {
   return p;
 }
 
-async function showBanner() {
-  try {
-    const r = await fetch(PENDING);
-    if (!r.ok) return;
-    const b = pendingBanner(await r.json());
-    if (!b) return;
-    banner.replaceChildren(el('b', {}, b.title), ' ', b.note, el('ul', {}, b.changes.map((c) => el('li', {}, c))));
-    banner.hidden = false;
-  } catch (e) { /* no banner */ }
-}
 
 function findTable(key) {
   for (const g of index.groups) for (const t of g.tables) if (t.key === key) return { table: t, group: g };
@@ -155,7 +143,6 @@ async function route() {
 }
 
 (async () => {
-  showBanner();
   try { await loadIndex(); setStatus(''); } catch (e) { setStatus(`Could not load the dataset manifest: ${e.message}`); return; }
   window.addEventListener('hashchange', route);
   await route();
