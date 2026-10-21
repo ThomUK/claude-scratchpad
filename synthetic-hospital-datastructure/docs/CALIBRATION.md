@@ -369,14 +369,90 @@ Sources: `HES-Data-Model-v1.0.pdf` (an entity diagram only), `HES-APC-TOS-v2.06.
   transfer, mortuary). The ETOS refset tabs give the full code lists with
   SNOMED concept IDs; the generator's `ref_ecds_codes` is built from them.
 
-## 7. Not supplied, still assumptions
+## 7. Admitted patient care and outpatients: HES provider tables 2025/26
 
-- Provider-level A&E attendances (the monthly provider CSV) would set the ED
-  volume from a real top-10 trust rather than an estimate.
-- HES APC and OP provider-level activity tables would set spells, day cases
-  and appointments. Without them the design uses ratios to ED and imaging.
-- DM01 provider monthly file would set endoscopy volumes and the waiting-list
-  weeks bands.
+Sources: `HES-APC-provider-2025-26.xlsx` (Hospital Episode Statistics,
+admitted patient care, hospital providers) and `HES-OP-provider-2025-26.csv`
+(outpatient activity, provider level). Financial year 2025/26.
+
+### 7.1 Admitted patient care
+
+FCE is a finished consultant episode; FAE is a finished admission episode,
+in other words an admission. Nottingham ranks 6th nationally by admissions,
+Oxford 15th.
+
+| Trust | FCEs | Admissions (FAE) | Emergency | Waiting list | Planned | Other | Emergency % | Mean wait, days | Median wait, days | Mean LOS, days | Day cases (FCE) | Day case % of FCE | FCE bed days |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| England | 22,627,070 | 18,466,126 | 6,542,854 | 7,449,621 | 2,563,098 | 1,910,553 | 35 | 79 | 34 | 4.5 | 8,733,223 | 39 | 45,123,255 |
+| University Hospitals Birmingham NHS Foundation Trust | 468,545 | 402,365 | 214,705 | 109,280 | 58,320 | 20,060 | 53 | 76 | 30 | 4.1 | 144,625 | 31 | 1,054,264 |
+| University Hospitals Sussex NHS Foundation Trust | 377,470 | 301,245 | 123,555 | 98,720 | 58,070 | 20,900 | 41 | 84 | 39 | 4.5 | 141,445 | 37 | 729,086 |
+| Mid And South Essex NHS Foundation Trust | 357,390 | 294,505 | 125,065 | 101,285 | 40,710 | 27,445 | 42 | 73 | 28 | 4.3 | 125,105 | 35 | 736,159 |
+| Nottingham University Hospitals NHS Trust | 377,010 | 293,955 | 106,815 | 140,010 | 13,425 | 33,705 | 36 | 14 | 10 | 3.9 | 130,760 | 35 | 655,740 |
+| Northern Care Alliance NHS Foundation Trust | 315,225 | 255,135 | 121,775 | 86,175 | 37,315 | 9,880 | 48 | 70 | 29 | 3.9 | 106,985 | 34 | 584,602 |
+| Imperial College Healthcare NHS Trust | 294,910 | 247,090 | 57,125 | 129,350 | 18,545 | 42,070 | 23 | 43 | 17 | 4.0 | 129,445 | 44 | 481,822 |
+| University Hospitals Of North Midlands NHS Trust | 315,720 | 232,105 | 75,400 | 91,050 | 32,415 | 33,245 | 32 | 78 | 29 | 4.2 | 109,095 | 35 | 519,252 |
+| Oxford University Hospitals NHS Foundation Trust | 275,515 | 229,145 | 108,490 | 90,015 | 11,720 | 18,920 | 47 | 77 | 28 | 3.6 | 83,555 | 30 | 523,348 |
+| Barts Health NHS Trust | 299,015 | 222,760 | 73,180 | 91,035 | 28,720 | 29,825 | 33 | 72 | 31 | 5.3 | 96,970 | 32 | 682,378 |
+| Leeds Teaching Hospitals NHS Trust | 241,240 | 200,745 | 56,570 | 81,475 | 42,050 | 20,650 | 28 | 78 | 36 | 6.7 | 99,300 | 41 | 676,541 |
+| Northern Lincolnshire And Goole NHS Foundation Trust | 150,895 | 135,180 | 71,205 | 36,520 | 18,385 | 9,070 | 53 | 71 | 35 | 2.9 | 50,465 | 33 | 241,589 |
+
+Notes: "Other" admissions are mostly maternity and births, which the
+dataset excludes. Nottingham's short mean wait (14 days) against 70–80
+days elsewhere is a reporting artefact worth copying as a mess entry, not
+a performance figure. Episodes per admission run 1.2–1.3 at the teaching
+trusts. FCE bed days of 520,000–660,000 a year imply 1,450–1,800 occupied
+beds, consistent with a 1,500-bed trust at high occupancy.
+
+Age profile of episodes, pooled over Nottingham, Oxford, Leeds and Imperial (%):
+
+0 : 4.1 | 1-4 : 2.2 | 5-9 : 1.9 | 10-14 : 2.0 | 15 : 0.5 | 16 : 0.5 | 17 : 0.5 | 18 : 0.5 | 19 : 0.6 | 20-24 : 3.2 | 25-29 : 4.7 | 30-34 : 6.2 | 35-39 : 5.8 | 40-44 : 4.7 | 45-49 : 4.7 | 50-54 : 5.4 | 55-59 : 6.8 | 60-64 : 7.8 | 65-69 : 7.8 | 70-74 : 7.6 | 75-79 : 8.5 | 80-84 : 6.4 | 85-89 : 4.6 | 90+ : 2.9
+
+### 7.2 Outpatients
+
+| Trust | Attended | DNA | Patient cancelled | Hospital cancelled | DNA % | First att | Follow-up att | Tele % of attended | GP-referred first % | Median wait GP ref, first att (days) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| England | 116,891,346 | 8,151,086 | 10,721,925 | 13,922,435 | 6.5 | 38,641,885 | 78,227,464 | 18 | 41 | 33 |
+| Leeds Teaching Hospitals NHS Trust | 1,551,975 | 96,750 | 0 | 0 | 5.9 | 543,765 | 1,008,210 | 24 | 33 | 13 |
+| Northern Care Alliance NHS Foundation Trust | 1,130,830 | 101,075 | 151,425 | 211,515 | 8.2 | 427,955 | 702,845 | 18 | 48 | 32 |
+| Barts Health NHS Trust | 1,860,090 | 208,945 | 213,125 | 570,045 | 10.1 | 574,395 | 1,285,695 | 13 | 33 | 50 |
+| Mid And South Essex NHS Foundation Trust | 1,614,695 | 109,025 | 162,065 | 236,105 | 6.3 | 480,025 | 1,134,665 | 19 | 42 | 45 |
+| Imperial College Healthcare NHS Trust | 1,417,015 | 136,750 | 197,655 | 351,005 | 8.8 | 490,710 | 926,305 | 19 | 28 | 57 |
+| University Hospitals Of North Midlands NHS Trust | 967,775 | 68,010 | 155,455 | 159,935 | 6.6 | 380,400 | 587,375 | 22 | 36 | 14 |
+| Oxford University Hospitals NHS Foundation Trust | 1,645,380 | 73,710 | 0 | 0 | 4.3 | 727,985 | 917,395 | 19 | 35 | 18 |
+| Nottingham University Hospitals NHS Trust | 1,513,200 | 112,090 | 177,490 | 313,625 | 6.9 | 518,560 | 994,640 | 19 | 54 | 17 |
+
+Notes: hospital cancellations exceed patient cancellations everywhere and
+are two to three times the DNA count, which the rebooking-churn mess entry
+(M-OP-01) now reflects. Telephone and video consultations are about a fifth
+of attendances. Median wait from GP referral to first attendance is 17–18
+days at Nottingham and Oxford against 33 nationally. Some trusts report no
+cancellations at all (Leeds, Oxford), a reminder that a zero in a national
+table is often a submission gap rather than a fact. Birmingham, Sussex,
+Mid and South Essex and Northern Lincolnshire are absent from the
+outpatient file for 2025/26.
+
+### 7.3 Generator targets, taken from the Nottingham and Oxford shape
+
+| Measure | Per year |
+| --- | --- |
+| Admissions (spells), excluding maternity | 250,000 |
+| of which emergency | 95,000 (46,000 via the ED, 49,000 by other routes) |
+| of which waiting list and booked | 140,000 |
+| of which planned | 15,000 |
+| Day cases | 90,000 (36% of admissions) |
+| Consultant episodes | 310,000 (1.25 per spell) |
+| Bed days | 560,000 |
+| Median wait, elective admission | 28 days |
+| Outpatient attendances | 1,500,000 (34% first, 66% follow-up, 19% telephone or video) |
+| DNAs | 105,000 (6.5% of attended plus DNA) |
+| Patient cancellations | 175,000 |
+| Hospital cancellations | 300,000 |
+| First attendances referred by a GP | 50% |
+| Median GP referral to first attendance | 17 days |
+
+## 8. Not supplied, still assumptions
+
+- DM01 provider monthly file would set endoscopy volumes and the waiting-list weeks bands.
 - DID Table 9 (medians by modality × source) and Table 13 (quarterly
   turnaround by provider) would sharpen the imaging calibration.
 - Slot lengths and room times for individual exam types: nothing supplied
