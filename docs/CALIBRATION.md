@@ -248,6 +248,86 @@ Source: `DM01-Guidance-v9.pdf`. Page numbers are the printed ones.
   operational standard, any report-date rule. The bands and the standard
   come from the monthly proforma and statistical release, not the guidance.
 
+### 4.1 Provider level: one month (DM01 provider file, August 2026)
+
+Source: `DM01-Provider-August-2026.xls`, sheet Provider by Test. Waiting
+list at month end, share waiting 6+ and 13+ weeks, and the three activity
+columns the guidance defines (waiting list, planned, unscheduled).
+
+| Trust | Test | Waiting list | 6+ wk % | 13+ wk % | Waiting-list activity | Planned | Unscheduled | Total in month |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Nottingham University Hospital | Magnetic Resonance Imaging | 5,415 | 41.6 | 8.8 | 5,955 | 972 | 25 | 6,952 |
+| Nottingham University Hospital | Computed Tomography | 5,109 | 46.1 | 20.8 | 1,576 | 1,044 | 7,537 | 10,157 |
+| Nottingham University Hospital | Non-obstetric Ultrasound | 6,439 | 51.6 | 14.7 | 3,255 | 415 | 1,191 | 4,861 |
+| Nottingham University Hospital | Gastroscopy | 1,222 | 41.1 | 20.8 | 693 | 93 | 0 | 786 |
+| Nottingham University Hospital | Colonoscopy | 857 | 36.8 | 10.7 | 594 | 99 | 0 | 693 |
+| Nottingham University Hospital | Flexi Sigmoidoscopy | 426 | 30.0 | 5.2 | 275 | 35 | 0 | 310 |
+| Nottingham University Hospital | Cystoscopy | 157 | 28.0 | 5.7 | 119 | 57 | 0 | 176 |
+| Oxford University Hospitals NH | Magnetic Resonance Imaging | 4,345 | 11.9 | 1.7 | 5,468 | 1,030 | 121 | 6,619 |
+| Oxford University Hospitals NH | Computed Tomography | 2,552 | 0.0 | 0.0 | 7,315 | 1,270 | 2,562 | 11,147 |
+| Oxford University Hospitals NH | Non-obstetric Ultrasound | 5,380 | 8.3 | 0.0 | 7,504 | 380 | 80 | 7,964 |
+| Oxford University Hospitals NH | Gastroscopy | 1,186 | 69.7 | 45.0 | 287 | 22 | 55 | 364 |
+| Oxford University Hospitals NH | Colonoscopy | 863 | 58.6 | 30.7 | 366 | 60 | 3 | 429 |
+| Oxford University Hospitals NH | Flexi Sigmoidoscopy | 376 | 51.1 | 23.9 | 112 | 24 | 25 | 161 |
+| Oxford University Hospitals NH | Cystoscopy | 245 | 24.9 | 6.5 | 544 | 21 | 24 | 589 |
+| Leeds Teaching Hospitals NHS T | Magnetic Resonance Imaging | 3,954 | 9.2 | 1.6 | 3,075 | 729 | 200 | 4,004 |
+| Leeds Teaching Hospitals NHS T | Computed Tomography | 3,002 | 3.7 | 0.4 | 2,571 | 1,044 | 4,465 | 8,080 |
+| Leeds Teaching Hospitals NHS T | Non-obstetric Ultrasound | 5,988 | 17.8 | 0.3 | 5,547 | 1,013 | 1,255 | 7,815 |
+| Leeds Teaching Hospitals NHS T | Gastroscopy | 401 | 36.2 | 28.9 | 243 | 69 | 14 | 326 |
+| Leeds Teaching Hospitals NHS T | Colonoscopy | 334 | 17.7 | 12.0 | 201 | 111 | 1 | 313 |
+| Leeds Teaching Hospitals NHS T | Flexi Sigmoidoscopy | 88 | 0.0 | 0.0 | 84 | 30 | 2 | 116 |
+| Leeds Teaching Hospitals NHS T | Cystoscopy | 207 | 18.4 | 13.5 | 134 | 206 | 1 | 341 |
+| Imperial College Healthcare NH | Magnetic Resonance Imaging | 4,902 | 17.7 | 0.6 | 5,747 | 1,379 | 1,212 | 8,338 |
+| Imperial College Healthcare NH | Computed Tomography | 1,636 | 2.7 | 0.2 | 3,876 | 748 | 6,295 | 10,919 |
+| Imperial College Healthcare NH | Non-obstetric Ultrasound | 4,160 | 15.6 | 1.9 | 7,373 | 429 | 917 | 8,719 |
+| Imperial College Healthcare NH | Gastroscopy | 849 | 1.2 | 0.0 | 506 | 11 | 28 | 545 |
+| Imperial College Healthcare NH | Colonoscopy | 875 | 1.0 | 0.0 | 574 | 15 | 4 | 593 |
+| Imperial College Healthcare NH | Flexi Sigmoidoscopy | 125 | 0.0 | 0.0 | 78 | 3 | 10 | 91 |
+| Imperial College Healthcare NH | Cystoscopy | 257 | 2.7 | 0.8 | 192 | 21 | 13 | 226 |
+| University Hospitals Birmingha | Magnetic Resonance Imaging | 7,111 | 19.7 | 3.6 | 8,569 | 1,040 | 2,030 | 11,639 |
+| University Hospitals Birmingha | Computed Tomography | 3,828 | 14.8 | 1.1 | 9,252 | 3,494 | 14,094 | 26,840 |
+| University Hospitals Birmingha | Non-obstetric Ultrasound | 16,455 | 42.5 | 7.7 | 8,508 | 806 | 3,165 | 12,479 |
+| University Hospitals Birmingha | Gastroscopy | 2,200 | 57.4 | 44.8 | 1,265 | 0 | 0 | 1,265 |
+| University Hospitals Birmingha | Colonoscopy | 2,297 | 55.9 | 39.5 | 1,306 | 0 | 0 | 1,306 |
+| University Hospitals Birmingha | Flexi Sigmoidoscopy | 580 | 53.6 | 37.6 | 271 | 0 | 0 | 271 |
+| University Hospitals Birmingha | Cystoscopy | 580 | 56.0 | 33.8 | 212 | 45 | 17 | 274 |
+
+| Test (England, sum of providers) | Waiting list | 6+ wk % | Waiting-list activity | Planned | Unscheduled | Planned % | Unscheduled % |
+| --- | --- | --- | --- | --- | --- | --- | --- | 
+| Magnetic Resonance Imaging | 357,356 | 22.0 | 353,029 | 37,150 | 50,288 | 8 | 11 |
+| Computed Tomography | 181,619 | 11.2 | 347,413 | 78,033 | 369,965 | 10 | 47 |
+| Non-obstetric Ultrasound | 648,630 | 21.7 | 573,707 | 59,278 | 87,302 | 8 | 12 |
+| Gastroscopy | 73,297 | 29.9 | 52,909 | 6,040 | 3,483 | 10 | 6 |
+| Colonoscopy | 76,686 | 30.9 | 47,855 | 6,342 | 850 | 12 | 2 |
+| Flexi Sigmoidoscopy | 23,459 | 33.2 | 12,693 | 1,753 | 940 | 11 | 6 |
+| Cystoscopy | 24,198 | 27.3 | 23,132 | 6,857 | 1,449 | 22 | 5 |
+
+Notes: the DM01 "unscheduled" column for CT is half of all CT activity
+nationally and three quarters at Nottingham, which is the DID's A&E plus
+inpatient share seen from the other side. Endoscopy is almost entirely
+waiting-list activity with about a tenth planned (surveillance). Six-week
+breaches vary from 0% to 70% between trusts of the same size for the same
+test; Oxford reports 0% for CT and 70% for gastroscopy in the same month.
+Nottingham does about 1,965 of the four DM01 endoscopy procedures a month,
+rank 19 nationally; Birmingham 3,116, rank 2.
+
+Weeks-waiting profile, endoscopy, pooled RX1/RTH/RR8/RYJ (% of list): 0<1: 17.0 | 1<2: 15.2 | 2<3: 12.0 | 3<4: 7.6 | 4<5: 9.1 | 5<6: 5.5 | 6<7: 2.7 | 7<8: 2.8 | 8<9: 2.9 | 9<10: 2.6 | 10<11: 1.9 | 11<12: 1.6 | 12<13: 1.7 | 13+: 17.3
+
+Weeks-waiting profile, MRI, pooled RX1/RTH/RR8/RYJ (% of list): 0<1: 15.4 | 1<2: 17.3 | 2<3: 14.4 | 3<4: 12.9 | 4<5: 10.4 | 5<6: 8.1 | 6<7: 4.7 | 7<8: 4.0 | 8<9: 3.6 | 9<10: 2.3 | 10<11: 1.3 | 11<12: 1.2 | 12<13: 0.9 | 13+: 3.5
+
+Weeks-waiting profile, CT, pooled RX1/RTH/RR8/RYJ (% of list): 0<1: 21.1 | 1<2: 18.6 | 2<3: 14.0 | 3<4: 10.5 | 4<5: 9.0 | 5<6: 6.3 | 6<7: 2.3 | 7<8: 1.8 | 8<9: 2.1 | 9<10: 1.9 | 10<11: 1.1 | 11<12: 1.3 | 12<13: 1.1 | 13+: 8.8
+
+**Generator targets, taken from the Nottingham and Oxford shape:**
+
+| Measure | Value |
+| --- | --- |
+| Endoscopy procedures a year | 24,000: gastroscopy 9,400, colonoscopy 8,300, flexi sigmoidoscopy 3,700, cystoscopy 2,600 |
+| of which planned (surveillance) | 12%; unscheduled 3% |
+| Endoscopy waiting list at month end | 2,700, with 35% over 6 weeks and 15% over 13 weeks |
+| MRI waiting list at month end | 5,000, with 20% over 6 weeks |
+| CT waiting list at month end | 3,500, with 10% over 6 weeks |
+| Weeks-waiting profiles | the pooled profiles above, as band weights |
+
 ## 5. Diagnostic Imaging Dataset: fields and derivations
 
 Sources: `DID-Annex-2-Data-Items-v6.1.pdf`, `DID-Technical-Report-v13-2023-24.pdf`,
@@ -342,6 +422,65 @@ GIRFT also reports mean scanner counts per trust of 3.4 CT and 2.8 MRI
 suggests cold scanners plan for "75–80% of all available slots". It gives
 no slot lengths, no per-scanner throughput and no DNA rates; those stay as
 assumptions.
+
+### 5.6 Request to test by source setting (DID Table 9, England 2023/24)
+
+Source: `DID-Table-9-2023-24-Request-to-test-by-source.xlsx`. Share of
+examinations by days from request to test. These are the band weights the
+generator uses per modality and source; they explain why the CT and MRI
+teams' queues look nothing alike.
+
+| Modality | Source setting | 0-7 days % | 8-31 | 32-62 | >62 | Exams |
+| --- | --- | --- | --- | --- | --- | --- |
+| CT | Accident and Emergency Department | 99.7 | 0.2 | 0.0 | 0.0 | 2,466,680 |
+| CT | Admitted Patient Care - Day case | 66.7 | 22.0 | 6.1 | 5.2 | 30,770 |
+| CT | Admitted Patient Care - Inpatient | 98.0 | 1.5 | 0.3 | 0.2 | 1,693,700 |
+| CT | GP Direct Access | 26.9 | 51.0 | 16.9 | 5.2 | 461,900 |
+| CT | Outpatient | 26.3 | 38.5 | 16.7 | 18.5 | 2,819,500 |
+| CT | Other | 50.1 | 27.6 | 11.7 | 10.6 | 143,460 |
+| MRI | Accident and Emergency Department | 86.2 | 7.4 | 5.2 | 1.1 | 143,430 |
+| MRI | Admitted Patient Care - Day case | 30.5 | 25.0 | 14.6 | 29.9 | 28,925 |
+| MRI | Admitted Patient Care - Inpatient | 93.1 | 5.3 | 1.0 | 0.6 | 545,540 |
+| MRI | GP Direct Access | 14.3 | 45.6 | 29.6 | 10.5 | 695,515 |
+| MRI | Outpatient | 19.6 | 37.4 | 25.1 | 17.9 | 2,772,130 |
+| MRI | Other | 27.7 | 33.4 | 26.7 | 12.2 | 216,645 |
+
+### 5.7 Report turnaround by provider (DID Table 13, 2023/24 Q4)
+
+Source: `DID-Table-13-2023-24-Report-turnaround-by-provider.xlsx`. Share of
+examinations reported by elapsed time from test, split inpatient and A&E
+versus outpatient and GP.
+
+| Trust | Modality | IP and A&E: same day % | by next day % | >28 d % | not known % | cases | OP and GP: by next day % | by 7 d % | by 14 d % | >28 d % | not known % | cases |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Imperial College Healthcare  | CT | 92 | 98 | 0.0 | 0.2 | 17,125 | 28 | 56 | 75 | 2.2 | 16.4 | 11,800 |
+| Imperial College Healthcare  | MRI | 69 | 81 | 3.3 | 5.1 | 4,110 | 18 | 43 | 56 | 12.2 | 24.4 | 19,845 |
+| Oxford University Hospitals  | CT | 94 | 99 | 0.1 | 0.1 | 16,230 | 23 | 55 | 77 | 9.1 | 0.9 | 13,960 |
+| Oxford University Hospitals  | MRI | 88 | 95 | 0.1 | 0.1 | 2,245 | 24 | 58 | 73 | 11.3 | 3.2 | 13,770 |
+| Nottingham University Hospit | CT | 83 | 98 | 0.0 | 0.7 | 18,735 | 17 | 45 | 64 | 0.0 | 30.8 | 12,010 |
+| Nottingham University Hospit | MRI | 79 | 90 | 0.0 | 2.5 | 3,020 | 23 | 63 | 75 | 0.0 | 21.4 | 11,050 |
+| University Hospitals Birming | CT | 96 | 100 | 0.0 | 0.0 | 28,805 | 30 | 63 | 84 | 1.0 | 0.0 | 16,595 |
+| University Hospitals Birming | MRI | 80 | 96 | 0.1 | 0.0 | 5,450 | 27 | 48 | 74 | 3.2 | 0.0 | 18,290 |
+| Leeds Teaching Hospitals NHS | CT | 76 | 97 | 0.1 | 0.2 | 21,215 | 23 | 44 | 72 | 2.8 | 0.2 | 21,650 |
+| Leeds Teaching Hospitals NHS | MRI | 74 | 89 | 0.1 | 2.1 | 3,130 | 29 | 55 | 80 | 1.8 | 1.0 | 14,230 |
+
+Nottingham outpatient and GP reporting by quarter 2023/24:
+   2023-24 Q1 CT: by next day 16%, by 7 days 40%, by 14 days 49%, >28 days 0.1%, not known 42%
+   2023-24 Q1 MRI: by next day 18%, by 7 days 34%, by 14 days 41%, >28 days 0.4%, not known 50%
+   2023-24 Q2 CT: by next day 12%, by 7 days 33%, by 14 days 43%, >28 days 0.0%, not known 49%
+   2023-24 Q2 MRI: by next day 20%, by 7 days 37%, by 14 days 46%, >28 days 0.2%, not known 50%
+   2023-24 Q3 CT: by next day 15%, by 7 days 32%, by 14 days 44%, >28 days 0.1%, not known 42%
+   2023-24 Q3 MRI: by next day 17%, by 7 days 38%, by 14 days 48%, >28 days 0.1%, not known 44%
+   2023-24 Q4 CT: by next day 17%, by 7 days 45%, by 14 days 64%, >28 days 0.0%, not known 31%
+   2023-24 Q4 MRI: by next day 23%, by 7 days 63%, by 14 days 75%, >28 days 0.0%, not known 21%
+
+Two lessons the generator reproduces. First, the comparators report 80–95%
+of inpatient and A&E exams the same day but only 45–63% of outpatient
+exams within a week. Second, Nottingham's outpatient CT and MRI show 21–50%
+of reports with no issue date across 2023/24 and 0% over 28 days: the
+missing dates swallow the tail, so the trust looks as if it has no slow
+reports at all. That pattern is now mess entry M-RIS-02 at Nottingham's
+rates rather than my earlier guess.
 
 ## 6. HES and ECDS field shapes
 
@@ -452,8 +591,7 @@ outpatient file for 2025/26.
 
 ## 8. Not supplied, still assumptions
 
-- DM01 provider monthly file would set endoscopy volumes and the waiting-list weeks bands.
-- DID Table 9 (medians by modality × source) and Table 13 (quarterly
-  turnaround by provider) would sharpen the imaging calibration.
 - Slot lengths and room times for individual exam types: nothing supplied
-  gives them.
+  gives them, and GIRFT says no national figure exists.
+- Endoscopy procedure durations, list points per list, comfort and
+  completion rates: no public NED extract was supplied.

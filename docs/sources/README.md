@@ -7,11 +7,14 @@ Open Government Licence unless the document says otherwise.
 
 | File | What it is | Used for |
 | --- | --- | --- |
+| `DM01-Provider-August-2026.xls` | DM01 waiting list and activity by provider and test, August 2026 | endoscopy and imaging waiting lists, activity split, weeks profile |
 | `DM01-Guidance-v9.pdf` | Diagnostics waiting times and activity (DM01) guidance, v9 March 2026 | the 15 tests in scope, clock rules, planned-test exclusions |
 | `DID-Annex-2-Data-Items-v6.1.pdf` | Diagnostic Imaging Dataset data items | field list for `ris_imaging` |
 | `DID-Annex-1-Exam-Lookup-Table-Modality-v5-May26.xlsx` | NICIP and SNOMED imaging codes by modality | exam catalogue codes |
 | `DID-Technical-Report-v13-2023-24.pdf` | DID statistics methodology | waiting-time derivations and validation rules |
 | `DID-Annual-Statistical-Release-2023-24.pdf` | DID annual release | national volumes, source mix, turnaround |
+| `DID-Table-9-2023-24-Request-to-test-by-source.xlsx` | DID request-to-test bands by modality and source setting, 2023/24 | per-source queue shapes |
+| `DID-Table-13-2023-24-Report-turnaround-by-provider.xlsx` | DID report turnaround by provider, modality and quarter, 2023/24 | reporting speed and missing report dates at comparator trusts |
 | `DID-Table-11-2023-24-Modality-Provider-Source-setting.xlsx` | DID activity by provider, modality and source setting | top-10 trust scale and source splits |
 | `GIRFT-radiology-report.pdf` | GIRFT radiology national report, Nov 2020 | request-to-test and test-to-report distributions, equipment counts |
 | `HES-APC-provider-2025-26.xlsx` | HES admitted patient care activity by hospital provider, 2025/26 | admissions, admission-method mix, day cases, episodes, bed days, age profile |
