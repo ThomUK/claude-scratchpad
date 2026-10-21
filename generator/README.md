@@ -6,10 +6,11 @@ it builds and `../docs/CALIBRATION.md` for every number it is tuned to.
 
 ## Status
 
-Clean generator (deliverable 2 in the design). It produces internally
-consistent, calibrated data with **no injected mess**: the mess layer
-(deliverable 3) will take this output and add the catalogued imperfections,
-recording each one in `mess_log`.
+Clean generator (deliverable 2) and mess injection (deliverable 3).
+`generate()` applies every catalogued imperfection at the rates in
+`default_mess_rates()` and records each changed row in `mess_log`
+(`mess_log.csv` in the output); `generate(mess = NULL)` gives the clean
+dataset. The derived layer and Parquet publication are deliverable 4.
 
 ## Running it
 
@@ -19,8 +20,10 @@ Then:
 
 ```sh
 R CMD INSTALL --no-docs generator/fakehosp
-Rscript generator/run.R <out_dir> [n_patients] [seed]
+Rscript generator/run.R <out_dir> [n_patients] [seed] [clean]
 ```
+
+Add `clean` as the fourth argument for a run with no mess injected.
 
 Defaults are the full scale (800,000 patients) and seed 20230401. A
 20,000-patient run takes about ten seconds and is the right size for

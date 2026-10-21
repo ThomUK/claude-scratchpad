@@ -19,6 +19,7 @@ write_layer1 <- function(gen, out_dir) {
     fwrite(fmt(gen$tables[[nm]]), f, na = "")
     counts[[nm]] <- nrow(gen$tables[[nm]])
   }
+  if (!is.null(gen$mess_log)) { fwrite(fmt(gen$mess_log), file.path(out_dir, "mess_log.csv"), na = ""); counts$mess_log <- nrow(gen$mess_log) }
   for (nm in names(gen$reference)) {
     f <- file.path(out_dir, paste0("ref_", nm, ".csv"))
     fwrite(fmt(gen$reference[[nm]]), f, na = "")

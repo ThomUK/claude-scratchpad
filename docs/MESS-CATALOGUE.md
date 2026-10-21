@@ -164,6 +164,18 @@ linkage rather than events.
 | M-X-02 | timing | Clocks differ: the ED system runs 2 minutes ahead of the PAS and the RIS writes times in UTC during British Summer Time, so overlapping events disagree by 1 hour in summer | structural | ED departure 1 h before/after PAS admission in summer | Timestamps have a time zone and a source, whether or not the column says so |
 | M-X-03 | completeness | The aggregates do not add up: `agg_daily_flow` admissions minus discharges does not equal the change in `agg_midnight_census` | emergent, not injected | reconcile the three layers | Aggregates built from different definitions never reconcile exactly; the event layer is where reconciliation happens |
 
+## Implementation status
+
+Every entry below with a rate is implemented in the generator's
+`R/mess.R`, keyed by its code in `default_mess_rates()`; set a code to 0 to
+switch it off, or pass `mess = NULL` to `generate()` for the clean dataset.
+Entries marked structural or emergent (M-PAS-14, M-CT-04, M-EN-05,
+M-X-01, M-X-03) need no injection: they arise from the clean generator or
+from the derivation itself. Two renames (Ward 11 Frailty, formerly Ward 11
+Elderly Care, from June 2024; Ward 4 Gastro, formerly Ward 4 GI Medicine,
+from November 2024) are applied to the event log as reference drift and are
+not logged, since they are correct history rather than error.
+
 ## How the catalogue is used
 
 - The generator reads this file's codes as parameter names in

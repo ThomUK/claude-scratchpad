@@ -4,13 +4,14 @@
 #' @param n_patients number of patients with at least one contact (800000 at full scale)
 #' @param start,end activity window (dates)
 #' @param volumes annual volumes at full scale, see [default_volumes()]
+#' @param mess mess rates keyed by catalogue code (see [default_mess_rates()]); `NULL` for a clean dataset
 #' @param out_dir if given, the tables are written there as CSV with a manifest
 #' @param verbose print progress
 #' @return a list with `tables` (layer-1 source extracts), `reference`, `truth`
 #'   (the clean spell and stay tables the derived layer should reproduce) and `meta`
 #' @export
 generate <- function(seed = 20230401L, n_patients = 800000L, start = "2023-04-01", end = "2026-03-31",
-                     volumes = default_volumes(), out_dir = NULL, verbose = TRUE) {
+                     volumes = default_volumes(), mess = default_mess_rates(), out_dir = NULL, verbose = TRUE) {
   checkmate::assert_int(seed); checkmate::assert_int(n_patients, lower = 1000L)
   start <- as.Date(start); end <- as.Date(end)
   scale <- n_patients / volumes$patients_full_scale
@@ -74,12 +75,19 @@ generate <- function(seed = 20230401L, n_patients = 800000L, start = "2023-04-01
     stays = adm$stays,
     ed_admitted = ed$attendances[, .(uec_activity_identifier, admitted)]
   )
-  meta <- list(version = "v1-clean", seed = seed, n_patients = n_patients, start = as.character(start), end = as.character(end),
-               scale = scale, mess = "none", generator = "fakehosp 0.1.0",
+  mess_log <- NULL
+  if (!is.null(mess)) {
+    gen0 <- list(tables = tables, truth = truth, reference = ref)
+    m <- inject_mess(gen0, mess, seed, start, end, verbose)
+    tables <- m$tables; truth <- m$truth; mess_log <- m$mess_log
+    vmsg(verbose, "Mess rows logged: ", nrow(mess_log))
+  }
+  meta <- list(version = if (is.null(mess)) "v1-clean" else "v1", seed = seed, n_patients = n_patients, start = as.character(start), end = as.character(end),
+               scale = scale, mess = if (is.null(mess)) "none" else "default_mess_rates", generator = "fakehosp 0.2.0",
                elapsed_s = round(as.numeric(difftime(Sys.time(), t0, units = "secs")), 1))
   gen <- list(tables = tables, reference = ref[c("sites", "wards", "specialties", "consultants", "clinics", "exam_catalogue", "admission_method",
                                                   "admission_source", "discharge_destination", "discharge_method", "attendance_status",
-                                                  "patient_source_setting", "ecds_codes")], truth = truth, meta = meta)
+                                                  "patient_source_setting", "ecds_codes")], truth = truth, mess_log = mess_log, meta = meta)
   if (!is.null(out_dir)) write_layer1(gen, out_dir)
   vmsg(verbose, "Done in ", meta$elapsed_s, " s")
   invisible(gen)

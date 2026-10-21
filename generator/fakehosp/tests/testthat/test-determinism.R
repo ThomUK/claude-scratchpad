@@ -1,8 +1,8 @@
 test_that("the same seed and parameters give identical output", {
-  a <- generate(seed = 11L, n_patients = 4000L, verbose = FALSE)
-  b <- generate(seed = 11L, n_patients = 4000L, verbose = FALSE)
+  a <- generate(seed = 11L, n_patients = 4000L, mess = NULL, verbose = FALSE)
+  b <- generate(seed = 11L, n_patients = 4000L, mess = NULL, verbose = FALSE)
   for (nm in names(a$tables)) expect_identical(a$tables[[nm]], b$tables[[nm]], info = nm)
-  c <- generate(seed = 12L, n_patients = 4000L, verbose = FALSE)
+  c <- generate(seed = 12L, n_patients = 4000L, mess = NULL, verbose = FALSE)
   expect_false(identical(a$tables$pas_adt_events, c$tables$pas_adt_events))
 })
 
