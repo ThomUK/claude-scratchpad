@@ -10,3 +10,5 @@ mess <- if (length(args) >= 4 && args[4] == "clean") NULL else fakehosp::default
 library(fakehosp)
 g <- generate(seed = seed, n_patients = n, mess = mess, out_dir = out, verbose = TRUE)
 str(g$meta)
+
+cat("Peak R heap MB:", sum(gc()[, 6]), "\n")
