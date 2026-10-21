@@ -18,6 +18,7 @@ Open Government Licence unless the document says otherwise.
 | `HES-APC-TOS-v2.06.xlsx` | HES technical output specification (APC, OP, A&E, CC) | field names and code lists for the derived layer |
 | `ECDS-ETOS-v4.0.8.xlsx` | Emergency Care Data Set technical output specification v4 | `ed_attendances` fields and code lists |
 | `ECDS-v4.0-Data-Item-Mapping-Specification-v4.0.2.xlsx` | ECDS data item mapping | cross-check of field names |
+| `Monthly-AE-Provider-September-2026.csv` | A&E attendances and emergency admissions by provider, September 2026 | ED scale for a single-ED top-10 trust; admission routes |
 | `Monthly-AE-Time-Series-September-2026.xls` | National A&E attendances and emergency admissions, monthly | ED seasonality and admitted proportion |
 | `RTT-Overview-Timeseries-Aug26.xlsx` | National RTT time series | waiting list profile over the window |
 
