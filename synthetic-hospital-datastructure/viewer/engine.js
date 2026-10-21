@@ -51,6 +51,20 @@ export const DESCRIPTIONS = {
   'answers/truth/mrn_aliases': 'The true MRN merges.',
   'answers/truth/imaging_links': 'Which imaging exams belong to which attendance, spell or appointment.',
   'answers/truth/endoscopy_links': 'Which endoscopy procedures belong to which spell or appointment.',
+  'reference/sites': 'The two hospitals.',
+  'reference/wards': 'Wards and locations with site, specialty, bed count and kind.',
+  'reference/beds': 'One row per bed space with its ward, bay, label and bed type (bed, recliner, trolley, chair).',
+  'reference/specialties': 'Treatment function codes and names.',
+  'reference/consultants': 'Fictional consultant codes by specialty.',
+  'reference/clinics': 'Outpatient clinics by site and specialty.',
+  'reference/exam_catalogue': 'Imaging exams: NICIP code, SNOMED, modality and durations.',
+  'reference/ecds_codes': 'ECDS code lists with SNOMED concept IDs from the ETOS.',
+  'reference/admission_method': 'HES ADMIMETH codes.',
+  'reference/admission_source': 'HES ADMISORC codes.',
+  'reference/discharge_method': 'HES DISMETH codes.',
+  'reference/discharge_destination': 'HES DISDEST codes.',
+  'reference/attendance_status': 'HES outpatient ATTENDED codes.',
+  'reference/patient_source_setting': 'DID patient source setting codes.',
 };
 
 export function layerOf(key) {
@@ -72,8 +86,8 @@ export function sampleUrl(path) {
   return DATA_BASE + path;
 }
 
-export function previewPath(dataRoot, part, key) {
-  return `${dataRoot}preview/${part}/${key.replace(/\//g, '__')}.json`;
+export function previewPath(dataRoot, key) {
+  return `${dataRoot}preview/sample/${key.replace(/\//g, '__')}.json`;
 }
 
 function entry(v) {
@@ -132,11 +146,22 @@ export function isNumericType(type) {
 export function parseRoute(hash) {
   const h = (hash || '').replace(/^#\/?/, '');
   if (!h) return { view: 'index' };
-  const m = h.match(/^(full|sample)\/(.+)$/);
-  if (m) return { view: 'table', part: m[1], key: m[2] };
-  return { view: 'index' };
+  // older links carried a sample/ or full/ prefix
+  const key = h.replace(/^(full|sample)\//, '');
+  return /^[a-z0-9_]+(\/[a-z0-9_]+)+$/.test(key) ? { view: 'table', key } : { view: 'index' };
 }
 
-export function routeFor(part, key) {
-  return `#/${part}/${key}`;
+export function routeFor(key) {
+  return `#/${key}`;
+}
+
+// Text for the out-of-sync banner, or null when the generator and the
+// published data agree (no pending changes listed).
+export function pendingBanner(pending) {
+  if (!pending || !Array.isArray(pending.changes) || pending.changes.length === 0) return null;
+  return {
+    title: `Generator ahead of the published data (${pending.published_version}, built ${pending.published_build})`,
+    note: pending.note || '',
+    changes: pending.changes,
+  };
 }

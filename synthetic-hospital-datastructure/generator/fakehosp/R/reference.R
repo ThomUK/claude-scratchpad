@@ -73,6 +73,12 @@ tfc,name,ip_a,dc_a,op_a,ip_b,dc_b,op_b,elective_b_share,emergency_share
   wards[, ward_id := sprintf("W%03d", .I)]
   ref$wards <- wards
 
+  # Beds: one row per bed space, with its type. Inpatient wards hold beds in
+  # bays of six (plus side rooms); day units mix trolleys, recliners and
+  # chairs; the ED and SDEC are cubicles and chairs; the discharge lounge is
+  # mostly chairs. Bed labels follow the PAS "Bay<n>-<nn>" convention.
+  ref$beds <- make_beds(wards)
+
   # Consultants: ~420, by specialty roughly in proportion to activity.
   cons_n <- c("300"=60,"430"=30,"320"=24,"340"=18,"301"=18,"361"=12,"400"=14,"100"=28,"104"=10,"107"=8,"110"=34,"101"=16,
               "130"=18,"120"=14,"502"=20,"420"=30,"330"=10,"410"=8,"192"=20,"180"=36)
@@ -240,4 +246,55 @@ pattern,w,adm,spec
     data.table(chief_complaint = m$description, snomed_code = m$snomed_code, w = pick$w[i], adm = pick$adm[i], spec = sprintf("%03d", pick$spec[i]))
   }))
   out
+}
+
+
+# One row per bed space for every ward and location in `wards`.
+make_beds <- function(wards) {
+  space <- function(ward, bay, labels, type) data.table(ward_id = ward$ward_id, site_code = ward$site_code, ward_name = ward$ward_name,
+                                                        bay = bay, bed_label = labels, bed_type = type)
+  bays <- function(ward, n, type = "bed", prefix = "Bay") {
+    # bays of six, numbered within the bay; the last bay takes the remainder
+    if (n <= 0L) return(NULL)
+    bay_no <- (seq_len(n) - 1L) %/% 6L + 1L
+    pos <- (seq_len(n) - 1L) %% 6L + 1L
+    space(ward, paste(prefix, bay_no), sprintf("%s%d-%02d", prefix, bay_no, pos), type)
+  }
+  side_rooms <- function(ward, n) if (n > 0L) space(ward, "Side rooms", sprintf("SR-%02d", seq_len(n)), "bed") else NULL
+  out <- list()
+  for (i in seq_len(nrow(wards))) {
+    w <- wards[i]
+    out[[i]] <- switch(w$kind,
+      bed = , escalation = {
+        sr <- if (w$beds >= 20L) 4L else if (w$beds >= 12L) 2L else 0L
+        rbind(bays(w, w$beds - sr), side_rooms(w, sr))
+      },
+      critical = space(w, "Bed spaces", sprintf("CC-%02d", seq_len(w$beds)), "bed"),
+      daycase = {
+        if (grepl("Endoscopy", w$ward_name)) {
+          rbind(bays(w, ceiling(w$beds * 2 / 3), "trolley"), bays(w, floor(w$beds / 3), "recliner", "Recovery"))
+        } else if (grepl("Eye|Treatment", w$ward_name)) {
+          rbind(bays(w, ceiling(w$beds / 2), "chair"), bays(w, floor(w$beds / 2), "recliner", "Recovery"))
+        } else {
+          rbind(bays(w, ceiling(w$beds / 2), "trolley"), bays(w, floor(w$beds / 4), "bed", "Ward"), bays(w, w$beds - ceiling(w$beds / 2) - floor(w$beds / 4), "recliner", "Recovery"))
+        }
+      },
+      location = {
+        switch(w$ward_name,
+          ED = rbind(space(w, "Resus", sprintf("Resus-%02d", 1:6), "trolley"),
+                     space(w, "Majors", sprintf("Majors-%02d", 1:28), "trolley"),
+                     space(w, "Minors", sprintf("Minors-%02d", 1:12), "chair"),
+                     space(w, "Fit to sit", sprintf("FTS-%02d", 1:10), "chair")),
+          UTC = space(w, "Treatment rooms", sprintf("UTC-%02d", 1:8), "chair"),
+          `Childrens ED` = rbind(space(w, "Cubicles", sprintf("Paeds-%02d", 1:8), "trolley"), space(w, "Waiting", sprintf("PaedsChair-%02d", 1:6), "chair")),
+          `Discharge Lounge` = rbind(space(w, "Lounge", sprintf("Chair-%02d", 1:20), "chair"), space(w, "Lounge", sprintf("Trolley-%02d", 1:4), "trolley")),
+          NULL)
+      },
+      NULL)
+    if (w$ward_name == "SDEC") out[[i]] <- rbind(space(w, "Assessment", sprintf("Chair-%02d", 1:10), "chair"), space(w, "Assessment", sprintf("Trolley-%02d", 1:6), "trolley"))
+  }
+  beds <- rbindlist(out)
+  beds[, bed_id := sprintf("B%05d", .I)]
+  setcolorder(beds, c("bed_id", "site_code", "ward_id", "ward_name", "bay", "bed_label", "bed_type"))
+  beds[]
 }

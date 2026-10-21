@@ -1,1 +1,0 @@
-{"table":"reference/sites","part":"full","rows_total":2,"files":1,"columns":[{"name":"site_code","type":"VARCHAR"},{"name":"site_name","type":"VARCHAR"},{"name":"has_ed","type":"VARCHAR"},{"name":"beds","type":"VARCHAR"}],"rows":[["RZ901","Hospital A","TRUE","1100"],["RZ902","Hospital B","FALSE","400"]]}

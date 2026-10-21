@@ -35,6 +35,9 @@
     .soon { font-size: 0.75rem; font-weight: 600; color: var(--accent); border: 1px solid var(--panel-border);
             border-radius: 999px; padding: 2px 9px; margin-left: 8px; vertical-align: middle; }
     footer { margin-top: 40px; color: var(--muted); font-size: 0.85rem; }
+    .banner { background: #3a2a0f; border: 1px solid #8a6414; color: #f3d99b; border-radius: 10px; padding: 12px 16px; margin: 0 0 18px; font-size: 0.9rem; }
+    .banner b { color: #ffe9b0; }
+    .banner ul { margin: 6px 0 0; padding-left: 20px; color: #f3d99b; }
   </style>
 </head>
 <body>
@@ -58,6 +61,8 @@
       <strong>event data</strong> and <strong>aggregated data</strong> can be explored directly.
       No row describes a real person; every NHS number carries the <code>fake_</code> prefix.
     </p>
+
+    <div id="banner" class="banner" hidden></div>
 
     <div class="facts">
       <div class="fact"><b>800,000</b><span>patients</span></div>
@@ -123,5 +128,18 @@ dbGetQuery(con, sprintf("SELECT count(*) FROM read_parquet('%sderived/spells.par
       Generated with seed 20230401; <code>data/v1/</code> is immutable once published.
     </footer>
   </div>
+  <script>
+    // Out-of-sync notice: pending-changes.json lists generator changes not yet in the published data.
+    fetch('pending-changes.json?v=dev').then((r) => (r.ok ? r.json() : null)).then((p) => {
+      if (!p || !Array.isArray(p.changes) || !p.changes.length) return;
+      const b = document.getElementById('banner');
+      const ul = document.createElement('ul');
+      for (const c of p.changes) { const li = document.createElement('li'); li.textContent = c; ul.append(li); }
+      const t = document.createElement('b');
+      t.textContent = `Generator ahead of the published data (${p.published_version}, built ${p.published_build}).`;
+      b.append(t, ' ' + (p.note || ''), ul);
+      b.hidden = false;
+    }).catch(() => {});
+  </script>
 </body>
 </html>

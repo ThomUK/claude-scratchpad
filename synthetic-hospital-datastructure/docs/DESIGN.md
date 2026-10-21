@@ -84,7 +84,13 @@ episodes bring their own CDS types; mental health is a different data model).
 
 About 60 wards are generated from a reference table of site, specialty, bed
 count and canonical name. Rather than list all sixty here, the generator's
-`ref_wards` seed table holds them; the categories are:
+`ref_wards` seed table holds them. A companion `ref_beds` table holds one
+row per bed space (`bed_id`, site, ward, bay, label, `bed_type`): inpatient
+wards are beds in bays of six plus side rooms, critical care is numbered
+bed spaces, day units mix trolleys, recliners and chairs with a few beds,
+the ED is resus and majors trolleys with minors and fit-to-sit chairs, SDEC
+is chairs and trolleys, and the discharge lounge is mostly chairs. The bed
+types are `bed`, `recliner`, `trolley` and `chair`. The categories are:
 
 | Site | Ward group | Count | Beds each | Notes |
 | --- | --- | --- | --- | --- |
@@ -492,7 +498,8 @@ over six weeks **(source)**.
 
 ### 4.7 Reference tables
 
-`ref_sites`, `ref_wards` (with valid-from/valid-to for renames), `ref_specialties`
+`ref_sites`, `ref_wards` (with valid-from/valid-to for renames), `ref_beds`
+(one row per bed space with its type), `ref_specialties`
 (from `nhs-specialties/`), `ref_consultants`, `ref_clinics`, `ref_exam_catalogue`
 (NICIP, SNOMED, modality, durations), `ref_admission_method`,
 `ref_admission_source`, `ref_discharge_destination`, `ref_attendance_status`,
