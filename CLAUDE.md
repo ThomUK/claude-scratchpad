@@ -20,6 +20,8 @@ deployed to GitHub Pages from `main`.
   to change Global Explorer from this repo, say so instead of editing. Its card
   in `index.html`, its README row and the `world-borders/` redirect live here
   and may still be edited.
+- **`synthetic-hospital-datastructure/` is only a redirect.** The project
+  moved to `ThomUK/synthetic-hospital-data`; work on it there.
 - Adding an app: create its directory, add a card to the root `index.html`
   (copy an existing block) and a row to the README table.
 - Asset URLs use `?v=dev`; the Pages workflow rewrites them to the commit SHA.

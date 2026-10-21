@@ -1,1 +1,0 @@
-{"table":"reference/admission_source","part":"sample","rows_total":5,"files":1,"columns":[{"name":"code","type":"VARCHAR"},{"name":"description","type":"VARCHAR"}],"rows":[["19","Usual place of residence"],["29","Temporary place of residence"],["51","NHS other hospital provider ward for general patients"],["54","Care home"],["87","Non-NHS run hospital"]]}
