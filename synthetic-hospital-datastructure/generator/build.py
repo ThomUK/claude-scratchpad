@@ -230,6 +230,9 @@ def main():
     manifest["totals"] = {"full_bytes": sum(f["bytes"] for e in manifest["full"].values() for f in e["files"]),
                           "sample_bytes": sum(f["bytes"] for e in manifest["sample"].values() for f in e["files"])}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1))
+    log("previews for the data viewer")
+    import preview
+    preview.write_previews(out)
     log("done; full", round(manifest["totals"]["full_bytes"] / 1e6), "MB, sample", round(manifest["totals"]["sample_bytes"] / 1e6), "MB")
 
 

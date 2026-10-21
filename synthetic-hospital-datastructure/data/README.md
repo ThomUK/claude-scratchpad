@@ -17,8 +17,14 @@ data/v1/
     answers/mess_log.parquet the answers table: every injected imperfection with its original value
     answers/truth/*.parquet  the clean spells, stays and linkages the derived layer is marked against
     sample-csv.zip           the same tables as CSV, for tools that cannot read Parquet
+  preview/{full,sample}/     the first 100 rows of every table as JSON, for the table viewer
   full/                      every row (see below for where it lives)
 ```
+
+The table viewer at `../viewer/` (served at
+`https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/viewer/`)
+lists every table from the manifest with its counts and download links and
+shows those 100-row previews.
 
 The sample is in this repository and served by GitHub Pages. The full set
 is about 1.1 GB of Parquet, which is more than GitHub Pages will host, so
