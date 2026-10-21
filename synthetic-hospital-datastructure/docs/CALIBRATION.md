@@ -144,9 +144,75 @@ to 11; within-18-weeks improves from 58% to 65%. The generator's referral
 and clock-stop rates are tuned so the fictional trust's incomplete list
 follows this profile scaled to its size.
 
-**Generator target:** an incomplete list of about 75,000 pathways
-(**assumption**: a top-10 trust's share, roughly 1.6% of the national
-list), with the same weeks-waiting profile.
+### 3.1 Provider level: one month (RTT waiting times by provider, August 2026)
+
+Source: `RTT-Waiting-Times-by-Provider-Aug26.xls`, sheets IncompProv,
+AdmProv and NonAdmProv. The imaging top-ten trusts plus Nottingham. The
+single-ED comparators (Nottingham, Oxford) sit 14th to 19th nationally by
+incomplete list size.
+
+| Trust | Incomplete | Within 18 wk % | Median wk | 92nd pct wk | Over 52 wk % | Completed admitted in month | Median wk | Completed non-admitted in month | Median wk |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| University Hospitals Birmingham NHS Foundation Trust | 96,056 | 66.6 | 11.8 | 32.8 | 0.2 | 3,066 | 4.2 | 17,094 | 7.9 |
+| Leeds Teaching Hospitals NHS Trust | 89,297 | 67.5 | 11.0 | 37.3 | 1.7 | 4,642 | 8.4 | 13,772 | 6.8 |
+| Northern Care Alliance NHS Foundation Trust | 136,819 | 55.8 | 15.5 | 43.6 | 2.9 | 2,501 | 14.3 | 14,463 | 13.2 |
+| Barts Health NHS Trust | 122,447 | 64.1 | 12.5 | 38.4 | 0.8 | 2,537 | 15.6 | 17,778 | 10.9 |
+| University Hospitals Sussex NHS Foundation Trust | 118,139 | 52.6 | 16.9 | 47.5 | 4.8 | 3,922 | 19.8 | 14,902 | 9.6 |
+| Mid And South Essex NHS Foundation Trust | 165,234 | 50.4 | 17.8 | 52.2 | 8.1 | 4,078 | 12.8 | 20,348 | 11.2 |
+| Imperial College Healthcare NHS Trust | 84,317 | 70.4 | 10.8 | 32.5 | 0.0 | 3,163 | 13.9 | 15,686 | 7.3 |
+| Northern Lincolnshire And Goole NHS Foundation Trust | 43,136 | 58.6 | 14.3 | 44.5 | 3.7 | 1,231 | 14.5 | 6,063 | 9.8 |
+| University Hospitals Of North Midlands NHS Trust | 75,383 | 60.0 | 13.8 | 41.5 | 2.3 | 2,700 | 12.8 | 11,859 | 6.4 |
+| Oxford University Hospitals NHS Foundation Trust | 89,879 | 62.2 | 13.3 | 40.9 | 1.7 | 3,575 | 16.4 | 13,358 | 10.0 |
+| Nottingham University Hospitals NHS Trust | 86,339 | 62.1 | 13.3 | 43.2 | 2.8 | 2,289 | 20.3 | 10,156 | 13.5 |
+
+Pooled specialty mix of the incomplete list at five teaching trusts
+(Nottingham, Oxford, Leeds, Birmingham, Imperial). "Other medical" and
+"other surgical" are the national return's catch-all treatment functions
+and are larger than any named specialty, which the generator reproduces
+by mapping its tertiary and sub-specialty referrals to them.
+
+| Treatment function | Description | Share of incomplete list % |
+| --- | --- | --- |
+| X02 | Other - Medical Services | 15.2 |
+| 502 | Gynaecology Service | 9.0 |
+| X05 | Other - Surgical Services | 8.4 |
+| 120 | Ear Nose and Throat Service | 8.1 |
+| 130 | Ophthalmology Service | 7.5 |
+| 110 | Trauma and Orthopaedic Service | 6.9 |
+| 330 | Dermatology Service | 6.8 |
+| X04 | Other - Paediatric Services | 5.9 |
+| 320 | Cardiology Service | 4.9 |
+| 101 | Urology Service | 4.9 |
+| 301 | Gastroenterology Service | 4.5 |
+| 400 | Neurology Service | 3.5 |
+| 100 | General Surgery Service | 2.5 |
+| 140 | Oral Surgery Service | 2.4 |
+| 340 | Respiratory Medicine Service | 2.1 |
+| 160 | Plastic Surgery Service | 1.9 |
+| 150 | Neurosurgical Service | 1.8 |
+| 410 | Rheumatology Service | 1.4 |
+| X06 | Other - Other Services | 1.2 |
+| 430 | Elderly Medicine Service | 0.5 |
+| 170 | Cardiothoracic Surgery Service | 0.4 |
+| 300 | General Internal Medicine Service | 0.1 |
+| X03 | Other - Mental Health Services | 0.0 |
+
+**Generator targets, taken from the Nottingham and Oxford shape:**
+
+| Measure | Value |
+| --- | --- |
+| Incomplete pathways, month-end snapshot | 88,000 |
+| Within 18 weeks | 62% |
+| Median wait | 13 weeks |
+| 92nd percentile | 42 weeks |
+| Over 52 weeks | 2% |
+| Completed admitted pathways per month | 3,000 (median 18 weeks) |
+| Completed non-admitted pathways per month | 12,000 (median 12 weeks) |
+| Clock starts per month | about 15,500, so the list is roughly stable |
+
+Over the three-year window the trust follows the national trajectory in
+section 3: the over-52-week share falls from about 5% to about 1.5% and
+the median from 15 weeks to 11.
 
 ## 4. Diagnostics waiting times: DM01 rules (DM01 Guidance v9, March 2026)
 
@@ -307,7 +373,6 @@ Sources: `HES-Data-Model-v1.0.pdf` (an entity diagram only), `HES-APC-TOS-v2.06.
 
 - Provider-level A&E attendances (the monthly provider CSV) would set the ED
   volume from a real top-10 trust rather than an estimate.
-- Provider-level RTT incomplete pathways would do the same for the waiting list.
 - HES APC and OP provider-level activity tables would set spells, day cases
   and appointments. Without them the design uses ratios to ED and imaging.
 - DM01 provider monthly file would set endoscopy volumes and the waiting-list
