@@ -24,9 +24,28 @@ Rscript generator/run.R <out_dir> [n_patients] [seed]
 
 Defaults are the full scale (800,000 patients) and seed 20230401. A
 20,000-patient run takes about ten seconds and is the right size for
-development; the full run takes a few minutes and writes roughly 14 million
-rows of CSV. Output is one CSV per table plus `manifest.json` with the seed,
+development. Output is one CSV per table plus `manifest.json` with the seed,
 parameters and row counts.
+
+Full-scale run on the cloud container (4 cores, 15 GB): 6 min 20 s to
+generate, 8 min 45 s wall clock including the CSV write, 3.7 GB of CSV,
+37.9 million rows:
+
+| Table | Rows |
+| --- | --- |
+| pas_patients | 800,000 |
+| pas_adt_events | 2,627,292 |
+| ed_attendances | 795,950 |
+| ed_status_log | 3,425,580 |
+| pas_referrals | 2,096,135 |
+| pas_outpatient_appointments | 6,163,826 |
+| pas_op_status_log | 21,030,538 |
+| ris_imaging | 933,561 |
+| endo_procedures | 70,250 |
+
+The two audit logs are two thirds of the rows. Parquet will compress them
+heavily; if the published set still needs trimming, the logs are the first
+candidates for per-year partitioning.
 
 From R:
 

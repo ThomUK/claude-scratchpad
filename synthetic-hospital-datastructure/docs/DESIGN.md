@@ -187,8 +187,9 @@ spells a year excluding maternity, of which 95,000 emergency (46,000 via the
 ED and 49,000 by other routes), 140,000 waiting list or booked and 15,000
 planned; 90,000 are day cases and there are about 310,000 consultant
 episodes **(source: HES APC provider table 2025/26, Nottingham and Oxford;
-A&E provider CSV for the ED split)**. That is roughly 1.7 million events a
-year and 5 million over three years.
+A&E provider CSV for the ED split)**. That is about 3.4 events per spell, 0.9
+million events a year and 2.6 million over three years (measured on the
+clean generator's full-scale run).
 
 ### 4.2 `ed_attendances` — ED system export
 
@@ -597,11 +598,13 @@ Patterns the generator builds in, with sources where they exist:
 ## 8. Hosting, formats and access
 
 - **Primary format: Parquet**, one file per table, committed under
-  `synthetic-hospital-datastructure/data/v1/full/`. The ADT event table
-  (about 5 million rows) and outpatient appointments (about 6 million)
-  are partitioned by financial year so that no single file approaches
-  GitHub's 100 MB file limit. Expected total around 400–500 MB, about 14
-  million rows in all.
+  `synthetic-hospital-datastructure/data/v1/full/`. The clean generator's
+  full-scale run produces 38 million rows and 3.7 GB of CSV, of which the
+  two audit logs (outpatient 21 million rows, ED 3.4 million) are two
+  thirds. Large tables are partitioned by financial year so that no single
+  file approaches GitHub's 100 MB file limit; the Parquet total is to be
+  measured at deliverable 4 and the audit logs are the first candidates
+  for trimming if the site limit bites.
 - **A `sample/` partition alongside `full/`**: a 5% sample of *patients*
   (about 40,000) with all of their activity across every table, so joins
   hold. About 25 MB. This is what the browser console loads by default;
