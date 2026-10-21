@@ -110,18 +110,171 @@ follows this profile scaled to its size.
 (**assumption**: a top-10 trust's share, roughly 1.6% of the national
 list), with the same weeks-waiting profile.
 
-## 4. Still to extract
+## 4. Diagnostics waiting times: DM01 rules (DM01 Guidance v9, March 2026)
 
-- DM01 test list and clock rules (from `DM01-Guidance-v9.pdf`).
-- DID derivation and validation rules (from `DID-Technical-Report-v13-2023-24.pdf`) and national turnaround times and body-site mix (from `DID-Annual-Statistical-Release-2023-24.pdf`).
-- DID field list (from `DID-Annex-2-Data-Items-v6.1.pdf`); NICIP exam codes (from `DID-Annex-1-...xlsx`).
-- GIRFT radiology throughput and slot lengths (from `GIRFT-radiology-report.pdf`).
-- HES data model entity relationships and the APC/OP field lists and code lists (from `HES-Data-Model-v1.0.pdf`, `HES-APC-TOS-v2.06.xlsx`).
-- ECDS data items and code lists (from `ECDS-ETOS-v4.0.8.xlsx`).
+Source: `DM01-Guidance-v9.pdf`. Page numbers are the printed ones.
 
-## 5. Not supplied, still assumptions
+- **The 15 tests** (p5, p17). Imaging: MRI, CT, non-obstetric ultrasound,
+  barium enema, DEXA. Physiological science: audiology assessments,
+  echocardiography, cardiac electrophysiology, peripheral neurophysiology,
+  sleep studies, urodynamics. Endoscopy: colonoscopy, flexi sigmoidoscopy,
+  cystoscopy, gastroscopy. Plain X-ray is not a DM01 test. The dataset
+  covers four of the fifteen: MRI, CT, and all four endoscopy tests except
+  that cystoscopy is modelled as a urology endoscopy in the same vendor
+  table.
+- **Clock start** (p6): "when the request for a diagnostic test or procedure
+  is made." **Clock stop**: "when the patient receives the diagnostic
+  test/procedure." The report date plays no part.
+- **Snapshot** (p6): length of wait in weeks "on the last day of the month".
+- **Patient cancellation or DNA** (p6): the clock "continues until the date
+  of the appointment that the patient cancelled or missed, whereupon it is
+  set to zero and the waiting time starts again." Two declined reasonable
+  offers (three or more weeks out) also allow a reset. No rule for hospital
+  cancellations: the clock runs on.
+- **Excluded from the waiting list** (p5–6): planned or surveillance tests
+  on a planned list; screening-programme tests (but a diagnostic triggered
+  by a positive screen is included); patients currently admitted and waiting
+  for an unscheduled test; tests incidental to a therapeutic admission.
+- **Activity** (p7–9): tests "carried out during the month", one unit per
+  distinct test (multiple MR scans of the same knee at one visit are one
+  unit), in three columns: waiting list (excluding planned), planned
+  (surveillance), and unscheduled (patients admitted as emergencies,
+  admission methods 21–2D, 31, 32, and tests in A&E).
+- **Not in the document**: the weeks-waiting bands, the 6-week / 1%
+  operational standard, any report-date rule. The bands and the standard
+  come from the monthly proforma and statistical release, not the guidance.
 
-- Provider-level A&E attendances (the monthly "A&E attendances and emergency admissions" provider CSV) would set the ED volume from a real top-10 trust rather than an estimate.
+## 5. Diagnostic Imaging Dataset: fields and derivations
+
+Sources: `DID-Annex-2-Data-Items-v6.1.pdf`, `DID-Technical-Report-v13-2023-24.pdf`,
+`DID-Annual-Statistical-Release-2023-24.pdf`.
+
+### 5.1 The submission (Annex 2)
+
+A CSV with no header row and 17 columns in this order: NHS Number (M*),
+NHS Number Status (R), Date of Birth (M*), Ethnicity (M*), Patient Gender
+(M*), Patient Home Postcode (M*), Registered GP Practice (M*), Patient Type
+(M), Referrer (R), Referring Organisation (R), Date of Test Request (R),
+Date Test Request Received (R), Date of Test (M), Imaging Code NICIP (M, or
+SNOMED CT), Imaging Code SNOMED CT, Date Test Report Issued (R), Provider
+Site Code (M), RIS Accession Number (M). M = mandatory, R = required, M* =
+at least one of the starred items must be present (Technical Report p9).
+
+Every temporal item is a **date only**. There is no time of day, no
+cancellation, no DNA, no modality and no body-site field: modality and body
+site live inside the NICIP or SNOMED code, and the accession number exists
+"so that a differentiation can be made between multiple body parts examined
+at the same attendance". It must be unique within site code.
+
+Patient Type (source setting) codes: 01 inpatient, 02 day case, 03
+outpatient, 04 GP direct access, 05 A&E, 06 other health care provider, 07
+other; "based on intended management at the time of the diagnostic test
+request". There is no code for unknown.
+
+### 5.2 Hard validations (Technical Report Table A, p9)
+
+Request date ≤ request received ≤ test date ≤ report issued; test date not
+more than 3 months before the submission month; NHS number must pass the
+modulus-11 check and must not be 1234567890, 0123456789 or N00000000N;
+postcode has exactly one space; referrer must be 8 characters (1–2 letters
+then digits) or is converted to 99. "Only five data fields (in addition to
+accession number) are mandatory, whilst all other fields can be left blank."
+
+### 5.3 Completeness and known data-quality behaviour (Technical Report)
+
+2023/24 completeness: NHS number 99.4%, NHS number status 82.6%, GP code
+94.1%, date of test request 94.0%, date of report issue about 95.8%.
+Providers have defaulted Patient Type to "Other" for up to 40% of
+outpatient requests; accession numbers not consistently available have
+produced both overwrites (same accession, different exams) and duplicates
+(same exam, different accessions); some providers submit several records
+for a complex exam that should be one. All of these are reproduced in the
+mess catalogue (M-RIS-*).
+
+### 5.4 Waits and reporting (Annual Release, 2023/24)
+
+| Measure | X-ray | Ultrasound | CT | MRI |
+| --- | --- | --- | --- | --- |
+| Median request to test, days | 0 | 15 | 1 | 20 |
+| Median test to report, days | 1 | 0 | 0 | 4 |
+| Reported same day, inpatient and A&E | 31% | 97% | 91% | 74% |
+| Reported by end of next day, inpatient and A&E | 55% | 98% | 98% | 87% |
+| Reported same day, outpatient and GP | 38% | 94% | 18% | 12% |
+| Reported by end of next day, outpatient and GP | 50% | 96% | 29% | 24% |
+
+Monthly MRI request-to-test medians run 19–23 days with January the
+longest; the release notes a seasonal rise in January for every modality.
+Brain MRI is 953,500 of 4.4 million MRI (21.6%); chest and/or abdomen CT is
+806,625 of 7.7 million CT (10.5%). RCR/SoR reporting guidance "suggests
+turnaround times from 12 hours (<4 hours for Emergency Department requests
+and the acutely unwell) up to 28 days according to urgency and modality".
+
+National monthly activity 2023/24 (all modalities): April lowest at 3.61
+million, January highest at 4.19 million, December 3.64 million. The
+generator uses the per-modality monthly columns from Table 1 as its
+seasonal index.
+
+### 5.5 Day curves (GIRFT radiology, 2017/18 DID data, chart-read)
+
+| Days from request | CT done by | MRI done by |
+| --- | --- | --- |
+| 0 | ≈43% | ≈8% |
+| 1 | ≈50% | ≈13% |
+| 10 | ≈65% | ≈31% |
+| 14 | ≈72% | ≈38% |
+| 28 | ≈85% | ≈62% |
+| 42 | ≈92% | ≈84% |
+
+| Days from test | CT reported by | MRI reported by |
+| --- | --- | --- |
+| 0 | ≈59% | ≈24% |
+| 1 | ≈69% | ≈35% |
+| 3 | ≈76% | ≈50% |
+| 7 | ≈88% | ≈70% |
+| 21 | ≈98% | ≈92% |
+
+GIRFT also reports mean scanner counts per trust of 3.4 CT and 2.8 MRI
+(median 2), recommends at least two CT scanners accessible from any ED, and
+suggests cold scanners plan for "75–80% of all available slots". It gives
+no slot lengths, no per-scanner throughput and no DNA rates; those stay as
+assumptions.
+
+## 6. HES and ECDS field shapes
+
+Sources: `HES-Data-Model-v1.0.pdf` (an entity diagram only), `HES-APC-TOS-v2.06.xlsx`, `ECDS-ETOS-v4.0.8.xlsx`.
+
+- HES APC is one row per **episode** (`EPIKEY`), with spell fields repeated
+  on every episode (`ADMIDATE`, `ADMIMETH`, `ADMISORC`, `CLASSPAT`) and
+  discharge fields only on the last (`DISDATE`, `DISMETH`, `DISDEST`,
+  `SPELEND = Y`). `EPIORDER`, `EPISTART`, `EPIEND`, `SPELBGIN`, `EPISTAT`
+  (3 finished), `SPELDUR`, `ELECDATE`, `INTMANIG`, `DISREADYDATE`,
+  `TRETSPEF`, `MAINSPEF`, `SITETRET`, `PROVSPNOPS`. HES AE carries `EPIKEY`
+  and HES APC carries `AEKEY`, which is how an attendance links to its
+  admission.
+- HES OP is one row per **appointment** (`ATTENDKEY`) with `ATTENDED` (2
+  patient cancelled, 3 DNA, 4 hospital cancelled, 5 seen, 6 late and seen,
+  7 late not seen), `FIRSTATT` (1–4), `ATENTYPE` derived from the two,
+  `OUTCOME`, `PRIORITY` (1 routine, 2 urgent, 3 two-week wait), `REFSOURC`,
+  `REQDATE`, `DNADATE`, `WAITING`, `RTTPERSTART/END/STAT`.
+- ECDS v4 is one row per **attendance** with timestamps for activity start
+  (arrival), initial assessment, seen for treatment, decided to admit,
+  clinically ready to proceed and activity end; SNOMED-coded arrival mode,
+  attendance source, acuity (1 immediate … 5 low acuity), chief complaint,
+  discharge status (treatment complete, streamed, left before assessment,
+  died) and discharge destination (home, ward, HDU, ICU, SDEC, theatre,
+  transfer, mortuary). The ETOS refset tabs give the full code lists with
+  SNOMED concept IDs; the generator's `ref_ecds_codes` is built from them.
+
+## 7. Not supplied, still assumptions
+
+- Provider-level A&E attendances (the monthly provider CSV) would set the ED
+  volume from a real top-10 trust rather than an estimate.
 - Provider-level RTT incomplete pathways would do the same for the waiting list.
-- HES APC and OP provider-level activity (the annual "Hospital Admitted Patient Care Activity" and "Hospital Outpatient Activity" provider tables) would set spells, day cases and appointments. Without them the design uses ratios to ED and imaging activity.
-- Endoscopy volumes: no national provider-level endoscopy activity was supplied; DM01 gives waiting list and monthly activity by test type nationally and by provider in its monthly provider file.
+- HES APC and OP provider-level activity tables would set spells, day cases
+  and appointments. Without them the design uses ratios to ED and imaging.
+- DM01 provider monthly file would set endoscopy volumes and the waiting-list
+  weeks bands.
+- DID Table 9 (medians by modality × source) and Table 13 (quarterly
+  turnaround by provider) would sharpen the imaging calibration.
+- Slot lengths and room times for individual exam types: nothing supplied
+  gives them.

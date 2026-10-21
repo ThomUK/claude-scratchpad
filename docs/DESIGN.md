@@ -1,109 +1,129 @@
 # Design: synthetic-hospital-datastructure
 
 Design document for review before any code is written. Everything marked
-**assumption** is a number or rule I chose because I could not find an
-authoritative public figure; correct it and the generator will follow.
+**assumption** is a number or rule I chose because no supplied document
+gives it; everything marked **(source)** is taken from a document in
+`docs/sources/` and quoted in `CALIBRATION.md`. Correct either and the
+generator follows.
 
 ## 1. Purpose and principles
 
-- A fixed, versioned, seeded synthetic dataset for one fictional acute trust,
-  queryable with SQL from a browser page, from R and from Python, with no
-  server.
+- A fixed, versioned, seeded synthetic dataset for one fictional acute trust
+  of top-10 national scale, queryable with SQL from a browser page, from R
+  and from Python, with no server.
 - Three layers, each built from the one below by SQL that is checked in and
   readable, so the information lost at each step is demonstrable:
   1. **Source extracts**: what the trust's systems actually emit. Event-level,
      one table per system, deliberately messy.
   2. **Derived entities**: spells, episodes, ward stays, attendances,
-     appointments, exams, procedures. What an analyst in the trust sees.
+     appointments, exams, procedures. What an analyst in the trust sees,
+     shaped like HES and ECDS so the field names are familiar.
   3. **Aggregates**: the counts, snapshots and performance figures that leave
-     the trust. What a board or a national return sees.
-- Flow only. No diagnoses, procedures codes, observations or results in v1.
+     the trust, shaped like the national returns (A&E monthly, DM01, DID,
+     RTT, HES activity).
+- Flow only. No diagnoses, procedure codes, observations or results in v1.
 - Mess is injected on purpose, at known rates, and every injected row is
-  recorded in a hidden answers table (`mess_log`) so the mess is a teaching
-  aid rather than an accident. See `MESS-CATALOGUE.md`.
+  recorded in a hidden answers table (`mess_log`). See `MESS-CATALOGUE.md`.
 - Reproducible: one seed, one manifest, committed output. Re-running the
   generator with the same seed and version gives byte-identical Parquet.
 
 ## 2. The fictional trust
 
 **Thornfield Vale NHS Foundation Trust**, organisation code `RZ9` (chosen to
-look like an ODS code without being one). Two sites:
+look like an ODS code without being one). A large teaching trust: around
+1,500 beds, activity at the scale of the 8th to 10th largest imaging
+providers in England **(source: DID Table 11)**.
 
-| Site code | Name | Role |
-| --- | --- | --- |
-| `RZ901` | Thornfield General Hospital | Main site. The only emergency department. All non-elective admissions, most medical specialties, trauma, emergency surgery, and plenty of elective work. |
-| `RZ902` | Wyvern Park Hospital | Predominantly elective: day surgery, elective orthopaedics, ophthalmology, ENT, most routine outpatients and a large share of routine MRI and endoscopy. A small number of non-elective admissions arise from elective patients deteriorating on site. |
+Two sites:
+
+| Site code | Name | Beds | Role |
+| --- | --- | --- | --- |
+| `RZ901` | Thornfield General Hospital | ~1,100 | Main site. The only emergency department (Type 1) plus a co-located UTC stream and SDEC. All non-elective admissions, every medical specialty, trauma, emergency and complex surgery, critical care, children's services, and a large elective programme of its own. Two CT scanners dedicated to the ED and inpatients ("hot") plus two elective CT scanners; three MRI scanners. |
+| `RZ902` | Wyvern Park Hospital | ~400 | Predominantly elective: day surgery, elective orthopaedics, ophthalmology, ENT, urology, most routine outpatients, a large share of routine MRI and endoscopy, and a community diagnostic centre (CDC) wing. One CT and two MRI scanners. A small number of non-elective admissions arise from elective patients deteriorating on site; anything serious is transferred to RZ901. |
+
+One ED at a top-10 trust is unusual (most of the real top ten run two or
+more) and is a deliberate simplification so that ED flow has one shape.
 
 ### 2.1 Specialties and where they work
 
 Treatment function codes (TFC) from the NHS Data Dictionary, reusing the
-`nhs-specialties/` reference data in this repo.
+`nhs-specialties/` reference data in this repo. "IP" is inpatient beds,
+"DC" day case, "OP" outpatients. Some specialties are split across sites,
+some are not.
 
-| TFC | Specialty | RZ901 (General) | RZ902 (Wyvern Park) |
+| TFC | Specialty | RZ901 Thornfield General | RZ902 Wyvern Park |
 | --- | --- | --- | --- |
-| 180 | Emergency Medicine | ED, SDEC | – |
-| 300 | General Internal Medicine | AMU, wards, OP | – |
-| 430 | Geriatric Medicine | wards, OP, frailty unit | OP only |
-| 320 | Cardiology | CCU, ward, OP, echo | OP only |
-| 340 | Respiratory Medicine | ward, OP | – |
-| 301 | Gastroenterology | ward, OP, endoscopy | OP, endoscopy |
-| 100 | General Surgery | emergency + elective, OP | day case + elective, OP |
-| 110 | Trauma & Orthopaedics | trauma, OP | elective inpatient + day case, OP |
-| 101 | Urology | emergency, OP | elective, day case, OP |
-| 130 | Ophthalmology | – | day case, OP |
-| 120 | ENT | – | day case, OP |
-| 502 | Gynaecology | ward, OP | day case |
-| 420 | Paediatrics | ward, OP | – |
+| 180 | Emergency Medicine | ED, UTC, SDEC | – |
+| 300 | General Internal Medicine | AMU, IP, OP | – |
+| 430 | Geriatric Medicine | IP, frailty unit, OP | OP |
+| 320 | Cardiology | CCU, IP, OP, cath lab | OP, echo |
+| 340 | Respiratory Medicine | IP, OP | OP |
+| 301 | Gastroenterology | IP, OP, endoscopy | OP, endoscopy |
+| 361 | Renal Medicine | IP, OP, dialysis | – |
+| 400 | Neurology | IP, OP | OP |
+| 100 | General Surgery | emergency + complex IP, OP | DC, elective IP, OP |
+| 104 | Colorectal Surgery | emergency + complex IP, OP | DC, OP, endoscopy |
+| 107 | Vascular Surgery | IP, OP | – |
+| 110 | Trauma & Orthopaedics | trauma IP, OP | elective IP, DC, OP |
+| 101 | Urology | emergency IP, OP | elective IP, DC, OP |
+| 130 | Ophthalmology | emergency eye clinic | DC, OP |
+| 120 | ENT | emergency IP | DC, elective IP, OP |
+| 502 | Gynaecology | IP, OP | DC, OP |
+| 420 | Paediatrics | IP, OP, children's ED stream | – |
 | 330 | Dermatology | – | OP |
 | 410 | Rheumatology | OP | OP |
+| 192 | Critical Care Medicine | ICU, HDU | – |
 
 Obstetrics and mental health are out of scope for v1 (birth and delivery
 episodes bring their own CDS types; mental health is a different data model).
 
 ### 2.2 Wards
 
-About 22 wards across the two sites, each with site, specialty, bed count and
-a canonical name. Names are *not* stable in the source data (see the mess
-catalogue): at least two wards are renamed mid-period, one closes and
-reopens, and ward names appear with inconsistent casing and spacing.
+About 60 wards are generated from a reference table of site, specialty, bed
+count and canonical name. Rather than list all sixty here, the generator's
+`ref_wards` seed table holds them; the categories are:
 
-| Site | Ward (canonical) | Specialty | Beds | Notes |
+| Site | Ward group | Count | Beds each | Notes |
 | --- | --- | --- | --- | --- |
-| RZ901 | ED | 180 | – | Not a bed ward; appears in ADT as a location for admitted patients boarding. |
-| RZ901 | SDEC | 180 | 12 | Same-day emergency care. |
-| RZ901 | AMU | 300 | 40 | Acute medical unit; most non-elective medical admissions land here first. |
-| RZ901 | Ward 1 Cardiology / CCU | 320 | 24 | |
-| RZ901 | Ward 2 Respiratory | 340 | 28 | |
-| RZ901 | Ward 3 Gastro | 301 | 24 | |
-| RZ901 | Ward 4 Medicine | 300 | 28 | |
-| RZ901 | Ward 5 Frailty | 430 | 28 | Renamed from "Ward 5 Elderly Care" in month 14. |
-| RZ901 | Ward 6 Frailty | 430 | 28 | |
-| RZ901 | SAU | 100 | 16 | Surgical assessment unit. |
-| RZ901 | Ward 7 Surgery | 100 | 28 | |
-| RZ901 | Ward 8 Trauma | 110 | 28 | |
-| RZ901 | Ward 9 Urology / Gynae | 101/502 | 24 | Mixed ward: specialty of the bed is ambiguous in the data. |
-| RZ901 | Childrens Ward | 420 | 20 | |
-| RZ901 | ICU | 192 | 12 | Critical care; appears as a location only. |
-| RZ901 | Escalation Ward | mixed | 0–20 | Opens in winter months only. |
-| RZ901 | Discharge Lounge | – | – | Location with no overnight stays. |
-| RZ902 | Day Surgery Unit | mixed | 30 | |
-| RZ902 | Elective Ortho Ward | 110 | 32 | |
-| RZ902 | Eye Unit | 130 | 8 | |
-| RZ902 | ENT Day Unit | 120 | 8 | |
-| RZ902 | Ward W1 Surgery | 100 | 20 | |
+| RZ901 | ED, UTC, SDEC, children's ED | 4 | – / 20 / 16 / – | Locations, not bed wards, except SDEC. Admitted patients board in ED. |
+| RZ901 | AMU (2 wards) and SAU | 3 | 40 / 40 / 20 | Most non-elective admissions land here first. |
+| RZ901 | Medical specialty wards | 14 | 24–32 | Cardiology, CCU, respiratory (2), gastro, renal, neurology, general medicine (4), frailty (3). |
+| RZ901 | Surgical wards | 8 | 24–28 | General and colorectal (3), vascular, trauma (2), urology/gynae mixed, ENT/max-fax. |
+| RZ901 | Critical care | 2 | 24 / 12 | ICU, HDU. Locations with level-of-care flags. |
+| RZ901 | Children's wards | 2 | 24 / 16 | |
+| RZ901 | Elective surgical wards | 4 | 24–28 | For the main site's own elective programme. |
+| RZ901 | Escalation wards | 3 | 0–24 | Open in winter months only; one opens on a different date each year. |
+| RZ901 | Discharge lounge | 1 | – | Location with no overnight stays. |
+| RZ902 | Day surgery and treatment units | 4 | 20–30 | |
+| RZ902 | Elective orthopaedic wards | 3 | 28–32 | |
+| RZ902 | Elective surgical wards | 3 | 20–28 | General, urology, ENT. |
+| RZ902 | Eye unit, endoscopy recovery, CDC | 3 | 8 / 12 / – | |
+
+Names are *not* stable in the source data (see the mess catalogue): several
+wards are renamed mid-period, escalation wards open and close, and names
+appear with inconsistent casing and spacing.
 
 ## 3. Time range and population
 
 - **Activity window:** 1 April 2023 to 31 March 2026 inclusive. Three full
-  financial years, enough for monthly time series and seasonality.
+  financial years, enough for monthly time series and seasonality, and the
+  period for which national A&E and RTT monthly figures were supplied
+  **(source)**.
 - **Edges are honest.** Some spells are open at 1 April 2023 (their admission
   events exist, dated before the window) and some are open at 31 March 2026
-  (no discharge yet). This is what real extracts look like and it is what
-  makes the midnight census differ from admissions minus discharges.
-- **Population:** 50,000 patients who had at least one contact in the window.
-  Age and sex drawn from an English acute-trust contact profile (older
-  skewed; roughly 20% under 18, 35% 18–64, 45% 65+ for admissions,
-  flatter for ED and outpatients). **Assumption.**
+  (no discharge yet). Open spells at the window edges are what make the
+  midnight census differ from admissions minus discharges.
+- **Population: 750,000 patients** who had at least one contact in the
+  window. **Assumption**, derived as follows: a trust of this scale sees
+  roughly 190,000 ED attendances, 230,000 spells and 1.2 million outpatient
+  appointments a year; with realistic repeat rates (an ED attender averages
+  about 1.5 attendances a year, an outpatient about 3 appointments a year)
+  that is roughly 450,000 distinct patients a year and about 750,000 over
+  three years. The original plan of 50,000 patients would mean every patient
+  attending ED eleven times, so it had to rise with the trust size.
+- Age and sex drawn from a profile matching the DID 2023/24 age bands for
+  imaging **(source)** and the national admitted-care profile
+  (**assumption** for ED and outpatients).
 - Some patients die during the window (in hospital or notified later), so
   dates of death exist and some are recorded after activity that should have
   stopped.
@@ -112,10 +132,12 @@ reopens, and ward names appear with inconsistent casing and spacing.
 
 | Identifier | Format | Owner | Notes |
 | --- | --- | --- | --- |
-| NHS number | `fake_` + 10 digits, the 10 digits having a valid modulus-11 check digit | national | Looks right, cannot be mistaken for real. Stored as text. |
+| NHS number | `fake_` + 10 digits, the 10 digits having a valid modulus-11 check digit | national | The full 10 digits are kept so the DID validation rule ("must pass the Modulus 11 check digit test") would pass on the digits, and the prefix makes it unmistakably fake. Stored as text. |
+| NHS number status | DID / ECDS `NHS NUMBER STATUS INDICATOR CODE` (01 traced, 02 untraced, etc.) | each system | Carried on ED and RIS rows; mostly 01. |
 | Hospital number (MRN) | `T` + 7 digits | PAS | The trust's master identifier. Both sites share one PAS. |
-| ED system ID | `E` + 8 digits | ED system | Issued by the ED system, mapped to MRN by an interface that sometimes fails. |
+| ED system ID | `E` + 8 digits | ED system | ECDS `LOCAL PATIENT IDENTIFIER (EXTENDED)` for the ED; mapped to MRN by an interface that sometimes fails. |
 | RIS patient ID | integer | Radiology Information System | |
+| RIS accession number | `RZ901-` or `RZ902-` + 8 digits | RIS | DID: "must be unique within site code". Uniqueness is only within site, which is itself a lesson. |
 | Endoscopy system ID | `EN-` + 6 digits | endoscopy vendor | |
 
 A patient can have more than one MRN (duplicates later merged via an A40
@@ -140,128 +162,196 @@ everything in the inpatient domain is derived from it.
 | `event_datetime` | when the thing happened (effective time) |
 | `recorded_datetime` | when the message was sent; lags `event_datetime` by minutes to days |
 | `mrn` | hospital number |
-| `visit_number` | PAS spell identifier |
+| `visit_number` | PAS spell identifier (becomes HES `PROVSPNO`) |
 | `site_code` | `RZ901` or `RZ902` |
 | `ward` | ward name as typed in the PAS at the time |
 | `bed` | bay/bed label, often blank |
 | `consultant_code` | fictional GMC-style code |
-| `specialty_code` | TFC |
-| `admission_method` | NHS Data Dictionary admission method (e.g. `21` ED, `11` waiting list, `12` booked, `13` planned, `22` GP, `28` other emergency) on A01 only |
-| `admission_source` | NHS Data Dictionary source of admission on A01 only |
-| `discharge_method` / `discharge_destination` | on A03 only |
-| `patient_class` | `I` inpatient, `D` day case, `R` regular day attender |
+| `specialty_code` | TFC (HES `TRETSPEF`); main specialty (HES `MAINSPEF`) is on the consultant reference table |
+| `admission_method` | HES `ADMIMETH` codes **(source)**: 11 waiting list, 12 booked, 13 planned, 21 ED, 22 GP, 23 bed bureau, 24 consultant clinic, 25 mental health crisis team, 28 other emergency, 2A ED of another provider, 2B transfer of an admitted patient from another hospital, 2D other emergency admission, 31/32 maternity (unused), 81 transfer from another provider (non-emergency). On A01 only. |
+| `admission_source` | HES `ADMISORC` codes **(source)**: 19 usual residence, 29 temporary residence, 51 NHS other provider ward, 54 care home, etc. On A01 only. |
+| `intended_management` | HES `INTMANIG`: 1 overnight, 2 not overnight. On A01 only. Lets the day-case versus inpatient distinction be derived rather than stated. |
+| `patient_class` | HES `CLASSPAT`: 1 ordinary admission, 2 day case, 3 regular day attender |
+| `decision_to_admit_date` | HES `ELECDATE`, elective admissions only |
+| `discharge_method` | HES `DISMETH`: 1 clinical discharge, 4 died, 6 self-discharge, 7 discharged by relative. On A03 only. |
+| `discharge_destination` | HES `DISDEST`: 19 home, 54 care home, 51 other NHS provider, 79 died, etc. On A03 only. |
+| `discharge_ready_date` | HES `DISREADYDATE`, populated for a minority of long-stay patients. On A03 only. |
 | `prior_mrn` | on A40 only: the MRN being merged away |
 
-Roughly 10 events per spell. Volume: around 60,000 spells a year, so about
-1.8 million events over three years. **Assumption**; see section 7.
+About 9 events per ordinary admission and 3 per day case. Volume: around
+230,000 spells a year **(assumption** scaled from the imaging volume**)**, so
+roughly 1.5 million events a year and 4.5 million over three years.
 
 ### 4.2 `ed_attendances` — ED system export
 
-ECDS-shaped, one row per attendance, from a different system with its own
-patient ID.
+ECDS v4-shaped **(source: ECDS ETOS v4.0.8)**, one row per attendance, from
+a different system with its own patient ID. Column names follow the ECDS
+XML element names in snake case so the mapping to the national dataset is
+one-to-one.
 
-Columns: `ed_attendance_id`, `ed_patient_id`, `nhs_number`, `mrn` (nullable:
-the interface fills it in later and sometimes never), `arrival_datetime`,
-`arrival_mode` (ambulance, walk-in, other), `attendance_category` (first,
-follow-up, unplanned re-attendance), `triage_datetime`, `acuity` (1–5),
-`initial_assessment_datetime`, `seen_by_clinician_datetime`,
-`decision_to_admit_datetime` (nullable), `departure_datetime`,
-`discharge_status` (admitted, discharged, transferred, left before treatment,
-died), `chief_complaint` (short code list), `department` (ED, UTC, SDEC).
+| Column | ECDS item |
+| --- | --- |
+| `uec_activity_identifier` | URGENT AND EMERGENCY CARE ACTIVITY IDENTIFIER |
+| `local_patient_identifier` | LOCAL PATIENT IDENTIFIER (EXTENDED), the `E` number |
+| `nhs_number`, `nhs_number_status_indicator_code` | as the ED system holds them |
+| `mrn` | not an ECDS item; populated by the PAS interface, nullable |
+| `site_of_treatment` | ORGANISATION SITE IDENTIFIER (OF TREATMENT), always `RZ901` |
+| `uec_activity_type` | ED (Type 1), UTC stream, SDEC |
+| `arrival_mode` | ECDS arrival mode: own transport / walk-in, public transport, emergency road ambulance, ambulance with medical escort, non-emergency ambulance, helicopter, police, custodial |
+| `attendance_category` | ECDS attendance category (first unplanned, follow-up unplanned, follow-up planned, etc.) |
+| `attendance_source` | ECDS attendance source group and item: self, GP, NHS 111, out-of-hours GP, ambulance service, ED of another provider, outpatient/SDEC, inpatient ward, community nurse, police, etc. |
+| `activity_start_datetime` | URGENT AND EMERGENCY CARE ACTIVITY START DATE AND TIME (arrival) |
+| `initial_assessment_timestamp` | INITIAL ASSESSMENT TIMESTAMP (triage) |
+| `acuity` | ECDS acuity 1–5: 1 immediate (resus), 2 very urgent, 3 urgent (majors), 4 standard (minors), 5 low acuity |
+| `chief_complaint` | short list drawn from the ECDS chief complaint refset |
+| `seen_for_treatment_timestamp` | TIMESTAMP SEEN FOR TREATMENT |
+| `decided_to_admit_datetime` | DECIDED TO ADMIT DATE AND TIME, nullable |
+| `tfc_decision_to_admit` | ACTIVITY TREATMENT FUNCTION CODE (DECISION TO ADMIT) |
+| `clinically_ready_to_proceed_timestamp` | CLINICALLY READY TO PROCEED TIMESTAMP, nullable |
+| `discharge_status` | ECDS discharge status: treatment complete; streamed to GP / UTC / SDEC / frailty; left before initial assessment; left after assessment; died in department; dead on arrival |
+| `discharge_destination` | ECDS discharge destination: home, residential care, nursing care, ED short stay ward, SDEC, ward bed, operating theatre, HDU, CCU, ICU, transfer to another hospital, hospice, mortuary |
+| `activity_end_timestamp` | ACTIVITY END TIMESTAMP (departure) |
 
-Volume around 85,000 attendances a year with about 25% admitted.
-**Assumption.**
+Volume: 190,000 Type 1 attendances a year (**assumption**, the scale of a
+large single-ED teaching hospital; provider-level national data was not
+supplied), of which about 28% are admitted **(source: national Type 1
+series, 27–29.5% every month 2023–26)**.
 
 ### 4.3 `pas_outpatient_appointments`
 
-One row per appointment slot that was booked. Columns: `appointment_id`,
-`mrn`, `referral_id`, `site_code`, `clinic_code`, `specialty_code`,
-`consultant_code`, `appointment_datetime`, `appointment_type`
-(first/follow-up), `attendance_status` (NHS Data Dictionary attended-or-DNA
-codes: 5 attended, 6 arrived late and seen, 7 DNA, 2 patient cancelled,
-4 hospital cancelled, 3 arrived late not seen), `outcome` (discharged,
-follow-up, added to waiting list, diagnostic requested), `booked_datetime`,
-`cancelled_datetime`, `contact_mode` (face to face, telephone, video).
+One row per appointment slot that was booked, with HES OP field semantics
+**(source: HES OP ATOS)**. Columns: `appointment_id` (HES `ATTENDKEY`),
+`mrn`, `referral_id`, `site_code` (`SITETRET`), `clinic_code`,
+`specialty_code` (`TRETSPEF`), `consultant_code`, `appointment_datetime`
+(`APPTDATE` plus time), `first_attendance` (`FIRSTATT`: 1 first face to
+face, 2 follow-up face to face, 3 first telephone/video, 4 follow-up
+telephone/video), `attendance_status` (`ATTENDED`: 2 cancelled by patient,
+3 DNA no warning, 4 cancelled by hospital, 5 seen on time, 6 arrived late and
+seen, 7 arrived late not seen), `outcome` (`OUTCOME`: discharged, timed
+follow-up given, follow-up to be arranged, moved to another specialty, added
+to inpatient waiting list, diagnostic requested), `priority` (`PRIORITY`: 1
+routine, 2 urgent, 3 two-week wait), `referral_source` (`REFSOURC`: 03 GP,
+04 ED, 05 consultant, 10 following ED attendance, 01 following emergency
+admission, etc.), `booked_datetime`, `cancelled_datetime`,
+`dna_date` (`DNADATE`), `staff_type` (`STAFFTYP`).
 
-Volume around 350,000 appointments a year. **Assumption.**
+Volume around 1.2 million appointments a year. **Assumption.**
 
 ### 4.4 `pas_referrals` — the RTT skeleton
 
 One row per referral into the trust. Columns: `referral_id`, `mrn`,
-`referral_received_date`, `referral_source` (GP, consultant-to-consultant,
-ED, other), `specialty_code`, `priority` (routine, urgent, two-week-wait),
-`rtt_pathway_id`, `clock_start_date`, `clock_stop_date` (nullable),
-`clock_stop_reason`. Enough to derive incomplete-pathway snapshots, not a
-full RTT implementation.
+`referral_received_date` (HES `REQDATE`), `referral_source`,
+`specialty_code`, `priority`, `rtt_pathway_id`, `rtt_period_start_date`,
+`rtt_period_end_date` (nullable), `rtt_period_status` (HES `RTTPERSTAT`
+codes: 10 first activity, 20 subsequent activity, 30 first definitive
+treatment, 31/32 active monitoring, 33 DNA first appointment, 34 decision
+not to treat, 35 patient declined, 36 died, 90/91/92 non-RTT). Enough to
+derive incomplete-pathway snapshots with the national weeks-waiting profile,
+not a full RTT implementation.
+
+The trust's incomplete list runs at about 75,000 pathways (**assumption**:
+roughly 1.6% of the national list of 4.3–4.6 million **(source: RTT
+overview)**), with median wait drifting from 14–15 weeks to 11 and the
+over-52-week share from 5% to 1.3% across the window, as nationally.
 
 ### 4.5 `ris_imaging` — CT and MRI from the Radiology Information System
 
 One structure, two modalities, two very different teams (see mess
-catalogue M-CT-* and M-MRI-*). One row per examination request.
+catalogue M-CT-* and M-MR-*). One row per examination request, which is
+richer than the DID submission (the DID is a date-only, performed-exams-only
+extract of this; see the aggregate layer).
 
-| Column | Meaning |
-| --- | --- |
-| `exam_id` | RIS accession number |
-| `ris_patient_id` | RIS identifier |
-| `nhs_number`, `mrn` | as the RIS holds them |
-| `modality` | `CT` or `MR` |
-| `exam_code` | NICIP-style short code, e.g. `CHEAC` (CT head), `MKNEL` (MRI knee left) |
-| `exam_description` | free text as the booking clerk typed it |
-| `body_area` | reference-table value, inconsistently filled |
-| `priority` | emergency, urgent, two-week-wait, routine, planned |
-| `patient_source` | DID-style source setting: GP direct access, outpatient, inpatient, A&E, other |
-| `referrer_code`, `referring_specialty` | |
-| `request_datetime` | |
-| `vetted_datetime` | radiologist vetting, nullable |
-| `booked_datetime` | appointment time given |
-| `scan_start_datetime`, `scan_end_datetime` | actual scanner time |
-| `slot_minutes` | the slot the booking system allocated |
-| `reported_datetime` | preliminary report |
-| `verified_datetime` | final report authorised |
-| `reporter_code` | |
-| `status` | requested, vetted, booked, cancelled, DNA, performed, reported, verified |
-| `cancel_reason` | nullable |
-| `site_code` | scanner site |
-| `scanner_id` | CT1, CT2 at RZ901; MR1 at RZ901, MR2 at RZ902 |
+| Column | Meaning | DID item it feeds **(source: DID Annex 2)** |
+| --- | --- | --- |
+| `accession_number` | `RZ90n-` + 8 digits, unique within site | RIS Accession Number (M) |
+| `ris_patient_id` | RIS identifier | – |
+| `nhs_number`, `nhs_number_status` | as the RIS holds them | NHS Number (M*), NHS Number Status (R) |
+| `mrn` | as the RIS holds it, from the PAS feed | – |
+| `modality` | `CT` or `MR` | derived from the code via Annex 1 |
+| `nicip_code` | NICIP code from the Annex 1 lookup **(source)**, e.g. `CHEAC` CT head, `CABPEC` CT abdomen and pelvis with contrast, `CCHEC` CT chest with contrast, `CURIT` CT urinary tract, `CAICN` CT angiogram intracranial, `CVCLD` CT colonography, `MMRCP` MRCP, `MPROSC` MRI prostate with contrast, `MCARD` MRI heart, `MLIVEC` MRI liver with contrast, `MSHLL` MRI shoulder left, `MHIPB` MRI hips | Imaging Code NICIP (M) |
+| `snomed_code` | the mapped SNOMED CT code, sometimes blank, sometimes the only code present | Imaging Code SNOMED CT (M, either/or) |
+| `exam_description` | free text as the booking clerk typed it | – |
+| `body_area` | local reference value, inconsistently filled | – (DID carries body site inside the code) |
+| `priority` | emergency, urgent, two-week-wait, routine, planned | – |
+| `patient_source_setting` | DID Patient Type codes **(source)**: 01 inpatient, 02 day case, 03 outpatient, 04 GP direct access, 05 A&E, 06 other health care provider, 07 other. "Based on intended management at the time of the request." | Patient Type (M) |
+| `referrer_code`, `referring_organisation` | GMC-style or practice code; ODS code | Referrer (R), Referring Organisation (R) |
+| `request_datetime` | when the clinician made the request | Date of Test Request (R) |
+| `request_received_datetime` | when the RIS received it (order comms makes these equal; paper and phone requests do not) | Date Test Request Received (R) |
+| `vetted_datetime` | radiologist or radiographer vetting, nullable | – |
+| `booked_datetime` | appointment time given | – |
+| `scan_start_datetime`, `scan_end_datetime` | actual scanner time | Date of Test (M), date part only |
+| `slot_minutes` | the slot the booking system allocated | – |
+| `reported_datetime` | preliminary report | – |
+| `verified_datetime` | final report authorised | Date Test Report Issued (R), date part only |
+| `reporter_code` | | – |
+| `status` | requested, vetted, booked, cancelled, DNA, performed, reported, verified | – (the DID has no cancellation or DNA items) |
+| `cancel_reason` | nullable | – |
+| `site_code` | scanner site | Provider Site Code (M) |
+| `scanner_id` | `CT1`–`CT4`, `MR1`–`MR3` at RZ901; `CT5`, `MR4`, `MR5` at RZ902 | – |
 
-**Exam catalogue.** Durations are the scanner-room time; slot lengths are
-what the booking system allocates. All **assumptions** from patient-facing
-NHS guidance and published timing studies, since no public NHS slot-length
-standard was found; inpatient and ED exams run a few minutes longer than
-outpatient ones.
+**Exam catalogue.** The GIRFT radiology report **(source)** gives no slot
+lengths or per-scanner throughput ("there is no clear correlation between
+the amount of equipment a trust owns and its performance"), and neither does
+any other supplied document, so durations remain **assumptions** from
+patient-facing NHS guidance and published timing studies. What the sources
+do give is the shape of the queue around each exam: see section 4.5.1.
+Inpatient and ED exams run a few minutes longer than outpatient ones.
 
-| Modality | Exam | Typical room time (min) | Slot (min) | Share of modality | Main sources |
-| --- | --- | --- | --- | --- | --- |
-| CT | Head | 5–10 | 10 | 30% | ED, inpatient |
-| CT | Chest | 8–12 | 15 | 12% | OP, GP, inpatient |
-| CT | Abdomen & pelvis with contrast | 12–18 | 20 | 18% | ED, inpatient, OP, 2WW |
-| CT | Chest/abdo/pelvis (staging) | 15–20 | 20 | 10% | OP, 2WW |
-| CT | Pulmonary angiogram (CTPA) | 10–15 | 15 | 8% | ED, inpatient |
-| CT | KUB (renal colic) | 5–10 | 10 | 6% | ED |
-| CT | Angiography (head and neck, aorta, limb) | 12–18 | 20 | 5% | ED, inpatient |
-| CT | Coronary angiography (CTCA) | 20–30 | 30 | 4% | OP cardiology |
-| CT | Colonography | 20–30 | 30 | 3% | OP, GP, 2WW |
-| CT | Guided intervention (biopsy, drain) | 30–50 | 45 | 2% | inpatient, OP |
-| CT | Spine / extremity | 8–12 | 15 | 2% | ED, OP |
-| MR | Brain | 20–30 | 30 | 22% | OP, GP, inpatient |
-| MR | Lumbar spine | 20–30 | 30 | 20% | GP, OP |
-| MR | Knee | 20–30 | 30 | 14% | GP, OP |
-| MR | Whole spine | 40–50 | 45 | 6% | inpatient, OP |
-| MR | Shoulder / hip / small joint | 20–30 | 30 | 10% | GP, OP |
-| MR | MRCP | 25–40 | 45 | 5% | OP, inpatient |
-| MR | Prostate | 30–40 | 40 | 7% | OP, 2WW |
-| MR | Pelvis (gynae) | 30–45 | 45 | 5% | OP, 2WW |
-| MR | Cardiac | 45–60 | 60 | 4% | OP cardiology |
-| MR | Breast | 30–45 | 45 | 2% | OP |
-| MR | Liver / abdomen with contrast | 30–40 | 45 | 5% | OP, inpatient |
+| Modality | Exam | NICIP | Typical room time (min) | Slot (min) | Share of modality | Main sources |
+| --- | --- | --- | --- | --- | --- | --- |
+| CT | Head | `CHEAC` | 5–10 | 10 | 30% | ED, inpatient |
+| CT | Chest with contrast | `CCHEC` | 8–12 | 15 | 10% | OP, GP, inpatient |
+| CT | Chest high resolution | `CHRC` | 8–12 | 15 | 2% | OP |
+| CT | Abdomen and pelvis with contrast | `CABPEC` | 12–18 | 20 | 18% | ED, inpatient, OP, 2WW |
+| CT | Chest/abdo/pelvis (staging) | `CCAPC` | 15–20 | 20 | 10% | OP, 2WW |
+| CT | Pulmonary angiogram (CTPA) | `CPULA`* | 10–15 | 15 | 8% | ED, inpatient |
+| CT | Urinary tract (renal colic) | `CURIT` | 5–10 | 10 | 6% | ED |
+| CT | Angiography (intracranial, aorta, lower limb) | `CAICN`, `CAAAG`, `CALLB` | 12–18 | 20 | 5% | ED, inpatient |
+| CT | Coronary angiography (CTCA) | `CCORA`* | 20–30 | 30 | 4% | OP cardiology |
+| CT | Colonography | `CVCLD` | 20–30 | 30 | 3% | OP, GP, 2WW |
+| CT | Guided biopsy / drainage | `CBIOPB`, `CABDOD` | 30–50 | 45 | 2% | inpatient, OP |
+| CT | Spine / extremity | `CLSPI`* | 8–12 | 15 | 2% | ED, OP |
+| MR | Brain | `MBRAI`* | 20–30 | 30 | 22% | OP, GP, inpatient |
+| MR | Lumbar spine | `MLUSP`* | 20–30 | 30 | 20% | GP, OP |
+| MR | Knee | `MKNEL`/`MKNER`* | 20–30 | 30 | 14% | GP, OP |
+| MR | Whole spine | `MWSPI`* | 40–50 | 45 | 6% | inpatient, OP |
+| MR | Shoulder / hip / small joint | `MSHLL`, `MSHLR`, `MHIPB` | 20–30 | 30 | 10% | GP, OP |
+| MR | MRCP | `MMRCP` | 25–40 | 45 | 5% | OP, inpatient |
+| MR | Prostate | `MPROSC` | 30–40 | 40 | 7% | OP, 2WW |
+| MR | Pelvis (gynae) | `MPEGY` | 30–45 | 45 | 5% | OP, 2WW |
+| MR | Cardiac | `MCARD` | 45–60 | 60 | 4% | OP cardiology |
+| MR | Breast | `MBRSB` | 30–45 | 45 | 2% | OP |
+| MR | Liver / abdomen with contrast | `MLIVEC`, `MABDOC` | 30–40 | 45 | 5% | OP, inpatient |
 
-Pathway: request → vetting (MRI only; CT vets only routine) → booking →
-scan → report → verification. Waiting-time clock for DM01-style aggregates
-starts at `request_datetime` and stops at `scan_start_datetime`; planned
-(surveillance) exams are excluded from the waiting list, as in DM01.
+Codes marked * were not pulled from the lookup in this pass and are placeholders
+to confirm from `DID-Annex-1-...xlsx` when the catalogue is built. The DID
+release reports Brain MRI as 21.6% of all MRI and chest/abdomen CT as 10.5%
+of all CT nationally **(source)**, which the shares above respect.
 
-Volume: about 45,000 CT and 25,000 MRI examinations a year. **Assumption**,
-scaled from the national ratio (CT roughly 1.7× MRI in 2024/25).
+#### 4.5.1 Calibration of the imaging queue **(source: DID annual release, GIRFT)**
+
+The generator reproduces these national 2023/24 figures at trust level, with
+the CT and MRI teams' different behaviours layered on top:
+
+| Measure | CT | MRI |
+| --- | --- | --- |
+| Median request to test, all sources | 1 day | 20 days |
+| Request to test: share done same day (GIRFT, 2017/18) | ≈43% | ≈8% |
+| Request to test: share done by day 14 | ≈72% | ≈38% |
+| Request to test: share done by day 42 | ≈92% | ≈84% |
+| Median test to report, all sources | 0 days | 4 days |
+| Reported same day, inpatient and A&E | 91% | 74% |
+| Reported same day, outpatient and GP | 18% | 12% |
+| Reported by end of next day, outpatient and GP | 29% | 24% |
+| Source mix (top-10 trusts): A&E / inpatient / outpatient / GP | 35 / 22 / 38 / 5 | 4 / 14 / 71 / 10 |
+
+Pathway: request → vetting (MRI always; CT only routine) → booking → scan →
+report → verification. January has longer request-to-test waits for all
+modalities **(source)**, and the DID counts an exam on its test date.
+
+Volume: **125,000 CT and 68,000 MRI examinations a year (source: top-10
+scale from DID Table 11)**, with the national monthly shape (April lowest,
+January highest, December a dip; range about ±8%).
 
 ### 4.6 `endo_procedures` — the endoscopy vendor's export
 
@@ -278,14 +368,14 @@ field names are the vendor's style, not the NED's.
 | `HospNo` | MRN as typed, sometimes blank or with the wrong site prefix |
 | `ProcDate` | text, `DD/MM/YYYY` |
 | `StartTime`, `EndTime` | text, `HH:MM`, sometimes blank |
-| `ProcType` | OGD (gastroscopy), Colonoscopy, Flexi Sig, (ERCP and EUS excluded from v1) |
-| `Category` | `IP-EL` elective inpatient / day case, `IP-NEL` emergency inpatient, `OP` outpatient direct, `SURV` surveillance, `BCSP` bowel cancer screening |
-| `Indication` | short list (e.g. dyspepsia, dysphagia, PR bleeding, iron deficiency, FIT positive, surveillance polyps, GI bleed inpatient) |
+| `ProcType` | OGD (gastroscopy), Colonoscopy, Flexi Sig, Cystoscopy (the four DM01 endoscopy tests **(source)**; ERCP and EUS excluded from v1) |
+| `Category` | `IP-EL` elective inpatient / day case, `IP-NEL` emergency inpatient, `OP` outpatient direct, `SURV` surveillance (planned), `BCSP` bowel cancer screening |
+| `Indication` | short list (e.g. dyspepsia, dysphagia, PR bleeding, iron deficiency, FIT positive, surveillance polyps, GI bleed inpatient, haematuria) |
 | `Urgency` | routine, urgent, 2WW, emergency |
 | `ReferralDate` | text |
 | `Endoscopist` | code |
 | `ListID`, `ListPoints` | the list the procedure was on and its total points |
-| `Points` | 1 for OGD and flexi sig, 2 for colonoscopy (JAG convention) |
+| `Points` | 1 for OGD, flexi sig and cystoscopy; 2 for colonoscopy (JAG convention) |
 | `Sedation` | none, throat spray, conscious sedation, Entonox, GA |
 | `Extent` | for lower GI: caecum, terminal ileum, splenic flexure, etc. |
 | `Completion` | Y/N (caecal intubation for colonoscopy) |
@@ -295,27 +385,45 @@ field names are the vendor's style, not the NED's.
 | `Report` | one-line synthetic free text, no clinical meaning |
 
 Procedure durations (**assumption**, from NHS patient guidance): OGD 10–15
-min, flexi sig 15–20, colonoscopy 30–45 (longer with polypectomy). A
-standard service list is 10 points over about 4 hours at RZ902 and 8 points
-at RZ901 where emergency cases interrupt (**assumption**; JAG's published
-training-list standard is 8 points).
+min, flexi sig 15–20, colonoscopy 30–45 (longer with polypectomy),
+cystoscopy 10–15. A standard service list is 10 points over about 4 hours
+at RZ902 and 8 points at RZ901 where emergency cases interrupt
+(**assumption**; JAG's published training-list standard is 8 points).
+
+**DM01 rules the generator honours (source):**
+
+- Screening programme procedures (`BCSP` index colonoscopy) are not DM01
+  diagnostics, but a colonoscopy triggered by a positive FIT *is*.
+- Planned (surveillance) procedures are excluded from the waiting list but
+  counted as activity in their own column.
+- Inpatient emergency procedures are excluded from the waiting list and
+  counted as "unscheduled" activity (admission methods 21–2D, 31, 32).
+- A patient cancellation or DNA resets the clock to zero at the missed date.
+- Entirely therapeutic procedures are excluded; diagnostic-turned-therapeutic
+  stay in.
 
 **How endoscopy links to the rest.** There is no spell or appointment key in
 this table. Linkage is by patient and date:
 
-- `IP-EL` procedures match a day-case spell on the same date (admission method 11/12, specialty 301 or 100).
+- `IP-EL` procedures match a day-case spell on the same date (admission method 11/12, specialty 301, 104 or 101).
 - `IP-NEL` procedures match an open non-elective spell containing the procedure date (e.g. upper GI bleed admitted via ED).
 - `OP` procedures match a referral or an outpatient appointment whose outcome was "diagnostic requested" within the preceding 12 weeks.
-- `SURV` and `BCSP` are planned: a recall date exists and the procedure is excluded from waiting-time aggregates. They have no matching referral; `BCSP` patients are aged 50–74 (**assumption**).
+- `SURV` and `BCSP` are planned: a recall date exists and the procedure is excluded from waiting-time aggregates. `BCSP` patients are aged 50–74 (**assumption**).
 
 About 40% `OP`, 25% `SURV`+`BCSP`, 25% `IP-EL`, 10% `IP-NEL`
-(**assumption**). Volume: about 9,000 procedures a year.
+(**assumption**). Volume: about 28,000 procedures a year (**assumption**:
+no provider-level endoscopy activity was supplied; the DM01 monthly
+provider file would set this).
 
 ### 4.7 Reference tables
 
 `ref_sites`, `ref_wards` (with valid-from/valid-to for renames), `ref_specialties`
-(from `nhs-specialties/`), `ref_consultants`, `ref_clinics`, `ref_exam_catalogue`,
-`ref_admission_method`, `ref_attendance_status`, `ref_chief_complaint`.
+(from `nhs-specialties/`), `ref_consultants`, `ref_clinics`, `ref_exam_catalogue`
+(NICIP, SNOMED, modality, durations), `ref_admission_method`,
+`ref_admission_source`, `ref_discharge_destination`, `ref_attendance_status`,
+`ref_ecds_codes` (arrival mode, attendance source, acuity, discharge status,
+discharge destination, with their SNOMED concept IDs from the ETOS),
+`ref_patient_source_setting`, `ref_chief_complaint`.
 
 ### 4.8 `mess_log` — the answers
 
@@ -328,65 +436,94 @@ exercise.
 
 All built by DuckDB SQL files under `sql/derive/`, run in order and committed
 with the data. Each file is short enough to read in a teaching session.
+Column names follow HES and ECDS where a HES or ECDS field exists
+**(source: HES APC/OP TOS, ECDS ETOS)**, so a user who knows HES can query
+without a dictionary.
 
 | Table | Grain | Derived from | Key decisions the SQL has to make |
 | --- | --- | --- | --- |
 | `patients` | one row per real person (master patient index) | all sources + A40 merges | which MRN survives; how ED, RIS and endoscopy identifiers map on |
-| `spells` | one hospital provider spell | `pas_adt_events` | handling A11/A13 cancellations, duplicate A03s, missing A03s, open spells at the edges |
-| `episodes` | consultant episode within a spell | A01 + A08 specialty changes | episode boundaries when A08 is a correction rather than a transfer of care |
+| `spells` | one hospital provider spell (`PROVSPNO`, `ADMIDATE`, `DISDATE`, `ADMIMETH`, `ADMISORC`, `CLASSPAT`, `DISMETH`, `DISDEST`, `SPELDUR`) | `pas_adt_events` | handling A11/A13 cancellations, duplicate A03s, missing A03s, open spells at the edges |
+| `episodes` | consultant episode (`EPIKEY`, `EPIORDER`, `EPISTART`, `EPIEND`, `TRETSPEF`, `MAINSPEF`, `SPELBGIN`, `SPELEND`, `EPISTAT`) | A01 + A08 specialty changes | episode boundaries when A08 is a correction rather than a transfer of care; `EPISTAT` 3 finished / unfinished at year end |
 | `ward_stays` | one continuous stay on one ward | A01/A02/A03 | normalising ward names; stays of zero minutes; ED and Discharge Lounge as locations |
-| `ed_attendances_clean` | one attendance | `ed_attendances` + MPI | resolving unmapped MRNs; linking admitted attendances to spells |
-| `op_appointments_clean` | one appointment | `pas_outpatient_appointments` | collapsing rebooked slots |
+| `ed_attendances_clean` | one attendance (`AEKEY`-style key) | `ed_attendances` + MPI | resolving unmapped MRNs; linking admitted attendances to spells (HES AE carries `EPIKEY`, APC carries `AEKEY` **(source: HES data model)**) |
+| `op_appointments_clean` | one appointment (`ATTENDKEY`, `ATENTYPE` derived from `FIRSTATT` and `ATTENDED`) | `pas_outpatient_appointments` | collapsing rebooked slots |
 | `rtt_pathways` | one pathway | `pas_referrals` + appointments + spells | clock stops implied by activity |
-| `imaging_exams` | one performed exam | `ris_imaging` | de-duplicating CT cancellations; backfilled MRI report dates; request-to-scan and scan-to-report intervals |
-| `endoscopy_procedures` | one performed procedure | `endo_procedures` + MPI + spells | parsing text dates; attaching `spell_id` or `referral_id` by date overlap |
+| `imaging_exams` | one performed exam | `ris_imaging` | de-duplicating CT cancellations; backfilled MRI report dates; request-to-test and test-to-report intervals |
+| `endoscopy_procedures` | one performed procedure | `endo_procedures` + MPI + spells | parsing text dates; attaching `spell_id` or `referral_id` by date overlap; DM01 category (waiting list / planned / unscheduled) |
 
 ## 6. Layer 3: aggregates
 
-Built by SQL under `sql/aggregate/`. Each is a familiar NHS management or
-national-return shape, and each discards something recoverable only from
-layer 1 or 2.
+Built by SQL under `sql/aggregate/`. Each mirrors a national return or a
+standard management report, and each discards something recoverable only
+from layer 1 or 2.
 
-| Aggregate | Grain | Mirrors | What it loses |
+| Aggregate | Grain | Mirrors **(source)** | What it loses |
 | --- | --- | --- | --- |
-| `agg_midnight_census` | ward × day, beds occupied at 00:00 | bed state / SitRep | everything that happened between midnights; same-day stays vanish |
+| `agg_midnight_census` | ward × day, beds occupied at 00:00 | bed state / SitRep | everything between midnights; same-day stays vanish |
 | `agg_daily_flow` | site × specialty × day: admissions, discharges, deaths, transfers in/out | daily flow report | who moved; LOS distribution |
-| `agg_ed_monthly` | site × month: attendances, 4-hour %, 12-hour waits, admitted % | A&E monthly return | intra-day arrival pattern; acuity mix |
-| `agg_apc_monthly` | specialty × admission-method group × month: spells, bed days, mean and median LOS | HES APC-style activity | the LOS tail; readmissions |
-| `agg_op_monthly` | specialty × month: first and follow-up attendances, DNA rate | outpatient activity | rebooking churn |
-| `agg_dm01_snapshot` | test × month-end: waiting list by weeks waiting, activity in month | DM01 | who waited; planned exclusions |
-| `agg_did_monthly` | modality × patient source × month: exams, median request-to-test and test-to-report | DID statistics | exam mix; team differences |
-| `agg_rtt_incomplete` | specialty × week: incomplete pathways by weeks waiting | RTT incomplete | pathway histories |
+| `agg_ae_monthly` | site × month: Type 1 attendances, within 4 h, over 4 h, emergency admissions via ED, over 4 h and over 12 h from decision to admit | Monthly A&E time series | intra-day arrival pattern; acuity mix |
+| `agg_apc_monthly` | specialty × admission-method group × month: spells, FCEs, bed days, mean and median LOS, day cases | HES APC activity | the LOS tail; readmissions |
+| `agg_op_monthly` | specialty × month: first and follow-up attendances, DNA rate, hospital cancellations | HES OP activity | rebooking churn |
+| `agg_dm01_snapshot` | test × month-end: waiting list by weeks waiting, plus activity in month split waiting list / planned / unscheduled | DM01 | who waited; the clock resets; which cancellations were the hospital's |
+| `agg_did_extract` | one row per performed exam with the 17 DID columns, dates only | DID submission | times of day; cancellations; DNAs; everything about the queue before the scan |
+| `agg_did_monthly` | modality × patient source setting × month: exams, median request-to-test and test-to-report, same-day report % | DID statistics | exam mix; team differences |
+| `agg_rtt_incomplete` | specialty × month-end: incomplete pathways by weeks waiting, median, within 18 weeks, over 52 weeks | RTT incomplete | pathway histories |
 | `agg_endoscopy_monthly` | procedure type × category × month: procedures, points, completion rate | JAG-style activity | list utilisation; linkage to admissions |
+
+`agg_did_extract` deserves a sentence: it is the layer-1 RIS table reduced
+to exactly what the DID asks for. Putting the two side by side is the
+cleanest demonstration in the whole dataset of what a national extract
+cannot see.
 
 ## 7. Volumes, seasonality and shape
 
-Indicative annual volumes (**assumptions** for a smallish acute trust; the
-generator takes these as parameters):
+Annual volumes the generator targets:
 
-| Activity | Per year |
-| --- | --- |
-| ED attendances | 85,000 |
-| Spells (all) | 60,000, of which day cases 28,000, non-elective 22,000, elective inpatient 10,000 |
-| Outpatient appointments | 350,000 |
-| CT examinations | 45,000 |
-| MRI examinations | 25,000 |
-| Endoscopy procedures | 9,000 |
+| Activity | Per year | Basis |
+| --- | --- | --- |
+| ED Type 1 attendances | 190,000 | **assumption**, large single-ED teaching hospital |
+| Emergency admissions via ED | 53,000 | 28% of attendances **(source: national series)** |
+| Spells (all) | 230,000, of which day cases 110,000, non-elective 70,000, elective inpatient 50,000 | **assumption**, scaled to a top-10 trust |
+| Outpatient appointments | 1,200,000 | **assumption** |
+| CT examinations | 125,000 | **(source: DID Table 11, rank 8–10)** |
+| MRI examinations | 68,000 | **(source: DID Table 11, rank 8–10)** |
+| Endoscopy procedures | 28,000 | **assumption** |
+| RTT incomplete pathways (snapshot) | 75,000 | **assumption**, 1.6% of national |
 
-Patterns the generator builds in: ED arrivals peak early afternoon and on
-Mondays; non-elective admissions peak in winter with a visible early-January
-spike; elective activity dips over Christmas and in August; discharges dip at
-weekends so occupancy peaks on Monday; MRI reporting backlog grows over each
-summer; a flu season in each winter with a different shape (nod to the
-`flu/` app). Length of stay is log-normal with a long tail per specialty.
+Patterns the generator builds in, with sources where they exist:
+
+- **ED arrivals**: weak volume seasonality (about ±7%, February low, March and
+  May high) but strong performance seasonality: four-hour performance about
+  60–64% in summer and 55–57% in December and January, and 12-hour
+  decision-to-admit waits roughly doubling in winter **(source)**. Arrivals
+  peak early afternoon and on Mondays (**assumption**).
+- **Admissions**: non-elective peaks in winter with an early-January spike;
+  elective dips over Christmas and in August; discharges dip at weekends so
+  occupancy peaks on Monday (**assumption**, consistent with the ED
+  performance pattern).
+- **Imaging**: April lowest, January highest, December a dip; January has
+  the longest request-to-test waits **(source)**. MRI reporting backlog
+  grows over each summer (**assumption** for the shape; the annual median
+  stays at 4 days to match the national figure).
+- **RTT**: incomplete list flat to slightly rising; over-52-week tail shrinks
+  from 5% to 1.3%; median wait from 14–15 weeks to 11 **(source)**.
+- **Length of stay**: log-normal with a long tail per specialty
+  (**assumption**).
+- A flu season in each winter with a different shape (nod to the `flu/`
+  app).
 
 ## 8. Hosting, formats and access
 
 - **Primary format: Parquet**, one file per table, committed under
-  `synthetic-hospital-datastructure/data/v1/`. Parquet is typed, compressed
-  (the whole dataset should sit well under 200 MB, within Pages limits),
-  and readable over HTTPS by DuckDB, Arrow, R and Python without downloading
-  the whole file.
+  `synthetic-hospital-datastructure/data/v1/full/`. The ADT event table
+  (about 4.5 million rows) and outpatient appointments (about 3.6 million)
+  are partitioned by financial year so that no single file approaches
+  GitHub's 100 MB file limit. Expected total around 300–400 MB.
+- **A `sample/` partition alongside `full/`**: a 5% sample of *patients*
+  (about 37,000) with all of their activity across every table, so joins
+  hold. About 20 MB. This is what the browser console loads by default;
+  `full/` is a toggle. Both carry the same version and seed.
 - **Secondary format: a CSV zip** of the same tables, committed alongside.
   It exists only for people whose tools cannot read Parquet, and for opening
   a table in a spreadsheet. The Parquet files are canonical; the CSVs are
@@ -400,9 +537,9 @@ summer; a flu season in each winter with a different shape (nod to the
 - **R:** `duckdb` with the httpfs extension or `arrow::read_parquet()` on the
   Pages URL. A small R package in the sub-project (working name
   `thornfield`) wraps this: `tf_tables()`, `tf_read("spells")`, and
-  `tf_connect()` which returns a DuckDB connection with every table attached
-  as a view so joins run locally.
-- **Python:** `duckdb.sql("select ... from 'https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/v1/spells.parquet'")`
+  `tf_connect(scale = "sample")` which returns a DuckDB connection with
+  every table attached as a view so joins run locally.
+- **Python:** `duckdb.sql("select ... from 'https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/v1/full/spells.parquet'")`
   or `pandas.read_parquet(url)`. Documented in the README; no package.
 - **Versioning:** `data/v1/` is immutable once published. A regenerated or
   reshaped dataset goes to `data/v2/` with its own manifest. Other projects
@@ -411,38 +548,44 @@ summer; a flu season in each winter with a different shape (nod to the
 ## 9. The generator
 
 - **Language: R**, as an R package under `synthetic-hospital-datastructure/generator/`.
-- **Entry point:** `generate(seed = 20230401, n_patients = 50000, start = "2023-04-01", end = "2026-03-31", volumes = default_volumes(), mess = default_mess_rates(), out_dir)`.
+- **Entry point:** `generate(seed = 20230401, n_patients = 750000, start = "2023-04-01", end = "2026-03-31", volumes = default_volumes(), mess = default_mess_rates(), out_dir)`.
 - **Pipeline:** population → referrals and outpatient → ED attendances →
   admissions and ward moves (clean event log) → imaging → endoscopy → inject
   mess (recording every injection in `mess_log`) → write layer 1 Parquet →
-  run `sql/derive/*.sql` with DuckDB → run `sql/aggregate/*.sql` → write
-  manifest.
+  run `sql/derive/*.sql` with DuckDB → run `sql/aggregate/*.sql` → draw the
+  patient sample → write manifest.
 - **Tests:** `testthat` unit tests on the engine (determinism for a fixed
   seed, volumes within tolerance, every spell has one A01, every injected
   mess row is in `mess_log`, derived layer reproduces the clean truth when
-  mess is switched off). A `make check` equivalent runs them.
+  mess is switched off, DID hard validations pass on `agg_did_extract`:
+  request ≤ received ≤ test ≤ report).
 - **Mess is a switch.** `mess = NULL` produces the clean dataset, which is
   itself useful: the derived layer built from clean data is the ground
   truth the messy derivation is marked against.
 - **No regeneration in the browser.** The committed dataset is the product;
   the generator is there so anyone can run it locally with another seed or
-  size.
+  size (a 50,000-patient run for a laptop is the obvious one).
 
 ## 10. Deliverables, in order
 
-1. This design and the mess catalogue (done, for review).
+1. This design, the calibration note and the mess catalogue (done, for review).
 2. R package with the clean generator and tests; clean `data/v1` candidate.
 3. Mess injection and `mess_log`.
-4. Derive and aggregate SQL; manifest; CSV zip.
+4. Derive and aggregate SQL; manifest; sample partition; CSV zip.
 5. Browser console and explainer page; card on the root `index.html`; README row.
 6. R helper package and R/Python access docs.
 
 ## 11. Open points for review
 
-- Volumes in section 7 and the exam catalogue in 4.5 are the biggest
-  assumptions. Any real-world figures you can share replace them.
+- The patient count (750,000) follows from the top-10 volumes; confirm you
+  are happy with a dataset of that size (roughly 11 million rows across
+  tables, 300–400 MB of Parquet).
+- Provider-level files would replace the remaining volume assumptions: the
+  monthly A&E provider CSV, the RTT provider-level incomplete file, the HES
+  provider-level APC and OP activity tables, and the DM01 provider monthly
+  file for endoscopy. DID Table 9 (medians by modality and source) and
+  Table 13 (quarterly turnaround by provider) would sharpen the imaging
+  calibration.
 - Whether ultrasound and plain X-ray should join CT and MRI in `ris_imaging`
-  (same structure, cheap to add, much higher volume).
-- Whether `pas_referrals` should carry a fuller RTT model now, given the
-  other apps in this repo lean on RTT.
+  (same structure, cheap to add, 2.5× the imaging volume).
 - The fictional names (Thornfield Vale, Wyvern Park) and code `RZ9`.
