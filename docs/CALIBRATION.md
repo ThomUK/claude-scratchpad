@@ -79,12 +79,50 @@ Shape the generator reproduces:
 - There is a slow improvement in four-hour performance across the three
   years (about 61% in 2023 to about 64% by March 2026).
 
-**Generator target for the fictional trust's single Type 1 department:**
-175,000 attendances a year (**assumption**: the series is national and the
-provider-level monthly file was not supplied, so this is set at the scale of
-a large single-ED teaching hospital), 28% admitted, performance tracking the
-national monthly shape with a slightly better level because the trust is
-fictional and it is nice to have something to aim at.
+### 2.1 Provider level: one month (Monthly A&E provider CSV, September 2026)
+
+Source: `Monthly-AE-Provider-September-2026.csv`. The trusts that are in
+the imaging top ten, with the single-ED teaching trusts that match the
+fictional trust's shape at the bottom. Columns: Type 1 attendances, Type 1
+four-hour performance, emergency admissions via Type 1 and as a share of
+attendances, other emergency admissions (not via A&E), 12-hour-plus waits
+from decision to admit, and Type 3 / other attendances.
+
+| Trust | Type 1 | 4 h % | Adm via T1 | Adm % | Other emerg adm | 12 h+ DTA | Type 3 / other |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| University Hospitals Birmingham (4 EDs) | 34,437 | 57.3 | 10,284 | 29.9 | 8,515 | 2,085 | 12,413 |
+| University Hospitals Sussex (3) | 28,715 | 57.2 | 8,244 | 28.7 | 1,652 | 840 | 1,421 |
+| Mid and South Essex (3) | 28,595 | 61.8 | 9,218 | 32.2 | 1,161 | 1,371 | 8,495 |
+| Barts Health (3) | 27,253 | 61.0 | 3,992 | 14.6 | 1,207 | 1,208 | 18,702 |
+| Northern Care Alliance (4) | 27,197 | 61.5 | 7,815 | 28.7 | 2,708 | 1,103 | 9,021 |
+| Leeds Teaching Hospitals (2) | 19,809 | 61.8 | 3,696 | 18.7 | 1,164 | 685 | 10,454 |
+| University Hospitals of North Midlands (2) | 15,160 | 45.3 | 4,724 | 31.2 | 1,167 | 640 | 9,198 |
+| Nottingham University Hospitals (1) | 13,656 | 44.6 | 3,760 | 27.5 | 4,052 | 979 | 11,627 |
+| Oxford University Hospitals (2) | 13,610 | 72.6 | 5,677 | 41.7 | 4,224 | 8 | 2,856 |
+| Imperial College Healthcare (2) | 12,877 | 57.3 | 3,776 | 29.3 | 1,001 | 0 | 7,376 |
+| Northern Lincolnshire and Goole (2) | 10,716 | 50.8 | 5,487 | 51.2 | 327 | 757 | 6,433 |
+| England | 1,475,440 | 60.4 | 394,675 | 26.7 | 134,842 | 50,582 | 839,337 |
+
+Two things stand out. The big Type 1 numbers belong to multi-ED trusts;
+the single-ED teaching hospitals in the imaging top ten (Nottingham's
+QMC, Oxford's John Radcliffe) run 13,000–14,000 Type 1 attendances a
+month, about 165,000 a year, with a co-located UTC or Type 3 stream of a
+similar order. And "other emergency admissions" (GP, bed bureau, transfers,
+SDEC conversions) are as large as admissions via the ED at those trusts,
+which matters for the ADT admission-method mix. Twelve-hour waits from
+decision to admit vary from near zero to almost a thousand a month at the
+same scale, so they are a generator parameter rather than a derived fact.
+
+**Generator targets, taken from the Nottingham and Oxford shape:**
+
+| Measure | Per year | Per month |
+| --- | --- | --- |
+| Type 1 attendances | 165,000 | 13,750 |
+| UTC / Type 3 stream (same table, `uec_activity_type`) | 100,000 | 8,300 |
+| Emergency admissions via the ED | 46,000 (28%) | 3,850 |
+| Other emergency admissions | 40,000 | 3,300 |
+| 12-hour-plus decision-to-admit waits | 5,000, winter-weighted | 250–650 |
+| Type 1 four-hour performance | tracks the national monthly shape, 55–64% | |
 
 ## 3. Referral to treatment: national series (RTT Overview Timeseries, Aug 2026 edition)
 
