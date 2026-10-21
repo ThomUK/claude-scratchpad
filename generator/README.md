@@ -60,6 +60,21 @@ g$truth$spells               # the clean spells the derived layer should reprodu
 write_layer1(g, "out/")
 ```
 
+## Building the published dataset
+
+```sh
+python3 generator/build.py --input <run_dir> --out data [--sample 0.05] [--version v1]
+```
+
+Loads the run's CSVs into DuckDB with explicit types, writes layer 1 as
+Parquet (tables over a million rows partitioned by financial year), runs
+`sql/derive` then `sql/aggregate`, draws the patient sample (by hash of the
+surviving MRN so it is stable across builds), reruns the same SQL on the
+sample, zips the sample as CSV and writes `manifest.json`. The derived
+SQL is the same for full and sample; only the layer-1 schema name is
+substituted. Internal working tables are named with a leading underscore
+and are not published.
+
 ## Tests
 
 ```sh
