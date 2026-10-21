@@ -1,0 +1,68 @@
+name: Dataset release
+
+# Rebuilds the full dataset from its seed on a
+# runner, checks it against the manifest committed under data/<version>/, and
+# attaches every full-set Parquet file to a GitHub release. The full set is
+# about 1.1 GB, which Pages will not host, and the cloud session that builds
+# the dataset cannot create releases, so the runner does it. Running this is
+# also the reproducibility check: row counts must match the committed manifest.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Dataset version (directory under data/)
+        default: v1
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      VERSION: ${{ inputs.version }}
+      TAG: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the toolchain (R from the Ubuntu archive, DuckDB from PyPI)
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq r-base \
+            r-cran-data.table r-cran-jsonlite r-cran-withr r-cran-cli \
+            r-cran-checkmate r-cran-digest r-cran-lubridate
+          pip install -q duckdb==2.0.0 pyarrow==26.0.0
+          Rscript -e 'cat(R.version.string, "data.table", as.character(packageVersion("data.table")), "\n")'
+          free -g; df -h /
+
+      - name: Generate layer 1 (R, seeded)
+        run: |
+          sudo R CMD INSTALL --no-docs generator/fakehosp
+          mkdir -p "$RUNNER_TEMP/run"
+          Rscript generator/run.R "$RUNNER_TEMP/run"
+
+      - name: Build Parquet, derived and aggregate layers (DuckDB)
+        run: |
+          python3 generator/build.py --input "$RUNNER_TEMP/run" --out "$RUNNER_TEMP/build" \
+            --version "$VERSION" --db "$RUNNER_TEMP/build.duckdb"
+          rm -rf "$RUNNER_TEMP/run" "$RUNNER_TEMP/build.duckdb"
+          du -sh "$RUNNER_TEMP/build/$VERSION"/*
+
+      - name: Check the rebuild against the committed manifest
+        run: |
+          python3 generator/check_manifest.py \
+            "data/$VERSION/manifest.json" "$RUNNER_TEMP/build/$VERSION/manifest.json"
+
+      - name: Create the release and upload the full set
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash generator/publish_release.sh "$RUNNER_TEMP/build/$VERSION/full" "$TAG"
+          cp "$RUNNER_TEMP/build/$VERSION/manifest.json" "$RUNNER_TEMP/manifest.json"
+          gh release upload "$TAG" "$RUNNER_TEMP/manifest.json" --clobber

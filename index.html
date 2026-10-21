@@ -41,7 +41,7 @@
   <div class="wrap">
     <h1>Synthetic Hospital Data</h1>
     <p class="repo-link">
-      <a href="https://github.com/ThomUK/claude-scratchpad/tree/main/synthetic-hospital-datastructure" target="_blank" rel="noopener">
+      <a href="https://github.com/ThomUK/synthetic-hospital-data" target="_blank" rel="noopener">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.76-3.65 3.95.29.25.54.74.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
         View source on GitHub
       </a>
@@ -91,21 +91,21 @@
       <h3>Full set (GitHub release, 1.1 GB)</h3>
       <p>Every row, one Parquet asset per file. Asset names are the paths under <code>full/</code> with <code>/</code> replaced by <code>__</code>.</p>
       <ul>
-        <li><a href="https://github.com/ThomUK/claude-scratchpad/releases/tag/synthetic-hospital-datastructure-v1" target="_blank" rel="noopener">Release synthetic-hospital-datastructure-v1</a></li>
+        <li><a href="https://github.com/ThomUK/synthetic-hospital-data/releases/tag/v1" target="_blank" rel="noopener">Release v1</a></li>
       </ul>
     </div>
     <div class="panel">
       <h3>Query it from Python or R</h3>
       <p>DuckDB reads the Parquet straight from the URL.</p>
 <pre><code>import duckdb
-base = "https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/v1/sample/"
+base = "https://thomuk.github.io/synthetic-hospital-data/data/v1/sample/"
 duckdb.sql(f"""
   SELECT tretspef_first, count(*) AS spells, median(speldur) AS median_los
   FROM read_parquet('{base}derived/spells.parquet')
   WHERE emergency GROUP BY 1 ORDER BY 2 DESC
 """).show()</code></pre>
 <pre><code>library(duckdb); con &lt;- dbConnect(duckdb())
-base &lt;- "https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/v1/sample/"
+base &lt;- "https://thomuk.github.io/synthetic-hospital-data/data/v1/sample/"
 dbGetQuery(con, sprintf("SELECT count(*) FROM read_parquet('%sderived/spells.parquet')", base))</code></pre>
     </div>
     <div class="panel">
@@ -116,16 +116,16 @@ dbGetQuery(con, sprintf("SELECT count(*) FROM read_parquet('%sderived/spells.par
     <h2>Read about it</h2>
     <div class="panel">
       <ul>
-        <li><a href="https://github.com/ThomUK/claude-scratchpad/blob/main/synthetic-hospital-datastructure/docs/DESIGN.md" target="_blank" rel="noopener">Design</a>: sites, specialties, every table in the three layers, volumes, hosting and the generator pipeline</li>
-        <li><a href="https://github.com/ThomUK/claude-scratchpad/blob/main/synthetic-hospital-datastructure/docs/CALIBRATION.md" target="_blank" rel="noopener">Calibration</a>: every volume and distribution traced to its public source (ECDS, HES, DID, DM01, RTT, GIRFT)</li>
-        <li><a href="https://github.com/ThomUK/claude-scratchpad/blob/main/synthetic-hospital-datastructure/docs/MESS-CATALOGUE.md" target="_blank" rel="noopener">Mess catalogue</a>: the coded list of imperfections, what each one breaks and which measure it affects</li>
-        <li><a href="https://github.com/ThomUK/claude-scratchpad/blob/main/synthetic-hospital-datastructure/data/README.md" target="_blank" rel="noopener">Data README</a>: layout, URLs, read examples, versioning</li>
-        <li><a href="https://github.com/ThomUK/claude-scratchpad/blob/main/synthetic-hospital-datastructure/generator/README.md" target="_blank" rel="noopener">Generator</a>: the R package, the DuckDB build and the release workflow</li>
+        <li><a href="https://github.com/ThomUK/synthetic-hospital-data/blob/main/docs/DESIGN.md" target="_blank" rel="noopener">Design</a>: sites, specialties, every table in the three layers, volumes, hosting and the generator pipeline</li>
+        <li><a href="https://github.com/ThomUK/synthetic-hospital-data/blob/main/docs/CALIBRATION.md" target="_blank" rel="noopener">Calibration</a>: every volume and distribution traced to its public source (ECDS, HES, DID, DM01, RTT, GIRFT)</li>
+        <li><a href="https://github.com/ThomUK/synthetic-hospital-data/blob/main/docs/MESS-CATALOGUE.md" target="_blank" rel="noopener">Mess catalogue</a>: the coded list of imperfections, what each one breaks and which measure it affects</li>
+        <li><a href="https://github.com/ThomUK/synthetic-hospital-data/blob/main/data/README.md" target="_blank" rel="noopener">Data README</a>: layout, URLs, read examples, versioning</li>
+        <li><a href="https://github.com/ThomUK/synthetic-hospital-data/blob/main/generator/README.md" target="_blank" rel="noopener">Generator</a>: the R package, the DuckDB build and the release workflow</li>
       </ul>
     </div>
 
     <footer>
-      Source on <a href="https://github.com/ThomUK/claude-scratchpad" target="_blank" rel="noopener">GitHub</a>.
+      Source on <a href="https://github.com/ThomUK/synthetic-hospital-data" target="_blank" rel="noopener">GitHub</a>.
       Generated with seed 20230401; <code>data/v1/</code> is immutable once published.
     </footer>
   </div>

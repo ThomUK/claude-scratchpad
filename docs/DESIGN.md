@@ -1,4 +1,4 @@
-# Design: synthetic-hospital-datastructure
+# Design: synthetic-hospital-data
 
 Design document for review before any code is written. Everything marked
 **assumption** is a number or rule I chose because no supplied document
@@ -640,7 +640,7 @@ Patterns the generator builds in, with sources where they exist:
   `fakehosp`) wraps this: `fh_tables()`, `fh_read("spells")`, and
   `fh_connect(scale = "sample")` which returns a DuckDB connection with
   every table attached as a view so joins run locally.
-- **Python:** `duckdb.sql("select ... from 'https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/v1/full/spells.parquet'")`
+- **Python:** `duckdb.sql("select ... from 'https://thomuk.github.io/synthetic-hospital-data/data/v1/full/spells.parquet'")`
   or `pandas.read_parquet(url)`. Documented in the README; no package.
 - **Versioning:** `data/v1/` is immutable once published. A regenerated or
   reshaped dataset goes to `data/v2/` with its own manifest. Other projects
@@ -648,7 +648,7 @@ Patterns the generator builds in, with sources where they exist:
 
 ## 9. The generator
 
-- **Language: R**, as an R package under `synthetic-hospital-datastructure/generator/`.
+- **Language: R**, as an R package under `generator/`.
 - **Toolchain in the cloud session.** CRAN is not reachable from the
   container, so R (4.3.3) and its packages come from the Ubuntu archive:
   data.table, testthat, jsonlite, withr, cli, checkmate, digest, lubridate.
@@ -683,7 +683,7 @@ Patterns the generator builds in, with sources where they exist:
 1. This design, the calibration note and the mess catalogue (done).
 2. R package with the clean generator and tests (done; `generate(mess = NULL)`).
 3. Mess injection and `mess_log` (done; `generate()` with `default_mess_rates()`).
-4. Derive and aggregate SQL; Parquet build; manifest; sample partition; CSV zip; publication (done; `generator/build.py`, `sql/`, sample under `data/v1/`, full set released by `.github/workflows/synthetic-hospital-release.yml`).
+4. Derive and aggregate SQL; Parquet build; manifest; sample partition; CSV zip; publication (done; `generator/build.py`, `sql/`, sample under `data/v1/`, full set released by `.github/workflows/release.yml`).
 5. Browser console and explainer page; card on the root `index.html`; README row.
 6. R helper package and R/Python access docs.
 

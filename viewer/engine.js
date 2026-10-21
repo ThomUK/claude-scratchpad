@@ -1,8 +1,8 @@
 // Data viewer engine: DOM-free. Turns manifest.json into an index of tables
 // and formats preview cells. Tested by tests/engine.test.mjs.
 
-export const DATA_BASE = 'https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/';
-export const RELEASE_BASE = 'https://github.com/ThomUK/claude-scratchpad/releases/download/synthetic-hospital-datastructure-';
+export const DATA_BASE = 'https://thomuk.github.io/synthetic-hospital-data/data/';
+export const RELEASE_BASE = 'https://github.com/ThomUK/synthetic-hospital-data/releases/download/';
 
 export const LAYERS = [
   { id: 'layer1', label: 'Layer 1: source extracts', blurb: 'What the source systems hand over: the PAS event log and appointment tables, the ED tracking board, the radiology system and the endoscopy vendor export. Deliberately messy.' },

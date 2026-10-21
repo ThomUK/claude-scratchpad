@@ -3,11 +3,11 @@
 #   generator/publish_release.sh <build_dir>/v1/full <tag>
 # Each Parquet file becomes one asset; the asset name is the file's path under
 # full/ with "/" replaced by "__" (release assets cannot be nested). Download
-# URL pattern: https://github.com/ThomUK/claude-scratchpad/releases/download/<tag>/<asset>
+# URL pattern: https://github.com/ThomUK/synthetic-hospital-data/releases/download/<tag>/<asset>
 set -euo pipefail
-dir="$1"; tag="$2"; repo="ThomUK/claude-scratchpad"
-title="Synthetic hospital dataset ${tag#synthetic-hospital-datastructure-}: full set"
-notes="Full-scale build of the Fake NHS Trust synthetic dataset (every row). The 5% sample, the docs and the SQL live in the repository under synthetic-hospital-datastructure/. Asset names are the paths under full/ with '/' replaced by '__'."
+dir="$1"; tag="$2"; repo="ThomUK/synthetic-hospital-data"
+title="Synthetic hospital dataset ${tag}: full set"
+notes="Full-scale build of the Fake NHS Trust synthetic dataset (every row). The 5% sample, the docs and the SQL live in the repository under data/, docs/ and sql/. Asset names are the paths under full/ with '/' replaced by '__'."
 # create the release if it does not exist (REST API)
 if ! gh api "repos/$repo/releases/tags/$tag" >/dev/null 2>&1; then
   gh api -X POST "repos/$repo/releases" -f tag_name="$tag" -f target_commitish=main -f name="$title" -f body="$notes" -F draft=false -F prerelease=false >/dev/null

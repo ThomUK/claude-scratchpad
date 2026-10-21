@@ -1,4 +1,4 @@
-// Run: node tests/banner.test.mjs   (from synthetic-hospital-datastructure/)
+// Run: node tests/banner.test.mjs   (from the repository root)
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { bannerModel } from '../banner.js';

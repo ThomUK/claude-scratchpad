@@ -23,7 +23,7 @@ data/v1/
 ```
 
 The table viewer at `../viewer/` (served at
-`https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/viewer/`)
+`https://thomuk.github.io/synthetic-hospital-data/viewer/`)
 lists every table from the manifest with its counts and download links and
 shows those 100-row previews. The ERD page at `../erd/` draws one diagram
 per layer from `erd.json`.
@@ -38,11 +38,11 @@ is the asset `derived__spells.parquet`, and
 `layer1__pas_op_status_log__fy2024.parquet`. `manifest.json` lists every
 path. The Parquet files are canonical; the CSV zip is a convenience.
 
-Release page: `https://github.com/ThomUK/claude-scratchpad/releases/tag/synthetic-hospital-datastructure-v1`
-Asset URL pattern: `https://github.com/ThomUK/claude-scratchpad/releases/download/synthetic-hospital-datastructure-v1/<asset>`
+Release page: `https://github.com/ThomUK/synthetic-hospital-data/releases/tag/v1`
+Asset URL pattern: `https://github.com/ThomUK/synthetic-hospital-data/releases/download/v1/<asset>`
 
 The release is produced by the `Synthetic hospital dataset release`
-workflow (`.github/workflows/synthetic-hospital-release.yml`), which
+workflow (`.github/workflows/release.yml`), which
 rebuilds the full set from the seed on a GitHub runner, checks every row
 count against the committed `manifest.json` and uploads the files. The
 rebuilt manifest is attached to the release too, and it is the one to
@@ -60,13 +60,13 @@ corrected in the derived layer.
 ## Reading it
 
 Base URL for the sample:
-`https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/v1/sample/`
+`https://thomuk.github.io/synthetic-hospital-data/data/v1/sample/`
 
 Python, with DuckDB:
 
 ```python
 import duckdb
-base = "https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/v1/sample/"
+base = "https://thomuk.github.io/synthetic-hospital-data/data/v1/sample/"
 duckdb.sql(f"""
   SELECT tretspef_first, count(*) AS spells, median(speldur) AS median_los
   FROM read_parquet('{base}derived/spells.parquet')
@@ -80,7 +80,7 @@ R, with DuckDB (the httpfs extension loads automatically for URLs):
 
 ```r
 library(duckdb); con <- dbConnect(duckdb())
-base <- "https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/v1/sample/"
+base <- "https://thomuk.github.io/synthetic-hospital-data/data/v1/sample/"
 dbGetQuery(con, sprintf("SELECT count(*) FROM read_parquet('%sderived/spells.parquet')", base))
 ```
 
@@ -109,6 +109,6 @@ Full-set download in Python, straight from the release:
 
 ```python
 import duckdb
-rel = "https://github.com/ThomUK/claude-scratchpad/releases/download/synthetic-hospital-datastructure-v1/"
+rel = "https://github.com/ThomUK/synthetic-hospital-data/releases/download/v1/"
 duckdb.sql(f"SELECT count(*) FROM read_parquet('{rel}derived__spells.parquet')").show()
 ```

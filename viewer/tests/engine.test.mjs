@@ -1,4 +1,4 @@
-// Run: node tests/engine.test.mjs   (from synthetic-hospital-datastructure/viewer/)
+// Run: node tests/engine.test.mjs   (from viewer/)
 import assert from 'node:assert/strict';
 import { buildIndex, assetName, releaseUrl, sampleUrl, previewPath, formatCell, fmtBytes, fmtInt, parseRoute, routeFor, LAYERS, isNumericType } from '../engine.js';
 
@@ -56,12 +56,12 @@ check('assetName and releaseUrl: path under full/ with / replaced by __', () => 
   assert.equal(assetName('v1/full/layer1/pas_adt_events/fy2023.parquet'), 'layer1__pas_adt_events__fy2023.parquet');
   assert.equal(assetName('v1/full/derived/spells.parquet'), 'derived__spells.parquet');
   assert.equal(releaseUrl('v1', 'v1/full/derived/spells.parquet'),
-    'https://github.com/ThomUK/claude-scratchpad/releases/download/synthetic-hospital-datastructure-v1/derived__spells.parquet');
+    'https://github.com/ThomUK/synthetic-hospital-data/releases/download/v1/derived__spells.parquet');
 });
 
 check('sampleUrl and previewPath', () => {
   assert.equal(sampleUrl('v1/sample/derived/spells.parquet'),
-    'https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/v1/sample/derived/spells.parquet');
+    'https://thomuk.github.io/synthetic-hospital-data/data/v1/sample/derived/spells.parquet');
   assert.equal(previewPath('../data/v1/', 'answers/truth/spells'), '../data/v1/preview/sample/answers__truth__spells.json');
 });
 

@@ -1,4 +1,4 @@
-// Run: node tests/engine.test.mjs   (from synthetic-hospital-datastructure/erd/)
+// Run: node tests/engine.test.mjs   (from erd/)
 import assert from 'node:assert/strict';
 import { diagramFor, layout, visibleRows, routeEdge, edgeTitle, parseRoute, TABS, BOX, GROUP_ORDER } from '../engine.js';
 

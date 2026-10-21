@@ -1,7 +1,7 @@
 import { buildIndex, releaseUrl, sampleUrl, previewPath, formatCell, fmtBytes, fmtInt, parseRoute, routeFor, isNumericType, assetName } from './engine.js?v=dev';
 
 const DATA_ROOT = '../data/v1/';
-const RELEASE_PAGE = 'https://github.com/ThomUK/claude-scratchpad/releases/tag/synthetic-hospital-datastructure-';
+const RELEASE_PAGE = 'https://github.com/ThomUK/synthetic-hospital-data/releases/tag/';
 const view = document.getElementById('view');
 const status = document.getElementById('status');
 let index = null;
