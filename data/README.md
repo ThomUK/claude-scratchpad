@@ -23,8 +23,21 @@ data/v1/
 The sample is in this repository and served by GitHub Pages. The full set
 is about 1.1 GB of Parquet, which is more than GitHub Pages will host, so
 it is attached to a GitHub release of this repository as one asset per
-file; `manifest.json` lists the paths and the release carries the same
-layout. The Parquet files are canonical; the CSV zip is a convenience.
+file. Release assets cannot be nested, so an asset is named by its path
+under `full/` with `/` replaced by `__`: the file `derived/spells.parquet`
+is the asset `derived__spells.parquet`, and
+`layer1/pas_op_status_log/fy2024.parquet` is
+`layer1__pas_op_status_log__fy2024.parquet`. `manifest.json` lists every
+path. The Parquet files are canonical; the CSV zip is a convenience.
+
+Release page: `https://github.com/ThomUK/claude-scratchpad/releases/tag/synthetic-hospital-datastructure-v1`
+Asset URL pattern: `https://github.com/ThomUK/claude-scratchpad/releases/download/synthetic-hospital-datastructure-v1/<asset>`
+
+The release is produced by the `Synthetic hospital dataset release`
+workflow (`.github/workflows/synthetic-hospital-release.yml`), which
+rebuilds the full set from the seed on a GitHub runner, checks every row
+count against the committed `manifest.json` and uploads the files. The
+rebuilt manifest is attached to the release too.
 
 Timestamps are UTC to the second. Two source systems have deliberate clock
 behaviour (the ED runs two minutes fast; the RIS writes UTC during British
@@ -75,5 +88,14 @@ URLs.
 
 ```sh
 Rscript generator/run.R <run_dir> 800000 20230401      # layer 1 as CSV, about 9 minutes
-python3 generator/build.py --input <run_dir> --out data  # Parquet, derived and aggregate layers, sample, manifest
+python3 generator/build.py --input <run_dir> --out data  # Parquet, derived and aggregate layers, sample, manifest, about 1.5 minutes
+python3 generator/check_manifest.py data/v1/manifest.json <rebuilt>/v1/manifest.json  # row counts must match
+```
+
+Full-set download in Python, straight from the release:
+
+```python
+import duckdb
+rel = "https://github.com/ThomUK/claude-scratchpad/releases/download/synthetic-hospital-datastructure-v1/"
+duckdb.sql(f"SELECT count(*) FROM read_parquet('{rel}derived__spells.parquet')").show()
 ```

@@ -73,7 +73,22 @@ surviving MRN so it is stable across builds), reruns the same SQL on the
 sample, zips the sample as CSV and writes `manifest.json`. The derived
 SQL is the same for full and sample; only the layer-1 schema name is
 substituted. Internal working tables are named with a leading underscore
-and are not published.
+and are not published. Rebuilding takes about 1.5 minutes on four cores
+for the full set.
+
+## Publishing
+
+The 5% sample is committed under `data/<version>/` with `manifest.json`.
+The full set goes to a GitHub release through the
+`Synthetic hospital dataset release` workflow
+(`.github/workflows/synthetic-hospital-release.yml`, run by hand from the
+Actions tab with the version as input). The runner installs the same
+toolchain, regenerates layer 1 from the seed, builds, runs
+`check_manifest.py` against the committed manifest (every row count must
+match, checksums are reported) and uploads one asset per Parquet file with
+`publish_release.sh`. A cloud session's token cannot create releases, which
+is why the runner does it; the same script works locally with a personal
+token.
 
 ## Tests
 
@@ -105,6 +120,9 @@ CSV writer.
 | `fakehosp/R/write.R` | CSV writer and manifest |
 | `fakehosp/inst/extdata/` | ECDS code lists (from the ETOS) and NICIP-to-SNOMED map (from DID Annex 1) |
 | `run.R` | command-line entry point |
+| `build.py` | Parquet conversion, derived and aggregate SQL, sample, manifest (Python DuckDB) |
+| `check_manifest.py` | compares a rebuilt manifest with the committed one |
+| `publish_release.sh` | attaches the full set to a GitHub release |
 | `setup-cloud.sh` | toolchain install for cloud sessions |
 
 ## Toolchain note
