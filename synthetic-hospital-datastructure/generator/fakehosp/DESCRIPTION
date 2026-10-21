@@ -1,6 +1,6 @@
 Package: fakehosp
 Title: Synthetic Acute Hospital Data Generator (Fake NHS Trust)
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: person("Claude", role = c("aut", "cre"), email = "noreply@anthropic.com")
 Description: Seeded, reproducible generator for the Fake NHS Trust synthetic
     dataset: PAS ADT events, ED attendances, outpatients and RTT, radiology

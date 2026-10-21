@@ -504,8 +504,11 @@ discharge destination, with their SNOMED concept IDs from the ETOS),
 
 One row per injected imperfection: `mess_id` (catalogue code), `table`,
 `row_key`, `field`, `original_value` (where the mess replaced something),
-`note`. Shipped as a separate file so it can be withheld in a teaching
-exercise.
+`note`, `mess_row`. Shipped as a separate file (`mess_log.csv`) so it can be
+withheld in a teaching exercise. Rows whose note says "removed" or "never
+happened" refer to rows that no longer exist in the table; the PAS event
+log is re-sequenced after injection, so its `row_key` values are the
+pre-injection message ids and should be matched on the other columns.
 
 ## 5. Layer 2: derived entities
 
@@ -662,9 +665,9 @@ Patterns the generator builds in, with sources where they exist:
 
 ## 10. Deliverables, in order
 
-1. This design, the calibration note and the mess catalogue (done, for review).
-2. R package with the clean generator and tests; clean `data/v1` candidate.
-3. Mess injection and `mess_log`.
+1. This design, the calibration note and the mess catalogue (done).
+2. R package with the clean generator and tests (done; `generate(mess = NULL)`).
+3. Mess injection and `mess_log` (done; `generate()` with `default_mess_rates()`).
 4. Derive and aggregate SQL; manifest; sample partition; CSV zip.
 5. Browser console and explainer page; card on the root `index.html`; README row.
 6. R helper package and R/Python access docs.
