@@ -1,7 +1,6 @@
 import { TABS, diagramFor, layout, edgeTitle, parseRoute, fmtInt, pct, shortName, BOX } from './engine.js?v=dev';
 
 const ERD = '../data/v1/erd.json';
-const PENDING = '../pending-changes.json';
 const VIEWER = '../viewer/#/';
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
@@ -23,16 +22,6 @@ function svgEl(tag, attrs = {}, ...children) {
   return e;
 }
 
-async function showBanner() {
-  try {
-    const r = await fetch(PENDING); if (!r.ok) return;
-    const p = await r.json();
-    if (!p || !Array.isArray(p.changes) || !p.changes.length) return;
-    $('banner').replaceChildren(el('b', {}, `Generator ahead of the published data (${p.published_version}, built ${p.published_build}).`), ' ', p.note || '',
-      el('ul', {}, p.changes.map((c) => el('li', {}, c))));
-    $('banner').hidden = false;
-  } catch (e) { /* no banner */ }
-}
 
 function renderTabs(current) {
   $('tabs').replaceChildren(...TABS.map((t) => el('a', { href: `#/${t.id}`, class: t.id === current ? 'on' : '' }, t.label)));
@@ -131,7 +120,6 @@ function renderSide(tab) {
 }
 
 (async () => {
-  showBanner();
   try {
     const r = await fetch(ERD); if (!r.ok) throw new Error(`HTTP ${r.status}`);
     erd = await r.json();

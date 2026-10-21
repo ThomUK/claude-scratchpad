@@ -1,6 +1,6 @@
 // Run: node tests/engine.test.mjs   (from synthetic-hospital-datastructure/viewer/)
 import assert from 'node:assert/strict';
-import { buildIndex, assetName, releaseUrl, sampleUrl, previewPath, formatCell, fmtBytes, fmtInt, parseRoute, routeFor, LAYERS, isNumericType, pendingBanner } from '../engine.js';
+import { buildIndex, assetName, releaseUrl, sampleUrl, previewPath, formatCell, fmtBytes, fmtInt, parseRoute, routeFor, LAYERS, isNumericType } from '../engine.js';
 
 let n = 0;
 function check(name, fn) { fn(); n++; console.log('  ok  ' + name); }
@@ -99,14 +99,6 @@ check('parseRoute and routeFor round-trip, older sample/ and full/ links still r
   assert.deepEqual(parseRoute(routeFor('derived/spells')), { view: 'table', key: 'derived/spells' });
   assert.deepEqual(parseRoute('#/bogus'), { view: 'index' });
   assert.deepEqual(parseRoute('#/../x/y'), { view: 'index' });
-});
-
-check('pendingBanner: null with no changes, otherwise a title naming the published build', () => {
-  assert.equal(pendingBanner(null), null);
-  assert.equal(pendingBanner({ changes: [] }), null);
-  const b = pendingBanner({ published_version: 'v1', published_build: '2026-10-21', note: 'n', changes: ['beds table'] });
-  assert.match(b.title, /v1, built 2026-10-21/);
-  assert.deepEqual(b.changes, ['beds table']);
 });
 
 console.log(`\n${n} checks passed`);

@@ -155,13 +155,3 @@ export function routeFor(key) {
   return `#/${key}`;
 }
 
-// Text for the out-of-sync banner, or null when the generator and the
-// published data agree (no pending changes listed).
-export function pendingBanner(pending) {
-  if (!pending || !Array.isArray(pending.changes) || pending.changes.length === 0) return null;
-  return {
-    title: `Generator ahead of the published data (${pending.published_version}, built ${pending.published_build})`,
-    note: pending.note || '',
-    changes: pending.changes,
-  };
-}
