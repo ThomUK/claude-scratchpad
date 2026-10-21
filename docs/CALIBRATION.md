@@ -24,12 +24,16 @@ Providers ranked by CT plus MRI examinations. Source: `DID-Table-11-2023-24-Moda
 | 10 | Oxford University Hospitals | 118,045 | 59,670 | 295,975 | 102,190 | 606,315 |
 | 11 | Nottingham University Hospitals | 119,295 | 58,030 | 273,400 | 112,510 | 591,895 |
 
-137 NHS trusts submitted CT activity. The top-10 pooled mean is CT 134,560
-and MRI 72,800; the 10th-ranked trust does CT 118,045 and MRI 59,670.
+137 NHS trusts submitted CT activity. The top-10 pooled mean is CT 134,560,
+MRI 72,800 and ultrasound 150,800 (median 133,800); the 10th-ranked trust
+does CT 118,045, MRI 59,670 and ultrasound 102,190. The DID ultrasound
+column counts every ultrasound examination, including obstetric and
+vascular scans that DM01 excludes (see section 4.1).
 
 **Generator target (a trust sitting around rank 8 to 10):** CT 125,000,
-MRI 68,000 and non-obstetric ultrasound 130,000 a year. Plain X-ray is out
-of scope.
+MRI 68,000 and non-obstetric ultrasound 115,000 a year (the top-10
+ultrasound median of 133,800 less the obstetric scans the dataset
+excludes, taken as about 15%). Plain X-ray is out of scope.
 
 ### Patient source setting, % of examinations
 
@@ -39,13 +43,15 @@ of scope.
 | CT, top-10 pooled | 34.9 | 0.2 | 22.1 | 37.6 | 5.0 | 0.2 | 0.1 |
 | MRI, England | 3.3 | 0.7 | 12.4 | 62.9 | 15.8 | 3.0 | 1.9 |
 | MRI, top-10 pooled | 3.9 | 0.4 | 14.3 | 70.9 | 9.9 | 0.5 | 0.1 |
-| X-ray, England | 34.4 | 0.4 | 16.1 | 21.4 | 25.9 | 0.7 | 1.2 |
 | Ultrasound, England | 2.5 | 0.7 | 11.4 | 51.8 | 30.2 | 1.2 | 2.3 |
+| Ultrasound, top-10 pooled | 2.8 | 0.7 | 14.4 | 55.1 | 26.8 | 0.1 | 0.1 |
+| X-ray, England (out of scope, for comparison) | 34.4 | 0.4 | 16.1 | 21.4 | 25.9 | 0.7 | 1.2 |
 
-The generator uses the top-10 pooled splits for CT, MRI and ultrasound. The difference
-between CT and MRI is the single strongest reason those two
-teams behave differently in the data: a third of CT comes through the
-emergency department, almost no MRI does.
+The generator uses the top-10 pooled splits for CT, MRI and ultrasound.
+These splits are the single strongest reason the three teams behave
+differently in the data: a third of CT comes through the emergency
+department, almost no MRI does, and a quarter of ultrasound is GP direct
+access with no hospital clinician in the loop.
 
 ## 2. Emergency department: national Type 1 series (Monthly A&E Time Series, Sept 2026 edition)
 
@@ -223,9 +229,9 @@ Source: `DM01-Guidance-v9.pdf`. Page numbers are the printed ones.
   echocardiography, cardiac electrophysiology, peripheral neurophysiology,
   sleep studies, urodynamics. Endoscopy: colonoscopy, flexi sigmoidoscopy,
   cystoscopy, gastroscopy. Plain X-ray is not a DM01 test. The dataset
-  covers four of the fifteen: MRI, CT, and all four endoscopy tests except
-  that cystoscopy is modelled as a urology endoscopy in the same vendor
-  table.
+  covers seven of the fifteen: MRI, CT, non-obstetric ultrasound, and the
+  four endoscopy tests (cystoscopy modelled as a urology procedure in the
+  same vendor table as the gastrointestinal ones).
 - **Clock start** (p6): "when the request for a diagnostic test or procedure
   is made." **Clock stop**: "when the patient receives the diagnostic
   test/procedure." The report date plays no part.
@@ -309,11 +315,19 @@ waiting-list activity with about a tenth planned (surveillance). Six-week
 breaches vary from 0% to 70% between trusts of the same size for the same
 test; Oxford reports 0% for CT and 70% for gastroscopy in the same month.
 Nottingham does about 1,965 of the four DM01 endoscopy procedures a month,
-rank 19 nationally; Birmingham 3,116, rank 2.
+rank 19 nationally; Birmingham 3,116, rank 2. Nottingham's DM01
+non-obstetric ultrasound activity (4,861 a month) is about half its DID
+ultrasound count (112,510 a year, 9,400 a month): the difference is
+obstetric scans (out of scope here), vascular scans, screening, and scans
+incidental to another purpose, none of which DM01 counts. The generator
+therefore produces about 115,000 non-obstetric ultrasound rows a year in
+the RIS of which roughly 60,000 are DM01-countable.
 
 Weeks-waiting profile, endoscopy, pooled RX1/RTH/RR8/RYJ (% of list): 0<1: 17.0 | 1<2: 15.2 | 2<3: 12.0 | 3<4: 7.6 | 4<5: 9.1 | 5<6: 5.5 | 6<7: 2.7 | 7<8: 2.8 | 8<9: 2.9 | 9<10: 2.6 | 10<11: 1.9 | 11<12: 1.6 | 12<13: 1.7 | 13+: 17.3
 
 Weeks-waiting profile, MRI, pooled RX1/RTH/RR8/RYJ (% of list): 0<1: 15.4 | 1<2: 17.3 | 2<3: 14.4 | 3<4: 12.9 | 4<5: 10.4 | 5<6: 8.1 | 6<7: 4.7 | 7<8: 4.0 | 8<9: 3.6 | 9<10: 2.3 | 10<11: 1.3 | 11<12: 1.2 | 12<13: 0.9 | 13+: 3.5
+
+Weeks-waiting profile, non-obstetric ultrasound, pooled RX1/RTH/RR8/RYJ (% of list): 0<1: 15.6 | 1<2: 17.4 | 2<3: 13.6 | 3<4: 10.8 | 4<5: 9.6 | 5<6: 7.9 | 6<7: 5.1 | 7<8: 4.2 | 8<9: 3.2 | 9<10: 2.2 | 10<11: 1.8 | 11<12: 1.8 | 12<13: 1.9 | 13+: 4.8
 
 Weeks-waiting profile, CT, pooled RX1/RTH/RR8/RYJ (% of list): 0<1: 21.1 | 1<2: 18.6 | 2<3: 14.0 | 3<4: 10.5 | 4<5: 9.0 | 5<6: 6.3 | 6<7: 2.3 | 7<8: 1.8 | 8<9: 2.1 | 9<10: 1.9 | 10<11: 1.1 | 11<12: 1.3 | 12<13: 1.1 | 13+: 8.8
 
@@ -327,6 +341,7 @@ Weeks-waiting profile, CT, pooled RX1/RTH/RR8/RYJ (% of list): 0<1: 21.1 | 1<2: 
 | MRI waiting list at month end | 5,000, with 20% over 6 weeks |
 | CT waiting list at month end | 3,500, with 10% over 6 weeks |
 | Non-obstetric ultrasound waiting list at month end | 5,500, with 20% over 6 weeks (Nottingham 6,439 at 52%, Oxford 5,380 at 8%) |
+| Non-obstetric ultrasound DM01 activity a month | 5,000 of the 9,600 ultrasound exams in the RIS; 8% planned, 12% unscheduled |
 | Weeks-waiting profiles | the pooled profiles above, as band weights |
 
 ## 5. Diagnostic Imaging Dataset: fields and derivations
@@ -401,14 +416,14 @@ seasonal index.
 
 ### 5.5 Day curves (GIRFT radiology, 2017/18 DID data, chart-read)
 
-| Days from request | CT done by | MRI done by |
-| --- | --- | --- |
-| 0 | ≈43% | ≈8% |
-| 1 | ≈50% | ≈13% |
-| 10 | ≈65% | ≈31% |
-| 14 | ≈72% | ≈38% |
-| 28 | ≈85% | ≈62% |
-| 42 | ≈92% | ≈84% |
+| Days from request | CT done by | MRI done by | Ultrasound done by |
+| --- | --- | --- | --- |
+| 0 | ≈43% | ≈8% | ≈18% |
+| 1 | ≈50% | ≈13% | ≈26% |
+| 10 | ≈65% | ≈31% | ≈40% |
+| 14 | ≈72% | ≈38% | ≈46% |
+| 28 | ≈85% | ≈62% | ≈68% |
+| 42 | ≈92% | ≈84% | ≈87% |
 
 | Days from test | CT reported by | MRI reported by |
 | --- | --- | --- |
@@ -418,7 +433,10 @@ seasonal index.
 | 7 | ≈88% | ≈70% |
 | 21 | ≈98% | ≈92% |
 
-GIRFT also reports mean scanner counts per trust of 3.4 CT and 2.8 MRI
+GIRFT gives no test-to-report curve for ultrasound beyond "ultrasound
+reporting turnaround times are generally swift" because sonographers
+report their own scans; Table 13 below confirms it. GIRFT also reports mean
+scanner counts per trust of 3.4 CT and 2.8 MRI
 (median 2), recommends at least two CT scanners accessible from any ED, and
 suggests cold scanners plan for "75–80% of all available slots". It gives
 no slot lengths, no per-scanner throughput and no DNA rates; those stay as
@@ -470,6 +488,11 @@ versus outpatient and GP.
 | University Hospitals Birming | MRI | 80 | 96 | 0.1 | 0.0 | 5,450 | 27 | 48 | 74 | 3.2 | 0.0 | 18,290 |
 | Leeds Teaching Hospitals NHS | CT | 76 | 97 | 0.1 | 0.2 | 21,215 | 23 | 44 | 72 | 2.8 | 0.2 | 21,650 |
 | Leeds Teaching Hospitals NHS | MRI | 74 | 89 | 0.1 | 2.1 | 3,130 | 29 | 55 | 80 | 1.8 | 1.0 | 14,230 |
+| Imperial College Healthcare | US | 96 | 98 | 0.0 | 0.3 | 3,420 | 94 | 99 | 100 | 0.0 | 0.3 | 24,150 |
+| Oxford University Hospitals | US | 97 | 99 | 0.0 | 0.7 | 3,725 | 94 | 99 | 100 | 0.1 | 0.1 | 23,740 |
+| Nottingham University Hospit | US | 90 | 94 | 0.0 | 2.3 | 5,090 | 95 | 98 | 98 | 0.0 | 2.1 | 23,415 |
+| University Hospitals Birming | US | 99 | 99 | 0.0 | 0.0 | 9,230 | 97 | 100 | 100 | 0.0 | 0.0 | 28,055 |
+| Leeds Teaching Hospitals NHS | US | 97 | 97 | 0.2 | 0.3 | 10,135 | 90 | 93 | 94 | 0.1 | 6.1 | 33,835 |
 
 Nottingham outpatient and GP reporting by quarter 2023/24:
    2023-24 Q1 CT: by next day 16%, by 7 days 40%, by 14 days 49%, >28 days 0.1%, not known 42%
@@ -481,13 +504,16 @@ Nottingham outpatient and GP reporting by quarter 2023/24:
    2023-24 Q4 CT: by next day 17%, by 7 days 45%, by 14 days 64%, >28 days 0.0%, not known 31%
    2023-24 Q4 MRI: by next day 23%, by 7 days 63%, by 14 days 75%, >28 days 0.0%, not known 21%
 
-Two lessons the generator reproduces. First, the comparators report 80–95%
-of inpatient and A&E exams the same day but only 45–63% of outpatient
-exams within a week. Second, Nottingham's outpatient CT and MRI show 21–50%
+Three lessons the generator reproduces. First, the comparators report
+80–95% of inpatient and A&E CT and MRI the same day but only 45–63% of
+outpatient exams within a week, while ultrasound is 90–99% same day for
+every source because the sonographer writes the report in the room. Second, Nottingham's outpatient CT and MRI show 21–50%
 of reports with no issue date across 2023/24 and 0% over 28 days: the
 missing dates swallow the tail, so the trust looks as if it has no slow
 reports at all. That pattern is now mess entry M-RIS-02 at Nottingham's
-rates rather than my earlier guess.
+rates rather than my earlier guess. Third, the missing-date problem does
+not touch ultrasound at the same trust (2%), so it is a workflow property
+of the CT and MRI reporting chain, not of the RIS.
 
 ## 6. HES and ECDS field shapes
 

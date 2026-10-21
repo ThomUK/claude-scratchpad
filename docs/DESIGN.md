@@ -392,8 +392,10 @@ verification (ultrasound reports are verified by the sonographer at the
 time, so `reported_datetime` and `verified_datetime` coincide). January has longer request-to-test waits for all
 modalities **(source)**, and the DID counts an exam on its test date.
 
-Volume: **125,000 CT, 68,000 MRI and 130,000 ultrasound examinations a
-year (source: top-10 scale from DID Table 11)**, with the national monthly shape (April lowest,
+Volume: **125,000 CT, 68,000 MRI and 115,000 non-obstetric ultrasound
+examinations a year (source: top-10 scale from DID Table 11, ultrasound
+net of obstetric)**, of which about 60,000 ultrasound exams are
+DM01-countable **(source: DM01 provider file)**, with the national monthly shape (April lowest,
 January highest, December a dip; range about ±8%).
 
 ### 4.6 `endo_procedures` — the endoscopy vendor's export
@@ -538,7 +540,7 @@ Annual volumes the generator targets:
 | Outpatient attendances | 1,500,000, plus 105,000 DNAs, 175,000 patient and 300,000 hospital cancellations | **(source: HES OP provider table, Nottingham and Oxford)** |
 | CT examinations | 125,000 | **(source: DID Table 11, rank 8–10)** |
 | MRI examinations | 68,000 | **(source: DID Table 11, rank 8–10)** |
-| Ultrasound examinations, non-obstetric | 130,000 | **(source: DID Table 11, top-10 median)** |
+| Ultrasound examinations, non-obstetric | 115,000, of which about 60,000 DM01-countable | **(source: DID Table 11 top-10 median net of obstetric; DM01 provider file)** |
 | Endoscopy procedures | 24,000 | **(source: DM01 provider file, Nottingham)** |
 | RTT incomplete pathways (snapshot) | 88,000 | **(source: RTT provider file, Nottingham and Oxford)** |
 | RTT completed pathways | 180,000 | **(source: same, 15,000 a month)** |
