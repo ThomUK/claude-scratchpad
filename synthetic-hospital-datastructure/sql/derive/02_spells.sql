@@ -17,7 +17,7 @@ SELECT ev.*,
        message_id IN (SELECT message_id FROM a03) AS discharge_cancelled
 FROM ev;
 
-CREATE OR REPLACE TABLE derived.spells AS
+CREATE OR REPLACE TABLE derived._spells_raw AS
 WITH a01 AS (
   SELECT visit_number, person_id, min(event_datetime) AS admit,
          arg_min(site_code, event_datetime) AS site_code, arg_min(specialty_code, event_datetime) AS specialty_first,
@@ -45,3 +45,27 @@ SELECT a01.visit_number AS provspno, a01.person_id, a01.admit AS admidate, a03.d
        CASE WHEN a01.admission_method = '21' THEN 'ED' WHEN a01.admission_method IN ('22','23','24','28','2A','2B','2C','2D') THEN 'other emergency'
             WHEN a01.admission_method = '13' THEN 'planned' ELSE 'elective' END AS admission_group
 FROM a01 LEFT JOIN a03 USING (visit_number);
+
+-- A spell with no discharge message did end if the person was admitted again
+-- later, or if nothing more was recorded on it for over 30 days before the
+-- window end. The discharge is inferred as the earlier of the next admission
+-- and a day after the spell's last event, and flagged. Spells with recent
+-- activity and no later admission stay open.
+CREATE OR REPLACE TABLE derived.spells AS
+WITH nxt AS (
+  SELECT provspno, lead(admidate) OVER (PARTITION BY person_id ORDER BY admidate) AS next_admit
+  FROM derived._spells_raw),
+last_ev AS (SELECT visit_number AS provspno, max(event_datetime) AS last_event FROM derived._adt_valid GROUP BY 1),
+inf AS (
+  SELECT r.provspno,
+         CASE WHEN r.disdate IS NOT NULL THEN r.disdate
+              WHEN n.next_admit IS NOT NULL OR l.last_event < TIMESTAMP '2026-03-01'
+                THEN least(COALESCE(n.next_admit - INTERVAL 1 MINUTE, TIMESTAMP '2026-03-31 23:59:00'), l.last_event + INTERVAL 1 DAY)
+              END AS disdate_final
+  FROM derived._spells_raw r JOIN nxt n USING (provspno) JOIN last_ev l USING (provspno))
+SELECT r.* EXCLUDE (disdate, open_spell, speldur),
+       i.disdate_final AS disdate,
+       r.disdate IS NULL AND i.disdate_final IS NOT NULL AS discharge_inferred,
+       i.disdate_final IS NULL AS open_spell,
+       date_diff('day', CAST(r.admidate AS DATE), CAST(i.disdate_final AS DATE)) AS speldur
+FROM derived._spells_raw r JOIN inf i USING (provspno);
