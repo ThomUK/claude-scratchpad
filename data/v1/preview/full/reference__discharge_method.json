@@ -1,1 +1,0 @@
-{"table":"reference/discharge_method","part":"full","rows_total":4,"files":1,"columns":[{"name":"code","type":"VARCHAR"},{"name":"description","type":"VARCHAR"}],"rows":[["1","Patient discharged on clinical advice or with clinical consent"],["4","Patient died"],["6","Patient discharged himself or herself"],["7","Patient discharged by a relative or advocate"]]}

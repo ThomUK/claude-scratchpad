@@ -85,3 +85,23 @@ test_that("writing produces one CSV per table plus a manifest", {
   x <- data.table::fread(file.path(d, "pas_adt_events.csv"), nrows = 5)
   expect_true(all(c("message_id", "event_type", "event_datetime", "mrn", "visit_number") %in% names(x)))
 })
+
+
+test_that("beds reference: every ward has bed spaces, with the four bed types", {
+  ref <- fh_reference()
+  beds <- ref$beds
+  expect_setequal(unique(beds$bed_type), c("bed", "recliner", "trolley", "chair"))
+  expect_true(all(ref$wards$ward_id %in% beds$ward_id))
+  expect_equal(anyDuplicated(beds$bed_id), 0L)
+  expect_equal(anyDuplicated(beds[, .(ward_id, bed_label)]), 0L)
+  # inpatient wards: one bed space per bed in the wards table, all of type bed
+  inpt <- ref$wards[kind %in% c("bed", "escalation", "critical") & ward_name != "SDEC"]
+  cnt <- beds[ward_id %in% inpt$ward_id, .N, by = ward_id]
+  expect_equal(cnt[match(inpt$ward_id, ward_id), N], inpt$beds)
+  expect_true(all(beds[ward_id %in% inpt$ward_id, bed_type] == "bed"))
+  # the ED is cubicles and chairs, not beds
+  expect_false("bed" %in% beds[ward_name == "ED", bed_type])
+  expect_true(all(c("trolley", "chair") %in% beds[ward_name == "ED", bed_type]))
+  # day units hold trolleys, recliners and chairs as well as beds
+  expect_true(all(c("trolley", "recliner") %in% beds[ward_id %in% ref$wards[kind == "daycase", ward_id], bed_type]))
+})

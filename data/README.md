@@ -17,7 +17,7 @@ data/v1/
     answers/mess_log.parquet the answers table: every injected imperfection with its original value
     answers/truth/*.parquet  the clean spells, stays and linkages the derived layer is marked against
     sample-csv.zip           the same tables as CSV, for tools that cannot read Parquet
-  preview/{full,sample}/     the first 100 rows of every table as JSON, for the table viewer
+  preview/sample/            the first 100 rows of every sample table as JSON, for the table viewer
   full/                      every row (see below for where it lives)
 ```
 

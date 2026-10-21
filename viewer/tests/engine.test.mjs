@@ -1,6 +1,6 @@
 // Run: node tests/engine.test.mjs   (from synthetic-hospital-datastructure/viewer/)
 import assert from 'node:assert/strict';
-import { buildIndex, assetName, releaseUrl, sampleUrl, previewPath, formatCell, fmtBytes, fmtInt, parseRoute, routeFor, LAYERS, isNumericType } from '../engine.js';
+import { buildIndex, assetName, releaseUrl, sampleUrl, previewPath, formatCell, fmtBytes, fmtInt, parseRoute, routeFor, LAYERS, isNumericType, pendingBanner } from '../engine.js';
 
 let n = 0;
 function check(name, fn) { fn(); n++; console.log('  ok  ' + name); }
@@ -62,7 +62,7 @@ check('assetName and releaseUrl: path under full/ with / replaced by __', () => 
 check('sampleUrl and previewPath', () => {
   assert.equal(sampleUrl('v1/sample/derived/spells.parquet'),
     'https://thomuk.github.io/claude-scratchpad/synthetic-hospital-datastructure/data/v1/sample/derived/spells.parquet');
-  assert.equal(previewPath('../data/v1/', 'full', 'answers/truth/spells'), '../data/v1/preview/full/answers__truth__spells.json');
+  assert.equal(previewPath('../data/v1/', 'answers/truth/spells'), '../data/v1/preview/sample/answers__truth__spells.json');
 });
 
 check('formatCell: null stays null, booleans and arrays render, doubles are rounded to 4 places', () => {
@@ -90,12 +90,23 @@ check('fmtBytes and fmtInt', () => {
   assert.equal(fmtInt(null), '');
 });
 
-check('parseRoute and routeFor round-trip', () => {
+check('parseRoute and routeFor round-trip, older sample/ and full/ links still resolve', () => {
   assert.deepEqual(parseRoute(''), { view: 'index' });
   assert.deepEqual(parseRoute('#/'), { view: 'index' });
-  assert.deepEqual(parseRoute('#/full/answers/truth/spells'), { view: 'table', part: 'full', key: 'answers/truth/spells' });
-  assert.deepEqual(parseRoute(routeFor('sample', 'derived/spells')), { view: 'table', part: 'sample', key: 'derived/spells' });
-  assert.deepEqual(parseRoute('#/bogus/x'), { view: 'index' });
+  assert.deepEqual(parseRoute('#/answers/truth/spells'), { view: 'table', key: 'answers/truth/spells' });
+  assert.deepEqual(parseRoute('#/full/answers/truth/spells'), { view: 'table', key: 'answers/truth/spells' });
+  assert.deepEqual(parseRoute('#/sample/derived/spells'), { view: 'table', key: 'derived/spells' });
+  assert.deepEqual(parseRoute(routeFor('derived/spells')), { view: 'table', key: 'derived/spells' });
+  assert.deepEqual(parseRoute('#/bogus'), { view: 'index' });
+  assert.deepEqual(parseRoute('#/../x/y'), { view: 'index' });
+});
+
+check('pendingBanner: null with no changes, otherwise a title naming the published build', () => {
+  assert.equal(pendingBanner(null), null);
+  assert.equal(pendingBanner({ changes: [] }), null);
+  const b = pendingBanner({ published_version: 'v1', published_build: '2026-10-21', note: 'n', changes: ['beds table'] });
+  assert.match(b.title, /v1, built 2026-10-21/);
+  assert.deepEqual(b.changes, ['beds table']);
 });
 
 console.log(`\n${n} checks passed`);

@@ -74,10 +74,17 @@ sample, zips the sample as CSV and writes `manifest.json`. The derived
 SQL is the same for full and sample; only the layer-1 schema name is
 substituted. Internal working tables are named with a leading underscore
 and are not published. Rebuilding takes about 1.5 minutes on four cores
-for the full set. The build ends by writing `preview/` (the first 100 rows
-of every table in both sets as JSON) for the table viewer; `preview.py`
-also runs on its own against a build directory, or against the repository's
-`data/v1` with a build directory as the second argument for the full set.
+for the full set. The build ends by writing `preview/sample/` (the first
+100 rows of every sample table as JSON) for the table viewer; `preview.py`
+also runs on its own against a build directory or the repository's
+`data/v1`.
+
+## Pending changes to the published data
+
+`../pending-changes.json` lists generator changes that are not yet in the
+published dataset; the project page and the table viewer show it as a
+banner. Add a line there with every change to the generator, and empty the
+list when the next version is built and published.
 
 ## Publishing
 
@@ -125,7 +132,7 @@ CSV writer.
 | `run.R` | command-line entry point |
 | `build.py` | Parquet conversion, derived and aggregate SQL, sample, manifest (Python DuckDB) |
 | `check_manifest.py` | compares a rebuilt manifest with the committed one |
-| `preview.py` | 100-row JSON previews of every table for the table viewer; run by `build.py` |
+| `preview.py` | 100-row JSON previews of every sample table for the table viewer; run by `build.py` |
 | `publish_release.sh` | attaches the full set to a GitHub release |
 | `setup-cloud.sh` | toolchain install for cloud sessions |
 

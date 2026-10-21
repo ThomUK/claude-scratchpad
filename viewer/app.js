@@ -1,9 +1,11 @@
-import { buildIndex, releaseUrl, sampleUrl, previewPath, formatCell, fmtBytes, fmtInt, parseRoute, routeFor, isNumericType, assetName } from './engine.js?v=dev';
+import { buildIndex, releaseUrl, sampleUrl, previewPath, formatCell, fmtBytes, fmtInt, parseRoute, routeFor, isNumericType, assetName, pendingBanner } from './engine.js?v=dev';
 
 const DATA_ROOT = '../data/v1/';
 const RELEASE_PAGE = 'https://github.com/ThomUK/claude-scratchpad/releases/tag/synthetic-hospital-datastructure-';
+const PENDING = '../pending-changes.json';
 const view = document.getElementById('view');
 const status = document.getElementById('status');
+const banner = document.getElementById('banner');
 let index = null;
 const previews = new Map();
 
@@ -26,14 +28,24 @@ async function loadIndex() {
   index = buildIndex(await r.json());
 }
 
-async function loadPreview(part, key) {
-  const id = `${part}/${key}`;
-  if (previews.has(id)) return previews.get(id);
-  const r = await fetch(previewPath(DATA_ROOT, part, key));
-  if (!r.ok) throw new Error(`preview ${id}: HTTP ${r.status}`);
+async function loadPreview(key) {
+  if (previews.has(key)) return previews.get(key);
+  const r = await fetch(previewPath(DATA_ROOT, key));
+  if (!r.ok) throw new Error(`preview ${key}: HTTP ${r.status}`);
   const p = await r.json();
-  previews.set(id, p);
+  previews.set(key, p);
   return p;
+}
+
+async function showBanner() {
+  try {
+    const r = await fetch(PENDING);
+    if (!r.ok) return;
+    const b = pendingBanner(await r.json());
+    if (!b) return;
+    banner.replaceChildren(el('b', {}, b.title), ' ', b.note, el('ul', {}, b.changes.map((c) => el('li', {}, c))));
+    banner.hidden = false;
+  } catch (e) { /* no banner */ }
 }
 
 function findTable(key) {
@@ -48,24 +60,19 @@ function renderIndex() {
     view.append(el('h2', {}, g.label), el('p', { class: 'blurb' }, g.blurb));
     const tbody = el('tbody');
     for (const t of g.tables) {
-      const part = t.sample ? 'sample' : 'full';
-      const links = el('td', { class: 'links' });
-      if (t.sample) links.append(el('a', { href: routeFor('sample', t.key) }, 'sample rows'));
-      if (t.full) links.append(el('a', { href: routeFor('full', t.key) }, 'full rows'));
       tbody.append(el('tr', {},
-        el('td', {}, el('a', { class: 'tbl', href: routeFor(part, t.key) }, t.name)),
+        el('td', {}, el('a', { class: 'tbl', href: routeFor(t.key) }, t.name)),
         el('td', { class: 'desc' }, t.description),
         el('td', { class: 'num' }, t.sample ? fmtInt(t.sample.rows) : '–'),
         el('td', { class: 'num' }, t.full ? fmtInt(t.full.rows) : '–'),
         el('td', { class: 'num' }, t.full ? fmtBytes(t.full.bytes) : '–'),
-        el('td', { class: 'num' }, t.full ? String(t.full.files.length) : '–'),
-        links));
+        el('td', { class: 'num' }, t.full ? String(t.full.files.length) : '–')));
     }
     view.append(el('table', { class: 'index' },
       el('thead', {}, el('tr', {},
         el('th', {}, 'Table'), el('th', { class: 'desc' }, 'What it is'),
         el('th', { class: 'num' }, 'Sample rows'), el('th', { class: 'num' }, 'Full rows'),
-        el('th', { class: 'num' }, 'Full size'), el('th', { class: 'num' }, 'Files'), el('th', {}, 'Preview'))),
+        el('th', { class: 'num' }, 'Full size'), el('th', { class: 'num' }, 'Files'))),
       tbody));
   }
   if (index.extras.length) {
@@ -95,33 +102,31 @@ function downloadLinks(t, part) {
   return box;
 }
 
-async function renderTable(part, key) {
+async function renderTable(key) {
   const hit = findTable(key);
   if (!hit) { view.replaceChildren(el('p', {}, `No table called ${key}. `, el('a', { href: '#/' }, 'Back to the index'))); return; }
   const { table: t, group: g } = hit;
-  if (!t[part]) part = t.sample ? 'sample' : 'full';
   document.title = `${t.name}: table viewer`;
   view.replaceChildren();
   view.append(el('p', { class: 'crumbs' }, el('a', { href: '#/' }, 'All tables'), ' › ', g.label, ' › ', t.name));
   view.append(el('h2', {}, t.key));
   if (t.description) view.append(el('p', { class: 'blurb' }, t.description));
 
-  const toggle = el('div', { class: 'toggle' },
-    el('a', { href: routeFor('sample', key), class: part === 'sample' ? 'on' : (t.sample ? '' : 'off') }, 'Sample'),
-    el('a', { href: routeFor('full', key), class: part === 'full' ? 'on' : (t.full ? '' : 'off') }, 'Full set'));
   const meta = el('div', { class: 'meta' },
     el('span', {}, 'Sample rows: ', el('b', {}, t.sample ? fmtInt(t.sample.rows) : '–')),
     el('span', {}, 'Full rows: ', el('b', {}, t.full ? fmtInt(t.full.rows) : '–')),
     el('span', {}, 'Full size: ', el('b', {}, t.full ? fmtBytes(t.full.bytes) : '–')),
-    el('span', {}, 'Files: ', el('b', {}, t[part].files.length)));
-  const panel = el('div', { class: 'panel' }, toggle, meta,
-    el('p', { class: 'blurb' }, part === 'full' ? 'Download from the GitHub release:' : 'Download from this site:'), downloadLinks(t, part));
+    el('span', {}, 'Full-set files: ', el('b', {}, t.full ? t.full.files.length : '–')));
+  const panel = el('div', { class: 'panel' }, meta);
+  if (t.sample) panel.append(el('p', { class: 'blurb' }, 'Sample, from this site:'), downloadLinks(t, 'sample'));
+  if (t.full) panel.append(el('p', { class: 'blurb' }, 'Full set, from the GitHub release:'), downloadLinks(t, 'full'));
   view.append(panel);
 
   const holder = el('div', {}, el('p', { class: 'status' }, 'Loading preview…'));
   view.append(holder);
+  if (!t.sample) { holder.replaceChildren(el('p', { class: 'status' }, 'This table is not in the sample, so there is no preview.')); return; }
   let p;
-  try { p = await loadPreview(part, key); } catch (e) { holder.replaceChildren(el('p', { class: 'status' }, `Could not load the preview: ${e.message}`)); return; }
+  try { p = await loadPreview(key); } catch (e) { holder.replaceChildren(el('p', { class: 'status' }, `Could not load the preview: ${e.message}`)); return; }
   if (parseRoute(location.hash).key !== key) return; // navigated away meanwhile
 
   const cols = el('div', { class: 'cols' }, p.columns.map((c) => el('span', {}, c.name, el('i', {}, c.type))));
@@ -138,19 +143,19 @@ async function renderTable(part, key) {
     body.append(tr);
   });
   holder.replaceChildren(
-    el('p', { class: 'blurb' }, `${p.columns.length} columns. Showing the first ${fmtInt(p.rows.length)} of ${fmtInt(p.rows_total)} rows`,
-      p.files > 1 ? ` (from the largest of ${p.files} partitions)` : '', '. Scroll sideways for more columns.'),
+    el('p', { class: 'blurb' }, `${p.columns.length} columns. Showing the first ${fmtInt(p.rows.length)} of ${fmtInt(p.rows_total)} sample rows. Scroll sideways for more columns.`),
     cols,
     el('div', { class: 'grid-wrap' }, el('table', { class: 'grid' }, el('thead', {}, head), body)));
 }
 
 async function route() {
   const r = parseRoute(location.hash);
-  if (r.view === 'table') await renderTable(r.part, r.key); else renderIndex();
+  if (r.view === 'table') await renderTable(r.key); else renderIndex();
   window.scrollTo(0, 0);
 }
 
 (async () => {
+  showBanner();
   try { await loadIndex(); setStatus(''); } catch (e) { setStatus(`Could not load the dataset manifest: ${e.message}`); return; }
   window.addEventListener('hashchange', route);
   await route();
