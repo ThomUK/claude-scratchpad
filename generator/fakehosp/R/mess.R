@@ -58,6 +58,11 @@ inject_mess <- function(gen, rates, seed, start, end, verbose = FALSE) {
   res <- mess_op(T, tr, r, ml, ctx);         T <- res$T; tr <- res$tr
   vmsg(verbose, "Mess: bouncing")
   res <- mess_bounce(T, tr, r, ml, ctx);     T <- res$T; tr <- res$tr; rm(res); gc()
+  # apply the outpatient log removals and additions in one pass
+  lg <- T$pas_op_status_log; T$pas_op_status_log <- NULL
+  if (".keep" %in% names(lg)) { kept <- lg[.keep == TRUE]; rm(lg); gc(); kept[, .keep := NULL] } else kept <- lg
+  if (length(T$op_log_add)) { add <- rbindlist(T$op_log_add); T$op_log_add <- NULL; lg <- rbindlist(list(kept, add)); rm(kept, add); gc() } else lg <- kept
+  T$pas_op_status_log <- lg; rm(lg)
   vmsg(verbose, "Mess: radiology")
   res <- mess_ris(T, tr, r, ml, ctx);        T <- res$T; tr <- res$tr
   vmsg(verbose, "Mess: endoscopy")
@@ -338,6 +343,7 @@ mess_ed <- function(T, tr, r, ml, ctx) {
 mess_op <- function(T, tr, r, ml, ctx) {
   ap <- T$pas_outpatient_appointments; lg <- T$pas_op_status_log; rf <- T$pas_referrals
   K <- "appointment_id"
+  if (!".keep" %in% names(lg)) lg[, .keep := TRUE]
   lg_add <- list(); drop_outcome <- character(); drop_all <- character()
   # M-OP-01 extra hospital-cancelled slot before an attended one (rebooking churn)
   i <- ap[, which(attendance_status %in% c("5", "6"))]; i <- i[runif(length(i)) < r("M-OP-01")]
@@ -369,9 +375,9 @@ mess_op <- function(T, tr, r, ml, ctx) {
   i <- rf[, which(!is.na(rtt_period_end_date))]; i <- i[runif(length(i)) < r("M-OP-04")]
   if (length(i)) { log_mess(ml, "M-OP-04", "pas_referrals", rf$referral_id[i], "rtt_period_end_date", chr(rf$rtt_period_end_date[i]), "clock stop validated 1-3 weeks after the event")
     rf[i, rtt_period_end_date := rtt_period_end_date + round(runif(.N, 7, 21))] }
-  keep <- !(lg$appointment_id %in% drop_all) & !(lg$appointment_id %in% drop_outcome & lg$field == "outcome")
-  lg <- lg[keep]
-  if (length(lg_add)) lg <- rbind(lg, rbindlist(lg_add))
+  if (length(drop_all)) lg[appointment_id %in% drop_all, .keep := FALSE]
+  if (length(drop_outcome)) lg[appointment_id %in% drop_outcome & field == "outcome", .keep := FALSE]
+  T$op_log_add <- c(T$op_log_add, lg_add)
   T$pas_outpatient_appointments <- ap; T$pas_op_status_log <- lg; T$pas_referrals <- rf
   list(T = T, tr = tr)
 }
@@ -379,6 +385,7 @@ mess_op <- function(T, tr, r, ml, ctx) {
 # ---- bouncing in the outpatient audit trail --------------------------------
 mess_bounce <- function(T, tr, r, ml, ctx) {
   ap <- T$pas_outpatient_appointments; lg <- T$pas_op_status_log
+  if (!".keep" %in% names(lg)) lg[, .keep := TRUE]
   lg_add <- list(); drop_arrived <- character()
   att <- ap[, which(attendance_status %in% c("5", "6") & !is.na(appointment_datetime))]
   mkrow <- function(ids, field, old, new, t, ws = "clinic reception") data.table(appointment_id = ids, field = field, old_value = old, new_value = new, recorded_datetime = t, workstation = ws, user_id = sprintf("U%04d", sample.int(600L, length(ids), TRUE)), log_id = NA_integer_)
@@ -419,8 +426,8 @@ mess_bounce <- function(T, tr, r, ml, ctx) {
     ap[i, outcome := "5"]
     lg_add$b04 <- rbind(mkrow(ids, "outcome", ap$outcome[i], "2", t0 + mins(10)), mkrow(ids, "outcome", "2", "1", t0 + mins(40)), mkrow(ids, "outcome", "1", "5", t0 + mins(75)))
   }
-  if (length(drop_arrived)) lg <- lg[!(appointment_id %in% drop_arrived & new_value == "arrived")]
-  if (length(lg_add)) lg <- rbind(lg, rbindlist(lg_add))
+  if (length(drop_arrived)) lg[appointment_id %in% drop_arrived & new_value == "arrived", .keep := FALSE]
+  T$op_log_add <- c(T$op_log_add, lg_add)
   T$pas_outpatient_appointments <- ap; T$pas_op_status_log <- lg
   list(T = T, tr = tr)
 }
