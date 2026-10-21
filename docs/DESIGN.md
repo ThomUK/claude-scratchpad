@@ -577,6 +577,15 @@ Patterns the generator builds in, with sources where they exist:
 ## 9. The generator
 
 - **Language: R**, as an R package under `synthetic-hospital-datastructure/generator/`.
+- **Toolchain in the cloud session.** CRAN is not reachable from the
+  container, so R (4.3.3) and its packages come from the Ubuntu archive:
+  data.table, testthat, jsonlite, withr, cli, checkmate, digest, lubridate.
+  The archive has no arrow or duckdb for R, so the package writes its
+  layer-1 tables as CSV with `data.table::fwrite` and a small Python step
+  using DuckDB converts them to Parquet, runs `sql/derive` and
+  `sql/aggregate`, draws the sample and writes the manifest. The SQL is the
+  same whichever engine runs it, which is the point. `generator/setup-cloud.sh`
+  installs all of this and is the environment's setup script.
 - **Entry point:** `generate(seed = 20230401, n_patients = 800000, start = "2023-04-01", end = "2026-03-31", volumes = default_volumes(), mess = default_mess_rates(), out_dir)`.
 - **Pipeline:** population → referrals and outpatient → ED attendances →
   admissions and ward moves (clean event log) → imaging → endoscopy → inject
