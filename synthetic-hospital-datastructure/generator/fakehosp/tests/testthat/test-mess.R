@@ -37,7 +37,7 @@ test_that("injection rates land near the catalogue rates", {
   en <- T$endo_procedures
   expect_true(all(en$Site %in% c("HA", "Hosp A", "Hospital A", "HOSPITAL A", "HB", "Hosp B", "Hospital B", "HOSPITAL B")))
   expect_true(any(is.na(en$HospNo)))
-  expect_true(any(grepl("^[0-9]{3} [0-9]{3} [0-9]{4}$", ed$nhs_number)))
+  expect_true(any(grepl("^fake_[0-9]{3} [0-9]{3} [0-9]{4}$", ed$nhs_number)))
 })
 
 test_that("the ADT log is still well formed after injection", {
@@ -68,4 +68,18 @@ test_that("bouncing writes extra audit rows and the final values the catalogue d
   el <- g$tables$ed_status_log
   expect_true("re-opened" %in% el$status)
   expect_true("decision to admit removed" %in% el$status)
+})
+
+
+test_that("every NHS number in every table keeps the fake_ prefix, whatever the formatting mess", {
+  g <- gen_messy()
+  for (nm in names(g$tables)) {
+    t <- g$tables[[nm]]
+    for (col in grep("nhs_?number$", names(t), ignore.case = TRUE, value = TRUE)) {
+      if (!is.character(t[[col]])) next
+      v <- t[[col]][!is.na(t[[col]]) & t[[col]] != ""]
+      if (!length(v)) next
+      expect_true(all(startsWith(v, "fake_")), label = paste(nm, col))
+    }
+  }
 })

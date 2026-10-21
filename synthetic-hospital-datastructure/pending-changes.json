@@ -3,6 +3,7 @@
   "published_build": "2026-10-21",
   "note": "The generator has moved on since v1 was built. These changes are in the code but not in the published data; the dataset will be regenerated as v2 when the list is complete.",
   "changes": [
-    "Beds reference table (reference/beds): one row per bed space with bed_type bed, recliner, trolley or chair. The published ADT events still carry random Bay<n>-<nn> labels that are not drawn from it."
+    "Beds reference table (reference/beds): one row per bed space with bed_type bed, recliner, trolley or chair. The published ADT events still carry random Bay<n>-<nn> labels that are not drawn from it.",
+    "NHS numbers keep the fake_ prefix under every formatting variant (M-ED-07 now gives fake_410 897 3682, not 410 897 3682). About 2% of the published ED rows still carry the unprefixed form."
   ]
 }

@@ -332,8 +332,9 @@ mess_ed <- function(T, tr, r, ml, ctx) {
   if (length(i)) { log_mess(ml, "M-ED-02", "ed_attendances", ed[[K]][i], "mrn", ed$mrn[i], "interface matched a different person with the same sex and birth year")
     ed[i, mrn := pts$mrn[sample.int(nrow(pts), length(i), TRUE)]] }
   i <- pick(nrow(ed), r("M-ED-07"))
-  if (length(i)) { log_mess(ml, "M-ED-07", "ed_attendances", ed[[K]][i], "nhs_number", ed$nhs_number[i], "typed by hand: spaces, no prefix")
-    d <- sub("^fake_", "", ed$nhs_number[i]); ed[i, nhs_number := paste(substr(d, 1, 3), substr(d, 4, 6), substr(d, 7, 10))] }
+  # the fake_ prefix survives every formatting variant so no value can ever pass for a real NHS number
+  if (length(i)) { log_mess(ml, "M-ED-07", "ed_attendances", ed[[K]][i], "nhs_number", ed$nhs_number[i], "typed by hand: spaces in 3-3-4 groups")
+    d <- sub("^fake_", "", ed$nhs_number[i]); ed[i, nhs_number := paste0("fake_", substr(d, 1, 3), " ", substr(d, 4, 6), " ", substr(d, 7, 10))] }
   setorder(ed, activity_start_datetime)
   T$ed_attendances <- ed; T$ed_status_log <- lg
   list(T = T, tr = tr)

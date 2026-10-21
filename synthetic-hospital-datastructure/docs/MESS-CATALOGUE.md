@@ -74,7 +74,7 @@ user", "value held longest") can be scored against it.
 | M-ED-04 | timing | Breach-shaped departures: a cluster of `departure_datetime` at 3 h 55–3 h 59 after arrival for discharged patients | 5% of discharged attendances | histogram spike just under 4 h | Targets shape data; the distribution reveals the behaviour |
 | M-ED-05 | completeness | Missing initial assessment and triage times for walk-in minors streamed to UTC | 20% of UTC attendances | null `initial_assessment_datetime` | Process steps that did not happen are indistinguishable from steps not recorded |
 | M-ED-06 | process | Unplanned re-attendance within 72 h recorded as a new first attendance | 3% of re-attendances | same patient within 72 h, category = first | Re-attendance rates depend on who classifies, not just what happened |
-| M-ED-07 | coding | `nhs_number` with spaces and without the `fake_` prefix on 2% of rows (typed by hand at registration) | 2% | pattern mismatch | Identifiers need normalising before they are keys |
+| M-ED-07 | coding | `nhs_number` typed by hand at registration, with spaces in 3-3-4 groups (`fake_410 897 3682`) on 2% of rows; the `fake_` prefix is kept on every variant so no value can pass for a real number | 2% | pattern mismatch | Identifiers need normalising before they are keys |
 
 ## Outpatients and referrals (`pas_outpatient_appointments`, `pas_referrals`)
 
