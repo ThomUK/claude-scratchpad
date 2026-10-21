@@ -509,6 +509,9 @@ withheld in a teaching exercise. Rows whose note says "removed" or "never
 happened" refer to rows that no longer exist in the table; the PAS event
 log is re-sequenced after injection, so its `row_key` values are the
 pre-injection message ids and should be matched on the other columns.
+The clinic close-down batch (M-BOUNCE-03) is logged once per clinic
+session, with the clinic code and date as the key, rather than once per
+audit row.
 
 ## 5. Layer 2: derived entities
 
