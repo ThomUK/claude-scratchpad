@@ -603,23 +603,23 @@ Patterns the generator builds in, with sources where they exist:
 
 ## 8. Hosting, formats and access
 
-- **Primary format: Parquet**, one file per table, committed under
-  `synthetic-hospital-datastructure/data/v1/full/`. The clean generator's
-  full-scale run produces 38 million rows and 3.7 GB of CSV, of which the
-  two audit logs (outpatient 21 million rows, ED 3.4 million) are two
-  thirds. Large tables are partitioned by financial year so that no single
-  file approaches GitHub's 100 MB file limit; the Parquet total is to be
-  measured at deliverable 4 and the audit logs are the first candidates
-  for trimming if the site limit bites.
+- **Primary format: Parquet**, one file per table. The full-scale run
+  produces 38 million rows, about 1.1 GB as ZSTD Parquet, which exceeds
+  what GitHub Pages will host, so the **full set is attached to a GitHub
+  release** of the repository (one asset per file, large tables partitioned
+  by financial year) and the **5% sample lives in the repository** under
+  `data/v1/sample/` and is served by Pages. `data/README.md` has the URLs
+  and read examples.
 - **A `sample/` partition alongside `full/`**: a 5% sample of *patients*
   (about 40,000) with all of their activity across every table, so joins
   hold. About 25 MB. This is what the browser console loads by default;
   `full/` is a toggle. Both carry the same version and seed.
-- **Secondary format: a CSV zip** of the same tables, committed alongside.
-  It exists only for people whose tools cannot read Parquet, and for opening
-  a table in a spreadsheet. The Parquet files are canonical; the CSVs are
-  generated from them and carry the same version tag. Both are listed in
-  `manifest.json` with row counts and checksums.
+- **Secondary format: a CSV zip** of the sample's tables, alongside it. It
+  exists only for people whose tools cannot read Parquet, and for opening a
+  table in a spreadsheet. The Parquet files are canonical; the CSVs are
+  generated from them and carry the same version tag. Everything is listed
+  in `manifest.json` with row counts, sizes and checksums. The full set has
+  no CSV zip: at 3.7 GB it would not be a convenience.
 - **Browser:** a page in the usual repo style with a DuckDB-WASM SQL console
   pre-loaded with the tables, a schema browser, and the explainer walking
   from an ADT event to a spell to a midnight census with runnable queries.
@@ -651,9 +651,11 @@ Patterns the generator builds in, with sources where they exist:
 - **Entry point:** `generate(seed = 20230401, n_patients = 800000, start = "2023-04-01", end = "2026-03-31", volumes = default_volumes(), mess = default_mess_rates(), out_dir)`.
 - **Pipeline:** population → referrals and outpatient → ED attendances →
   admissions and ward moves (clean event log) → imaging → endoscopy → inject
-  mess (recording every injection in `mess_log`) → write layer 1 CSV →
-  Python DuckDB converts to Parquet → run `sql/derive/*.sql` → run
-  `sql/aggregate/*.sql` → draw the patient sample → write manifest.
+  mess (recording every injection in `mess_log`) → write layer 1 and truth
+  as CSV (`generator/run.R`) → `generator/build.py` loads into DuckDB,
+  writes Parquet, runs `sql/derive/*.sql` and `sql/aggregate/*.sql`, draws
+  the 5% patient sample and reruns the same SQL on it, zips the sample as
+  CSV and writes the manifest.
 - **Tests:** `testthat` unit tests on the engine (determinism for a fixed
   seed, volumes within tolerance, every spell has one A01, every injected
   mess row is in `mess_log`, derived layer reproduces the clean truth when
@@ -671,7 +673,7 @@ Patterns the generator builds in, with sources where they exist:
 1. This design, the calibration note and the mess catalogue (done).
 2. R package with the clean generator and tests (done; `generate(mess = NULL)`).
 3. Mess injection and `mess_log` (done; `generate()` with `default_mess_rates()`).
-4. Derive and aggregate SQL; manifest; sample partition; CSV zip.
+4. Derive and aggregate SQL; Parquet build; manifest; sample partition; CSV zip (done; `generator/build.py`, `sql/`).
 5. Browser console and explainer page; card on the root `index.html`; README row.
 6. R helper package and R/Python access docs.
 
