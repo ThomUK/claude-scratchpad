@@ -22,6 +22,7 @@
     .go span { display: block; width: 100%; padding: 14px 20px; border-radius: 14px; background: var(--accent); color: #fff; font-size: 1.125rem; font-weight: 700; }
     .go:hover span, .go:focus-visible span { background: #0b5b55; }
     .small { font-size: 0.8125rem; margin: 22px 0 0; }
+    .carry { font-size: 0.8125rem; color: var(--accent); font-weight: 600; margin: -6px 0 0; }
     a { color: var(--accent); }
   </style>
 </head>
@@ -29,11 +30,40 @@
   <main>
     <h1>Global Explorer has moved</h1>
     <p>This old address is no longer updated. Global Explorer now lives at globalexplorer.app.</p>
-    <a class="go" href="https://globalexplorer.app/play/">
+    <a class="go" id="go" href="https://globalexplorer.app/play/">
       <img src="icon.svg" alt="Global Explorer" width="160" height="160" />
       <span>Go to the new site</span>
+      <p class="carry" id="carry" hidden></p>
     </a>
     <p class="small">Playing at school? Ask your teacher for your school's access code. Everyone else: Global Explorer is coming soon to Google Play, and <a href="https://globalexplorer.app/">globalexplorer.app</a> has the details.</p>
   </main>
+  <script>
+    // Progress saved at this old address can't be read by the new site (each site
+    // keeps its own storage), so carry it in the link, after # where it never
+    // reaches a server. The new site checks it and asks before adding it.
+    (function () {
+      function read(name) {
+        try {
+          var v = localStorage.getItem('global-explorer.' + name);
+          if (v == null) v = localStorage.getItem('world-borders.' + name);
+          return v == null ? null : JSON.parse(v);
+        } catch (e) { return null; }
+      }
+      var stats = read('stats'), visited = read('visited'), settings = read('settings');
+      var found = stats && stats.found ? Object.keys(stats.found).length : 0;
+      var places = Array.isArray(visited) ? visited.length : 0;
+      if (!found && !places && !(stats && stats.rounds)) return;
+      try {
+        var json = JSON.stringify({ v: 1, stats: stats, visited: visited, settings: settings });
+        var bytes = new TextEncoder().encode(json), bin = '';
+        for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        var data = btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        document.getElementById('go').href = 'https://globalexplorer.app/play/#import=' + data;
+        var carry = document.getElementById('carry');
+        carry.textContent = 'Your passport comes with you.';
+        carry.hidden = false;
+      } catch (e) { /* the plain link still works */ }
+    })();
+  </script>
 </body>
 </html>
