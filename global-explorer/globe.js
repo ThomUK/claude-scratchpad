@@ -4,8 +4,8 @@
 // territories get a screen-space ring marker. Recolouring a country is just a
 // material colour change.
 import * as THREE from 'three';
-import { OrbitControls } from './vendor/three/OrbitControls.js?v=4434b9f7';
-import { cameraDistanceForSpan, pickCountry } from './engine.js?v=4434b9f7';
+import { OrbitControls } from './vendor/three/OrbitControls.js?v=e1a0a621';
+import { cameraDistanceForSpan, pickCountry } from './engine.js?v=e1a0a621';
 
 // Light "atlas" palette: pale ocean, sand land, soft grey borders.
 export const COLORS = {
