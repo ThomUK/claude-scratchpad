@@ -1,12 +1,12 @@
 // Global Explorer service worker: precache the app shell and data so the game
 // works offline and installs as an app. The build script (build.mjs) rewrites every
-// "?v=e1a0a621" to the commit SHA, which versions both the cache and the assets.
-const VERSION = 'global-explorer?v=e1a0a621';
+// "?v=ced2c53c" to the commit SHA, which versions both the cache and the assets.
+const VERSION = 'global-explorer?v=ced2c53c';
 const ASSETS = [
-  './', './index.html', './styles.css?v=e1a0a621', './app.js?v=e1a0a621', './engine.js?v=e1a0a621', './globe.js?v=e1a0a621', './native.js?v=e1a0a621',
-  './manifest.webmanifest?v=e1a0a621', './icons/icon.svg?v=e1a0a621', './icons/icon-192.png?v=e1a0a621', './icons/icon-512.png?v=e1a0a621',
-  './data/countries.json?v=e1a0a621', './data/world.json?v=e1a0a621',
-  './vendor/three/three.module.js?v=e1a0a621', './vendor/three/three.core.js', './vendor/three/OrbitControls.js?v=e1a0a621',
+  './', './index.html', './styles.css?v=ced2c53c', './app.js?v=ced2c53c', './engine.js?v=ced2c53c', './globe.js?v=ced2c53c', './native.js?v=ced2c53c',
+  './manifest.webmanifest?v=ced2c53c', './icons/icon.svg?v=ced2c53c', './icons/icon-192.png?v=ced2c53c', './icons/icon-512.png?v=ced2c53c',
+  './data/countries.json?v=ced2c53c', './data/world.json?v=ced2c53c',
+  './vendor/three/three.module.js?v=ced2c53c', './vendor/three/three.core.js', './vendor/three/OrbitControls.js?v=ced2c53c',
   './vendor/fonts/TwemojiCountryFlags.woff2',
 ];
 

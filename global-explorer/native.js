@@ -11,7 +11,7 @@ export const isNative = () => !!(window.Capacitor && window.Capacitor.isNativePl
  */
 export async function initNative({ back }) {
   if (!isNative()) return;
-  const { registerPlugin } = await import('./vendor/capacitor/core.js?v=e1a0a621');
+  const { registerPlugin } = await import('./vendor/capacitor/core.js?v=ced2c53c');
   const App = registerPlugin('App');
   await App.addListener('backButton', () => { if (!back()) App.minimizeApp(); });
 }
