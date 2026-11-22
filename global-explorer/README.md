@@ -1,6 +1,5 @@
-# Global Explorer (published copy)
+# Global Explorer has moved
 
-This folder is published automatically from a private repository by its
-"Publish web demo" workflow. Do not edit it here: every publish replaces it.
-
-Live: https://thomuk.github.io/claude-scratchpad/global-explorer/
+Global Explorer now lives at https://globalexplorer.app. This folder only
+points the way there, and is published automatically from a private
+repository: do not edit it here.

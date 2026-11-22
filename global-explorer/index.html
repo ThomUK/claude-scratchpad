@@ -1,210 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#f6f3ec" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Global Explorer" />
-  <title>Global Explorer</title>
-  <link rel="manifest" href="manifest.webmanifest?v=5c15159f" />
-  <link rel="icon" href="icons/icon.svg?v=5c15159f" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="icons/icon-180.png?v=5c15159f" />
-  <link rel="stylesheet" href="styles.css?v=5c15159f" />
-  <script type="importmap">
-    { "imports": { "three": "./vendor/three/three.module.js?v=5c15159f" } }
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Explorer has moved</title>
+  <meta name="robots" content="noindex" />
+  <link rel="canonical" href="https://globalexplorer.app/" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <style>
+    /* This old address now only points the way to globalexplorer.app. */
+    :root { --bg: #f6f3ec; --text: #1f2933; --muted: #5d6873; --accent: #0f766e; --surface: #ffffff; --border: #e2dcd0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 32px 20px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); text-align: center; }
+    main { max-width: 440px; }
+    h1 { font-size: 1.25rem; margin: 0 0 8px; }
+    p { font-size: 0.90625rem; line-height: 1.5; color: var(--muted); margin: 0 0 24px; }
+    .go { display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 28px 24px 24px; border-radius: 24px; text-decoration: none;
+      background: var(--surface); border: 1px solid var(--border); box-shadow: 0 16px 40px rgba(31, 41, 51, 0.14); color: var(--text); }
+    .go img { width: 160px; height: 160px; border-radius: 36px; }
+    .go span { display: block; width: 100%; padding: 14px 20px; border-radius: 14px; background: var(--accent); color: #fff; font-size: 1.125rem; font-weight: 700; }
+    .go:hover span, .go:focus-visible span { background: #0b5b55; }
+    .small { font-size: 0.8125rem; margin: 22px 0 0; }
+    a { color: var(--accent); }
+  </style>
 </head>
 <body>
-  <div id="app">
-    <main id="screens">
-
-      <!-- ============================== PLAY ============================== -->
-      <section class="screen picking" id="screen-play"><!-- picking: the globe fills the screen until a round starts, so nothing else shows while loading -->
-        <div class="globe-wrap" id="globe-wrap">
-          <div id="globe"></div>
-          <div class="loading" id="loading"><div class="spin"></div>Loading…</div>
-          <div class="explore-head" id="explore-bar" hidden><!-- the back button floats on its own beside the explorer's card -->
-            <button type="button" class="back float" id="explore-back" aria-label="Back to passport"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-            <div class="explore-bar explore-card"><div class="explore-title"><strong id="explore-title"></strong><span class="muted small" id="explore-sub"></span></div></div>
-          </div>
-          <div class="explore-bar start-bar" id="start-bar" hidden>
-            <h1>Global Explorer</h1>
-            <p>Explore while you search for a mystery country. Where do you want to start?</p>
-          </div>
-          <div class="explore-pop start-pop" id="start-pop" hidden>
-            <button type="button" class="close" id="start-close" aria-label="Close">×</button>
-            <button type="button" class="close info" id="start-info" aria-label="About this country" title="About this country">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="8" r="1.3" fill="currentColor"/><path d="M12 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            </button>
-            <div class="rhead"><span class="bigflag" id="start-flag"></span><div><h2 id="start-pop-name"></h2><p class="muted small" id="start-pop-status"></p></div></div>
-            <div class="btnrow">
-              <button type="button" class="primary" id="start-here">Start from here</button>
-            </div>
-          </div>
-          <div class="explore-pop" id="explore-pop" hidden>
-            <button type="button" class="close" id="explore-close" aria-label="Close">×</button>
-            <div class="rhead"><span class="bigflag" id="pop-flag"></span><div><h2 id="pop-name"></h2><p class="muted small" id="pop-status"></p></div></div>
-            <dl class="facts-grid" id="pop-facts"></dl>
-            <div class="btnrow"><button type="button" class="primary" id="pop-more">Full details</button></div>
-          </div>
-          <button type="button" class="compass" id="compass" hidden title="North is up. Tap to re-centre." aria-label="Compass: north is up. Tap to re-centre the globe.">
-            <svg viewBox="0 0 100 100" aria-hidden="true">
-              <circle cx="50" cy="50" r="49" class="c-bg"/>
-              <g transform="translate(50 50) scale(0.76) translate(-50 -50)"><!-- the star sits in from the letters -->
-                <circle cx="50" cy="50" r="40" class="c-ring"/>
-                <g class="c-minor"><path d="M50 22l5 23-5 5-5-5zM50 78l-5-23 5-5 5 5zM22 50l23-5 5 5-5 5zM78 50l-23 5-5-5 5-5z" transform="rotate(45 50 50)"/></g>
-                <g class="c-major"><path d="M50 12l6 32-6 6-6-6zM50 88l-6-32 6-6 6 6zM12 50l32-6 6 6-6 6zM88 50l-32 6-6-6 6-6z"/></g>
-                <path d="M50 12l6 32-6 6z" class="c-north"/>
-                <circle cx="50" cy="50" r="3" class="c-hub"/>
-              </g>
-              <text x="50" y="12" class="c-txt">N</text>
-              <text x="88.5" y="51" class="c-txt">E</text>
-              <text x="50" y="89" class="c-txt">S</text>
-              <text x="11.5" y="51" class="c-txt">W</text>
-            </svg>
-          </button>
-          <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-        </div>
-
-        <div class="sheet" id="sheet" data-state="half">
-          <button class="grip" id="grip" type="button" aria-label="Expand or collapse the panel"><span></span></button>
-          <div class="sheet-body" id="sheet-body">
-
-
-            <!-- In a round -->
-            <div id="panel-game" hidden>
-              <div class="status">
-                <div><span class="muted small">From</span><br /><strong id="start-name"></strong></div>
-                <div class="right"><span class="muted small">Guesses</span><br /><strong id="guess-count">0</strong> <span class="muted small" id="clues-used"></span></div>
-              </div>
-              <p class="clue" id="clue" aria-live="polite"></p>
-              <p class="cluebox" id="clue-box" aria-live="polite" hidden>🧭 <span id="clue-text"></span></p>
-              <p class="flash" id="flash" aria-live="polite" hidden></p>
-              <div class="picker" id="picker-guess">
-                <label for="search-guess" class="sr-only">Guess</label>
-                <input id="search-guess" type="search" autocomplete="off" spellcheck="false" enterkeyhint="go" placeholder="Type the country's name…" />
-                <div id="results-guess" class="results" hidden></div>
-              </div>
-              <ol class="log" id="log"></ol>
-              <p class="muted small" id="log-empty" hidden>No guesses yet. Each guess is compared with the one before it: an orange line means that hop took you closer, a blue one further away.</p>
-              <div class="btnrow">
-                <button type="button" id="btn-clue" hidden>💡 Give me a clue</button>
-                <button type="button" id="btn-giveup">Give up and reveal</button>
-              </div>
-            </div>
-
-            <!-- Round over -->
-            <div id="panel-over" hidden>
-              <p class="outcome" id="outcome"></p>
-              <div class="stamped" id="stamped" hidden></div>
-              <div id="reveal-card"></div>
-            </div>
-
-          </div>
-          <div class="sheet-footer" id="sheet-footer" hidden>
-            <div class="btnrow" id="over-actions"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ============================ PASSPORT ============================ -->
-      <section class="screen passport" id="screen-passport" hidden>
-        <header class="appbar"><h1>Passport</h1><span class="muted small" id="passport-count"></span></header>
-        <div class="page">
-          <div class="travel" id="levels"></div>
-          <div class="chips sort" id="passport-filter"></div>
-          <div class="book" id="book"></div>
-          <p class="muted small" id="book-empty" hidden>No stamps yet. Find a country on Easy, Intermediate or Advanced to earn its stamp, or open a country in the Atlas to mark somewhere you have really been.</p>
-        </div>
-      </section>
-
-      <!-- ============================== ATLAS ============================= -->
-      <section class="screen" id="screen-atlas" hidden>
-        <div class="atlas-head">
-          <header class="appbar"><h1>Atlas</h1><span class="muted small" id="ref-count"></span></header>
-          <div class="atlas-tools">
-            <input id="ref-filter" type="search" placeholder="Filter by name, continent or status…" autocomplete="off" />
-            <div class="chips" id="sort-chips"></div>
-          </div>
-        </div>
-        <ul class="atlas" id="atlas-list"></ul>
-      </section>
-
-      <!-- Country page (from the Atlas) -->
-      <section class="screen" id="screen-country" hidden>
-        <header class="appbar country-head">
-          <button type="button" class="back" id="country-back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <span class="bigflag" id="country-flag"></span>
-          <div class="ctitle"><h1 id="country-title">Country</h1><p class="muted small" id="country-official"></p></div>
-        </header>
-        <div class="btnrow page-actions top">
-          <button type="button" class="primary" id="btn-show-globe">Show on globe</button>
-          <button type="button" class="visit" id="btn-visited">I've been here for real</button>
-        </div>
-        <div class="page" id="country-body"></div>
-      </section>
-
-      <!-- ============================= SETTINGS =========================== -->
-      <section class="screen" id="screen-settings" hidden>
-        <header class="appbar"><h1>Settings</h1></header>
-        <div class="page">
-          <h2>Level</h2>
-          <div class="difficulty" id="difficulty" role="radiogroup" aria-label="Level"></div>
-
-          <h2>Units</h2>
-          <div class="seg" id="units">
-            <label><input type="radio" name="units" value="km" /> Kilometres</label>
-            <label><input type="radio" name="units" value="mi" /> Miles</label>
-          </div>
-
-          <h2>Passport</h2>
-          <div class="btnrow"><button type="button" class="ghost" id="btn-reset-stats">Reset passport and progress</button></div>
-          <p class="muted small">Clears every level's stamps. Places you have really been are kept.</p>
-
-          <h2>Credits</h2>
-          <dl class="facts-grid credits" id="credits"></dl>
-          <p class="muted small">Boundaries follow internationally recognised borders. Distances are great-circle, centre to centre.</p>
-          <!-- build.mjs fills in the version from package.json and the commit, e.g. "1.0.0 (b00a3159)" -->
-          <p class="muted small app-version" id="app-version">Version 0.1.0 (5c15159f)</p>
-        </div>
-      </section>
-
-    </main>
-
-    <nav class="tabbar" id="tabbar" aria-label="Sections">
-      <button type="button" class="tab on" data-screen="play" aria-label="Game">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.55"/><path d="M17.09 6.91L14.60 12.00L17.09 17.09L12.00 14.60L6.91 17.09L9.40 12.00L6.91 6.91L12.00 9.40Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12.00 1.60L14.26 9.74L22.40 12.00L14.26 14.26L12.00 22.40L9.74 14.26L1.60 12.00L9.74 9.74Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 1.60L14.26 9.74L12 12L9.74 9.74Z" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/></svg>
-        <span>Game</span>
-      </button>
-      <button type="button" class="tab" data-screen="passport" aria-label="Passport">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="10" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 16.5h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <span>Passport</span>
-      </button>
-      <button type="button" class="tab" data-screen="atlas" aria-label="Atlas">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10.5c3 .5 5 2 6 4.5s3 3 5.5 3M12 3c-1.5 2.5-1 5 .5 6.5s3.5 1.5 5 .5M9 4c-.5 2 .5 3.5 2 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <span>Atlas</span>
-      </button>
-      <button type="button" class="tab" data-screen="settings" aria-label="Settings">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 3h3.4l.5 2.3a7 7 0 0 1 1.9 1.1l2.2-.8 1.7 3-1.8 1.5a7 7 0 0 1 0 2.2l1.8 1.5-1.7 3-2.2-.8a7 7 0 0 1-1.9 1.1l-.5 2.3h-3.4l-.5-2.3a7 7 0 0 1-1.9-1.1l-2.2.8-1.7-3 1.8-1.5a7 7 0 0 1 0-2.2L3.7 8.6l1.7-3 2.2.8a7 7 0 0 1 1.9-1.1z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
-        <span>Settings</span>
-      </button>
-    </nav>
-  </div>
-
-  <dialog id="confirm" class="confirm" aria-labelledby="confirm-title">
-    <div class="confirm-inner">
-      <h2 id="confirm-title"></h2>
-      <p id="confirm-text" class="muted"></p>
-      <div class="btnrow">
-        <button type="button" class="primary" id="confirm-ok">Confirm</button>
-        <button type="button" id="confirm-cancel">Cancel</button>
-      </div>
-    </div>
-  </dialog>
-
-  <script type="module" src="app.js?v=5c15159f"></script>
+  <main>
+    <h1>Global Explorer has moved</h1>
+    <p>This old address is no longer updated. Global Explorer now lives at globalexplorer.app.</p>
+    <a class="go" href="https://globalexplorer.app/play/">
+      <img src="icon.svg" alt="Global Explorer" width="160" height="160" />
+      <span>Go to the new site</span>
+    </a>
+    <p class="small">Playing at school? Ask your teacher for your school's access code. Everyone else: Global Explorer is coming soon to Google Play, and <a href="https://globalexplorer.app/">globalexplorer.app</a> has the details.</p>
+  </main>
 </body>
 </html>
